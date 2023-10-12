@@ -6,4 +6,4 @@ tags:
 
 > [disrupotr](https://lmax-exchange.github.io/disruptor/) 是一个高性能的无锁并发框架，主要用于解决在高并发场景下数据发布和消费的问题。
 
-![classdiagram](../_img/001/classdiagram.png)
+![classdiagram](../images/001/classdiagram.png)
