@@ -19,3 +19,11 @@ git push
 hexo deploy
 ```
 
+## 修改theme
+
+
+```bash
+# 修改 `theme/${theme}/_config.yml`
+hexo g
+hexo deploy
+```
