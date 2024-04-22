@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="" />
+  <meta name="author" content="2183814023" />
+  <meta name="description" content="一个普通的程序员" />
+  
+  
+  <title>
+    
+      关于golang的类型推导、隐式类型转换的一些思考 
+      
+      
+    
+  </title>
+
+  
+    <link rel="apple-touch-icon" href="/images/favicon.png">
+    <link rel="icon" href="/images/favicon.png">
+  
+
+  <!-- Raleway-Font -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat|Roboto:400,400italic,600|Roboto+Mono" rel="stylesheet">
+
+  <!-- hexo site css -->
+  
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/iconfont/iconfont.css">
+
+
+  
+
+  
+    
+<link rel="stylesheet" href="/css/post.css">
+
+  
+
+  <!-- jquery3.3.1 -->
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- fancybox -->
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <script async src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js"></script>
+  
+<script src="/js/fancybox.js"></script>
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+  <body>
+    <div id="app">
+      <div class="header">
+  <a href="/">0x822a5b87</a>
+</div>
+
+
+      <p class="links">
+  
+    <a title="archives" target="" href="/archives/">
+      <i class="iconfont icon-bookmark"></i>
+    </a>
+  
+    <a title="github" target="_blank" href="https://github.com/0x822a5b87">
+      <i class="iconfont icon-github"></i>
+    </a>
+  
+    <a title="about" target="" href="/about/">
+      <i class="iconfont icon-twitter"></i>
+    </a>
+  
+</p>
+
+
+      <div class="main">
+        <!-- 文章详情页，展示文章具体内容，url形式：https://yoursite/文章标题/ -->
+<!-- 同时为「标签tag」，「朋友friend」，「分类categories」，「关于about」页面的承载页面，具体展示取决于page.type -->
+
+<!-- LaTex Display -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+
+<div class="post">
+  <h3 class="date">
+    Apr 19, 2024
+  </h3>
+  <h1>
+    关于golang的类型推导、隐式类型转换的一些思考
+  </h1>
+  <div class="content markdown-body">
+    <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a target="_blank" rel="noopener" href="https://medium.com/golangspec/comparison-operators-in-go-910d9d788ec0">Comparison operators in Go</a></p>
+<p><a target="_blank" rel="noopener" href="https://juejin.cn/post/7095489639024164894">golang类型推断与隐式类型转换</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/golang/go/blob/master/src/cmd/compile/internal/typecheck/const.go#L339">golang 编译器的强制类型转换</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/golang/go/tree/master/src/cmd/compile/internal/ssa">golang SSA(Static Single Assignment)</a></p>
+<p><a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Conversions">Conversions</a></p>
+<p><a target="_blank" rel="noopener" href="https://yourbasic.org/golang/conversions/">Conversions [complete list]</a></p>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>今天，有个朋友突然问了我一个问题，为什么会发生以下这种情况呢？</p>
+<ol>
+<li><code>secretId == &quot;&quot;</code> 可以正常的进行比较；</li>
+<li><code>printString(secretId)</code> 会提示类型不匹配；</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Password <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printString</span><span class="params">(str <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	fmt.Println(str)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">testPrint</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> secretId Password = <span class="string">&quot;0&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 这里不会报错</span></span><br><span class="line">	<span class="keyword">if</span> secretId == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		fmt.Println(secretId)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Cannot use &#x27;secretId&#x27; (type Password) as the type string</span></span><br><span class="line">	printString(secretId)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到这个问题我的第一反应是由于 <strong>类型推导（Type inference）</strong>，<code>&quot;&quot;</code> 被直接推导为 <code>Password</code> 类型，所以可以直接和 secretId 对象进行比较。可惜的是，在 golang 反编译的代码中已经丢失了类型信息，所以只能慢慢探索了。</p>
+<h2 id="探索"><a href="#探索" class="headerlink" title="探索"></a>探索</h2><h3 id="第一次遇到的问题"><a href="#第一次遇到的问题" class="headerlink" title="第一次遇到的问题"></a>第一次遇到的问题</h3><p><strong>如果”” 被隐式的推导为 Password 类型</strong>，那么使用 <code>==</code> 对他们的比较是合法的，于是我就开始验证自己的想法，在验证自己想法过程中，却发现了一个更神奇的问题：<strong>go语言中对于const变量和非const变量的类型推导难道是不一样的？</strong>可以看到在下面的代码中：</p>
+<ol>
+<li><code>const</code> 标记的 <code>constPassString</code> 可以和 <code>Password</code> 类型比较；</li>
+<li>非 <code>const</code> 标记的 <code>passString</code> 却不能和 <code>Password</code> 比较；</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;reflect&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Password <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printString</span><span class="params">(str <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	fmt.Println(str)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">testPrint</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> secretId Password = <span class="string">&quot;0&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 这里不会报错</span></span><br><span class="line">	<span class="keyword">if</span> secretId == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		fmt.Println(secretId)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">const</span> constPassString = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="comment">// 这里不会报错</span></span><br><span class="line">	<span class="keyword">if</span> constPassString == secretId &#123;</span><br><span class="line">		fmt.Println(constPassString)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 输出 string</span></span><br><span class="line">	fmt.Println(reflect.TypeOf(constPassString))</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 编译失败</span></span><br><span class="line">	<span class="comment">// Invalid operation: passString == secretId (mismatched types string and Password)</span></span><br><span class="line">	<span class="keyword">var</span> passString = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="keyword">if</span> passString == secretId &#123;</span><br><span class="line">		fmt.Println(passString)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	testPrint()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="隐式类型转换的规则"><a href="#隐式类型转换的规则" class="headerlink" title="隐式类型转换的规则"></a>隐式类型转换的规则</h3><p>查阅了golang spec之后，我们得到几个重要结论：</p>
+<blockquote>
+<ol>
+<li>The only implicit conversion in Go is when an <strong>untyped constant</strong> is used in a situation where a type is required.</li>
+<li>Except for shift operations, if one operand is an untyped <a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Constants">constant</a> and the other operand is not, the constant is implicitly <a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Conversions">converted</a> to the type of the other operand.</li>
+</ol>
+</blockquote>
+<p>这里的 constant 很好理解，就是我们的 <code>const</code> 关键词指定的变量，而 <code>untyped</code> 我们可能会错误的理解为 <strong>无类型</strong>，实际确实指的是 <strong>未明确声明的类型或者由 type inference 推导出来的类型</strong>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// typedValue 表示的是 int 类型，这个类型是由 int 关键词声明的</span></span><br><span class="line"><span class="keyword">var</span> typedValue <span class="type">int</span> = <span class="number">10</span></span><br><span class="line"><span class="comment">// untypedValue 虽然也是 int 类型，但是它是由 type inference 推导出来的</span></span><br><span class="line"><span class="comment">// 根据 golang spec，每个 untyped 类型都会有他的默认类型</span></span><br><span class="line"><span class="comment">// 例如 10 的 默认类型是 int，也就是他默认会被推到为 int 类型</span></span><br><span class="line"><span class="keyword">var</span> untypedValue = <span class="number">10</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// const int 类型</span></span><br><span class="line"><span class="keyword">const</span> constTypedValue <span class="type">int</span> = <span class="number">10</span></span><br><span class="line"><span class="comment">// const untyped int</span></span><br><span class="line"><span class="keyword">const</span> constUntypedValue = <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<p>所以，在我们上面的代码就出现了这样的问题：</p>
+<blockquote>
+<ol>
+<li><code>&quot;&quot;</code> 是一个典型的 const untyped 变量，默认类型是 string，也就是 const untyped string，由上面的原则，它被隐式的转换为 <code>Password</code> 类型，所以&lt;1&gt; 编译器不会报错</li>
+<li>&lt;2&gt; <code>constPassString</code>也是一个 const untyped string，它也被隐式的转换为 <code>Password</code> 所以不会报错</li>
+<li>&lt;3&gt; <code>passString</code> 是一个 non-const untyped string，它无法被隐式的转换为 Password 类型，所以编译器报错。</li>
+</ol>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;reflect&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Password <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printString</span><span class="params">(str <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	fmt.Println(str)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">testPrint</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> secretId Password = <span class="string">&quot;0&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// &lt;1&gt;</span></span><br><span class="line">	<span class="keyword">if</span> secretId == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		fmt.Println(secretId)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// &lt;2&gt;</span></span><br><span class="line">	<span class="keyword">const</span> constPassString = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="keyword">if</span> constPassString == secretId &#123;</span><br><span class="line">		fmt.Println(constPassString)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 输出 string</span></span><br><span class="line">	fmt.Println(reflect.TypeOf(constPassString))</span><br><span class="line"></span><br><span class="line">  <span class="comment">// &lt;3&gt;</span></span><br><span class="line">	<span class="comment">// 编译失败</span></span><br><span class="line">	<span class="comment">// Invalid operation: passString == secretId (mismatched types string and Password)</span></span><br><span class="line">	<span class="keyword">var</span> passString = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="keyword">if</span> passString == secretId &#123;</span><br><span class="line">		fmt.Println(passString)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	testPrint()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="隐式转换的验证"><a href="#隐式转换的验证" class="headerlink" title="隐式转换的验证"></a>隐式转换的验证</h3><p>在我们下面的代码中：</p>
+<ol>
+<li>&lt;1&gt;，&lt;2&gt;，&lt;4&gt; 都会报错，他们的类型分别是 untyped string, non-const typed string, const typed string，这些都不允许隐式类型转换；</li>
+<li>&lt;3&gt; 是 const untyped string，可以被隐式的转换为 Password。</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Password <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printPassword</span><span class="params">(pwd Password)</span></span> &#123;</span><br><span class="line">	fmt.Println(pwd)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> untypedStr = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="keyword">var</span> nonConstTypedStr <span class="type">string</span> = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="keyword">const</span> constUntypedStr = <span class="string">&quot;&quot;</span></span><br><span class="line">	<span class="keyword">const</span> constTypedStr <span class="type">string</span> = <span class="string">&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// &lt;1&gt;</span></span><br><span class="line">	<span class="comment">// Cannot use &#x27;untypedStr&#x27; (type string) as the type Password</span></span><br><span class="line">	printPassword(untypedStr)</span><br><span class="line">	<span class="comment">// &lt;2&gt;</span></span><br><span class="line">	<span class="comment">// Cannot use &#x27;nonConstTypedStr&#x27; (type string) as the type Password</span></span><br><span class="line">	printPassword(nonConstTypedStr)</span><br><span class="line">	<span class="comment">// &lt;3&gt;</span></span><br><span class="line">	<span class="comment">// 合法</span></span><br><span class="line">	printPassword(constUntypedStr)</span><br><span class="line">	<span class="comment">// &lt;4&gt;</span></span><br><span class="line">	<span class="comment">// Cannot use &#x27;constTypedStr&#x27; (type string) as the type Password</span></span><br><span class="line">	printPassword(constTypedStr)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="隐式类型源码"><a href="#隐式类型源码" class="headerlink" title="隐式类型源码"></a>隐式类型源码</h3><p>查阅资料后，我们找到了 golang 的隐式转换函数代码，位于 <a target="_blank" rel="noopener" href="https://github.com/golang/go/blob/master/src/cmd/compile/internal/typecheck/const.go">const.go</a></p>
+<blockquote>
+<p>令我们十分疑惑。按照我们的直观想法，我们的 secretId 不是 string，而 “” 则是 string。那么最后应该是没有办法执行默认的类型转换的。</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DefaultLit</span><span class="params">(n ir.Node, t *types.Type)</span></span> ir.Node &#123;</span><br><span class="line">	<span class="keyword">return</span> convlit1(n, t, <span class="literal">false</span>, <span class="literal">nil</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// DefaultLit on both nodes simultaneously;</span></span><br><span class="line"><span class="comment">// if they&#x27;re both ideal going in they better</span></span><br><span class="line"><span class="comment">// get the same type going out.</span></span><br><span class="line"><span class="comment">// force means must assign concrete (non-ideal) type.</span></span><br><span class="line"><span class="comment">// The results of defaultlit2 MUST be assigned back to l and r, e.g.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//	n.Left, n.Right = defaultlit2(n.Left, n.Right, force)</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">defaultlit2</span><span class="params">(l ir.Node, r ir.Node, force <span class="type">bool</span>)</span></span> (ir.Node, ir.Node) &#123;</span><br><span class="line">	<span class="comment">// 如果l或者r为nil，则无法进行类型转换</span></span><br><span class="line">  <span class="keyword">if</span> l.Type() == <span class="literal">nil</span> || r.Type() == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> l, r</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果 l 和 r 都是非 interface 类型</span></span><br><span class="line">	<span class="keyword">if</span> !l.Type().IsInterface() &amp;&amp; !r.Type().IsInterface() &#123;</span><br><span class="line">    <span class="comment">// 无法转换bool值和非bool值</span></span><br><span class="line">    <span class="comment">// 也无法转换string和非string值</span></span><br><span class="line">		<span class="keyword">if</span> l.Type().IsBoolean() != r.Type().IsBoolean() &#123;</span><br><span class="line">			<span class="keyword">return</span> l, r</span><br><span class="line">		&#125;</span><br><span class="line">   </span><br><span class="line">		<span class="keyword">if</span> l.Type().IsString() != r.Type().IsString() &#123;</span><br><span class="line">			<span class="keyword">return</span> l, r</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果左边的变量有类型，则将右边的变量转换为左边的类型</span></span><br><span class="line">  <span class="comment">// var b int</span></span><br><span class="line">  <span class="comment">// b = 10</span></span><br><span class="line">  <span class="comment">// 此时尝试将 10 转换为 b 对应的类型</span></span><br><span class="line">	<span class="keyword">if</span> !l.Type().IsUntyped() &#123;</span><br><span class="line">		r = convlit(r, l.Type())</span><br><span class="line">		<span class="keyword">return</span> l, r</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果左边的变量为无类型，并且右边的变量有类型，则将左边的类型转换为右边的类型</span></span><br><span class="line">  <span class="comment">// var r int = 10</span></span><br><span class="line">  <span class="comment">// var l = r</span></span><br><span class="line">  <span class="comment">// 此时尝试将 l 转换为 r 对应的类型</span></span><br><span class="line">	<span class="keyword">if</span> !r.Type().IsUntyped() &#123;</span><br><span class="line">		l = convlit(l, r.Type())</span><br><span class="line">		<span class="keyword">return</span> l, r</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> !force &#123;</span><br><span class="line">		<span class="keyword">return</span> l, r</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Can&#x27;t mix nil with anything untyped.</span></span><br><span class="line">	<span class="keyword">if</span> ir.IsNil(l) || ir.IsNil(r) &#123;</span><br><span class="line">		<span class="keyword">return</span> l, r</span><br><span class="line">	&#125;</span><br><span class="line">	t := defaultType(mixUntyped(l.Type(), r.Type()))</span><br><span class="line">	l = convlit(l, t)</span><br><span class="line">	r = convlit(r, t)</span><br><span class="line">	<span class="keyword">return</span> l, r</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+  </div>
+  
+    
+      <a id="older" class="blog-nav" href="/2023/11/28/hello-world/">OLDER&nbsp;&gt;</a>
+      
+        
+            
+</div>
+        <div class="footer">
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/leedom92/hexo-theme-leedom">Copyright © Leedom 2021</a>
+        
+    </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/leedom92/hexo-theme-leedom">Theme by Leedom | Powered by Hexo</a>
+        
+    </div>
+  
+</div>
+
+      </div>
+
+      <div class="back-to-top hidden">
+  <a href="javascript: void(0)">
+    <i class="iconfont icon-chevronup"></i>
+  </a>
+</div>
+
+
+<script src="/js/backtotop.js"></script>
+
+
+
+      
+  <div class="search-icon" id="search-icon">
+    <a href="javascript: void(0)">
+      <i class="iconfont icon-search"></i>
+    </a>
+  </div>
+
+  <div class="search-overlay hidden">
+    <div class="search-content" tabindex="0">
+      <div class="search-box">
+        <div class="search-title">
+          <!-- <span class="search-icon-input">
+            <a href="javascript: void(0)">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </span> -->
+          
+            <input type="text" class="search-input" id="search-input" placeholder="$ grep...">
+          
+          <span class="search-close-icon" id="search-close-icon">
+            <a href="javascript: void(0)">
+              <i class="iconfont icon-close"></i>
+            </a>
+          </span>
+        </div>
+        <div class="search-result" id="search-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var inputArea = document.querySelector("#search-input")
+    var searchOverlayArea = document.querySelector(".search-overlay")
+
+    // inputArea.onclick = function() {
+    //   getSearchFile()
+    //   this.onclick = null
+    // }
+
+    inputArea.onkeydown = function() {
+      if(event.keyCode == 13)
+        return false
+    }
+
+    function openOrHideSearchContent() {
+      let isHidden = searchOverlayArea.classList.contains('hidden')
+      if (isHidden) {
+        searchOverlayArea.classList.remove('hidden')
+        document.body.classList.add('hidden')
+        inputArea.focus()
+        getSearchFile()
+      } else {
+        searchOverlayArea.classList.add('hidden')
+        document.body.classList.remove('hidden')
+      }
+    }
+
+    function blurSearchContent(e) {
+      if (e.target === searchOverlayArea) {
+        openOrHideSearchContent()
+      }
+    }
+
+    document.querySelector("#search-icon").addEventListener("click", openOrHideSearchContent, false)
+    document.querySelector("#search-close-icon").addEventListener("click", openOrHideSearchContent, false)
+    searchOverlayArea.addEventListener("click", blurSearchContent, false)
+
+    var searchFunc = function (path, search_id, content_id) {
+      'use strict';
+      var $input = document.getElementById(search_id);
+      var $resultContent = document.getElementById(content_id);
+      $resultContent.innerHTML = "<ul><span class='local-search-empty'><span></ul>";
+      // $resultContent.innerHTML = "<ul><span class='local-search-empty'>First search, index file loading, please wait...<span></ul>";
+      $.ajax({
+        // 0x01. load xml file
+        url: path,
+        dataType: "xml",
+        success: function (xmlResponse) {
+          // 0x02. parse xml file
+          var datas = $("entry", xmlResponse).map(function () {
+            return {
+              title: $("title", this).text(),
+              content: $("content", this).text(),
+              url: $("url", this).text()
+            };
+          }).get();
+          $resultContent.innerHTML = "";
+
+          $input.addEventListener('input', function () {
+            // 0x03. parse query to keywords list
+            var str = '<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length <= 0) {
+              return;
+            }
+            // 0x04. perform local searching
+            datas.forEach(function (data) {
+              var isMatch = true;
+              var content_index = [];
+              if (!data.title || data.title.trim() === '') {
+                data.title = "Untitled";
+              }
+              var orig_data_title = data.title.trim();
+              var data_title = orig_data_title.toLowerCase();
+              var orig_data_content = data.content.trim().replace(/<[^>]+>/g, "");
+              var data_content = orig_data_content.toLowerCase();
+              var data_url = data.url;
+              var index_title = -1;
+              var index_content = -1;
+              var first_occur = -1;
+              // only match artiles with not empty contents
+              if (data_content !== '') {
+                keywords.forEach(function (keyword, i) {
+                  index_title = data_title.indexOf(keyword);
+                  index_content = data_content.indexOf(keyword);
+
+                  if (index_title < 0 && index_content < 0) {
+                    isMatch = false;
+                  } else {
+                    if (index_content < 0) {
+                      index_content = 0;
+                    }
+                    if (i == 0) {
+                      first_occur = index_content;
+                    }
+                    // content_index.push({index_content:index_content, keyword_len:keyword_len});
+                  }
+                });
+              } else {
+                isMatch = false;
+              }
+              // 0x05. show search results
+              if (isMatch) {
+                str += "<li><a href='" + data_url + "' class='search-result-title'><h2>" + orig_data_title + "</h2></a>";
+                var content = orig_data_content;
+                if (first_occur >= 0) {
+                  // cut out 100 characters
+                  var start = first_occur - 20;
+                  var end = first_occur + 80;
+
+                  if (start < 0) {
+                    start = 0;
+                  }
+
+                  if (start == 0) {
+                    end = 100;
+                  }
+
+                  if (end > content.length) {
+                    end = content.length;
+                  }
+
+                  var match_content = content.substr(start, end);
+
+                  // highlight all keywords
+                  keywords.forEach(function (keyword) {
+                    var regS = new RegExp(keyword, "gi");
+                    match_content = match_content.replace(regS, "<span class=\"search-keyword\">" + keyword + "</span>");
+                  });
+
+                  str += "<h3 class=\"search-result-abstract\">" + match_content + "...</h3>"
+                }
+                str += "<hr></li>";
+              }
+            });
+            str += "</ul>";
+            if (str.indexOf('<li>') === -1) {
+              return $resultContent.innerHTML = "<ul><span class='local-search-empty'>No result<span></ul>";
+            }
+            $resultContent.innerHTML = str;
+          });
+        },
+        error: function(xhr, status, error) {
+          $resultContent.innerHTML = ""
+          if (xhr.status === 404) {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The search.xml file was not found, please refer to：<a href='https://github.com/leedom92/hexo-theme-leedom#configuration' target='_black'>configuration</a><span></ul>";
+          } else {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The request failed, Try to refresh the page or try again later.<span></ul>";
+          }
+        }
+      });
+      $(document).on('click', '#search-close-icon', function() {
+        $('#search-input').val('');
+        $('#search-result').html('');
+      });
+    }
+
+    var getSearchFile = function() {
+        var path = "/search.xml";
+        searchFunc(path, 'search-input', 'search-result');
+    }
+  </script>
+
+
+
+
+    </div>
+  </body>
+</html>
