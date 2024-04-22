@@ -16,6 +16,7 @@ git add -A
 git commit -m 'comment'
 git push
 
+hexo generate
 hexo deploy
 ```
 
