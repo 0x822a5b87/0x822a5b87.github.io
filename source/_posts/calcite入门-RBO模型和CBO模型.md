@@ -1674,8 +1674,6 @@ target = hepPlanner.findBestExp();
   }
 ```
 
-
-
 ## 引用
 
 - [https://github.com/0x822a5b87/test-calcite](https://github.com/0x822a5b87/test-calcite)
@@ -1687,4 +1685,5 @@ target = hepPlanner.findBestExp();
 - [Apache Calcite关系代数](https://liebing.org.cn/apache-calcite-relational-algebra.html)
 - [Apache Calcite查询优化器之HepPlanner](https://liebing.org.cn/apache-calcite-hepplanner.html)
 - [Apache Calcite查询优化器之VolcanoPlanner](https://liebing.org.cn/apache-calcite-volcanoplanner.html)
+- [SQL 查询优化原理与 Volcano Optimizer 介绍](https://io-meter.com/2018/11/01/sql-query-optimization-volcano/)
 
