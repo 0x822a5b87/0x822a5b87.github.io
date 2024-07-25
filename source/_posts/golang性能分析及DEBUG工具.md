@@ -4,20 +4,6 @@ date: 2024-05-11 15:35:53
 tags:
 ---
 
-## 引用
-
-[6.1 Go 大杀器之性能剖析 PProf（上）](https://golang2.eddycjy.com/posts/ch6/01-pprof-1/)
-
-[golang pprof document](https://github.com/google/pprof/blob/main/doc/README.md)
-
-[Go语言高级编程](https://chai2010.cn/advanced-go-programming-book/ch3-asm/ch3-09-debug.html)
-
-[delve](https://github.com/go-delve/delve/tree/master)
-
-[Golang Debugging With Delve [Step by Step]](https://golang.cafe/blog/golang-debugging-with-delve.html)
-
-[Configuration and Command History](https://github.com/go-delve/delve/blob/master/Documentation/cli/README.md)
-
 ## pprof
 
 pprof 是 golang 内置的一种用于调优和性能分析的工具，有三种最常用的方式使用：
@@ -462,4 +448,19 @@ print x
 # 也可以通过 display 在每次执行后都输出x，我觉得这里用watch来表示更加直观
 display -a x
 ```
+
+
+## 引用
+
+[6.1 Go 大杀器之性能剖析 PProf（上）](https://golang2.eddycjy.com/posts/ch6/01-pprof-1/)
+
+[golang pprof document](https://github.com/google/pprof/blob/main/doc/README.md)
+
+[Go语言高级编程](https://chai2010.cn/advanced-go-programming-book/ch3-asm/ch3-09-debug.html)
+
+[delve](https://github.com/go-delve/delve/tree/master)
+
+[Golang Debugging With Delve [Step by Step]](https://golang.cafe/blog/golang-debugging-with-delve.html)
+
+[Configuration and Command History](https://github.com/go-delve/delve/blob/master/Documentation/cli/README.md)
 

@@ -6,14 +6,6 @@ tags:
 
 # Golang异步编程总结
 
-## 引用
-
-[Golang异步编程方式和技巧](https://mp.weixin.qq.com/s/PuNu65ggHyB6jxRqhbN_VQ)
-
-[sync.Cond 的使用场景](https://geektutu.com/post/hpg-sync-cond.html)
-
-[Golang sync.Cond 条件变量源码分析](https://www.cyhone.com/articles/golang-sync-cond/)
-
 ## 常用方式
 
 ### 基于go关键词
@@ -579,4 +571,12 @@ func TestSyncMap(t *testing.T) {
 > - WithTimeout returns WithDeadline(parent, time.Now().Add(timeout)).
 
 ### 使用context.WithValue()传递上下文
+
+## 引用
+
+[Golang异步编程方式和技巧](https://mp.weixin.qq.com/s/PuNu65ggHyB6jxRqhbN_VQ)
+
+[sync.Cond 的使用场景](https://geektutu.com/post/hpg-sync-cond.html)
+
+[Golang sync.Cond 条件变量源码分析](https://www.cyhone.com/articles/golang-sync-cond/)
 
