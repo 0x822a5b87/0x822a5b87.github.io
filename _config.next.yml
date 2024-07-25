@@ -534,10 +534,11 @@ pdf:
 # Mermaid tag
 mermaid:
   enable: true
+  version: "10.9.1"
   # Available themes: default | dark | forest | neutral
-  theme:
-    light: default
-    dark: dark
+  theme: forest
+  options:
+
 
 # WaveDrom tag
 wavedrom:
@@ -931,13 +932,13 @@ images: images
 
 theme: next
 
-auto_excerpt:
-  enable: true
-  length: 150
-
+# Site
 title: 0x822a5b87的博客
-subtitle: 记录一下工作瞬间
-description: (define alive +1s)
+subtitle: 到码头整点薯条吃
+description: '到码头整点薯条吃'
+keywords:
+author: 0x822a5b87
+language: zh-CN
 
 excerpt:
   depth: 5  
