@@ -8,6 +8,23 @@
 # Theme Core Configuration Settings
 # See: https://theme-next.js.org/docs/theme-settings/
 # ---------------------------------------------------------------
+#
+# Site
+title: 0x822a5b87的博客
+subtitle: 到码头整点薯条吃
+description: '到码头整点薯条吃'
+keYwords: ['java', 'cpp', 'complier', 'OS']
+author: 0x822a5b87
+language: zh-CN
+
+# URL
+url: https://0x822a5b87.github.io/
+root: /
+permalink: :year/:month/:day/:title/
+permalink_defaults:
+pretty_urls:
+  trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
+  trailing_html: true # Set to false to remove trailing '.html' from permalinks
 
 # Allow to cache content generation.
 cache:
@@ -97,10 +114,11 @@ open_graph:
 # External url should start with http:// or https://
 menu:
   #home: / || fa fa-home
-  #about: /about/ || fa fa-user
-  #tags: /tags/ || fa fa-tags
+  about: /about/ || fa fa-user
+  tags: /tags/ || fa fa-tags
   #categories: /categories/ || fa fa-th
-  #archives: /archives/ || fa fa-archive
+  archives: /archives/ || fa fa-archive
+  top: /top/ || signal
   #schedule: /schedule/ || fa fa-calendar
   #sitemap: /sitemap.xml || fa fa-sitemap
   #commonweal: /404/ || fa fa-heartbeat
@@ -932,16 +950,25 @@ images: images
 
 theme: next
 
-# Site
-title: 0x822a5b87的博客
-subtitle: 到码头整点薯条吃
-description: '到码头整点薯条吃'
-keywords:
-author: 0x822a5b87
-language: zh-CN
-
 excerpt:
   depth: 5  
   excerpt_excludes: []
   more_excludes: []
   hideWholePostExcerpts: true
+
+# Date / Time format
+## Hexo uses Moment.js to parse and display date
+## You can customize the date format as defined in
+## http://momentjs.com/docs/#/displaying/format/
+date_format: YYYY-MM-DD
+time_format: HH:mm:ss
+## updated_option supports 'mtime', 'date', 'empty'
+updated_option: 'mtime'
+
+# Deployment
+## Docs: https://hexo.io/docs/one-command-deployment
+deploy:
+  type: git
+  repo: https://github.com/0x822a5b87/0x822a5b87.github.io.git
+  branch: main
+
