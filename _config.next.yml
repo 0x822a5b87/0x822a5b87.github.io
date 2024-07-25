@@ -930,3 +930,17 @@ js: js
 images: images
 
 theme: next
+
+auto_excerpt:
+  enable: true
+  length: 150
+
+title: 0x822a5b87的博客
+subtitle: 记录一下工作瞬间
+description: (define alive +1s)
+
+excerpt:
+  depth: 5  
+  excerpt_excludes: []
+  more_excludes: []
+  hideWholePostExcerpts: true
