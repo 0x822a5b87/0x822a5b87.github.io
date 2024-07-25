@@ -1544,7 +1544,7 @@ sequenceDiagram
 	NOTE OVER HepPlanner : executeProgram()
 	HepPlanner -->> HepProgram#State : prepare(HepPlanner)
 	loop HepInstructions
-			HepProgram#State -->> HepInstruction: execute()
+			HepProgram#State -->> HepInstruction: prepare()
 			HepInstruction -->> HepProgram#State : HepState
 	end
 	NOTE OVER HepProgram#State : HepStates
@@ -1581,6 +1581,100 @@ sequenceDiagram
     return program.prepare(px);
   }
 ```
+
+#### 以RuleInstance作为实例说明HepInstruction的优化规则
+
+从前面的代码中，我们发现RBO的优化其实逻辑非常简单，就是为每个规则生成一个HepInstruction并遍历执行，为了保证HepInstruction的可重入性（re-entrant），我们增加了一个额外的HepState来存储状态。**所以，实际的优化其实是定义在HepInstruction中的。**
+
+```java
+/** Rule that combines two {@link LogicalFilter}s. */
+public static final FilterMergeRule FILTER_MERGE = FilterMergeRule.Config.DEFAULT.toRule();
+
+HepProgram program = new HepProgramBuilder().addRuleInstance(CoreRules.FILTER_MERGE);
+
+final HepPlanner hepPlanner = new HepPlanner(program);
+hepPlanner.setRoot(target);
+target = hepPlanner.findBestExp();
+```
+
+在以上代码中，我们添加了 `FilterMergeRule` 并执行，它是 `RelOptRule` 的子类，基于 `matches()` 和 `onMatch()` 方法将一个epxression转换为另外的expression。
+
+
+
+而`RuleInstance#State`的execute()方法，最终会执行到`HepPlanner.applyRules()`。
+
+```java
+  private void applyRules(HepProgram.State programState,
+      Collection<RelOptRule> rules, boolean forceConversions) {
+    final HepInstruction.EndGroup.State group = programState.group;
+    if (group != null) {
+      checkArgument(group.collecting);
+      Set<RelOptRule> ruleSet = requireNonNull(group.ruleSet, "group.ruleSet");
+      ruleSet.addAll(rules);
+      return;
+    }
+
+    LOGGER.trace("Applying rule set {}", rules);
+
+    // 匹配顺序不为深度优先，则设置该值为true，这会使得每次有节点被成功的优化时，再次回到root节点进行优化
+    // ATTENTION ：在后面获取迭代器的代码中，这两个顺序其实都是深度优先
+    final boolean fullRestartAfterTransformation =
+        programState.matchOrder != HepMatchOrder.ARBITRARY
+        && programState.matchOrder != HepMatchOrder.DEPTH_FIRST;
+
+    int nMatches = 0;
+
+    boolean fixedPoint;
+    do {
+      /**
+       * 根据 {@link HepProgram.State#matchOrder} 获取对应的迭代器，这里遍历的就是我们在{@link HepPlanner#setRoot(RelNode)} 生成的DAG
+       */
+      Iterator<HepRelVertex> iter =
+          getGraphIterator(programState, requireNonNull(root, "root"));
+      fixedPoint = true;
+      while (iter.hasNext()) {
+        HepRelVertex vertex = iter.next();
+        // 对于DAG的每个节点，我们都使用提供的规则尝试进行匹配和转换
+        for (RelOptRule rule : rules) {
+          HepRelVertex newVertex = applyRule(rule, vertex, forceConversions);
+          if (newVertex == null || newVertex == vertex) {
+            continue;
+          }
+
+          // 如果到这里，说明当前的DAG节点可以被转换为一个新的节点。
+          ++nMatches;
+          // 限制最大匹配次数
+          if (nMatches >= programState.matchLimit) {
+            return;
+          }
+
+          // 如果fullRestartAfterTransformation，我们回到root节点再次进行从头转换
+          // 因为这个时候，我们的结构改变了，所以刚才不能转换的节点现在可能可以转换了。
+          if (fullRestartAfterTransformation) {
+            iter = getGraphIterator(programState, requireNonNull(root, "root"));
+          } else {
+            // 如果是DEPTH_FIRST，直接使用新节点作为root节点重新开始匹配，因为转换后的节点可能匹配新的规则
+            iter = getGraphIterator(programState, newVertex);
+            // 如果是深度优先，则继续遍历。
+            // 再回忆一下，只有 HepMatchOrder.ARBITRARY 和 HepMatchOrder.DEPTH_FIRST 会进入到这个位置
+            if (programState.matchOrder == HepMatchOrder.DEPTH_FIRST) {
+              nMatches =
+                  depthFirstApply(programState, iter, rules, forceConversions, nMatches);
+              if (nMatches >= programState.matchLimit) {
+                return;
+              }
+            }
+            // 标记不退出循环，因为由于HepMatchOrder我们跳过了一些节点
+            fixedPoint = false;
+          }
+          break;
+        }
+      }
+    } while (!fixedPoint);
+  }
+```
+
+
 
 ## 引用
 
