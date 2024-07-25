@@ -4,20 +4,6 @@ date: 2024-04-19 17:02:53
 tags:
 ---
 
-## 参考
-
-[Comparison operators in Go](https://medium.com/golangspec/comparison-operators-in-go-910d9d788ec0)
-
-[golang类型推断与隐式类型转换](https://juejin.cn/post/7095489639024164894)
-
-[golang 编译器的强制类型转换](https://github.com/golang/go/blob/master/src/cmd/compile/internal/typecheck/const.go#L339)
-
-[golang SSA(Static Single Assignment)](https://github.com/golang/go/tree/master/src/cmd/compile/internal/ssa)
-
-[Conversions](https://go.dev/ref/spec#Conversions)
-
-[Conversions [complete list]](https://yourbasic.org/golang/conversions/)
-
 ## 前言
 
 今天，有个朋友突然问了我一个问题，为什么在以下代码中会发生以下这种情况呢？
@@ -287,3 +273,11 @@ func defaultlit2(l ir.Node, r ir.Node, force bool) (ir.Node, ir.Node) {
 }
 ```
 
+## 参考
+
+- [Comparison operators in Go](https://medium.com/golangspec/comparison-operators-in-go-910d9d788ec0)
+- [golang类型推断与隐式类型转换](https://juejin.cn/post/7095489639024164894)
+- [golang 编译器的强制类型转换](https://github.com/golang/go/blob/master/src/cmd/compile/internal/typecheck/const.go#L339)
+- [golang SSA(Static Single Assignment)](https://github.com/golang/go/tree/master/src/cmd/compile/internal/ssa)
+- [Conversions](https://go.dev/ref/spec#Conversions)
+- [Conversions [complete list]](https://yourbasic.org/golang/conversions/)

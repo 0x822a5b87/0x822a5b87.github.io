@@ -8,26 +8,6 @@ tags:
 
 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。
 
-## 引用
-
-[https://github.com/0x822a5b87/test-calcite](https://github.com/0x822a5b87/test-calcite)
-
-[calcite-demo ： calcite adapter and calcite optimizer and so on](https://github.com/zzzzming95/calcite-demo)
-
-[Apache Calcite 处理流程详解（一）](http://matt33.com/2019/03/07/apache-calcite-process-flow/)
-
-[Apache Calcite 优化器详解（二）](https://matt33.com/2019/03/17/apache-calcite-planner/)
-
-[SQL 查询优化原理与 Volcano Optimizer 介绍](https://io-meter.com/2018/11/01/sql-query-optimization-volcano/)
-
-[Apche Calcite查询优化概述](https://liebing.org.cn/apache-calcite-query-optimization-overview.html)
-
-[Apache Calcite关系代数](https://liebing.org.cn/apache-calcite-relational-algebra.html)
-
-[Apache Calcite查询优化器之HepPlanner](https://liebing.org.cn/apache-calcite-hepplanner.html)
-
-[Apache Calcite查询优化器之VolcanoPlanner](https://liebing.org.cn/apache-calcite-volcanoplanner.html)
-
 ## 解析
 
 ### sql parse 的过程
@@ -1602,19 +1582,15 @@ sequenceDiagram
   }
 ```
 
+## 引用
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- [https://github.com/0x822a5b87/test-calcite](https://github.com/0x822a5b87/test-calcite)
+- [calcite-demo ： calcite adapter and calcite optimizer and so on](https://github.com/zzzzming95/calcite-demo)
+- [Apache Calcite 处理流程详解（一）](http://matt33.com/2019/03/07/apache-calcite-process-flow/)
+- [Apache Calcite 优化器详解（二）](https://matt33.com/2019/03/17/apache-calcite-planner/)
+- [SQL 查询优化原理与 Volcano Optimizer 介绍](https://io-meter.com/2018/11/01/sql-query-optimization-volcano/)
+- [Apche Calcite查询优化概述](https://liebing.org.cn/apache-calcite-query-optimization-overview.html)
+- [Apache Calcite关系代数](https://liebing.org.cn/apache-calcite-relational-algebra.html)
+- [Apache Calcite查询优化器之HepPlanner](https://liebing.org.cn/apache-calcite-hepplanner.html)
+- [Apache Calcite查询优化器之VolcanoPlanner](https://liebing.org.cn/apache-calcite-volcanoplanner.html)
 
