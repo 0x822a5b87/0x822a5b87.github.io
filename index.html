@@ -127,7 +127,7 @@
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -144,6 +144,90 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/07/26/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/07/26/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" class="post-title-link" itemprop="url">关于golang的类型推导、隐式类型转换的一些思考</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-07-26 17:02:53 / 修改时间：10:46:39" itemprop="dateCreated datePublished" datetime="2024-07-26T17:02:53+08:00">2024-07-26</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>今天，有个朋友突然问了我一个问题，为什么在以下代码中会发生以下这种情况呢？</p>
+<ol>
+<li><code>secretId == &quot;&quot;</code> 可以正常的进行比较；</li>
+<li><code>printString(secretId)</code> 会提示类型不匹配；</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Password <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printString</span><span class="params">(str <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	fmt.Println(str)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">testPrint</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> secretId Password = <span class="string">&quot;0&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 这里不会报错</span></span><br><span class="line">	<span class="keyword">if</span> secretId == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		fmt.Println(secretId)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Cannot use &#x27;secretId&#x27; (type Password) as the type string</span></span><br><span class="line">	printString(secretId)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到这个问题我的第一反应是由于 <strong>类型推导（Type inference）</strong>，<code>&quot;&quot;</code> 被直接推导为 <code>Password</code> 类型，所以可以直接和 secretId 对象进行比较。可惜的是，在 golang 反编译的代码中已经丢失了类型信息，所以只能慢慢探索了。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/07/26/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -181,9 +265,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2024-07-26 10:42:22 / 修改时间：10:43:03" itemprop="dateCreated datePublished" datetime="2024-07-26T10:42:22+08:00">2024-07-26</time>
+      <time title="创建时间：2024-07-26 10:42:22" itemprop="dateCreated datePublished" datetime="2024-07-26T10:42:22+08:00">2024-07-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-07-29 12:32:20" itemprop="dateModified" datetime="2024-07-29T12:32:20+08:00">2024-07-29</time>
     </span>
 
   
@@ -196,7 +286,164 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          
+          <h2 id="简述Generics"><a href="#简述Generics" class="headerlink" title="简述Generics"></a>简述Generics</h2><p><code>Generics</code> 是一种基本所有现代高级强类型编程语言中都会提供的特性，各个语言的实现模式不一样，例如：</p>
+<ul>
+<li>java基于<strong>类型擦除（Type Erasure）</strong>实现，简单来说就是被<strong>在运行时被实际转换为声明的类型（如果没有声明就是object）</strong>。这意味着在运行时我们已经丢失实际的类型。</li>
+<li><code>cpp</code> 基于 <code>Template</code> 来实现泛型，<strong>模版在编译时进行实例化</strong>。</li>
+<li><code>golang</code> 基于 <strong>类型参数</strong> 和 <strong>约束</strong> 来实现泛型。</li>
+</ul>
+<p>总的来说优缺点如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>特性&#x2F;语言</th>
+<th>Java 泛型</th>
+<th>C++ 模板</th>
+<th>Go 泛型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>实现方式</strong></td>
+<td>类型擦除（Type Erasure）</td>
+<td>编译时实例化</td>
+<td>类型参数和约束</td>
+</tr>
+<tr>
+<td><strong>类型安全</strong></td>
+<td>有</td>
+<td>有</td>
+<td>有</td>
+</tr>
+<tr>
+<td><strong>编译时类型检查</strong></td>
+<td>有</td>
+<td>有</td>
+<td>有</td>
+</tr>
+<tr>
+<td><strong>灵活性</strong></td>
+<td>差</td>
+<td>极高，支持模板化和模板元变成</td>
+<td>一般</td>
+</tr>
+<tr>
+<td><strong>复杂性</strong></td>
+<td>简单</td>
+<td>极复杂</td>
+<td>简单</td>
+</tr>
+<tr>
+<td><strong>运行时开销</strong></td>
+<td>有</td>
+<td>无</td>
+<td>有</td>
+</tr>
+<tr>
+<td><strong>缺点</strong></td>
+<td>- 运行时无法获取泛型类型信息<br>- 不能创建泛型数组<br>- 不能使用基本类型作为泛型参数<br>- 不能在静态上下文中使用泛型类型参数<br>- 不能直接实例化泛型类型参数</td>
+<td>- 编译速度慢：模板实例化可能导致编译时间增加<br>- 代码膨胀：大量模板实例化可能导致生成的二进制代码体积增大<br>- 错误信息复杂：模板错误信息可能难以理解和调试</td>
+<td>- 相对较新的特性，生态系统和社区支持可能还不够成熟<br>- 可能引入一些性能开销，具体需要根据实际使用场景评估<br></td>
+</tr>
+</tbody></table>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/07/26/golang%E6%B3%9B%E5%9E%8B%E7%AE%80%E8%BF%B0/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/" class="post-title-link" itemprop="url">calcite入门--RBO模型和CBO模型</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-07-26 09:53:40 / 修改时间：10:46:25" itemprop="dateCreated datePublished" datetime="2024-07-26T09:53:40+08:00">2024-07-26</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="calcite入门–RBO模型和CBO模型"><a href="#calcite入门–RBO模型和CBO模型" class="headerlink" title="calcite入门–RBO模型和CBO模型"></a>calcite入门–RBO模型和CBO模型</h1><p>由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。</p>
+<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><h3 id="sql-parse-的过程"><a href="#sql-parse-的过程" class="headerlink" title="sql parse 的过程"></a>sql parse 的过程</h3><pre class="mermaid">flowchart LR
+
+subgraph 模版
+    direction LR
+    模板Parser.jj
+    compoundIdentifier.ftl
+    parserImpls.ftl
+    config.fmpp
+    default_config.fmpp
+end
+
+模版 --> FMPP --> Parser.jj:::underline --> JavaCC --> SqlParserImpl:::underline
+
+classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -274,184 +521,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2024/07/25/calcite%E5%85%A5%E9%97%A8-Volcano-Optimizer/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/07/25/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2024/07/25/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2024-07-25 11:25:19" itemprop="dateCreated datePublished" datetime="2024-07-25T11:25:19+08:00">2024-07-25</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="发布博客"><a href="#发布博客" class="headerlink" title="发布博客"></a>发布博客</h2><blockquote>
-<p>源码存放于source分支下，编译后的文件存放于master分支下。</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在source分支下</span></span><br><span class="line">hexo new <span class="string">&#x27;hello world&#x27;</span></span><br><span class="line"></span><br><span class="line">vim <span class="built_in">source</span>/_posts/hello-world.md</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编辑完</span></span><br><span class="line">git add -A</span><br><span class="line">git commit -m <span class="string">&#x27;comment&#x27;</span></span><br><span class="line">git push</span><br><span class="line"></span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
-
-<h2 id="修改theme"><a href="#修改theme" class="headerlink" title="修改theme"></a>修改theme</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 修改 `theme/$&#123;theme&#125;/_config.yml`</span></span><br><span class="line">hexo g</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2024/07/25/hello-world/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/06/18/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2024/06/18/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/" class="post-title-link" itemprop="url">calcite入门--RBO模型和CBO模型</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2024-06-18 09:53:40" itemprop="dateCreated datePublished" datetime="2024-06-18T09:53:40+08:00">2024-06-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2024-07-26 10:41:02" itemprop="dateModified" datetime="2024-07-26T10:41:02+08:00">2024-07-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="calcite入门–RBO模型和CBO模型"><a href="#calcite入门–RBO模型和CBO模型" class="headerlink" title="calcite入门–RBO模型和CBO模型"></a>calcite入门–RBO模型和CBO模型</h1><p>由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。</p>
-<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><h3 id="sql-parse-的过程"><a href="#sql-parse-的过程" class="headerlink" title="sql parse 的过程"></a>sql parse 的过程</h3><pre class="mermaid">flowchart LR
-
-subgraph 模版
-    direction LR
-    模板Parser.jj
-    compoundIdentifier.ftl
-    parserImpls.ftl
-    config.fmpp
-    default_config.fmpp
-end
-
-模版 --> FMPP --> Parser.jj:::underline --> JavaCC --> SqlParserImpl:::underline
-
-classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2024/06/18/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -657,7 +726,7 @@ classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/04/19/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/04/24/hello-world/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -675,7 +744,7 @@ classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2024/04/19/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" class="post-title-link" itemprop="url">关于golang的类型推导、隐式类型转换的一些思考</a>
+          <a href="/2024/04/24/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
         </h2>
 
         <div class="post-meta-container">
@@ -686,14 +755,14 @@ classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
       </span>
       <span class="post-meta-item-text">发表于</span>
 
-      <time title="创建时间：2024-04-19 17:02:53" itemprop="dateCreated datePublished" datetime="2024-04-19T17:02:53+08:00">2024-04-19</time>
+      <time title="创建时间：2024-04-24 00:19:10" itemprop="dateCreated datePublished" datetime="2024-04-24T00:19:10+08:00">2024-04-24</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2024-07-26 10:40:50" itemprop="dateModified" datetime="2024-07-26T10:40:50+08:00">2024-07-26</time>
+      <time title="修改时间：2024-07-26 12:06:06" itemprop="dateModified" datetime="2024-07-26T12:06:06+08:00">2024-07-26</time>
     </span>
 
   
@@ -706,17 +775,15 @@ classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
     
     
     <div class="post-body" itemprop="articleBody">
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>今天，有个朋友突然问了我一个问题，为什么在以下代码中会发生以下这种情况呢？</p>
-<ol>
-<li><code>secretId == &quot;&quot;</code> 可以正常的进行比较；</li>
-<li><code>printString(secretId)</code> 会提示类型不匹配；</li>
-</ol>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Password <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printString</span><span class="params">(str <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	fmt.Println(str)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">testPrint</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> secretId Password = <span class="string">&quot;0&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 这里不会报错</span></span><br><span class="line">	<span class="keyword">if</span> secretId == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		fmt.Println(secretId)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Cannot use &#x27;secretId&#x27; (type Password) as the type string</span></span><br><span class="line">	printString(secretId)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          <h2 id="发布博客"><a href="#发布博客" class="headerlink" title="发布博客"></a>发布博客</h2><blockquote>
+<p>源码存放于source分支下，编译后的文件存放于master分支下。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在source分支下</span></span><br><span class="line">hexo new <span class="string">&#x27;hello world&#x27;</span></span><br><span class="line"></span><br><span class="line">vim <span class="built_in">source</span>/_posts/hello-world.md</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编辑完</span></span><br><span class="line">git add -A</span><br><span class="line">git commit -m <span class="string">&#x27;comment&#x27;</span></span><br><span class="line">git push</span><br><span class="line"></span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
 
-<p>看到这个问题我的第一反应是由于 <strong>类型推导（Type inference）</strong>，<code>&quot;&quot;</code> 被直接推导为 <code>Password</code> 类型，所以可以直接和 secretId 对象进行比较。可惜的是，在 golang 反编译的代码中已经丢失了类型信息，所以只能慢慢探索了。</p>
+<h2 id="修改theme"><a href="#修改theme" class="headerlink" title="修改theme"></a>修改theme</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 修改 `theme/$&#123;theme&#125;/_config.yml`</span></span><br><span class="line">hexo g</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/04/19/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/#more" rel="contents">
+              <a class="btn" href="/2024/04/24/hello-world/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
