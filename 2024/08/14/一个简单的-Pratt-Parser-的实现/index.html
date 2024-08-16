@@ -27,7 +27,7 @@
 <meta property="og:description" content="使用本文记录学习 Pratt Parser 的过程，全部代码实现基于 go version go1.20.14 darwin&#x2F;arm64 实现，代码地址位于：0x822a5b87&#x2F;test-pratt-parsing  什么是 Pratt Parser在语法解析器（Parser）的工作过程中，我们通常会将一个字符串转换为一个抽象语法树（Abstract Syntax Tree）： --">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-08-14T10:34:02.000Z">
-<meta property="article:modified_time" content="2024-08-14T10:37:20.676Z">
+<meta property="article:modified_time" content="2024-08-16T08:13:32.020Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="go">
 <meta property="article:tag" content="compliler">
@@ -116,7 +116,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Pratt-Parser"><span class="nav-number">1.</span> <span class="nav-text">什么是 Pratt Parser</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BNF%E5%92%8Chand-writeing-the-parser"><span class="nav-number">2.</span> <span class="nav-text">BNF和hand-writeing the parser</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Recursive-descent-and-left-recursion"><span class="nav-number">2.1.</span> <span class="nav-text">Recursive descent and left-recursion</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pratt-Parser-%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">Pratt Parser 的基本原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pratt-Parser-%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91%E7%AE%80%E8%BF%B0"><span class="nav-number">4.</span> <span class="nav-text">Pratt Parser 实现逻辑简述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">Pratt Parser 的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E6%B3%95%E5%AE%9A%E4%B9%89"><span class="nav-number">5.1.</span> <span class="nav-text">文法定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89token"><span class="nav-number">5.2.</span> <span class="nav-text">定义token</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AST"><span class="nav-number">5.3.</span> <span class="nav-text">AST</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parser"><span class="nav-number">5.4.</span> <span class="nav-text">parser</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%85%8Dprecedence"><span class="nav-number">5.4.1.</span> <span class="nav-text">分配precedence</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E8%A7%A3%E6%9E%90%E5%87%BD%E6%95%B0"><span class="nav-number">5.4.2.</span> <span class="nav-text">定义解析函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B"><span class="nav-number">5.4.3.</span> <span class="nav-text">真正的解析流程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">6.</span> <span class="nav-text">解析流程详解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#references"><span class="nav-number">7.</span> <span class="nav-text">references</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Pratt-Parser"><span class="nav-number">1.</span> <span class="nav-text">什么是 Pratt Parser</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">2.</span> <span class="nav-text">一个简单的例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BNF%E5%92%8Chand-writeing-the-parser"><span class="nav-number">3.</span> <span class="nav-text">BNF和hand-writeing the parser</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Recursive-descent-and-left-recursion"><span class="nav-number">3.1.</span> <span class="nav-text">Recursive descent and left-recursion</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pratt-Parser-%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">Pratt Parser 的基本原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pratt-Parser-%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91%E7%AE%80%E8%BF%B0"><span class="nav-number">5.</span> <span class="nav-text">Pratt Parser 实现逻辑简述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.</span> <span class="nav-text">Pratt Parser 的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E6%B3%95%E5%AE%9A%E4%B9%89"><span class="nav-number">6.1.</span> <span class="nav-text">文法定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89token"><span class="nav-number">6.2.</span> <span class="nav-text">定义token</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AST"><span class="nav-number">6.3.</span> <span class="nav-text">AST</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parser"><span class="nav-number">6.4.</span> <span class="nav-text">parser</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%85%8Dprecedence"><span class="nav-number">6.4.1.</span> <span class="nav-text">分配precedence</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E8%A7%A3%E6%9E%90%E5%87%BD%E6%95%B0"><span class="nav-number">6.4.2.</span> <span class="nav-text">定义解析函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B"><span class="nav-number">6.4.3.</span> <span class="nav-text">真正的解析流程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">7.</span> <span class="nav-text">解析流程详解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#references"><span class="nav-number">8.</span> <span class="nav-text">references</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -189,9 +189,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2024-08-14 18:34:02 / 修改时间：18:37:20" itemprop="dateCreated datePublished" datetime="2024-08-14T18:34:02+08:00">2024-08-14</time>
+      <time title="创建时间：2024-08-14 18:34:02" itemprop="dateCreated datePublished" datetime="2024-08-14T18:34:02+08:00">2024-08-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-08-16 16:13:32" itemprop="dateModified" datetime="2024-08-16T16:13:32+08:00">2024-08-16</time>
     </span>
 
   
@@ -229,6 +235,51 @@ flowchart LR
 <li>前缀和后缀应该如何计算？<code>1 + 2!</code> 是 <code>1 + (2!)</code> 还是 <code>(1 + 2)!</code></li>
 </ol>
 <p>这些基本都是由于运算符（<code>Operator</code>）存在不同的优先级（<code>Precedence</code>），而 Pratt Parser就是为了解决这个运算符优先级而发明的一个算法，这个算法由 <strong>Vaughan R. Pratt</strong> 在论文 <a target="_blank" rel="noopener" href="https://tdop.github.io/">Top Down Operator Precedence</a> 中提出。</p>
+<h2 id="一个简单的例子"><a href="#一个简单的例子" class="headerlink" title="一个简单的例子"></a>一个简单的例子</h2><p>在我们了解Pratt Parser之前，我们可以思考一个简单的例子以便于对Pratt Parser有一些最基本的直觉和了解，我们可以看看这个例子：</p>
+<pre class="mermaid">---
+title: 一个简单的例子
+---
+flowchart LR
+    1 --> operator1:::op --> 2 --> operator2:::op --> 3
+    
+classDef op fill:#ff6347,stroke:#333,stroke-width:4px;</pre>
+
+
+
+<p>他的AST可能是这样构造的：</p>
+<pre class="mermaid">---
+title: 语法树
+---
+flowchart TD
+
+subgraph condition1["operaor1 >= operator2"]
+    operator1:::high --> operand1["1"]
+    operator1 --> operand2["2"]
+    
+    operator2 --> operand3["3"]
+    operator2:::low --> operator1
+end
+
+subgraph condition2["operaor1 < operator2"]
+    op3["operator1"]:::low
+    op4["operator2"]:::high
+    operand4["1"]
+    operand5["2"]
+    operand6["3"]
+
+    op3 --> operand4
+    op4 --> operand5
+    op4 --> operand6
+    op3 --> op4
+end
+
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px;</pre>
+
+<blockquote>
+<p>我们可以先做一个比较武断的总结：影响我们的AST构造的最重要的部分，就是 operator1 和 operator2 的优先级大小关系，谁的优先级更大，谁连接的表达式就在AST的更底层，因为我们在执行AST时通常是深度优先遍历的。</p>
+<p>所以，在我们构造树的过程中可以遵循这个原则，对于从左到右的两个operator1和operator2，将优先级较高的那个节点作为另外一个节点的左子节点或右子节点，具体是左子节点还是右子节点取决于优先级较高的节点出现的位置。</p>
+</blockquote>
 <h2 id="BNF和hand-writeing-the-parser"><a href="#BNF和hand-writeing-the-parser" class="headerlink" title="BNF和hand-writeing the parser"></a>BNF和hand-writeing the parser</h2><p>在我们实现一个Parser的过程中，我们往往可以选择两个方式来生成我们的AST：</p>
 <ol>
 <li>使用一个DSL来声明语言的语法，通常是基于BNF&#x2F;EBNF语法，比较常用的有 <code>antlr4</code>, <code>javacc</code> 等；</li>
@@ -266,17 +317,17 @@ flowchart LR
 <li><p>继续向后，当到最后一个 <code>+</code> 时，peek() 得到 EOF，我们再次构造一个AST。</p>
 </li>
 </ol>
-<p>此时解析完毕，我们得到了如下AST（4的位置错误是由于mermaid的渲染BUG）：</p>
+<p>此时解析完毕，我们得到了如下AST：</p>
 <pre class="mermaid">---
 title: 1 + 2 * 3 + 4
 ---
 flowchart TD  
-    add0["+"] --> 1  
+    add0["+"] --> operand1["1"]  
     add0 --> mul  
-    mul[*] --> 2  
-    mul --> 3  
+    mul[*] --> operand2["2"]
+    mul --> operand3["3"]
     add1["+"] --> add0
-    add1 --> 4</pre>
+    add1 --> operand4["4"]</pre>
 
 
 
