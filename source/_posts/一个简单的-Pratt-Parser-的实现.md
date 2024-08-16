@@ -94,6 +94,23 @@ classDef high fill:#ff6347,stroke:#333,stroke-width:4px;
 >
 > 所以，在我们构造树的过程中可以遵循这个原则，对于从左到右的两个operator1和operator2，将优先级较高的那个节点作为另外一个节点的左子节点或右子节点，具体是左子节点还是右子节点取决于优先级较高的节点出现的位置。
 
+再细化一点来说，存在如下表达式：
+
+```mermaid
+---
+title: 一个简单的例子
+---
+flowchart LR
+	leftOp["leftOp"]:::op --> operand --> rightOp["rightOp"]:::op
+	
+classDef op fill:#ff6347,stroke:#333,stroke-width:4px;
+```
+
+1. 如果 Precedence(leftOp) >= Precedence(rightOp)，那么 operand 作为 leftOp 的右子节点，leftOp 作为 rightOp 的左子节点；
+2. 如果 Precedence(leftOp) < Precedence(rightOp)，那么 operand 作为 rightOp 的左字节点，rightOp 作为 leftOp 的右子节点；
+
+这个就是 Pratt Parser 中提到的一个概念：**绑定强度（binding power）**，可以理解为operad会被绑定到他的左右operator中，binding power更强的那个operator。
+
 ## BNF和hand-writeing the parser
 
 在我们实现一个Parser的过程中，我们往往可以选择两个方式来生成我们的AST：
