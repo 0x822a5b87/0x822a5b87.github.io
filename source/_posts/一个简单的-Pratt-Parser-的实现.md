@@ -39,6 +39,61 @@ flowchart LR
 
 这些基本都是由于运算符（`Operator`）存在不同的优先级（`Precedence`），而 Pratt Parser就是为了解决这个运算符优先级而发明的一个算法，这个算法由 **Vaughan R. Pratt** 在论文 [Top Down Operator Precedence](https://tdop.github.io/) 中提出。
 
+## 一个简单的例子
+
+在我们了解Pratt Parser之前，我们可以思考一个简单的例子以便于对Pratt Parser有一些最基本的直觉和了解，我们可以看看这个例子：
+
+```mermaid
+---
+title: 一个简单的例子
+---
+flowchart LR
+	1 --> operator1:::op --> 2 --> operator2:::op --> 3
+	
+classDef op fill:#ff6347,stroke:#333,stroke-width:4px;
+```
+
+
+
+他的AST可能是这样构造的：
+
+```mermaid
+---
+title: 语法树
+---
+flowchart TD
+
+subgraph condition1["operaor1 >= operator2"]
+	operator1:::high --> operand1["1"]
+	operator1 --> operand2["2"]
+	
+	operator2 --> operand3["3"]
+	operator2:::low --> operator1
+end
+
+subgraph condition2["operaor1 < operator2"]
+	op3["operator1"]:::low
+	op4["operator2"]:::high
+	operand4["1"]
+	operand5["2"]
+	operand6["3"]
+
+	op3 --> operand4
+	op4 --> operand5
+	op4 --> operand6
+	op3 --> op4
+end
+
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px;
+```
+
+> 我们可以先做一个比较武断的总结：影响我们的AST构造的最重要的部分，就是 operator1 和 operator2 的优先级大小关系，谁的优先级更大，谁连接的表达式就在AST的更底层，因为我们在执行AST时通常是深度优先遍历的。
+>
+> 
+>
+> 所以，在我们构造树的过程中可以遵循这个原则，对于从左到右的两个operator1和operator2，将优先级较高的那个节点作为另外一个节点的左子节点或右子节点，具体是左子节点还是右子节点取决于优先级较高的节点出现的位置。
+
 ## BNF和hand-writeing the parser
 
 在我们实现一个Parser的过程中，我们往往可以选择两个方式来生成我们的AST：
@@ -114,19 +169,19 @@ func (p *Parser) ParseSum() {
 4. 我们通过 `parseAdd()` 构造一个 AST，root节点为 `+`，lhs 和 rhs 分别是 `1` 和 `<3>` 得到的节点；
 5. 继续向后，当到最后一个 `+` 时，peek() 得到 EOF，我们再次构造一个AST。
 
-此时解析完毕，我们得到了如下AST（4的位置错误是由于mermaid的渲染BUG）：
+此时解析完毕，我们得到了如下AST：
 
 ```mermaid
 ---
 title: 1 + 2 * 3 + 4
 ---
 flowchart TD  
-    add0["+"] --> 1  
+    add0["+"] --> operand1["1"]  
     add0 --> mul  
-    mul[*] --> 2  
-    mul --> 3  
+    mul[*] --> operand2["2"]
+    mul --> operand3["3"]
     add1["+"] --> add0
-    add1 --> 4
+    add1 --> operand4["4"]
 ```
 
 
