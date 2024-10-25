@@ -275,7 +275,7 @@ fn struct_can_be_passed_via_move_or_borrow() {
 }
 ```
 
-## A more complicated example
+### A more complicated example
 
 Assuming that we are going to build an HTTP server, here is the procedure of how the server processes a HTTP request:
 
@@ -320,6 +320,43 @@ fn handle_connection(mut stream: TcpStream) {
         Ok(_) => println!("response!"),
         Err(err) => println!("response error : {err}")
     }
+}
+```
+
+## Ownership with trait
+
+In Rust, regular values and reference values have significant differences. Let's consider the following situation:
+
+1. we have a `trait` called SimpleTrait that does not have any methods.
+2. we have a `function` called `new` that receives a `trait` SimpleTrait as an argument;
+3. we have a `struct` called `SimpleStruct`. Both `SimpleStruct`  and `&SimpleStruct` implement the trait SimpleTrait.
+
+When you call the function `new`, you will witness something truly magical: for the same function call, some of them take ownership while others do not. This is because Rust creates a corresponding function instance for each generic function during compilation, using a technique called monomorphization.
+
+```rust
+fn ownership_with_trait() {
+    trait SimpleTrait {}
+
+    struct StructWithTrait {
+        id: i32
+    }
+
+    impl SimpleTrait for StructWithTrait {}
+    impl SimpleTrait for &StructWithTrait {}
+
+    fn new<T>(t: T)
+    where
+        T: SimpleTrait,
+    {}
+
+    let instance = &StructWithTrait {id:10};
+
+    // error[E0382]: borrow of moved value: `instance`
+    // new(instance);
+    // println!("{}", instance.id);
+
+    new(instance);
+    println!("{}", instance.id);
 }
 ```
 
