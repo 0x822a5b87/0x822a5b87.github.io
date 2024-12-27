@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Draw Diagrams in MarkdownI have always been a enthusiast for diagrams because I believe illustrations are a more direct and efficient way to elucidate the truths we want to explore. Meanwhile, I don’t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Draw Diagrams in Markdown">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/10/28/Draw-Diagrams-in-Markdown/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="Draw Diagrams in MarkdownI have always been a enthusiast for diagrams because I believe illustrations are a more direct and efficient way to elucidate the truths we want to explore. Meanwhile, I don’t">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-28T03:50:28.000Z">
+<meta property="article:modified_time" content="2024-12-26T10:17:48.654Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="markdown">
+<meta property="article:tag" content="md">
+<meta property="article:tag" content="diagrams">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/10/28/Draw-Diagrams-in-Markdown/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/10/28/Draw-Diagrams-in-Markdown/","path":"2024/10/28/Draw-Diagrams-in-Markdown/","title":"Draw Diagrams in Markdown"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Draw Diagrams in Markdown | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Draw-Diagrams-in-Markdown"><span class="nav-number">1.</span> <span class="nav-text">Draw Diagrams in Markdown</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Most-Useful-Diagrams-in-Mermaid"><span class="nav-number">1.1.</span> <span class="nav-text">Most Useful Diagrams in Mermaid</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#flowchart"><span class="nav-number">1.1.1.</span> <span class="nav-text">flowchart</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sequenceDiagram"><span class="nav-number">1.2.</span> <span class="nav-text">sequenceDiagram</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#block-beta"><span class="nav-number">1.2.1.</span> <span class="nav-text">block-beta</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/10/28/Draw-Diagrams-in-Markdown/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Draw Diagrams in Markdown | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Draw Diagrams in Markdown
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-10-28 11:50:28" itemprop="dateCreated datePublished" datetime="2024-10-28T11:50:28+08:00">2024-10-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-12-26 18:17:48" itemprop="dateModified" datetime="2024-12-26T18:17:48+08:00">2024-12-26</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Draw-Diagrams-in-Markdown"><a href="#Draw-Diagrams-in-Markdown" class="headerlink" title="Draw Diagrams in Markdown"></a>Draw Diagrams in Markdown</h1><p>I have always been a enthusiast for diagrams because I believe illustrations are a more direct and efficient way to elucidate the truths we want to explore. Meanwhile, I don’t need a heavy diagraming tool like PowerPoint. I prefer to a  <code>lightweight</code>, <code>cross-platform</code>,<code>easy-to-using</code> tool that can be seamlessly integerated with markdown, and here are several tools build for markdown that I find useful:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://bramp.github.io/js-sequence-diagrams/">js-sequence-diagrams</a></li>
+<li><a target="_blank" rel="noopener" href="http://flowchart.js.org/">flowchart.js</a></li>
+<li><a target="_blank" rel="noopener" href="https://mermaid.js.org/#/">mermaid</a></li>
+</ul>
+<p>If you are interested in any one of these tools, just read the tutorial to get started on your journey.</p>
+<h2 id="Most-Useful-Diagrams-in-Mermaid"><a href="#Most-Useful-Diagrams-in-Mermaid" class="headerlink" title="Most Useful Diagrams in Mermaid"></a>Most Useful Diagrams in Mermaid</h2><h3 id="flowchart"><a href="#flowchart" class="headerlink" title="flowchart"></a>flowchart</h3><pre class="mermaid">---
+title: 语法树
+---
+flowchart TD
+
+subgraph condition1["operaor1 >= operator2"]
+    operator1:::high --> operand1["1"]
+    operator1 --> operand2["2"]
+    
+    operator2 --> operand3["3"]
+    operator2:::low --> operator1
+end
+
+subgraph condition2["operaor1 < operator2"]
+    op3["operator1"]:::low
+    op4["operator2"]:::high
+    operand4["1"]
+    operand5["2"]
+    operand6["3"]
+
+    op3 --> operand4
+    op4 --> operand5
+    op4 --> operand6
+    op3 --> op4
+end
+
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px;</pre>
+
+<h2 id="sequenceDiagram"><a href="#sequenceDiagram" class="headerlink" title="sequenceDiagram"></a>sequenceDiagram</h2><pre class="mermaid">sequenceDiagram
+    participant Input
+    participant SqlParser
+    participant SqlValidator
+    participant SqlToRelConverter
+    participant Planner
+    
+    Input -->> SqlParser : string
+    SqlParser ->> SqlValidator : SqlNode
+    SqlValidator -->> SqlValidator : validate(SqlNode)
+    SqlValidator ->> SqlToRelConverter : SqlNode
+    SqlToRelConverter -->> SqlToRelConverter : convertQuery(SqlNode)
+    NOTE OVER SqlToRelConverter : RexBuilder && SqlNodeToRexConverter convert SqlNode to RexNode
+  SqlToRelConverter -->> Planner : RelNode</pre>
+
+<h3 id="block-beta"><a href="#block-beta" class="headerlink" title="block-beta"></a>block-beta</h3><pre class="mermaid">---
+title: function stack
+---
+block-beta
+columns 3
+
+block:group1:2
+    columns 2
+    stack3["stack 3"]:2
+    stack2["stack 2"]:2
+    stack1["stack 1"]:2
+    stack0["stack 0"]:1
+    stackPointer:1
+end
+stackPointer --> stack0
+desc1["empty"]:1
+
+block:group2:2
+    columns 2
+    Local2["..."]:2
+    Local1["Local 1"]:2
+    Local0["Local 0"]:1
+    basePointer
+    Function:1
+    functionPointer
+end
+desc2["reserved for locals"]:1
+basePointer --> Local0
+functionPointer --> Function
+
+block:group3:2
+    columns 1
+    OtherValue1["..."]:1
+    OtherValue2["Other Value 3"]:1
+    OtherValue3["Other Value 2"]:1
+    OtherValue4["Other Value 1"]:1
+end
+desc3["pushed before call"]
+
+classDef front 1,fill:#FFCCCC,stroke:#333;
+classDef back fill:#969,stroke:#333;
+classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef header fill: #696,color: #fff,font-weight: bold,padding: 10px;
+
+class stack3 op
+class stack2 op
+class stack1 op
+class stack0 op
+
+class Local0 header
+class Local2 header
+class Local1 header
+class Function header
+
+class OtherValue1 back
+class OtherValue2 back
+class OtherValue3 back
+class OtherValue4 back
+
+class basePointer front
+class stackPointer front
+class functionPointer front</pre>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/markdown/" rel="tag"># markdown</a>
+              <a href="/tags/md/" rel="tag"># md</a>
+              <a href="/tags/diagrams/" rel="tag"># diagrams</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/" rel="prev" title="A simple conclusion for ownership in Rust">
+                  <i class="fa fa-angle-left"></i> A simple conclusion for ownership in Rust
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/10/30/%E8%AF%8D%E6%A0%B9/" rel="next" title="词根">
+                  词根 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
