@@ -18,4 +18,143 @@ tags:
 > - [x86 instruction listings](https://en.wikipedia.org/wiki/X86_instruction_listings)
 > - [Executable file](https://en.wikipedia.org/wiki/Executable): `ELF`, `PE`, `OMF`
 > - [Symbol table](https://en.wikipedia.org/wiki/Symbol_table)
+> - [shared libraries](https://en.wikipedia.org/wiki/Shared_library)
+> - [Static library](https://en.wikipedia.org/wiki/Static_library)
+> - [dynamic linker](https://en.wikipedia.org/wiki/Dynamic_linker)
 > - 其他待总结
+
+## 第一印象
+
+### 一个最简单的链接过程
+
+```mermaid
+---
+title: 一个简单的链接过程
+---
+flowchart LR
+
+source1("source1"):::purple
+of1("object_file1.o"):::purple
+
+source2("source2"):::purple
+of2("object_file2.o"):::purple
+
+linkers("linkers"):::pink
+
+executable("executable"):::green
+
+source1 -->|gcc -o| of1
+source2 -->|gcc -o| of2
+
+of1 --> linkers
+of2 --> linkers
+
+linkers --> executable
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+```
+
+### 链接过程可能涉及到的产物
+
+```mermaid
+---
+title: 一个简单的链接过程
+---
+flowchart TB
+
+source_code("source_code")
+object_file("object_file.o")
+executable("executable")
+shared_lib("shared libraries")
+dynamic_linker("dynamic linker")
+program_linker("program linker")
+
+ELF("ELF(on SVR4/GNU/Linux)")
+DLLs("DLLs(on windows)")
+GOT("GOT:Global Offset Table")
+PLT("PLT:Procedure Linkage Table")
+
+shared_lib --> ELF:::purple
+shared_lib --> DLLs:::purple
+shared_lib --> GOT:::pink
+shared_lib --> PLT:::pink
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+```
+
+### ELF
+
+> 1. `section` 表示的二进制文件中的代码段；
+> 2. `weak` 类型的绑定可以允许被覆盖，可以理解为给了某个symbol一个默认值 -- 在没有找到其他的同名symbol的情况下，使用weak绑定的symbol；
+> 3. `visibility` 提供了对 symbol 在 shared library 外可访问性的控制 -- 例如，我们可能希望某个 symbol 在 shared library 内是 global 的，但是在外部是 local 的。
+
+```mermaid
+---
+title:  go over ELF symbols in more details
+---
+flowchart LR
+
+entry("entry in an ELF symbole"):::green
+
+name("a name"):::pink
+value("a value"):::pink
+size("a size"):::pink
+section("a section"):::pink
+binding("a binding"):::pink
+type("a type"):::pink
+visibility("a visibility"):::pink
+undefined("undefined additional information"):::pink
+
+text(".text")
+data(".data")
+rodata(".rodata")
+symtab(".symtab")
+
+global("global")
+local("local")
+weak("weak")
+
+entry --> name
+entry --> value
+entry --> size
+entry --> section
+entry --> binding
+entry --> type
+entry --> visibility
+entry --> undefined
+
+section --> text
+section --> data
+section --> rodata
+section --> symtab
+
+binding --> global
+binding --> local
+binding --> weak
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+```
+
+> 这里需要注意一下，C 可以支持通过如下的方式来提示编译器生成指定的代码。
+>
+> ```c
+> #include <stdio.h>
+> 
+> void __attribute__((weak)) foo() {
+>     printf("Default foo\n");
+> }
+> 
+> int main() {
+>     foo();
+>     return 0;
+> }
+> ```
