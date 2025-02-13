@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/MHRD/XOR.png">
 <meta property="article:published_time" content="2025-02-12T03:23:29.000Z">
-<meta property="article:modified_time" content="2025-02-12T10:32:16.903Z">
+<meta property="article:modified_time" content="2025-02-13T03:31:38.519Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="assmebly">
 <meta property="article:tag" content="CPU">
@@ -117,7 +117,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tasks"><span class="nav-number">2.</span> <span class="nav-text">tasks</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#NAND"><span class="nav-number">2.1.</span> <span class="nav-text">NAND</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NOT"><span class="nav-number">2.2.</span> <span class="nav-text">NOT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AND"><span class="nav-number">2.3.</span> <span class="nav-text">AND</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OR"><span class="nav-number">2.4.</span> <span class="nav-text">OR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XOR-Exclusive-Or"><span class="nav-number">2.5.</span> <span class="nav-text">XOR(Exclusive-Or)</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">2.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BE%B7%E6%91%A9%E6%A0%B9%E5%AE%9A%E5%BE%8B%EF%BC%88De-Morgan%E2%80%99s-Laws%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">德摩根定律（De Morgan’s Laws）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E5%BD%A2%E5%BC%8F"><span class="nav-number">2.1.1.</span> <span class="nav-text">逻辑形式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E8%AE%BA%E5%BD%A2%E5%BC%8F"><span class="nav-number">2.1.2.</span> <span class="nav-text">集合论形式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E5%90%88%E5%BE%8B%EF%BC%88Associative-Law%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">结合律（Associative Law）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A4%E6%8D%A2%E5%BE%8B%EF%BC%88Commutative-Law%EF%BC%89"><span class="nav-number">2.3.</span> <span class="nav-text">交换律（Commutative Law）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E5%BE%8B%EF%BC%88Distributive-Law%EF%BC%89"><span class="nav-number">2.4.</span> <span class="nav-text">分配律（Distributive Law）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tasks"><span class="nav-number">3.</span> <span class="nav-text">tasks</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#NAND"><span class="nav-number">3.1.</span> <span class="nav-text">NAND</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NOT"><span class="nav-number">3.2.</span> <span class="nav-text">NOT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AND"><span class="nav-number">3.3.</span> <span class="nav-text">AND</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OR"><span class="nav-number">3.4.</span> <span class="nav-text">OR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XOR-Exclusive-Or"><span class="nav-number">3.5.</span> <span class="nav-text">XOR(Exclusive-Or)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">3.5.1.</span> <span class="nav-text">优化</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -190,9 +190,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2025-02-12 11:23:29 / 修改时间：18:32:16" itemprop="dateCreated datePublished" datetime="2025-02-12T11:23:29+08:00">2025-02-12</time>
+      <time title="创建时间：2025-02-12 11:23:29" itemprop="dateCreated datePublished" datetime="2025-02-12T11:23:29+08:00">2025-02-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-02-13 11:31:38" itemprop="dateModified" datetime="2025-02-13T11:31:38+08:00">2025-02-13</time>
     </span>
 
   
@@ -254,6 +260,29 @@ classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharra
 <p>A pin can be either a reference to a reference to a pin id or a specific pin inside a bus :</p>
 <figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[pin_value] = <span class="string">&quot;0&quot;</span> | <span class="string">&quot;1&quot;</span></span><br><span class="line"></span><br><span class="line">[input_pin] = [input_pin_id] | [input_bus_id][pin_selection]</span><br><span class="line">  </span><br><span class="line">[output_pin] = [output_pin_id] | [output_bus_id][pin_selection]</span><br><span class="line">  </span><br><span class="line">[pin_selection] = <span class="string">&quot;[&quot;</span> [number] <span class="string">&quot;]&quot;</span></span><br></pre></td></tr></table></figure>
 
+<h2 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h2><blockquote>
+<p>在正式开始之前，我们需要了解一些必要的知识以方便于我们进行简单的数学计算</p>
+</blockquote>
+<h3 id="德摩根定律（De-Morgan’s-Laws）"><a href="#德摩根定律（De-Morgan’s-Laws）" class="headerlink" title="德摩根定律（De Morgan’s Laws）"></a>德摩根定律（De Morgan’s Laws）</h3><h4 id="逻辑形式"><a href="#逻辑形式" class="headerlink" title="逻辑形式"></a>逻辑形式</h4><ol>
+<li><strong>第一定律</strong>：¬(A ∧ B) ≡ ¬A ∨ ¬B</li>
+<li><strong>第二定律</strong>：¬(A ∨ B) ≡ ¬A ∧ ¬B</li>
+</ol>
+<h4 id="集合论形式"><a href="#集合论形式" class="headerlink" title="集合论形式"></a>集合论形式</h4><ol>
+<li><strong>第一定律</strong>：(A ∩ B)^c &#x3D; A^c ∪ B^c</li>
+<li><strong>第二定律</strong>：(A ∪ B)^c &#x3D; A^c ∩ B^c</li>
+</ol>
+<h3 id="结合律（Associative-Law）"><a href="#结合律（Associative-Law）" class="headerlink" title="结合律（Associative Law）"></a>结合律（Associative Law）</h3><ol>
+<li>逻辑与（AND）运算：**(A ∧ B) ∧ C&#x3D;A ∧ (B ∧ C)**</li>
+<li>逻辑或（OR）运算：**(A ∨ B) ∨ C&#x3D;A ∨ (B ∨ C)**</li>
+</ol>
+<h3 id="交换律（Commutative-Law）"><a href="#交换律（Commutative-Law）" class="headerlink" title="交换律（Commutative Law）"></a>交换律（Commutative Law）</h3><ol>
+<li>逻辑与（AND）运算：<strong>A ∧ B&#x3D;B ∧ A</strong></li>
+<li>逻辑或（OR）运算：<strong>A ∨ B&#x3D;B ∨ A</strong></li>
+</ol>
+<h3 id="分配律（Distributive-Law）"><a href="#分配律（Distributive-Law）" class="headerlink" title="分配律（Distributive Law）"></a>分配律（Distributive Law）</h3><ol>
+<li><strong>A ∧ (B ∨ C) &#x3D; (A ∧ B) ∨ (A ∧ C)</strong></li>
+<li><strong>A ∨ (B ∧ C) &#x3D; (A ∨ B) ∧ (A ∨ C)</strong></li>
+</ol>
 <h2 id="tasks"><a href="#tasks" class="headerlink" title="tasks"></a>tasks</h2><blockquote>
 <p>在游戏刚开始的时候，我们只有一个默认的 <code>NAND（Not AND）</code> 模块，模块声明如下</p>
 </blockquote>
@@ -335,6 +364,10 @@ classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharra
 </ol>
 <p>所以，我们要判断 XOR 可以表示为：**!(in1 AND in2) AND (in1 OR in2)**</p>
 <p><img src="/../images/MHRD/XOR.png" alt="XOR"></p>
+<h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">XOR(in1, in2) = (in1 <span class="keyword">\land</span> <span class="keyword">\lnot</span> in2) <span class="keyword">\lor</span> (<span class="keyword">\lnot</span> in1 <span class="keyword">\land</span> in2)</span><br></pre></td></tr></table></figure>
+
+
+
 
     </div>
 
