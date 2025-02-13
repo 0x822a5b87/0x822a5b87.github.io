@@ -1,19 +1,17 @@
 # ===============================================================
 # It's recommended to use Alternate Theme Config to configure NexT
 # Modifying this file may result in merge conflict
-# See: https://theme-next.js.org/docs/getting-started/configuration
 # ===============================================================
 
 # ---------------------------------------------------------------
 # Theme Core Configuration Settings
-# See: https://theme-next.js.org/docs/theme-settings/
 # ---------------------------------------------------------------
 #
 # Site
 title: 0x822a5b87的博客
 subtitle: 到码头整点薯条吃
 description: '到码头整点薯条吃'
-keYwords: ['java', 'cpp', 'complier', 'OS']
+keywords: ['java', 'cpp', 'complier', 'OS']
 author: 0x822a5b87
 language: zh-CN
 
@@ -131,7 +129,6 @@ menu_settings:
 
 # ---------------------------------------------------------------
 # Sidebar Settings
-# See: https://theme-next.js.org/docs/theme-settings/sidebar
 # ---------------------------------------------------------------
 
 sidebar:
@@ -215,7 +212,6 @@ toc:
 
 # ---------------------------------------------------------------
 # Footer Settings
-# See: https://theme-next.js.org/docs/theme-settings/footer
 # ---------------------------------------------------------------
 
 # Show multilingual switcher in footer.
@@ -255,7 +251,6 @@ footer:
 
 # ---------------------------------------------------------------
 # Post Settings
-# See: https://theme-next.js.org/docs/theme-settings/posts
 # ---------------------------------------------------------------
 
 # Use `description` in front-matter to specify post excerpt.
@@ -275,7 +270,6 @@ post_meta:
   categories: true
 
 # Post wordcount display settings
-# Dependencies: https://github.com/next-theme/hexo-word-counter
 symbols_count_time:
   separated_meta: true
   item_text_total: false
@@ -324,7 +318,6 @@ post_navigation: left
 
 # ---------------------------------------------------------------
 # Custom Page Settings
-# See: https://theme-next.js.org/docs/theme-settings/custom-pages
 # ---------------------------------------------------------------
 
 # TagCloud settings for tags page.
@@ -351,7 +344,6 @@ calendar:
 
 # ---------------------------------------------------------------
 # Misc Theme Settings
-# See: https://theme-next.js.org/docs/theme-settings/miscellaneous
 # ---------------------------------------------------------------
 
 # Preload styles and preconnect CDN for fonts and plugins.
@@ -380,8 +372,6 @@ body_scrollbar:
   stable: false
 
 codeblock:
-  # Code Highlight theme
-  # All available themes: https://theme-next.js.org/highlight/
   theme:
     light: default
     dark: stackoverflow-dark
@@ -485,7 +475,6 @@ font:
 
 # ---------------------------------------------------------------
 # SEO Settings
-# See: https://theme-next.js.org/docs/theme-settings/seo
 # ---------------------------------------------------------------
 
 # If true, site-subtitle will be added to the title of index page.
@@ -516,7 +505,6 @@ baidu_site_verification:
 
 # ---------------------------------------------------------------
 # Tags Settings
-# See: https://theme-next.js.org/docs/tag-plugins/
 # ---------------------------------------------------------------
 
 # Note tag (bootstrap callout)
@@ -543,7 +531,6 @@ tabs:
 # PDF tag
 # NexT will try to load pdf files natively, if failed, pdf.js will be used.
 # So, you have to install the dependency of pdf.js if you want to use pdf tag and make it available to all browsers.
-# Dependencies: https://github.com/next-theme/theme-next-pdf
 pdf:
   enable: false
   # Default height
@@ -579,15 +566,15 @@ math:
   # Default (false) will load mathjax / katex script on demand.
   # That is it only render those page which has `mathjax: true` in front-matter.
   # If you set it to true, it will load mathjax / katex script EVERY PAGE.
-  every_page: false
+  every_page: true
 
   mathjax:
-    enable: false
+    enable: true
     # Available values: none | ams | all
-    tags: none
+    tags: all
 
   katex:
-    enable: false
+    enable: true
     # See: https://github.com/KaTeX/KaTeX/tree/master/contrib/copy-tex
     copy_tex: false
 
@@ -972,3 +959,5 @@ deploy:
   repo: https://github.com/0x822a5b87/0x822a5b87.github.io.git
   branch: main
 
+source_dir: source
+post_dir: _posts

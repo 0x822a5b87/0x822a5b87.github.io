@@ -7,7 +7,7 @@ tags:
   - hardware
 ---
 
-最近因为开了两个 [操作系统](https://github.com/0x822a5b87/Ardi) 和 [linkers](https://github.com/0x822a5b87/tiny-linkers) 的新坑，一直在学习硬件和汇编相关的知识，所以这里找了一个简单的小游戏 [MHRD(Micro Hard Rock Deluxe)](https://store.steampowered.com/app/576030/MHRD/) 用来复习一些基础的CPU相关的知识，以下是官方的描述：
+ 最近因为开了两个 [操作系统](https://github.com/0x822a5b87/Ardi) 和 [linkers](https://github.com/0x822a5b87/tiny-linkers) 的新坑，一直在学习硬件和汇编相关的知识，所以这里找了一个简单的小游戏 [MHRD(Micro Hard Rock Deluxe)](https://store.steampowered.com/app/576030/MHRD/) 用来复习一些基础的CPU相关的知识，以下是官方的描述：
 
 > MHRD is a hardware design game, in which you design various hardware circuits in a hardware description language. The hardware circuits you design get more complex as you go until you create a fully functional CPU design.
 
@@ -203,4 +203,8 @@ Wires:
 
 所以，我们要判断 XOR 可以表示为：**!(in1 AND in2) AND (in1 OR in2)**
 
-![XOR](../images/MHRD/XOR.png)
+$$
+f(x) = \frac{x^2}{x+y}
+$$
+
+
