@@ -113,6 +113,23 @@ A pin can be either a reference to a reference to a pin id or a specific pin ins
 [pin_selection] = "[" [number] "]"
 ```
 
+## 基础知识
+
+> 在正式开始之前，我们需要了解一些必要的知识以方便于我们进行简单的数学计算
+
+|         name         |                     formulation                     |
+| :------------------: | :-------------------------------------------------: |
+|    德摩根第一定律    |       $\neg(A \land B) = \neg A \lor \neg B$        |
+| 德摩根第一定律逆定律 |      $A \lor B = \lnot(\lnot A \land \lnot B)$      |
+|    德摩根第二定律    |     $\neg(A \lor B) \equiv \neg A \land \neg B$     |
+| 德摩根第二定律逆定律 |      $A \land B = \lnot(\lnot A \lor \lnot B)$      |
+|     逻辑与结合律     |     $(A \land B) \land C = A \land (B \land C)$     |
+|     逻辑或结合律     |       $(A \lor B) \lor C = A \lor (B \lor C)$       |
+|     逻辑与交换律     |               $A \land B = B \land A$               |
+|     逻辑或交换律     |                $A \lor B = B \lor A$                |
+|     逻辑与分配率     | $A \land (B \lor C) = (A \land B) \lor (A \land C)$ |
+|     逻辑或分配率     | $A \lor (B \land C) = (A \lor B) \land (A \lor C)$  |
+
 ## tasks
 
 > 在游戏刚开始的时候，我们只有一个默认的 `NAND（Not AND）` 模块，模块声明如下
@@ -201,10 +218,74 @@ Wires:
 1. `in1` AND `in2` = `0`
 2. `in1` OR `in2` = `1`
 
-所以，我们要判断 XOR 可以表示为：**!(in1 AND in2) AND (in1 OR in2)**
+所以，我们要判断 XOR 可以表示为 $XOR(in1, in2) \equiv (\lnot (in1 \land in2)) \land (in1 \lor in2)$
+
+#### XOR 的优化
+
+前面的公式虽然可以实现 `XOR` 的功能，但是相对来说性能较差，我们可以通过以下方式来进行优化：
+$$
+XOR(in1, in2) \\
+= (in1 \land \lnot in2) \lor (in2 \land \lnot in1) \\
+= \lnot(\lnot(in1 \land \lnot in2) \land \lnot(in2 \land \lnot in1))
+$$
+假设
+$$
+A = \lnot(in1 \land \lnot in2)\\
+B = \lnot(in2 \land \lnot in1)
+$$
+
+
+那么此时我们知道
+$$
+XOR(in1, in2) = NAND(A, B)
+$$
+现在我们需要用尽可能少的门来表示B和C：
+$$
+A \\
+= \lnot(in1 \land \lnot in2)\\
+= \lnot((in1 \land \lnot in2) \lor (in1 \land \lnot in1))\\
+= \lnot(in1 \land (\lnot in2 \lor \lnot in1)) \\
+= \lnot (in1 \land (\lnot(in2 \land in1)))
+$$
 
 $$
-f(x) = \frac{x^2}{x+y}
+B \\
+= \lnot(in2 \land \lnot in1) \\
+= \lnot((in2 \land \lnot in1) \lor (in2 \land \lnot in2))\\
+= \lnot(in2 \land (\lnot in1 \lor \lnot in2)) \\
+= \lnot(in2 \land (\lnot(in1 \land in2)))
 $$
 
+此时，我们只需要假设：
+$$
+C = (\lnot(in1 \land in2))
+$$
+我们即可得到如下，**总计使用四个 `NAND`**：
+
+```c
+C = NAND(in1, in2);
+A = NAND(in1, C);
+B = NAND(in2, C);
+XOR(in1, in2) = NAND(A, B)
+```
+
+我们的设计代码也可以转换为如下：
+
+```vhdl
+Inputs: in1, in2;
+Outputs: out;
+
+Parts: a NAND, b NAND, c NAND, d NAND;
+
+Wires:
+	in1 -> a.in1,
+  in2 -> a.in2,
+	in1 -> b.in1,
+	a.out -> b.in2,
+	in2 -> c.in1,
+	a.out -> c.in2,
+	b.out -> d.in1,
+  c.out -> d.in2,
+	d.out -> out;
+```
 
