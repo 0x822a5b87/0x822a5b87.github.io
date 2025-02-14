@@ -224,9 +224,10 @@ Wires:
 
 前面的公式虽然可以实现 `XOR` 的功能，但是相对来说性能较差，我们可以通过以下方式来进行优化：
 $$
-XOR(in1, in2) \\
-= (in1 \land \lnot in2) \lor (in2 \land \lnot in1) \\
-= \lnot(\lnot(in1 \land \lnot in2) \land \lnot(in2 \land \lnot in1))
+\begin{aligned}
+XOR(in1, in2) & = (in1 \land \lnot in2) \lor (in2 \land \lnot in1) \\
+  & = \lnot(\lnot(in1 \land \lnot in2) \land \lnot(in2 \land \lnot in1))
+\end{aligned}
 $$
 假设
 $$
@@ -241,19 +242,21 @@ XOR(in1, in2) = NAND(A, B)
 $$
 现在我们需要用尽可能少的门来表示B和C：
 $$
-A \\
-= \lnot(in1 \land \lnot in2)\\
-= \lnot((in1 \land \lnot in2) \lor (in1 \land \lnot in1))\\
-= \lnot(in1 \land (\lnot in2 \lor \lnot in1)) \\
-= \lnot (in1 \land (\lnot(in2 \land in1)))
+\begin{aligned}
+A & = \lnot(in1 \land \lnot in2)\\
+& = \lnot((in1 \land \lnot in2) \lor (in1 \land \lnot in1))\\
+& = \lnot(in1 \land (\lnot in2 \lor \lnot in1)) \\
+& = \lnot (in1 \land (\lnot(in2 \land in1)))
+\end{aligned}
 $$
 
 $$
-B \\
-= \lnot(in2 \land \lnot in1) \\
-= \lnot((in2 \land \lnot in1) \lor (in2 \land \lnot in2))\\
-= \lnot(in2 \land (\lnot in1 \lor \lnot in2)) \\
-= \lnot(in2 \land (\lnot(in1 \land in2)))
+\begin{aligned}
+B &= \lnot(in2 \land \lnot in1) \\
+&= \lnot((in2 \land \lnot in1) \lor (in2 \land \lnot in2))\\
+&= \lnot(in2 \land (\lnot in1 \lor \lnot in2)) \\
+&= \lnot(in2 \land (\lnot(in1 \land in2)))
+\end{aligned}
 $$
 
 此时，我们只需要假设：
@@ -288,4 +291,6 @@ Wires:
   c.out -> d.in2,
 	d.out -> out;
 ```
+
+
 
