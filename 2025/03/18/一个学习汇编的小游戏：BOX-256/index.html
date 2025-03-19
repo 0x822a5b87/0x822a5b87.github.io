@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="BOX-256前言最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 displ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个学习汇编的小游戏：BOX-256">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="BOX-256前言最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 displ">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE.png">
+<meta property="article:published_time" content="2025-03-18T06:58:57.000Z">
+<meta property="article:modified_time" content="2025-03-19T04:11:56.609Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="assembly">
+<meta property="article:tag" content="OS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/","path":"2025/03/18/一个学习汇编的小游戏：BOX-256/","title":"一个学习汇编的小游戏：BOX-256"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一个学习汇编的小游戏：BOX-256 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#BOX-256"><span class="nav-number">1.</span> <span class="nav-text">BOX-256</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Program-Counter"><span class="nav-number">1.1.1.</span> <span class="nav-text">Program Counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Multithreading"><span class="nav-number">1.1.2.</span> <span class="nav-text">Multithreading</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memory-Addressing"><span class="nav-number">1.1.3.</span> <span class="nav-text">Memory Addressing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Instructions"><span class="nav-number">1.1.4.</span> <span class="nav-text">Instructions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Instruction-Examples"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">Instruction Examples</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Opcodes"><span class="nav-number">1.1.5.</span> <span class="nav-text">Opcodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Level"><span class="nav-number">1.2.</span> <span class="nav-text">Level</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#BIG-SQUARE"><span class="nav-number">1.2.1.</span> <span class="nav-text">BIG SQUARE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ADD-80-C0-80"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">ADD @80 *C0 @80</span></a></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一个学习汇编的小游戏：BOX-256 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一个学习汇编的小游戏：BOX-256
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-03-18 14:58:57" itemprop="dateCreated datePublished" datetime="2025-03-18T14:58:57+08:00">2025-03-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-03-19 12:11:56" itemprop="dateModified" datetime="2025-03-19T12:11:56+08:00">2025-03-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="BOX-256"><a href="#BOX-256" class="headerlink" title="BOX-256"></a>BOX-256</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近在学习 <a target="_blank" rel="noopener" href="https://drive.google.com/file/d/1uviu1nH-tScFfgrovvFCrj7Omv8tFtkp/view">RISC-V</a>，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 <a target="_blank" rel="noopener" href="http://box-256.com/">BOX-256</a> 的一些描述：</p>
+<blockquote>
+<p>BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 display. It is also a programming game, where the player tries to pass the graphics tests and optimize the code to perfection. The ultimate goal is to use as few CPU cycles or lines of code as possible, by employing multithreading and other optimization tricks.</p>
+</blockquote>
+<p>此外，文档里提到了一些比较重要的细节这里也稍微列举一下：</p>
+<h3 id="Program-Counter"><a href="#Program-Counter" class="headerlink" title="Program Counter"></a><strong>Program Counter</strong></h3><blockquote>
+<p>When the execution starts, the last memory slot (FF) is used as a program counter (PC). If a second thread is started, the additional PC will be in FE, the third will be in FD and so on. Since there is no memory protection, it is possible to write into PC directly and cause execution to jump. The behaviour is identical to using JMP instruction.</p>
+</blockquote>
+<p>这里有一个点比较容易误解的是：<code>FF</code>, <code>FE</code>, 这些地址。我们前面提到BOX-256 – **…with 256 bytes of memory…**。所以，其实我们的 <code>FF</code>，<code>FE</code> 就是我们在内存从后往前的索引。也就是说，当我们执行一个多线程的程序时，他的 PC 分别存放在内存的倒数第一个字节，倒数第二个字节，依次类推。</p>
+<h3 id="Multithreading"><a href="#Multithreading" class="headerlink" title="Multithreading"></a><strong>Multithreading</strong></h3><blockquote>
+<p>Because of cached reads, it is generally not possible for one thread to communicate with other thread simultaneously. HOWEVER two exceptions remains: An earlier thread can write to memory address later executed by later thread. So self-modifying code is possible. An earlier thread can also write to program counter (PC) owned by a later thread to cause an immediate jump.</p>
+</blockquote>
+<h3 id="Memory-Addressing"><a href="#Memory-Addressing" class="headerlink" title="Memory Addressing"></a><strong>Memory Addressing</strong></h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0 = Constant value</span><br><span class="line">@ = Address in memory</span><br><span class="line">* = Address pointed by another address (a.k.a pointer)</span><br></pre></td></tr></table></figure>
+
+<p>Examples:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Address: 00 01 02 03 04 05 06 07 08 09 0A 0B ...</span><br><span class="line">Value:   00 1A 22 2A 5B 23 4A 28 00 03 BB CA ...</span><br><span class="line"></span><br><span class="line">009 evaluates to 09</span><br><span class="line">@09 evaluates to 03</span><br><span class="line">*09 evaluates to 2A</span><br></pre></td></tr></table></figure>
+
+<h3 id="Instructions"><a href="#Instructions" class="headerlink" title="Instructions"></a>Instructions</h3><table>
+<thead>
+<tr>
+<th align="center">INSTRUCTION</th>
+<th align="center">DESCIPTION</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">MOVE <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Sets the value A into address B</td>
+</tr>
+<tr>
+<td align="center">JMP <code>A</code></td>
+<td align="center">Jumps the execution into A</td>
+</tr>
+<tr>
+<td align="center">PIX <code>A</code> <code>B</code></td>
+<td align="center">Outputs a pixel into index <code>A</code> with color <code>B</code></td>
+</tr>
+<tr>
+<td align="center">JEQ <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">If <code>A</code> equals <code>B</code>, the execution jumps to <code>C</code></td>
+</tr>
+<tr>
+<td align="center">JNQ <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">If <code>A</code> not equals <code>B</code>, the execution jumps to <code>C</code></td>
+</tr>
+<tr>
+<td align="center">JGR <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">If <code>A</code> is greater than <code>B</code>, the execution jumps to <code>C</code></td>
+</tr>
+<tr>
+<td align="center">FLP <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Flips the values between memory address <code>A</code> and memory address <code>B</code>.</td>
+</tr>
+<tr>
+<td align="center">THR <code>A</code></td>
+<td align="center">Starts a new thread from memory address <code>A</code></td>
+</tr>
+<tr>
+<td align="center">ADD <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Adds values <code>A</code> and <code>B</code> together and stores the result in <code>C</code></td>
+</tr>
+<tr>
+<td align="center">SUB <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Subtracts <code>B</code> from <code>A</code> and stores the result in <code>C</code></td>
+</tr>
+<tr>
+<td align="center">MUL <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Multiplies values <code>A</code> and <code>B</code> and stores the results in <code>C</code></td>
+</tr>
+<tr>
+<td align="center">DIV <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Division <code>A</code> with <code>B</code> and stores the result in <code>C</code></td>
+</tr>
+<tr>
+<td align="center">MOD <code>A</code> <code>B</code> <code>C</code></td>
+<td align="center">Take modulo of <code>A</code> and <code>B</code> and place the result in <code>C</code></td>
+</tr>
+</tbody></table>
+<h4 id="Instruction-Examples"><a href="#Instruction-Examples" class="headerlink" title="Instruction Examples"></a>Instruction Examples</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FLP @10 @20 004 // Flip four (4) values between memory spaces starting from @10 and @20</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>Takes 4 values from memory that starts from address <code>10</code>;</li>
+<li>Takes 4 values from memory that starts from address <code>20</code>;</li>
+<li>Flips the values:<ol>
+<li>Flips the values between memory address <code>10</code> and memory address <code>20</code>;</li>
+<li>Flips the values between memory address <code>11</code> and memory address <code>21</code>;</li>
+<li>…</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JGR 020 @30 -04 // if value in @30 is smaller or equal to 20, jump forward 4 steps (16 bytes).</span><br></pre></td></tr></table></figure>
+
+<p>Note that you can prefix the C with minus ‘-‘ to get negative values.</p>
+<h3 id="Opcodes"><a href="#Opcodes" class="headerlink" title="Opcodes"></a>Opcodes</h3><blockquote>
+<p>Most of the opcodes are permutations of the same instruction. For example the ADD instruction has 8 different opcodes, depending on the ‘memory depth’ of the parameters.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="center">OPCODE</th>
+<th>Instruction</th>
+<th>P1</th>
+<th>P2</th>
+<th>P3</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">13</td>
+<td>ADD</td>
+<td>@</td>
+<td>0</td>
+<td>@</td>
+<td>ADD @01 002 @03</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td>ADD</td>
+<td>*</td>
+<td>0</td>
+<td>@</td>
+<td>ADD *01 002 @03</td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td>ADD</td>
+<td>@</td>
+<td>@</td>
+<td>@</td>
+<td>ADD @01 @02 @03</td>
+</tr>
+<tr>
+<td align="center">16</td>
+<td>ADD</td>
+<td>*</td>
+<td>@</td>
+<td>@</td>
+<td>ADD *01 @02 @03</td>
+</tr>
+<tr>
+<td align="center">17</td>
+<td>ADD</td>
+<td>@</td>
+<td>*</td>
+<td>@</td>
+<td>ADD @01 *02 @03</td>
+</tr>
+<tr>
+<td align="center">18</td>
+<td>ADD</td>
+<td>*</td>
+<td>0</td>
+<td>*</td>
+<td>ADD *01 002 *03</td>
+</tr>
+<tr>
+<td align="center">19</td>
+<td>ADD</td>
+<td>@</td>
+<td>0</td>
+<td>*</td>
+<td>ADD @01 002 *03</td>
+</tr>
+<tr>
+<td align="center">1A</td>
+<td>ADD</td>
+<td>*</td>
+<td>@</td>
+<td>*</td>
+<td>ADD *01 @02 *03</td>
+</tr>
+<tr>
+<td align="center">1B</td>
+<td>ADD</td>
+<td>@</td>
+<td>@</td>
+<td>*</td>
+<td>ADD @01 @02 *03</td>
+</tr>
+<tr>
+<td align="center">1C</td>
+<td>ADD</td>
+<td>*</td>
+<td>*</td>
+<td>*</td>
+<td>ADD *01 *02 *03</td>
+</tr>
+</tbody></table>
+<h2 id="Level"><a href="#Level" class="headerlink" title="Level"></a>Level</h2><h3 id="BIG-SQUARE"><a href="#BIG-SQUARE" class="headerlink" title="BIG SQUARE"></a>BIG SQUARE</h3><p><img src="/images/20250319/BIG-SQUARE.png" alt="BIG SQUARE"></p>
+<h4 id="code"><a href="#code" class="headerlink" title="code"></a>code</h4><blockquote>
+<p>这一题是游戏给出的示例，相对来说难度并不大。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000		// set @80 as Constant Value 22</span><br><span class="line">MOV 030 @C0 000		// set @C0 as Constant Value 30</span><br><span class="line">PIX @80 001 000		// draw a pixel with a fixed colour at the memory address @80</span><br><span class="line">ADD @80 *C0 @80		// add values @80 and *C0 and stores the result in @80 </span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR 00B @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">JMP @08 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+
+<h4 id="ADD-80-C0-80"><a href="#ADD-80-C0-80" class="headerlink" title="ADD @80 *C0 @80"></a>ADD @80 *C0 @80</h4><p><code>ADD @80 *C0 @80</code> 这里我们对 <code>@80</code> 和 <code>*C0</code> 进行求和，并将求和的结果存入 <code>@80</code>，初看这条命令其实会让人有一些疑惑，因为这里用到了 <code>*C0</code>，而 <code>*C0</code> 在前面的指令 <code>MOV 030 @C0 000</code> 中，指向了一个 <strong>constant value</strong> <code>30</code>。</p>
+<p>这里，其实我们是在初始化内存的时候，将内存地址的一部分存放了我们需要的操作数，例如：</p>
+<ul>
+<li><code>@30</code> &#x3D;&#x3D; 001</li>
+<li><code>@31</code> &#x3D;&#x3D; 010</li>
+<li><code>@32</code> &#x3D;&#x3D; -01</li>
+<li><code>@33</code> &#x3D;&#x3D; -10</li>
+</ul>
+<p>所以，当我们在调用指令 <code>ADD @80 *C0 @80</code> 时，其实相当于是 <code>num = num + 1;</code> 这条语句。</p>
+<p>正如我们在很多地方会提到的，可执行程序会包含所谓的 <code>.data</code> 和 <code>.text</code>，这里的 <code>[@30, @33]</code> 这个区间就可以认为是我们的 <code>.data</code>，而 <code>[@00, @23]</code> 这个区域，则可以认为是我们的 <code>.text</code></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/assembly/" rel="tag"># assembly</a>
+              <a href="/tags/OS/" rel="tag"># OS</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/03/12/game-log-%E5%BC%80%E6%BA%90%E5%95%A6/" rel="prev" title="game log 开源啦">
+                  <i class="fa fa-angle-left"></i> game log 开源啦
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+
+</body>
+</html>
