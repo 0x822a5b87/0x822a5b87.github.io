@@ -375,7 +375,6 @@ body_scrollbar:
 
 codeblock:
   # Code Highlight theme
-  # All available themes: https://theme-next.js.org/highlight/
   theme:
     light: default
     dark: stackoverflow-dark
@@ -968,3 +967,6 @@ deploy:
 
 source_dir: source
 post_dir: _posts
+
+highlight:
+  enable: true
