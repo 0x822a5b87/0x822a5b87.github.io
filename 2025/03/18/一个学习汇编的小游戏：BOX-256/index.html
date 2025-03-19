@@ -19,16 +19,17 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="BOX-256前言最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 displ">
+    <meta name="description" content="BOX-256 前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 dis">
 <meta property="og:type" content="article">
 <meta property="og:title" content="一个学习汇编的小游戏：BOX-256">
 <meta property="og:url" content="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="BOX-256前言最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 displ">
+<meta property="og:description" content="BOX-256 前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 dis">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE-NEW.png">
 <meta property="article:published_time" content="2025-03-18T06:58:57.000Z">
-<meta property="article:modified_time" content="2025-03-19T04:11:56.609Z">
+<meta property="article:modified_time" content="2025-03-19T07:42:42.092Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="assembly">
 <meta property="article:tag" content="OS">
@@ -116,7 +117,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#BOX-256"><span class="nav-number">1.</span> <span class="nav-text">BOX-256</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Program-Counter"><span class="nav-number">1.1.1.</span> <span class="nav-text">Program Counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Multithreading"><span class="nav-number">1.1.2.</span> <span class="nav-text">Multithreading</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memory-Addressing"><span class="nav-number">1.1.3.</span> <span class="nav-text">Memory Addressing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Instructions"><span class="nav-number">1.1.4.</span> <span class="nav-text">Instructions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Instruction-Examples"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">Instruction Examples</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Opcodes"><span class="nav-number">1.1.5.</span> <span class="nav-text">Opcodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Level"><span class="nav-number">1.2.</span> <span class="nav-text">Level</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#BIG-SQUARE"><span class="nav-number">1.2.1.</span> <span class="nav-text">BIG SQUARE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ADD-80-C0-80"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">ADD @80 *C0 @80</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#box-256"><span class="nav-number">1.</span> <span class="nav-text">BOX-256</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#program-counter"><span class="nav-number">1.1.1.</span> <span class="nav-text">Program Counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multithreading"><span class="nav-number">1.1.2.</span> <span class="nav-text">Multithreading</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory-addressing"><span class="nav-number">1.1.3.</span> <span class="nav-text">Memory Addressing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#instructions"><span class="nav-number">1.1.4.</span> <span class="nav-text">Instructions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#instruction-examples"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">Instruction Examples</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#opcodes"><span class="nav-number">1.1.5.</span> <span class="nav-text">Opcodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level"><span class="nav-number">1.2.</span> <span class="nav-text">Level</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#big-square"><span class="nav-number">1.2.1.</span> <span class="nav-text">BIG SQUARE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#add-80-c0-80"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">ADD @80 *C0 @80</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E6%9B%B4%E7%9B%B4%E8%A7%82%E7%9A%84%E5%9B%BE%E7%A4%BA"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">一个更直观的图示</span></a></li></ol></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -197,7 +198,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-03-19 12:11:56" itemprop="dateModified" datetime="2025-03-19T12:11:56+08:00">2025-03-19</time>
+      <time title="修改时间：2025-03-19 15:42:42" itemprop="dateModified" datetime="2025-03-19T15:42:42+08:00">2025-03-19</time>
     </span>
 
   
@@ -209,105 +210,164 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="BOX-256"><a href="#BOX-256" class="headerlink" title="BOX-256"></a>BOX-256</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近在学习 <a target="_blank" rel="noopener" href="https://drive.google.com/file/d/1uviu1nH-tScFfgrovvFCrj7Omv8tFtkp/view">RISC-V</a>，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 <a target="_blank" rel="noopener" href="http://box-256.com/">BOX-256</a> 的一些描述：</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="box-256">BOX-256</h1>
+<h2 id="前言">前言</h2>
+<p>最近在学习 <a
+target="_blank" rel="noopener" href="https://drive.google.com/file/d/1uviu1nH-tScFfgrovvFCrj7Omv8tFtkp/view">RISC-V</a>，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准
+RISC-V，但是可以作为学习路上的一个参考工具，下面是 <a
+target="_blank" rel="noopener" href="http://box-256.com/">BOX-256</a> 的一些描述：</p>
 <blockquote>
-<p>BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 display. It is also a programming game, where the player tries to pass the graphics tests and optimize the code to perfection. The ultimate goal is to use as few CPU cycles or lines of code as possible, by employing multithreading and other optimization tricks.</p>
+<p>BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16
+color 16x16 display. It is also a programming game, where the player
+tries to pass the graphics tests and optimize the code to perfection.
+The ultimate goal is to use as few CPU cycles or lines of code as
+possible, by employing multithreading and other optimization tricks.</p>
 </blockquote>
 <p>此外，文档里提到了一些比较重要的细节这里也稍微列举一下：</p>
-<h3 id="Program-Counter"><a href="#Program-Counter" class="headerlink" title="Program Counter"></a><strong>Program Counter</strong></h3><blockquote>
-<p>When the execution starts, the last memory slot (FF) is used as a program counter (PC). If a second thread is started, the additional PC will be in FE, the third will be in FD and so on. Since there is no memory protection, it is possible to write into PC directly and cause execution to jump. The behaviour is identical to using JMP instruction.</p>
+<h3 id="program-counter"><strong>Program Counter</strong></h3>
+<blockquote>
+<p>When the execution starts, the last memory slot (FF) is used as a
+program counter (PC). If a second thread is started, the additional PC
+will be in FE, the third will be in FD and so on. Since there is no
+memory protection, it is possible to write into PC directly and cause
+execution to jump. The behaviour is identical to using JMP
+instruction.</p>
 </blockquote>
-<p>这里有一个点比较容易误解的是：<code>FF</code>, <code>FE</code>, 这些地址。我们前面提到BOX-256 – **…with 256 bytes of memory…**。所以，其实我们的 <code>FF</code>，<code>FE</code> 就是我们在内存从后往前的索引。也就是说，当我们执行一个多线程的程序时，他的 PC 分别存放在内存的倒数第一个字节，倒数第二个字节，依次类推。</p>
-<h3 id="Multithreading"><a href="#Multithreading" class="headerlink" title="Multithreading"></a><strong>Multithreading</strong></h3><blockquote>
-<p>Because of cached reads, it is generally not possible for one thread to communicate with other thread simultaneously. HOWEVER two exceptions remains: An earlier thread can write to memory address later executed by later thread. So self-modifying code is possible. An earlier thread can also write to program counter (PC) owned by a later thread to cause an immediate jump.</p>
+<p>这里有一个点比较容易误解的是：<code>FF</code>, <code>FE</code>,
+这些地址。我们前面提到BOX-256 -- <strong>...with 256 bytes of
+memory...</strong>。所以，其实我们的 <code>FF</code>，<code>FE</code>
+就是我们在内存从后往前的索引。也就是说，当我们执行一个多线程的程序时，他的
+PC 分别存放在内存的倒数第一个字节，倒数第二个字节，依次类推。</p>
+<h3 id="multithreading"><strong>Multithreading</strong></h3>
+<blockquote>
+<p>Because of cached reads, it is generally not possible for one thread
+to communicate with other thread simultaneously. HOWEVER two exceptions
+remains: An earlier thread can write to memory address later executed by
+later thread. So self-modifying code is possible. An earlier thread can
+also write to program counter (PC) owned by a later thread to cause an
+immediate jump.</p>
 </blockquote>
-<h3 id="Memory-Addressing"><a href="#Memory-Addressing" class="headerlink" title="Memory Addressing"></a><strong>Memory Addressing</strong></h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0 = Constant value</span><br><span class="line">@ = Address in memory</span><br><span class="line">* = Address pointed by another address (a.k.a pointer)</span><br></pre></td></tr></table></figure>
-
+<h3 id="memory-addressing"><strong>Memory Addressing</strong></h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0 = Constant value</span><br><span class="line">@ = Address in memory</span><br><span class="line">* = Address pointed by another address (a.k.a pointer)</span><br></pre></td></tr></table></figure>
 <p>Examples:</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Address: 00 01 02 03 04 05 06 07 08 09 0A 0B ...</span><br><span class="line">Value:   00 1A 22 2A 5B 23 4A 28 00 03 BB CA ...</span><br><span class="line"></span><br><span class="line">009 evaluates to 09</span><br><span class="line">@09 evaluates to 03</span><br><span class="line">*09 evaluates to 2A</span><br></pre></td></tr></table></figure>
-
-<h3 id="Instructions"><a href="#Instructions" class="headerlink" title="Instructions"></a>Instructions</h3><table>
+<h3 id="instructions">Instructions</h3>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 78%" />
+</colgroup>
 <thead>
 <tr>
-<th align="center">INSTRUCTION</th>
-<th align="center">DESCIPTION</th>
+<th style="text-align: center;">INSTRUCTION</th>
+<th style="text-align: center;">DESCIPTION</th>
 </tr>
 </thead>
-<tbody><tr>
-<td align="center">MOVE <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Sets the value A into address B</td>
+<tbody>
+<tr>
+<td style="text-align: center;">MOVE <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Sets the value A into address B</td>
 </tr>
 <tr>
-<td align="center">JMP <code>A</code></td>
-<td align="center">Jumps the execution into A</td>
+<td style="text-align: center;">JMP <code>A</code></td>
+<td style="text-align: center;">Jumps the execution into A</td>
 </tr>
 <tr>
-<td align="center">PIX <code>A</code> <code>B</code></td>
-<td align="center">Outputs a pixel into index <code>A</code> with color <code>B</code></td>
+<td style="text-align: center;">PIX <code>A</code> <code>B</code></td>
+<td style="text-align: center;">Outputs a pixel into index
+<code>A</code> with color <code>B</code></td>
 </tr>
 <tr>
-<td align="center">JEQ <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">If <code>A</code> equals <code>B</code>, the execution jumps to <code>C</code></td>
+<td style="text-align: center;">JEQ <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">If <code>A</code> equals <code>B</code>,
+the execution jumps to <code>C</code></td>
 </tr>
 <tr>
-<td align="center">JNQ <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">If <code>A</code> not equals <code>B</code>, the execution jumps to <code>C</code></td>
+<td style="text-align: center;">JNQ <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">If <code>A</code> not equals
+<code>B</code>, the execution jumps to <code>C</code></td>
 </tr>
 <tr>
-<td align="center">JGR <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">If <code>A</code> is greater than <code>B</code>, the execution jumps to <code>C</code></td>
+<td style="text-align: center;">JGR <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">If <code>A</code> is greater than
+<code>B</code>, the execution jumps to <code>C</code></td>
 </tr>
 <tr>
-<td align="center">FLP <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Flips the values between memory address <code>A</code> and memory address <code>B</code>.</td>
+<td style="text-align: center;">FLP <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Flips the values between memory address
+<code>A</code> and memory address <code>B</code>.</td>
 </tr>
 <tr>
-<td align="center">THR <code>A</code></td>
-<td align="center">Starts a new thread from memory address <code>A</code></td>
+<td style="text-align: center;">THR <code>A</code></td>
+<td style="text-align: center;">Starts a new thread from memory address
+<code>A</code></td>
 </tr>
 <tr>
-<td align="center">ADD <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Adds values <code>A</code> and <code>B</code> together and stores the result in <code>C</code></td>
+<td style="text-align: center;">ADD <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Adds values <code>A</code> and
+<code>B</code> together and stores the result in <code>C</code></td>
 </tr>
 <tr>
-<td align="center">SUB <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Subtracts <code>B</code> from <code>A</code> and stores the result in <code>C</code></td>
+<td style="text-align: center;">SUB <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Subtracts <code>B</code> from
+<code>A</code> and stores the result in <code>C</code></td>
 </tr>
 <tr>
-<td align="center">MUL <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Multiplies values <code>A</code> and <code>B</code> and stores the results in <code>C</code></td>
+<td style="text-align: center;">MUL <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Multiplies values <code>A</code> and
+<code>B</code> and stores the results in <code>C</code></td>
 </tr>
 <tr>
-<td align="center">DIV <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Division <code>A</code> with <code>B</code> and stores the result in <code>C</code></td>
+<td style="text-align: center;">DIV <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Division <code>A</code> with
+<code>B</code> and stores the result in <code>C</code></td>
 </tr>
 <tr>
-<td align="center">MOD <code>A</code> <code>B</code> <code>C</code></td>
-<td align="center">Take modulo of <code>A</code> and <code>B</code> and place the result in <code>C</code></td>
+<td style="text-align: center;">MOD <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Take modulo of <code>A</code> and
+<code>B</code> and place the result in <code>C</code></td>
 </tr>
-</tbody></table>
-<h4 id="Instruction-Examples"><a href="#Instruction-Examples" class="headerlink" title="Instruction Examples"></a>Instruction Examples</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FLP @10 @20 004 // Flip four (4) values between memory spaces starting from @10 and @20</span><br></pre></td></tr></table></figure>
-
-<ol>
-<li>Takes 4 values from memory that starts from address <code>10</code>;</li>
-<li>Takes 4 values from memory that starts from address <code>20</code>;</li>
-<li>Flips the values:<ol>
-<li>Flips the values between memory address <code>10</code> and memory address <code>20</code>;</li>
-<li>Flips the values between memory address <code>11</code> and memory address <code>21</code>;</li>
-<li>…</li>
-</ol>
-</li>
+</tbody>
+</table>
+<h4 id="instruction-examples">Instruction Examples</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FLP @10 @20 004 // Flip four (4) values between memory spaces starting from @10 and @20</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li>Takes 4 values from memory that starts from address
+<code>10</code>;</li>
+<li>Takes 4 values from memory that starts from address
+<code>20</code>;</li>
+<li>Flips the values:
+<ol type="1">
+<li>Flips the values between memory address <code>10</code> and memory
+address <code>20</code>;</li>
+<li>Flips the values between memory address <code>11</code> and memory
+address <code>21</code>;</li>
+<li>...</li>
+</ol></li>
 </ol>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JGR 020 @30 -04 // if value in @30 is smaller or equal to 20, jump forward 4 steps (16 bytes).</span><br></pre></td></tr></table></figure>
-
-<p>Note that you can prefix the C with minus ‘-‘ to get negative values.</p>
-<h3 id="Opcodes"><a href="#Opcodes" class="headerlink" title="Opcodes"></a>Opcodes</h3><blockquote>
-<p>Most of the opcodes are permutations of the same instruction. For example the ADD instruction has 8 different opcodes, depending on the ‘memory depth’ of the parameters.</p>
+<p>Note that you can prefix the C with minus '-' to get negative
+values.</p>
+<h3 id="opcodes">Opcodes</h3>
+<blockquote>
+<p>Most of the opcodes are permutations of the same instruction. For
+example the ADD instruction has 8 different opcodes, depending on the
+'memory depth' of the parameters.</p>
 </blockquote>
 <table>
 <thead>
 <tr>
-<th align="center">OPCODE</th>
+<th style="text-align: center;">OPCODE</th>
 <th>Instruction</th>
 <th>P1</th>
 <th>P2</th>
@@ -315,103 +375,150 @@
 <th>Example</th>
 </tr>
 </thead>
-<tbody><tr>
-<td align="center">13</td>
+<tbody>
+<tr>
+<td style="text-align: center;">13</td>
 <td>ADD</td>
 <td>@</td>
 <td>0</td>
 <td>@</td>
-<td>ADD @01 002 @03</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> 002 <span
+class="citation" data-cites="03">@03</span></td>
 </tr>
 <tr>
-<td align="center">14</td>
+<td style="text-align: center;">14</td>
 <td>ADD</td>
 <td>*</td>
 <td>0</td>
 <td>@</td>
-<td>ADD *01 002 @03</td>
+<td>ADD *01 002 <span class="citation" data-cites="03">@03</span></td>
 </tr>
 <tr>
-<td align="center">15</td>
+<td style="text-align: center;">15</td>
 <td>ADD</td>
 <td>@</td>
 <td>@</td>
 <td>@</td>
-<td>ADD @01 @02 @03</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> <span
+class="citation" data-cites="02">@02</span> <span class="citation"
+data-cites="03">@03</span></td>
 </tr>
 <tr>
-<td align="center">16</td>
+<td style="text-align: center;">16</td>
 <td>ADD</td>
 <td>*</td>
 <td>@</td>
 <td>@</td>
-<td>ADD *01 @02 @03</td>
+<td>ADD *01 <span class="citation" data-cites="02">@02</span> <span
+class="citation" data-cites="03">@03</span></td>
 </tr>
 <tr>
-<td align="center">17</td>
+<td style="text-align: center;">17</td>
 <td>ADD</td>
 <td>@</td>
 <td>*</td>
 <td>@</td>
-<td>ADD @01 *02 @03</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> *02 <span
+class="citation" data-cites="03">@03</span></td>
 </tr>
 <tr>
-<td align="center">18</td>
+<td style="text-align: center;">18</td>
 <td>ADD</td>
 <td>*</td>
 <td>0</td>
 <td>*</td>
-<td>ADD *01 002 *03</td>
+<td>ADD <em>01 002 </em>03</td>
 </tr>
 <tr>
-<td align="center">19</td>
+<td style="text-align: center;">19</td>
 <td>ADD</td>
 <td>@</td>
 <td>0</td>
 <td>*</td>
-<td>ADD @01 002 *03</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> 002 *03</td>
 </tr>
 <tr>
-<td align="center">1A</td>
+<td style="text-align: center;">1A</td>
 <td>ADD</td>
 <td>*</td>
 <td>@</td>
 <td>*</td>
-<td>ADD *01 @02 *03</td>
+<td>ADD <em>01 <span class="citation" data-cites="02">@02</span>
+</em>03</td>
 </tr>
 <tr>
-<td align="center">1B</td>
+<td style="text-align: center;">1B</td>
 <td>ADD</td>
 <td>@</td>
 <td>@</td>
 <td>*</td>
-<td>ADD @01 @02 *03</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> <span
+class="citation" data-cites="02">@02</span> *03</td>
 </tr>
 <tr>
-<td align="center">1C</td>
+<td style="text-align: center;">1C</td>
 <td>ADD</td>
 <td>*</td>
 <td>*</td>
 <td>*</td>
-<td>ADD *01 *02 *03</td>
+<td>ADD <em>01 </em>02 *03</td>
 </tr>
-</tbody></table>
-<h2 id="Level"><a href="#Level" class="headerlink" title="Level"></a>Level</h2><h3 id="BIG-SQUARE"><a href="#BIG-SQUARE" class="headerlink" title="BIG SQUARE"></a>BIG SQUARE</h3><p><img src="/images/20250319/BIG-SQUARE.png" alt="BIG SQUARE"></p>
-<h4 id="code"><a href="#code" class="headerlink" title="code"></a>code</h4><blockquote>
-<p>这一题是游戏给出的示例，相对来说难度并不大。</p>
+</tbody>
+</table>
+<h2 id="level">Level</h2>
+<h3 id="big-square">BIG SQUARE</h3>
+<figure>
+<img src="/images/20250319/BIG-SQUARE.png" alt="BIG SQUARE" />
+<figcaption aria-hidden="true">BIG SQUARE</figcaption>
+</figure>
+<h4 id="code">Code</h4>
+<blockquote>
+<p>这一题是游戏给出的示例，相对来说难度并不大，整体的思路就是：我们在内存的
+<code>@30</code>, <code>@31</code>, <code>@32</code>, <code>@33</code>
+定义四个常量，分别是 <code>1</code>, <code>10</code>, <code>-1</code>,
+<code>-10</code>。而这个常量则是我们在循环的过程中控制像素点指针移动的变量。</p>
+<ul>
+<li>1 表示向右移动</li>
+<li>10 表示向下移动</li>
+<li>-1 表示向左移动</li>
+<li>-10 表示向上移动</li>
+</ul>
 </blockquote>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000		// set @80 as Constant Value 22</span><br><span class="line">MOV 030 @C0 000		// set @C0 as Constant Value 30</span><br><span class="line">PIX @80 001 000		// draw a pixel with a fixed colour at the memory address @80</span><br><span class="line">ADD @80 *C0 @80		// add values @80 and *C0 and stores the result in @80 </span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR 00B @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">JMP @08 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
-
-<h4 id="ADD-80-C0-80"><a href="#ADD-80-C0-80" class="headerlink" title="ADD @80 *C0 @80"></a>ADD @80 *C0 @80</h4><p><code>ADD @80 *C0 @80</code> 这里我们对 <code>@80</code> 和 <code>*C0</code> 进行求和，并将求和的结果存入 <code>@80</code>，初看这条命令其实会让人有一些疑惑，因为这里用到了 <code>*C0</code>，而 <code>*C0</code> 在前面的指令 <code>MOV 030 @C0 000</code> 中，指向了一个 <strong>constant value</strong> <code>30</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000		// set the starting pixel index for the graph we are about to draw</span><br><span class="line">MOV 030 @C0 000		// set a pointer with a constant value of 30, to which the offset&#x27;s constant value in the loop.</span><br><span class="line"></span><br><span class="line"># Here is where the loop start</span><br><span class="line">PIX @80 001 000		// draw a pixel with a fixed colour</span><br><span class="line">ADD @80 *C0 @80		// move the horizontal pixel index</span><br><span class="line">ADD @81 001 @81		// store the total movements count</span><br><span class="line">JGR 00B @81 -0C		// jump back if it&#x27;s not done</span><br><span class="line">MOV 000 @81 000		// reset the movements count</span><br><span class="line">ADD @C0 001 @C0		// move the offset value in the loop</span><br><span class="line">JMP @08 000 000		// return to the begining of the loop</span><br><span class="line"></span><br><span class="line"># ...</span><br><span class="line"></span><br><span class="line"># Here is where the .data section begins</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="add-80-c0-80">ADD <span class="citation"
+data-cites="80">@80</span> *C0 <span class="citation"
+data-cites="80">@80</span></h4>
+<p><code>ADD @80 *C0 @80</code> 这里我们对 <code>@80</code> 和
+<code>*C0</code> 进行求和，并将求和的结果存入
+<code>@80</code>，初看这条命令其实会让人有一些疑惑，因为这里用到了
+<code>*C0</code>，而 <code>*C0</code> 在前面的指令
+<code>MOV 030 @C0 000</code> 中，指向了一个 <strong>constant
+value</strong> <code>30</code>。</p>
 <p>这里，其实我们是在初始化内存的时候，将内存地址的一部分存放了我们需要的操作数，例如：</p>
 <ul>
-<li><code>@30</code> &#x3D;&#x3D; 001</li>
-<li><code>@31</code> &#x3D;&#x3D; 010</li>
-<li><code>@32</code> &#x3D;&#x3D; -01</li>
-<li><code>@33</code> &#x3D;&#x3D; -10</li>
+<li><code>@30</code> == 001</li>
+<li><code>@31</code> == 010</li>
+<li><code>@32</code> == -01</li>
+<li><code>@33</code> == -10</li>
 </ul>
-<p>所以，当我们在调用指令 <code>ADD @80 *C0 @80</code> 时，其实相当于是 <code>num = num + 1;</code> 这条语句。</p>
-<p>正如我们在很多地方会提到的，可执行程序会包含所谓的 <code>.data</code> 和 <code>.text</code>，这里的 <code>[@30, @33]</code> 这个区间就可以认为是我们的 <code>.data</code>，而 <code>[@00, @23]</code> 这个区域，则可以认为是我们的 <code>.text</code></p>
+<p>所以，当我们在调用指令 <code>ADD @80 *C0 @80</code> 时，其实相当于是
+<code>num = num + 1;</code> 这条语句。</p>
+<p>正如我们在很多地方会提到的，可执行程序会包含所谓的 <code>.data</code>
+和 <code>.text</code>，这里的 <code>[@30, @33]</code>
+这个区间就可以认为是我们的 <code>.data</code>，而
+<code>[@00, @23]</code> 这个区域，则可以认为是我们的 <code>.text</code>,
+而 <code>[@80, ..)</code> 这个区间，则是我们的堆栈区间。</p>
+<h4 id="一个更直观的图示">一个更直观的图示</h4>
+<p>在绘制这个简单的<strong>BIG
+SQUARE</strong>的过程中，我们其实把他拆分为了绘制四条边，每条边包含了11个像素点。然后通过
+<code>*C0</code> 指向的一个constant
+value来控制我们像素点的移动。如果我们修改一下我们的源码，我们可以非常清楚的看到我们像素点的绘制流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000</span><br><span class="line">MOV 038 @C0 000</span><br><span class="line">MOV 001 @82 000		// 我们在这里，使用了一个变量来作为 PIX 的参数</span><br><span class="line"></span><br><span class="line">PIX @80 @82 000</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR 00B @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">ADD @82 001 @82		// 当我们画完一条边的时候，我们修改 PIX 参数的值，也就是像素点的颜色</span><br><span class="line">JMP @0C 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+<p>这样我们最后得到的图像结果如下：</p>
+<figure>
+<img src="/images/20250319/BIG-SQUARE-NEW.png" alt="BIG SQUARE NEW" />
+<figcaption aria-hidden="true">BIG SQUARE NEW</figcaption>
+</figure>
 
     </div>
 
