@@ -19,17 +19,23 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="BOX-256 前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 dis">
+    <meta name="description" content="BOX-256 引用  BOX-256 Threads BOX-256 Forth  前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：">
 <meta property="og:type" content="article">
 <meta property="og:title" content="一个学习汇编的小游戏：BOX-256">
 <meta property="og:url" content="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="BOX-256 前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 dis">
+<meta property="og:description" content="BOX-256 引用  BOX-256 Threads BOX-256 Forth  前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE-NEW.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CHECKBOARD.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CHECKBOARD-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/FOURE-SQUARES.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/FOUR-SQUARES-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CARPET.png">
 <meta property="article:published_time" content="2025-03-18T06:58:57.000Z">
-<meta property="article:modified_time" content="2025-03-19T07:42:42.092Z">
+<meta property="article:modified_time" content="2025-03-21T11:16:08.413Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="assembly">
 <meta property="article:tag" content="OS">
@@ -117,7 +123,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#box-256"><span class="nav-number">1.</span> <span class="nav-text">BOX-256</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#program-counter"><span class="nav-number">1.1.1.</span> <span class="nav-text">Program Counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multithreading"><span class="nav-number">1.1.2.</span> <span class="nav-text">Multithreading</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory-addressing"><span class="nav-number">1.1.3.</span> <span class="nav-text">Memory Addressing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#instructions"><span class="nav-number">1.1.4.</span> <span class="nav-text">Instructions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#instruction-examples"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">Instruction Examples</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#opcodes"><span class="nav-number">1.1.5.</span> <span class="nav-text">Opcodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level"><span class="nav-number">1.2.</span> <span class="nav-text">Level</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#big-square"><span class="nav-number">1.2.1.</span> <span class="nav-text">BIG SQUARE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#add-80-c0-80"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">ADD @80 *C0 @80</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E6%9B%B4%E7%9B%B4%E8%A7%82%E7%9A%84%E5%9B%BE%E7%A4%BA"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">一个更直观的图示</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#box-256"><span class="nav-number">1.</span> <span class="nav-text">BOX-256</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.2.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#program-counter"><span class="nav-number">1.2.1.</span> <span class="nav-text">Program Counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multithreading"><span class="nav-number">1.2.2.</span> <span class="nav-text">Multithreading</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory-addressing"><span class="nav-number">1.2.3.</span> <span class="nav-text">Memory Addressing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#instructions"><span class="nav-number">1.2.4.</span> <span class="nav-text">Instructions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#instruction-examples"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">Instruction Examples</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#opcodes"><span class="nav-number">1.2.5.</span> <span class="nav-text">Opcodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level"><span class="nav-number">1.3.</span> <span class="nav-text">Level</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#big-square"><span class="nav-number">1.3.1.</span> <span class="nav-text">BIG SQUARE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#add-80-c0-80"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">ADD @80 *C0 @80</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E6%9B%B4%E7%9B%B4%E8%A7%82%E7%9A%84%E5%9B%BE%E7%A4%BA"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">一个更直观的图示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#big-square-ii"><span class="nav-number">1.3.2.</span> <span class="nav-text">BIG SQUARE II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-1"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#outputs"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">Outputs</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#checkboard"><span class="nav-number">1.3.3.</span> <span class="nav-text">CHECKBOARD</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-2"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#checkboard-ii"><span class="nav-number">1.3.4.</span> <span class="nav-text">CHECKBOARD II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-3"><span class="nav-number">1.3.4.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-1"><span class="nav-number">1.3.4.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#four-squares"><span class="nav-number">1.3.5.</span> <span class="nav-text">FOUR SQUARES</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-4"><span class="nav-number">1.3.5.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-2"><span class="nav-number">1.3.5.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#four-squares-ii"><span class="nav-number">1.3.6.</span> <span class="nav-text">FOUR SQUARES II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-5"><span class="nav-number">1.3.6.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-3"><span class="nav-number">1.3.6.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#carpet"><span class="nav-number">1.3.7.</span> <span class="nav-text">CARPET</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-6"><span class="nav-number">1.3.7.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-4"><span class="nav-number">1.3.7.2.</span> <span class="nav-text">Result</span></a></li></ol></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -198,7 +204,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-03-19 15:42:42" itemprop="dateModified" datetime="2025-03-19T15:42:42+08:00">2025-03-19</time>
+      <time title="修改时间：2025-03-21 19:16:08" itemprop="dateModified" datetime="2025-03-21T19:16:08+08:00">2025-03-21</time>
     </span>
 
   
@@ -211,6 +217,13 @@
     
     
     <div class="post-body" itemprop="articleBody"><h1 id="box-256">BOX-256</h1>
+<h2 id="引用">引用</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/threads.htm">BOX-256
+Threads</a></li>
+<li><a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/pandora.htm">BOX-256
+Forth</a></li>
+</ul>
 <h2 id="前言">前言</h2>
 <p>最近在学习 <a
 target="_blank" rel="noopener" href="https://drive.google.com/file/d/1uviu1nH-tScFfgrovvFCrj7Omv8tFtkp/view">RISC-V</a>，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准
@@ -518,6 +531,178 @@ value来控制我们像素点的移动。如果我们修改一下我们的源码
 <figure>
 <img src="/images/20250319/BIG-SQUARE-NEW.png" alt="BIG SQUARE NEW" />
 <figcaption aria-hidden="true">BIG SQUARE NEW</figcaption>
+</figure>
+<h3 id="big-square-ii">BIG SQUARE II</h3>
+<h4 id="code-1">Code</h4>
+<p>第二题是画两个正方形，我们的思路是一样的：将一个正方形拆解为四条边，每次画一条边，并通过一个常量值来控制像素点的上下左右移动。区别在于，这次我们需要一个个额外的变量：<strong>the
+total count of pixels per
+line</strong>，这个变量用于控制我们循环输出时每条边包含的像素点数量；具体的代码实现如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># .text</span><br><span class="line">MOV 011 @80 000</span><br><span class="line">MOV 03C @C0 000</span><br><span class="line">MOV 00D @82 000		// 初始化每条边的长度，这里其实可以省略，因为我通过对点的重复着色，可以避免去进行长度调整</span><br><span class="line">PIX @80 002 000</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR @82 @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">JMP @0C 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line"></span><br><span class="line"># .data</span><br><span class="line"># 保存了变量，其中 001, 010, -01, -10 基本是用于控制光标上下左右移动</span><br><span class="line"># 其余的变量是在画完一条边之后，将pixel移动到我们要绘制的直线的起点</span><br><span class="line">001 000 010 000</span><br><span class="line">-01 000 -10 011</span><br><span class="line">001 -02 010 -20</span><br><span class="line">-01 002 -10 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="outputs">Outputs</h4>
+<figure>
+<img src="/images/20250319/BIG-SQUARE-II.png" alt="BIG-SQUARE-II" />
+<figcaption aria-hidden="true">BIG-SQUARE-II</figcaption>
+</figure>
+<h3 id="checkboard">CHECKBOARD</h3>
+<blockquote>
+<p>这个问题也不难，思路就是使用FLP指令翻转色彩，但是需要注意的是，我们需要记录移动的次数，因为在换行时我们需要额外翻转一次。</p>
+</blockquote>
+<h4 id="code-2">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># @80 = first color</span><br><span class="line"># @81 = second color</span><br><span class="line"># @82 = pixel index</span><br><span class="line"># @83 = loop count</span><br><span class="line"></span><br><span class="line">MOV 002 @80 000</span><br><span class="line">MOV 003 @81 000</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">PIX @82 @80 000</span><br><span class="line">FLP @80 @81 000</span><br><span class="line">ADD @82 001 @82</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">JGR @83 00F 008</span><br><span class="line">JMP -14 000 000</span><br><span class="line">FLP @80 @81 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">JMP -20 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result">Result</h4>
+<figure>
+<img src="/images/20250319/CHECKBOARD.png" alt="CHECKBOARD" />
+<figcaption aria-hidden="true">CHECKBOARD</figcaption>
+</figure>
+<h3 id="checkboard-ii">CHECKBOARD II</h3>
+<blockquote>
+<p>同样的，这个题我们会使用到 <code>001</code> 和 <code>00C</code>
+两个颜色，并且，我们可以注意到：</p>
+<p>假设横坐标和纵坐标分别为 i 和 j，整个图形可以看做是
+<code>0 &lt;= i &lt; 4 &amp;&amp; 0 &lt;= j &lt; 4</code>
+这个图形的递归输出，那么 <code>board[i][j]</code> 的颜色为:</p>
+<ul>
+<li><code>i % 4 &lt;= 1</code> &amp;&amp;
+<code>j % 4 &lt;= 1</code>，则颜色是 <code>001</code>；</li>
+<li><code>i % 4 &gt;= 2</code> &amp;&amp;
+<code>j % 4 &lt;= 1</code>，则颜色是 <code>00C</code>；</li>
+<li><code>i % 4 &lt;= 1</code> &amp;&amp;
+<code>j % 4 &gt;= 2</code>，则颜色是 <code>001</code>；</li>
+<li><code>i % 4 &gt;= 1</code> &amp;&amp;
+<code>j % 4 &lt;= 1</code>，则颜色是 <code>00C</code>；</li>
+</ul>
+<p>也就是说，我们可以使用一个 <code>4 * 4</code>
+的二维数组来计算当前像素点的颜色并着色。</p>
+<p>此外，如果我们把每个同颜色 <code>2 * 2</code>
+色块作为一个整体来看，那么每次当我们来到左上的顶点时，我们可以将改区域的全部节点上色，也就是：</p>
+<ul>
+<li>PIX x color</li>
+<li>PIX (x + 1) color</li>
+<li>PIX (x + 10) color</li>
+<li>PIX (x + 11) color</li>
+</ul>
+<p>更进一步，在这种情况下，我们可以利用我们在 CHECKBOARD 中使用到的
+<code>FLP</code> 指令来对颜色进行翻转，可以直接省略掉这个 4 * 4
+的二维数组</p>
+</blockquote>
+<h4 id="code-3">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">MOV 001 @80 000 // @80 = current color</span><br><span class="line">MOV 00C @81 000 // @81 = next color</span><br><span class="line">MOV 000 @82 000 // @82 = loop count</span><br><span class="line">MOV 000 @83 000 // @83 = pixel index</span><br><span class="line"></span><br><span class="line">PIX @83 @80 000 // 画该区域内的四个色块</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 010 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 -01 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 -0E @83 // 跳转到下一个色块</span><br><span class="line">ADD @82 001 @82	// loop + 1</span><br><span class="line"></span><br><span class="line">JGR @82 007 00C // 跳转#1</span><br><span class="line"></span><br><span class="line">FLP @80 @81 000</span><br><span class="line">JMP -2C 000 000</span><br><span class="line"></span><br><span class="line">MOD @82 008 @82 // #1 重置loop count</span><br><span class="line">ADD @83 010 @83 // 移动 pixel index</span><br><span class="line">JMP -38 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-1">Result</h4>
+<figure>
+<img src="/images/20250319/CHECKBOARD-II.png" alt="CHECKBOARD-II" />
+<figcaption aria-hidden="true">CHECKBOARD-II</figcaption>
+</figure>
+<h3 id="four-squares">FOUR SQUARES</h3>
+<blockquote>
+<p>这题用到了四种不同的颜色：<code>008</code>, <code>009</code>,
+<code>00A</code>,
+<code>00B</code>，所以我们可以预先定义一个变量表示当前颜色，在每次循环结束时递增颜色，整个执行过程可以描述为：</p>
+<ol type="1">
+<li>初始化参数：
+<ol type="1">
+<li>初始化 pixel index 为 <code>0</code>；</li>
+<li>初始化 direction index 为 <code>0</code>，控制 pixel index
+移动方向；</li>
+<li>初始化 color 到 <code>008</code>；</li>
+</ol></li>
+<li>画上面的横边，画完后修改索引控制 pixel index 向下移动；</li>
+<li>画右边的竖边，画完后修改索引控制 pixel index 向左移动；</li>
+<li>画下面的横边，画完后修改索引控制 pixel index 向上移动；</li>
+<li>准备画下一个正方形：
+<ol type="1">
+<li>移动 pixel index 到下一个正方形的起始点；</li>
+<li>Reset direction index；</li>
+<li>color++；</li>
+</ol></li>
+</ol>
+</blockquote>
+<h4 id="code-4">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">MOV 000 @80 000 // @80 pixel index</span><br><span class="line">MOV 000 @81 000 // @81 loop count of drawing verticals of square</span><br><span class="line">MOV 000 @82 000 // @82 loop count of drawing dots of vertical</span><br><span class="line">MOV 008 @83 000 // @83 current color</span><br><span class="line">MOV 085 @84 000 // @84 direction index</span><br><span class="line">MOV 001 @85 000 // @85 move cursor right</span><br><span class="line">MOV 010 @86 000 // @86 move cursor down</span><br><span class="line">MOV -01 @87 000 // @87 move cursor left</span><br><span class="line">MOV -10 @88 000 // @88 move cursor up</span><br><span class="line"></span><br><span class="line">PIX @80 @83 000 // pixel a point</span><br><span class="line">ADD @82 001 @82</span><br><span class="line">ADD @80 *84 @80</span><br><span class="line">JGR 003 @82 -0C // jump if done drawing a vertical</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR @81 003 010 // jump if done drawing a square</span><br><span class="line">ADD @84 001 @84</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">JMP -20 000 000 // jump to draw next vertical</span><br><span class="line"></span><br><span class="line">// reset all propertries for drawing the next square</span><br><span class="line">ADD @80 044 @80</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">MOV 085 @84 000</span><br><span class="line">JMP -48 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-2">Result</h4>
+<figure>
+<img src="/images/20250319/FOURE-SQUARES.png" alt="FOUR-SQUARE" />
+<figcaption aria-hidden="true">FOUR-SQUARE</figcaption>
+</figure>
+<h3 id="four-squares-ii">FOUR SQUARES II</h3>
+<blockquote>
+<p>这一题，其实还是在画正方形，区别在于，这次画的正方形是一个
+<code>N * N</code> 的正方形。我们观察到，这四个正方形分别是
+<code>8 * 8</code>, <code>4 * 4</code>, <code>2 * 2</code>,
+<code>1 * 1</code>，所以我们可以使用一个变量来存储像素点的数量。</p>
+</blockquote>
+<h4 id="code-5">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">MOV 000 @80 000 // @80 pixel index</span><br><span class="line">MOV 008 @81 000 // @81 current color</span><br><span class="line">MOV 008 @82 000 // @82 loop count limiter</span><br><span class="line">MOV 000 @83 000 // @83 dots count</span><br><span class="line">MOV 001 @84 000 // @84 direction controller</span><br><span class="line">MOV -01 @85 000 // @85 next direction controller</span><br><span class="line">MOV 000 @86 000 // @86 line counter</span><br><span class="line"></span><br><span class="line">PIX @80 @81 000</span><br><span class="line">ADD @83 001 @83</span><br><span class="line"></span><br><span class="line">// judge whether or not the current line is finished</span><br><span class="line">JEQ @83 @82 00C</span><br><span class="line"></span><br><span class="line">// move pixel index and continue drawing current line</span><br><span class="line">ADD @80 @84 @80</span><br><span class="line">JMP -10 000 000</span><br><span class="line"></span><br><span class="line">// finish drawing a line, reset all properties</span><br><span class="line">ADD @86 001 @86</span><br><span class="line">FLP @84 @85 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line"></span><br><span class="line">// judge whether or not the current square is finished</span><br><span class="line">JEQ @86 @82 00C</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">ADD @80 010 @80</span><br><span class="line">JMP -28 000 000</span><br><span class="line"></span><br><span class="line">// finish drawing a square, reset all properties.</span><br><span class="line">ADD @80 @82 @80</span><br><span class="line">ADD @80 010 @80</span><br><span class="line">DIV @82 002 @82</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">MOV 000 @86 000</span><br><span class="line">JMP -44 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-3">Result</h4>
+<figure>
+<img src="/images/20250319/FOUR-SQUARES-II.png" alt="FOUR-SQUARES-II" />
+<figcaption aria-hidden="true">FOUR-SQUARES-II</figcaption>
+</figure>
+<h3 id="carpet">CARPET</h3>
+<blockquote>
+<p>到这一题，已经开始略微有一些难度了，我们可以注意到这个图中总共用到了以下四个颜色：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">color</th>
+<th style="text-align: center;">palette</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>red</code></td>
+<td style="text-align: center;"><code>002</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>purple</code></td>
+<td style="text-align: center;"><code>001</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>green</code></td>
+<td style="text-align: center;"><code>003</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>orange</code></td>
+<td style="text-align: center;"><code>004</code></td>
+</tr>
+</tbody>
+</table>
+<p>通过观察，我们可以注意到一个现象，假设使用 row 和 col
+表示内存的行和列，那么存在以下逻辑：</p>
+<blockquote>
+<p>对于任意满足 <span class="math inline">\(\text{row} \in (0,
+15]\)</span> 以及 <span class="math inline">\(\text{col} \in [0,
+15)\)</span> 的像素点，他的颜色可以表示为 <span
+class="math inline">\(memory[row - 1][col + 1]\)</span>。</p>
+</blockquote>
+<p>使用上面的公式，我们可以生成数组中的前15个像素点，但是最后一列我们也需要单独的记录（其实也可以找到对应的规律，但是没有必要）。</p>
+<p>所以我们需要做的就是，使用两个数组分别记录
+<code>memory[0][0] ~ memory[0][15]</code> 和
+<code>memory[15][0] ~ memory[15][15]</code>，并在程序中递归的去访问并生成图形。</p>
+<p>更进一步，我们可以发现，如果我们将
+<code>memory[0][0] ~ memory[0][15]</code> 和
+<code>memory[1][15] ~ memory[15][15]</code>
+这里总共31个元素，变换成一个长度为 <code>31</code>
+的一维数组，假设这个数组为 <code>transfomer</code>。</p>
+<p>我们会发现：</p>
+<ol type="1">
+<li><span class="math inline">\(memory[0][0]\)</span> ~ $ memory[0][15]$
+对应的是 <span class="math inline">\(transfomer[0]\)</span> ~ <span
+class="math inline">\(transformer[15]\)</span>；</li>
+<li><span class="math inline">\(memory[1][0]\)</span> ~ $ memory[1][15]$
+对应的是 <span class="math inline">\(transfomer[1]\)</span> ~ <span
+class="math inline">\(transformer[16]\)</span>；</li>
+<li>...</li>
+<li><span class="math inline">\(memory[i][0]\)</span> ~ $ memory[i][15]$
+对应的是 <span class="math inline">\(transfomer[i]\)</span> ~ <span
+class="math inline">\(transformer[i + 15]\)</span>；</li>
+</ol>
+</blockquote>
+<h4 id="code-6">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// @01 point to the first parameter of PIX</span><br><span class="line">// @1A is the pointer pointing to current color</span><br><span class="line">// @03 is the column number</span><br><span class="line">PIX 000 *1A 000 // draw pixel</span><br><span class="line">ADD 001 @01 @01 // move pixel index</span><br><span class="line">ADD 001 @1A @1A // move pointer</span><br><span class="line">MOD @01 010 @03 // get column number</span><br><span class="line">JNE @03 000 @00 // if not first column, return to the beginning</span><br><span class="line">SUB @1A 00F @1A // go to the proper position</span><br><span class="line"></span><br><span class="line">// 01B is is the position of @1A</span><br><span class="line">JMP @00 01B 002</span><br><span class="line">001 003 004 001</span><br><span class="line">001 004 003 001</span><br><span class="line">004 001 001 004</span><br><span class="line">001 001 002 001</span><br><span class="line">001 004 001 003</span><br><span class="line">004 001 001 004</span><br><span class="line">003 001 004 001</span><br><span class="line">001 002 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-4">Result</h4>
+<figure>
+<img src="/images/20250319/CARPET.png" alt="CARPET" />
+<figcaption aria-hidden="true">CARPET</figcaption>
 </figure>
 
     </div>
