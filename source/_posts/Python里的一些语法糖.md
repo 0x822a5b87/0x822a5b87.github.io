@@ -10,6 +10,10 @@ tags:
 - [Operators and Expressions in Python](https://realpython.com/python-operators-expressions/)
 - [Syntactic Sugar: Why Python Is Sweet and Pythonic](https://realpython.com/syntactic-sugar-python/#unpacking-in-python)
 - [How to Use Generators and yield in Python](https://realpython.com/introduction-to-python-generators/)
+- [When to Use a List Comprehension in Python](https://realpython.com/list-comprehension-python/)
+- [Python Dictionary Comprehensions: How and When to Use Them](https://realpython.com/python-dictionary-comprehension/)
+- [List Comprehensions](https://docs.python.org/2/tutorial/datastructures.html#list-comprehensions)
+- [Dictionaries](https://docs.python.org/3/tutorial/datastructures.html#dictionaries)
 
 ## 关键词
 
@@ -445,4 +449,96 @@ try:
 finally:
     file.close()
 ```
+
+## List Comprehension
+
+> List comprehensions provide a concise way to create lists. Common applications are to make new lists where each element is the result of some operations applied to each member of another sequence or iterable, or to create a subsequence of those elements that satisfy a certain condition.
+
+```python
+squares = []
+
+for x in range(10):
+  	squares.append(x**2)
+```
+
+we can obtain the same result with
+
+```python
+squares = [x ** 2 for x in range(10)]
+```
+
+This is also simliar to the following code, except that the following code return **<map object at 0x100d01760>** which is a stream of data that is lazily initiated when the it's called.
+
+```python
+squares = map(lambda x: x**2, range(10))
+print(squares)
+# <map object at 0x100d01760>
+for s in squares:
+  print(s, end=' ')
+  # 0 1 4 9 16 25 36 49 64 81 
+```
+
+A list comprehension consists of brackets containing an expression followed by a [`for`](https://docs.python.org/2/reference/compound_stmts.html#for) clause, then zero or more [`for`](https://docs.python.org/2/reference/compound_stmts.html#for) or [`if`](https://docs.python.org/2/reference/compound_stmts.html#if) clauses. The result will be a new list resulting from evaluating the expression in the context of the [`for`](https://docs.python.org/2/reference/compound_stmts.html#for) and [`if`](https://docs.python.org/2/reference/compound_stmts.html#if) clauses which follow it. For example, this listcomp combines the elements of two lists if they are not equal:
+
+```python
+def lc2():
+    arr = [(x, y)
+           for x in [1, 2, 3]
+           for y in [3, 1, 4]
+           if x != y]
+    for item in arr:
+        print(item, end=' ')
+        # (1, 3) (1, 4) (2, 3) (2, 1) (2, 4) (3, 1) (3, 4)
+```
+
+The forementioned code is equivalent to the following code but way more readable:
+
+```python
+    for_arr = []
+    for x in [1,2,3]:
+        for y in [3,1,4]:
+            if x != y:
+                for_arr.append((x, y))
+    for item in for_arr:
+        print(item, end=' ')
+    # (1, 3) (1, 4) (2, 3) (2, 1) (2, 4) (3, 1) (3, 4) 
+```
+
+If the expression is a tuple (e.g. the `(x, y)` in the previous example), it must be parenthesized.
+
+```python
+[x, x**2 for x in range(6)]
+#   File "<stdin>", line 1, in <module>
+#    [x, x**2 for x in range(6)]
+```
+
+#### [Nested List Comprehensions](https://docs.python.org/2/tutorial/datastructures.html#nested-list-comprehensions)
+
+The initial expression in a list comprehension can be any arbitrary expression, including another list comprehension.
+
+```python
+def nested_list_comprehensions():
+    matrix = [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+    ]
+    print([[row[i] for row in matrix] for i in range(len(matrix))])
+    # [[1, 5, 9], [2, 6, 10], [3, 7, 11]]
+    print([[row[i] for row in matrix] for i in range(4)])
+    # [[1, 5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]]
+```
+
+## Dictionary And dict comprehensions
+
+In addition, dict comprehensions can be used to create dictionaries from arbitrary key and value expressions:
+
+```python
+def dictionaries():
+    v = {x: x ** 2 for x in (2, 4, 6)}
+    print(v)
+    # {2: 4, 4: 16, 6: 36}
+```
+
+
 
