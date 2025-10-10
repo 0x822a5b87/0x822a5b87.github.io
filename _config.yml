@@ -962,7 +962,7 @@ updated_option: 'mtime'
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
-  repo: https://github.com/0x822a5b87/0x822a5b87.github.io.git
+  repo: git@github.com:0x822a5b87/0x822a5b87.github.io.git
   branch: main
 
 source_dir: source
