@@ -102,6 +102,8 @@ end
 1_plugin_unique_identifier --> 2_plugin_unique_identifier --> 3_plugin_unique_identifier
 2_tenant_id --> 3_tenant_id
 
+1_declaration -.->|由json中的内容解析得到| 3_provider
+
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
