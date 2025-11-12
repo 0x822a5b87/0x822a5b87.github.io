@@ -122,12 +122,12 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-count">31</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-count">31</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -144,6 +144,275 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/12/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%881%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/11/12/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%881%EF%BC%89/" class="post-title-link" itemprop="url">uCore：一个基于Rust的简单操作系统实现（1）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2025-11-12 11:29:13 / 修改时间：22:56:08" itemprop="dateCreated datePublished" datetime="2025-11-12T11:29:13+08:00">2025-11-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="前言">前言</h1>
+<p><code>uCore</code> 是由清华大学推出的一个基于 <code>rust</code> 和
+<code>riscv</code> 实现的操作系统，实现难度适中，核心代码量约为
+<code>5000</code>
+行，这里使用本文记录在学习过程中的一些思考和疑问，在完成这个项目之后，我们可以：</p>
+<ol type="1">
+<li>阅读简单的 Makefile 文件；</li>
+<li>阅读简单的 RISC-V 汇编代码；</li>
+<li>git 的基本功能，解决 git merge 冲突的办法；</li>
+<li>Rust 基本语法和一些进阶语法，包括 Cargo
+项目结构、Trait、函数式编程、Unsafe Rust、错误处理等；</li>
+<li>粗浅的了解操作系统的实现逻辑。</li>
+</ol>
+<p>项目的全部代码在这里：<a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/Ardi">ardi</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">➜  ~/code/2025a-rcore-0x822a5b87 git:(ch8) cloc --include-ext=rs,s,S,asm .</span><br><span class="line">     262 text files.</span><br><span class="line">     216 unique files.                                          </span><br><span class="line">     232 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.82  T=0.02 s (2738.4 files/s, 303633.3 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Rust                            55            391            967           4941</span><br><span class="line">Assembly                         3              6             29             97</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            58            397            996           5038</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/11/12/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%881%EF%BC%89/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/" class="post-title-link" itemprop="url">C99中关于char的一个未定义行为</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-03 16:25:47" itemprop="dateCreated datePublished" datetime="2025-11-03T16:25:47+08:00">2025-11-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-12 21:13:20" itemprop="dateModified" datetime="2025-11-12T21:13:20+08:00">2025-11-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="前言">前言</h1>
+<p>最近在学习 RISCV
+的过程中，碰见了一个比较奇特的BUG，在下面的代码中，我们出现了一个神秘的未定义行为（Undefined
+Behavior）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> a;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> b;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> c;</span><br><span class="line"></span><br><span class="line">    a = <span class="number">0x88</span>;</span><br><span class="line">    b = ~a;</span><br><span class="line">    c = ~a;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;a=0x%x, ~a=0x%x, b=0x%x, c=0x%lx\n&quot;</span>, a, ~a, b, c);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>本来是一段很简单的用于测试C语言下的隐式转换规则的代码，结果很神奇的是在两个不同的平台下出现了截然不同的输出！</p>
+<h2 id="x86x86_64">x86/x86_64</h2>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/10/10/%E4%B8%8D%E8%A6%81%E5%8E%BB%E8%A7%A3%E5%86%B3%E4%B8%80%E4%B8%AA%E4%B8%8D%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/10/10/%E4%B8%8D%E8%A6%81%E5%8E%BB%E8%A7%A3%E5%86%B3%E4%B8%80%E4%B8%AA%E4%B8%8D%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98/" class="post-title-link" itemprop="url">不要去解决一个不存在的问题</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-10-10 16:42:18" itemprop="dateCreated datePublished" datetime="2025-10-10T16:42:18+08:00">2025-10-10</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-12 21:13:20" itemprop="dateModified" datetime="2025-11-12T21:13:20+08:00">2025-11-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>最近由于学习 <code>risc-v</code>，需要使用到 <code>gdb</code> 来调试
+<code>elf</code> 文件，本来想使用大学期间比较熟悉的 <a
+target="_blank" rel="noopener" href="https://github.com/gdbinit/Gdbinit">gdbinit</a> 或者 <a
+target="_blank" rel="noopener" href="https://github.com/longld/peda">peda</a>。折腾了接近两天时间，修复了各种问题，最后还是失败了。直接切换到
+<a target="_blank" rel="noopener" href="https://github.com/pwndbg/pwndbg">pwndbg</a> 解决全部问题。</p>
+</blockquote>
+<figure>
+<img src="/images/20251010/1.png" alt="pwndbg" />
+<figcaption aria-hidden="true">pwndbg</figcaption>
+</figure>
+<blockquote>
+<p>回想这两天痛苦的查文档，翻github的issue却从来没有想过时代在变化，大学期间的明星项目peda已经断更五年多了。</p>
+</blockquote>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -299,9 +568,15 @@ classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2025-07-23 12:43:02 / 修改时间：13:13:39" itemprop="dateCreated datePublished" datetime="2025-07-23T12:43:02+08:00">2025-07-23</time>
+      <time title="创建时间：2025-07-23 12:43:02" itemprop="dateCreated datePublished" datetime="2025-07-23T12:43:02+08:00">2025-07-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-12 21:13:20" itemprop="dateModified" datetime="2025-11-12T21:13:20+08:00">2025-11-12</time>
     </span>
 
   
@@ -314,8 +589,12 @@ classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="插件逻辑"><a href="#插件逻辑" class="headerlink" title="插件逻辑"></a>插件逻辑</h1><p>在 <code>dify</code> 的插件管理中，整个体系逻辑比较混乱，这里使用该文本记录一下 <code>dify</code> 的插件管理逻辑。</p>
-<h2 id="插件概述"><a href="#插件概述" class="headerlink" title="插件概述"></a>插件概述</h2><p>一个插件以及插件对应的工具的组成部分如下图所示：</p>
+          <h1 id="插件逻辑">插件逻辑</h1>
+<p>在 <code>dify</code>
+的插件管理中，整个体系逻辑比较混乱，这里使用该文本记录一下
+<code>dify</code> 的插件管理逻辑。</p>
+<h2 id="插件概述">插件概述</h2>
+<p>一个插件以及插件对应的工具的组成部分如下图所示：</p>
 <pre class="mermaid">---
 title: 插件
 ---
@@ -989,351 +1268,8 @@ classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharra
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/01/18/%E5%85%B3%E4%BA%8EB%E6%A0%91%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/01/18/%E5%85%B3%E4%BA%8EB%E6%A0%91%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" class="post-title-link" itemprop="url">关于B树的一些思考</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-01-18 16:24:36" itemprop="dateCreated datePublished" datetime="2025-01-18T16:24:36+08:00">2025-01-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-01-22 16:32:07" itemprop="dateModified" datetime="2025-01-22T16:32:07+08:00">2025-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="前言">前言</h2>
-<blockquote>
-<p>在最近实现一个 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/elephant/tree/main/nosql">简单的kv数据库</a>
-中又重新思考了一些问题。</p>
-</blockquote>
-<p>当我第一次尝试了解数据库底层原理的时候，就从各个角度了解到了选择<strong>B+树</strong>而不是<strong>B树</strong>的很多理由，基本上无非是以下这些因素：</p>
-<ul>
-<li>B+树支持范围查询。B+树非叶子节点不存储数据，并且成熟的B+树实现的叶子节点都会通过指针连接起来构成一个单独的链表；所以当我们进行范围查询的时候，只需要找到起始叶子节点之后遍历链表找到对应的结尾叶子节点即可。但是B树的非叶子节点也可以存储数据，所以无法实现；</li>
-<li>更适合磁盘存储：B+树的内部节点只存储键值的索引，而叶子节点存储实际的数据。这种设计使得每个节点的大小更小，可以容纳更多的键值对，减少了磁盘I/O的次数。另外，由于叶子节点之间通过链表连接，可以更好地利用磁盘预读取的特性，提高查询性能。</li>
-<li>更适合索引：数据库通常需要支持快速的索引查找，而B+树的结构更适合作为索引结构。B+树的内部节点只存储键值的索引，可以更好地利用内存空间，提高索引的效率。</li>
-<li>查询效率更稳定：B树的查询时间复杂度在1到树高之间，因为数据可能存储在根节点、内部节点或叶子节点，查询效率会因数据所在位置不同而波动。B+树的所有数据都存储在叶子节点，查询复杂度则稳定为树高，查询效率更加稳定。</li>
-</ul>
-<p>当时觉得很有道理，然而随着水平和眼界的提升，却发现这里存在相当多的地方值得商榷：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/01/18/%E5%85%B3%E4%BA%8EB%E6%A0%91%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/" class="post-title-link" itemprop="url">开了一个linkers的新坑</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-01-15 11:37:54" itemprop="dateCreated datePublished" datetime="2025-01-15T11:37:54+08:00">2025-01-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-02-21 17:25:40" itemprop="dateModified" datetime="2025-02-21T17:25:40+08:00">2025-02-21</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <blockquote>
-<p>早上逛 <a target="_blank" rel="noopener" href="https://www.reddit.com/r/rust/">reddit rust</a>
-时偶然看到了 <a target="_blank" rel="noopener" href="https://www.airs.com/blog">Ian Lance Taylor</a>
-介绍 <a target="_blank" rel="noopener" href="https://a3f.at/lists/linkers">linkers</a>
-的系列文章，觉得很有意思，决定开一个新坑来看看能不能自己实现一个简单的
-linkers，目前找了一些资料，看起来工作量并不小。这里先做个简单的记录，参考的文章和书籍：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://a3f.at/lists/linkers">linkers by Ian Lance
-Taylor</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/andrewhalle/byo-linker">byo-linker</a></li>
-<li><a target="_blank" rel="noopener" href="https://www.amazon.com/Linkers-Kaufmann-Software-Engineering-Programming/dp/1558604960/ref=sr_1_1?crid=24DJPGT6TCPSU&amp;dib=eyJ2IjoiMSJ9.blypyivja49kN_oMLeGvLUYdmuxfh0xHvWmmz6FjaF-covkmqayhb5XmNBBIwDAbisFkJaB2k580X2V6D8nWuopCyzyijCWFM05AuAiNzMgaERzu_oxeZ8xEEIpl8vXed5zSGn5h8GXGtkBQX7THg0RltzVDWOPkMugTdtoG-9F-9i_407kB3K0tgLCeSnNq2B6MimVn2yD1KmgLnL-XlE5JnCQcS8qh1C0h6KY4hWA.uWjN7FnLv144NGBHfuKQYTUYvP0gr-bw8yJMFd3qvO4&amp;dib_tag=se&amp;keywords=linkers+and&amp;qid=1736912625&amp;sprefix=linkers+and+l%2Caps%2C430&amp;sr=8-1">Linkers
-and Loaders</a></li>
-</ul>
-<p>可能会涉及到的基础知识包括：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/SPARC"><strong>SPARC</strong>
-(<strong>Scalable Processor ARChitecture</strong>)</a></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/X86_instruction_listings">x86
-instruction listings</a></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Executable">Executable
-file</a>: <code>ELF</code>, <code>PE</code>, <code>OMF</code></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Symbol_table">Symbol
-table</a></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Shared_library">shared
-libraries</a></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Static_library">Static
-library</a></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Dynamic_linker">dynamic
-linker</a></li>
-<li>其他待总结</li>
-</ul>
-</blockquote>
-<h2 id="第一印象">第一印象</h2>
-<h3 id="一个最简单的链接过程">一个最简单的链接过程</h3>
-<pre class="mermaid">---
-title: 一个简单的链接过程
----
-flowchart LR
-
-source1("source1"):::purple
-of1("object_file1.o"):::purple
-
-source2("source2"):::purple
-of2("object_file2.o"):::purple
-
-linkers("linkers"):::pink
-
-executable("executable"):::green
-
-source1 -->|gcc -o| of1
-source2 -->|gcc -o| of2
-
-of1 --> linkers
-of2 --> linkers
-
-linkers --> executable
-
-classDef pink 1,fill:#FFCCCC,stroke:#333;
-classDef green fill: #696,color: #fff,font-weight: bold;
-classDef purple fill:#969,stroke:#333;
-classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</pre>
-<h3 id="链接过程可能涉及到的产物">链接过程可能涉及到的产物</h3>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/12/26/%E5%9F%BA%E4%BA%8E%E7%AE%80%E5%8D%95%E7%8A%B6%E6%80%81%E6%9C%BA%E7%9A%84%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2024/12/26/%E5%9F%BA%E4%BA%8E%E7%AE%80%E5%8D%95%E7%8A%B6%E6%80%81%E6%9C%BA%E7%9A%84%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97/" class="post-title-link" itemprop="url">基于简单状态机的四则运算</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2024-12-26 18:19:18" itemprop="dateCreated datePublished" datetime="2024-12-26T18:19:18+08:00">2024-12-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-02-12 11:57:06" itemprop="dateModified" datetime="2025-02-12T11:57:06+08:00">2025-02-12</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="test-fsm-arithmetic-operations">test-fsm-arithmetic-operations</h1>
-<blockquote>
-<ul>
-<li>测试一下通过 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Finite-state_machine">Finite State
-Machine</a> 实现简单的四则运算解析；</li>
-<li>全部代码在 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-fsm-arithmetic-operations">test-fsm-arithmetic-operations</a>，因为只是为了测试状态机，所以有非常多的边界条件没有处理。</li>
-</ul>
-</blockquote>
-<p>在之前 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/monkey">Programming
-Language Monkey</a> 中，其实也实现了一版，但是当时只是简单的根据 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-pratt-parsing">Pratt
-Parsing</a>
-实现，并没有画出完整的状态机，所以在这里重新实现了一次，为了避免浪费太多的时间，这次将只会支持以下简单内容：</p>
-<ul>
-<li>支持 <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>
-四则运算；</li>
-<li>支持 <code>()</code>；</li>
-<li>仅支持标准十进制格式的 number，不支持 <code>0xFF</code>
-等其他形式的数字输入；</li>
-<li>仅支持 <code>int64</code>
-类型，也就是说除法会导致会导致数据丢失，但是考虑到本来就是为了了解状态机而实现的玩具，这个完全是可以接受的；</li>
-</ul>
-<h2 id="前言">前言</h2>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2024/12/26/%E5%9F%BA%E4%BA%8E%E7%AE%80%E5%8D%95%E7%8A%B6%E6%80%81%E6%9C%BA%E7%9A%84%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>
