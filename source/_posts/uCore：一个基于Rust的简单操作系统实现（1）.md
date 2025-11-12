@@ -260,7 +260,7 @@ debug: build
 		tmux -2 attach-session -d
 ```
 
-## code
+## link and bootloader
 
 ### linker.ld
 
@@ -326,6 +326,56 @@ boot_stack_lower_bound:
     .globl boot_stack_top
 boot_stack_top:
 
+```
+
+## code
+
+> `rust` 代码是我们的主业务逻辑，在第一章中，我们只是简单的通过 entry.asm 引导CPU跳转到了rust的main函数，并向标准输出输出了一个字符。整体包含了如下几个模块：
+>
+> 1. `main.rs` 初始化内存区域，例如 `bss`, `text`, `rodata` 以及内核的栈内存等；并调用封装好的SBI发送字符到标准输出；
+> 1. `qemu.rs` 调用qemu相关的接口，确保在执行之后退出，如果有异常则进行异常处理并输出异常；
+> 1. `sbi.rs` 封装SBI function，提供将字符输出到标准输出的能力；
+> 1. `console.rs` 封装sbi.rs，提供输出 `&str` 到标准输出的能力；
+> 1. `logging.rs` 初始化rust标准库的log用于输出信息，并使用 `console.rs` 中封装好的函数输出字符串到标准输出；
+> 1. `lang_items.rs` 异常处理。
+
+### sbi.rs
+
+> 具体 SBI function 的调用规范，请查看 [SBI调用规范](#SBI调用规范)
+
+封装 SBI function，提供了输出字符到标准输出的能力，这里值得注意的的点有几个：
+
+1. `x16` 设置扩展ID，它标志了功能大类（如「基础扩展」「定时器扩展」「系统扩展」），**这里需要注意的是，它的设置必须在ecall之前，虽然这里先调用ecall再设置x16程序依然正常工作，但是这可能和x16的默认值正好为0有关（另外的可能性是我们使用的并非官方的SBI，这个SBI中并未遵循规定），这是一个不可靠的未定义行为**。
+2. ecall 先陷入到supervisor mode，这是系统调用的条件；
+3. inlateout 表明 x10 同时作为输入和输出，并且指定输入是arg0，输出存储到ret中；
+4. x11 和 x12 是SBI的arg1和arg2；
+5. x17 是调用的SBI function ID，而 x16 是调用SBI extension ID；这是 RISC-V SBI 规范（特别是 SBI v0.2 及以上版本）要求的「双参数标识」：**x17 存功能 ID（Function ID），x16 存扩展 ID（Extension ID）**，两者结合才能让 SBI 固件（如 RustSBI）明确要执行的具体功能。
+
+```rust
+// SBI function IDs
+const SBI_CONSOLE_PUTCHAR: usize = 1;
+
+/// general sbi call
+#[inline(always)]
+fn sbi_call(which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
+    let mut ret;
+    unsafe {
+        asm!(
+            "li x16, 0",                        // set SBI extension ID to 0
+            "ecall",                            // trap into supervisor mode
+            inlateout("x10") arg0 => ret,       // x10 is both input and output: arg0 and return value
+            in("x11") arg1,                     // x11: arg1
+            in("x12") arg2,                     // x12: arg2
+            in("x17") which,                    // x17: SBI function ID
+        );
+    }
+    ret
+}
+
+/// use sbi call to putchar in console (qemu uart handler)
+pub fn console_putchar(c: usize) {
+    sbi_call(SBI_CONSOLE_PUTCHAR, c, 0, 0);
+}
 ```
 
 # QA
@@ -403,3 +453,50 @@ classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25
 - `os.elf` 是 rust 编译后得到的 elf 文件，linux 下的可执行文件普遍是 elf 格式。
 - `os.bin` 是 elf 文件通过 `rust-objcopy` 得到的可以在逻辑上执行的二进制文件。
 
+## SBI调用规范
+
+SBI（Supervisor Binary Interface）是「内核（Supervisor 模式）」与「引导程序（Machine 模式，如 RustSBI/OpenSBI）」的通信接口。为了支持更多功能扩展（如定时器、系统关机、IPI 中断、调试等），SBI 规范定义了 **「扩展 ID + 功能 ID」的双标识机制**：
+
+- **扩展 ID（Extension ID）**：区分不同的功能大类（如「基础扩展」「定时器扩展」「系统扩展」）；
+- **功能 ID（Function ID）**：区分同一扩展下的具体功能（如「定时器扩展」下的「设置定时器」「获取当前时间」）。
+
+| 寄存器    | 寄存器别名  | 用途                    | 对应代码中的参数      |
+| --------- | ----------- | ----------------------- | --------------------- |
+| x16       | `a6`        | 扩展 ID（Extension ID） | `li x16, 0` → 0       |
+| x17       | `a7`        | 功能 ID（Function ID）  | 代码中的 `which` 参数 |
+| x10 ~ x15 | `a0` ~ `a5` | 调用参数                | `arg0` ~ `arg5`       |
+| x10       | `a0`        | 返回值                  | `ret`                 |
+
+## 寄存器别名
+
+我们可以观察到一个有趣的现象，将sbi_call的代码修改为如下仍然可以正常执行并工作：
+
+```rust
+/// general sbi call
+#[inline(always)]
+fn sbi_call(which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
+    let mut ret;
+    unsafe {
+        asm!(
+            "li a6, 0",                        // set SBI extension ID to 0
+            "ecall",                            // trap into supervisor mode
+            inlateout("a0") arg0 => ret,       // x10 is both input and output: arg0 and return value
+            in("a1") arg1,                     // x11: arg1
+            in("a2") arg2,                     // x12: arg2
+            in("a7") which,                    // x17: SBI function ID
+        );
+    }
+    ret
+}
+```
+
+这是因为，`a0` ~ `a7` 其实是寄存器 `a10` ~ `a17` 的别名，为什么需要别名呢？
+
+1. **明确功能定位**：寄存器编号（`x0`-`x31`）仅表示硬件层面的寄存器标识，而别名（如`a0`-`a7`、`s0`-`s11`等）则直接反映了寄存器的**约定用途**。例如：
+   - `a0`-`a7`（`x10`-`x17`）明确标记为 “函数参数与返回值寄存器”，开发者看到`a0`就知道它用于传递第一个参数或返回结果；
+   - 类似地，`s0`-`s11`表示 “保存寄存器”（需在函数调用中保留值），`t0`-`t6`表示 “临时寄存器”（无需保留）。
+2. **统一调用规范** 编译器、操作系统、固件（如 SBI）等不同软件组件需遵循同一套寄存器使用规则才能协同工作。例如：
+   - 编译器生成函数调用代码时，会自动将参数放入`a0`-`a7`；
+   - SBI 规范规定用a7（x17）传递功能号、a6（x16）传递扩展号，确保内核与 SBI 固件的交互一致。
+     别名让这种规范更直观，降低跨组件协作的出错概率。
+3. **抽象硬件细节**：对于开发者而言，无需关心 “`x10`是第 11 个寄存器” 这种硬件细节，只需关注`a0`的 “参数 / 返回值” 语义。
