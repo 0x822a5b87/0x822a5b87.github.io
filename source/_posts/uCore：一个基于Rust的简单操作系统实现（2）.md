@@ -249,6 +249,39 @@ classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
 ```
 
+```mermaid
+---
+title: 跳转
+---
+flowchart TB
+
+    subgraph registers
+        stvec("stvec"):::pink
+        scause("scause"):::pink
+        sstatus("sstatus"):::pink
+        stval("stval"):::pink
+    end
+
+
+
+    用户态触发trap("用户态触发trap"):::green
+    内核trap处理("内核trap处理"):::error
+
+    stvec -->|1. 读取stvec| 用户态触发trap --> TrapHandler("TrapHandler"):::error
+
+    scause -->|2. 读取trap原因-缺页？系统调用？| 内核trap处理
+    sstatus -->|3. 原特权等级-自陷？| 内核trap处理
+
+    内核trap处理 -->|4. 根据scause解析stval并解析执行| stval
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+```
+
 ### rust是如何组织依赖的
 
 >rust中：
