@@ -9,6 +9,10 @@ tags:
 # 批处理系统
 
 >本文描述了第一个简单的批处理系统的实现。代码量约 `600` 行。
+>全部的源代码位于
+>
+>- [rCore kernel - ch2](https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch2)
+>- [rCore test](https://github.com/0x822a5b87/rCore-Tutorial-Test)
 
 ```
 ➜  ~/code/2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext=rs,s,S,asm os        
@@ -30,6 +34,241 @@ SUM:                            18             87            130            628
 -------------------------------------------------------------------------------
 ```
 
+## 综述
+
+在本章节中，我们实现一个简单的**批处理系统**，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：
+
+1. 通过加载器在启动时动态的加载代码到并执行；
+2. 实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如 `privilege`。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于任何程序的。
+3. 操作系统通过trap机制来处理 `interruption` 和 `exception` 事件。
+
+### `rCore` 和 `rCore-test` 是怎么组织代码的？
+
+在 [rCore-test](https://github.com/0x822a5b87/rCore-Tutorial-Test) 这个项目中，构建系统主要包含两个文件分别是 [build.py](https://github.com/0x822a5b87/rCore-Tutorial-Test/blob/main/build.py) 和 [linker.ld](https://github.com/0x822a5b87/rCore-Tutorial-Test/blob/main/src/linker.ld)。
+
+仔细观察我们会发现一个奇怪的问题：
+
+1. build.py 中 通过 `cargo rustc --bin %s %s -- -Clink-args=-Ttext=%x` 这个指令，将build/app下的所有文件编译成了可执行文件。并且以 `0x80400000` 作为基址，每个app的大小是 `0x20000`；
+2. 而在 linker.ld 中，我们的 BASE_ADDRESS = `0x0` 。
+
+要想要解释这个原因，我们首先必须理清项目的编译和执行逻辑。在rCore的开发中，总共可以分为三个不同的模块：
+
+1. rCore 的 [kernel](https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch2)
+2. [rCore-test的用户态程序](https://github.com/0x822a5b87/rCore-Tutorial-Test/tree/main/src/bin)，也就是我们的 `rCore-Tutorial-Test` 中 `src/bin` 部分；
+3. [rCore-Tutorial-Test的用户态程序依赖的库](https://github.com/0x822a5b87/rCore-Tutorial-Test/tree/main/src)，也就是我们的 `rCore-Tutorial-Test` 中 `src` 除了 bin 的部分；
+
+下面我们将简称这三个模块分别为：`kernel`, `user`, `lib`。
+
+1. 编译阶段
+    1. `lib` 先被编译为静态库，因其 linker.ld 基址为 0，代码中使用相对跳转访问，不依赖具体加载地址。
+    2. `user` 程序编译时，通过 cargo rustc 链接 lib，并通过 --link-args=-Ttext=0x80400000 指定最终加载基址，将 lib 的相对地址代码重定位到该基址，生成独立的 ELF 二进制文件（.bin）。
+2. 执行阶段：
+    1. 内核通过 `build.rs` 将用户程序的 .bin 文件嵌入到内核镜像中（或在运行时读取），确保启动时可访问。
+    2. 内核的 load_app() 函数（如 batch.rs 中）将用户程序二进制数据加载到内存的 0x80400000 及后续地址（与编译时指定的基址一致）。
+    3. 内核通过上下文切换将 CPU 权限切换到用户态，并跳转到用户程序的入口地址（0x80400000 附近的 _start 函数，定义在 lib/src/lib.rs 中），开始执行用户程序。
+
+>观察上面的结论，我们发现，当 kernel 加载 user 的代码时，由于user 程序编译时的基址（0x80400000）必须与内核加载时的目标地址一致，否则会因地址错位导致程序崩溃（例如指令或数据访问到错误内存)。
+>
+>也就是说，每个app都必须加载在 `build.py` 中使用 `cargo rustc` 编译时声明的位置。
+>
+>而此时，user 代码和 kernel 是共用同一片虚拟内存空间的，内核需要提供一些机制防止 `user` 去访问没有权限的内存！
+>
+>这个错误也非常好模拟，只需要修改 `batch.rs` 中 `APP_BASE_ADDRESS` 到 0x80200000 即可，这是kernel的代码段，复制会覆盖这段内存导致内核异常。 
+
+
+## rCore-test
+
+`rCore-test` 包含了项目的测试文件，我们前面提到的 “**批处理系统将多个程序打包输入并按顺序执行**”，那些被打包执行的程序就源自于该仓库中。
+
+整体编译逻辑如下：
+
+1. 根据参数BASE,TEST,CHAPTER生成一个包含所有需要编译文件的列表；
+2. pre 执行会将所有的目标文件复制到 `app` 目录下；
+3. binary 编译源文件： 
+   - 编译源文件得到elf文件放在`$(TARGET_DIR)`目录下；
+   - 通过 rust-objcopy 得到二进制文件放在 `$(TARGET_DIR)` 目录下；
+4. build 将 `.bin` 和 `.elf` 复制到 `build` 对应的目录下；
+
+```mermaid
+---
+title: Compiling rCore-test
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    build_system("构建系统"):::purple
+    dir("文件夹"):::green
+    products("源文件/构建产物"):::animate
+end
+
+
+subgraph 构建过程
+    direction LR
+    makefile("Makefile"):::purple
+    build("build.py"):::purple
+
+    target("target/riscv64gc-unknown-none-elf/release"):::green
+    build_dir("build"):::green
+
+    source_code("*.rs"):::animate
+    bin("*.bin"):::animate
+    elf("*.elf"):::animate
+    object("*.object"):::animate
+
+
+    source_code -->|输入| build -->|编译| object -.->|输出到文件夹| target
+    object -->|输入| makefile -->|rust-objcopy| bin -.->|输出到文件夹| target
+    object -->|输入| makefile -->|cp| elf -.->|输出到文件夹| target
+
+    bin -->|cp| build_dir
+    elf -->|cp| build_dir
+end
+
+desc --> 构建过程
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+```
+
+### makefile
+
+```makefile
+# define variables
+TARGET := riscv64gc-unknown-none-elf
+MODE := release
+APP_DIR := src/bin
+TARGET_DIR := target/$(TARGET)/$(MODE)
+BUILD_DIR := build
+OBJDUMP := rust-objdump --arch-name=riscv64
+OBJCOPY := rust-objcopy --binary-architecture=riscv64
+PY := python3
+
+ifeq ($(MODE), release)
+	MODE_ARG := --release
+endif
+
+BASE ?= 0
+CHAPTER ?= 0
+TEST ?= $(CHAPTER)
+
+# Generate a list contains all target files.
+# $(TEST) : indicate which tests should run, 0 stands for none, 1 stands for all,
+#			and other values stand for tests based on BASE and TEST
+# $(BASE) : Indicate which types of test should run, 0 stands for normal, 1 stands for basic,
+#			and other values stand for basic and normal.
+# $(CHAPTER) : set default values for TEST
+ifeq ($(TEST), 0) # No test, deprecated, previously used in v3
+	APPS :=  $(filter-out $(wildcard $(APP_DIR)/ch*.rs), $(wildcard $(APP_DIR)/*.rs))
+else ifeq ($(TEST), 1) # All test
+	APPS :=  $(wildcard $(APP_DIR)/ch*.rs)
+else
+	# generate a sequential number between BASE and TEST, with both BASE and TEST included.
+	TESTS := $(shell seq $(BASE) $(TEST))
+	ifeq ($(BASE), 0) # Normal tests only
+		APPS := $(foreach T, $(TESTS), $(wildcard $(APP_DIR)/ch$(T)_*.rs))
+	else ifeq ($(BASE), 1) # Basic tests only
+		APPS := $(foreach T, $(TESTS), $(wildcard $(APP_DIR)/ch$(T)b_*.rs))
+	else # Basic and normal
+		APPS := $(foreach T, $(TESTS), $(wildcard $(APP_DIR)/ch$(T)*.rs))
+	endif
+endif
+
+# Use pattern substitution to generate a target directory list by replacing APP_DIR with TARGET_DIR.
+# For example : src/bin/hello_world.rs will become target/riscv64gc-unknown-none-elf/release/hello_world
+ELFS := $(patsubst $(APP_DIR)/%.rs, $(TARGET_DIR)/%, $(APPS))
+
+# Generate binary file according to $CHAPTER.
+# 1. Generate elf file by cargo or build.py;
+# 2. Transform elf file to binary file by rust-objcopy, and add .bin as suffix for elf file name as the name of binary file;
+# 3. Copy elf file to $BUILD_DIR/elf.
+binary:
+	@echo $(ELFS)
+	@if [ ${CHAPTER} -gt 3 ]; then \
+		cargo build $(MODE_ARG) ;\
+	else \
+		CHAPTER=$(CHAPTER) python3 build.py ;\
+	fi
+	@$(foreach elf, $(ELFS), \
+		$(OBJCOPY) $(elf) --strip-all -O binary $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.bin, $(elf)); \
+		cp $(elf) $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.elf, $(elf));)
+
+disasm:
+	@$(foreach elf, $(ELFS), \
+		$(OBJDUMP) $(elf) -S > $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.asm, $(elf));)
+	@$(foreach t, $(ELFS), cp $(t).asm $(BUILD_DIR)/asm/;)
+
+# prepare context and copy all target files
+pre:
+	@mkdir -p $(BUILD_DIR)/bin/
+	@mkdir -p $(BUILD_DIR)/elf/
+	@mkdir -p $(BUILD_DIR)/app/
+	@mkdir -p $(BUILD_DIR)/asm/
+	@$(foreach t, $(APPS), cp $(t) $(BUILD_DIR)/app/;)
+
+build: clean pre binary
+	@$(foreach t, $(ELFS), cp $(t).bin $(BUILD_DIR)/bin/;)
+	@$(foreach t, $(ELFS), cp $(t).elf $(BUILD_DIR)/elf/;)
+```
+
+### build.py
+
+`build.py` 的逻辑比较简单，就是将我们在 `make pre` 中复制到 `build/app` 目录下的所有 `*.rs` 源文件编译到 `可执行文件`（这也是为什么 `bin/*.rs` 的每个源文件中都有main函数的原因），以下是一些值得注意的细节：
+
+1. 代码的基址是 `0x80400000`，在 `rCore-kernel` 中，我们也必须使用相同的地址来处理这个地址；
+2. 每段代码我们使用了 `0x20000` 这么多空间，理论上来说这个是有问题的，因为每段程序的大小不一样，这有可能导致内存碎片（对于不足0x20000的程序），或者内存溢出等问题（对于超过0x20000的程序）。
+
+```python
+import os
+
+base_address = 0x80400000
+step = 0x20000
+linker = "src/linker.ld"
+
+for app in apps:
+    app = app[: app.find(".")]
+    #
+    os.system(
+        # generate object files by compiling source codes.
+        #
+        # cargo rustc --bin hello_world --release -- -Clink-args=Ttext=0x80400000
+        #
+        #       --bin [<NAME>]      Build only the specified binary
+        #       --release           Use release mode, which enables -O3 optimization, etc.
+        #       --                  Separator indicating the subsequent parameters are passed to `rustc`
+        #       -C, --codegen <OPT>[=<VALUE>] Set a codegen option
+        #
+        #           link-args specifies that it's an argument for linker.
+        #           -Ttext=0x80400000 T=template, text=.text section. It explicitly specifies the load address of the code.
+        "cargo rustc --bin %s %s -- -Clink-args=-Ttext=%x"
+        % (app, mode_arg, base_address + step * app_id)
+    )
+    print(
+        "[build.py] application %s start with address %s"
+        % (app, hex(base_address + step * app_id))
+    )
+    if chapter == '3':
+        app_id = app_id + 1
+```
+
+### linker.ld
+
+`linker.ld` 的逻辑和 `rCore-kernel` 的逻辑基本没有什么区别，就是老生常谈的指定 `.text`, `.bss`, `.data` 等区域的初始地址，唯一值得注意的是，他这里的基址指定为 `0x0`。
+
+
+
+```
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+
+BASE_ADDRESS = 0x0;
+```
+
+## rCore-kernel
 
 ## QA
 
@@ -74,7 +313,6 @@ SUM:                            18             87            130            628
       └── syscall.rs(包含 syscall 方法生成实际用于系统调用的汇编指令，
                      各个具体的 syscall 都是通过 syscall 来实现的)
 ```
-
 
 ### 如何处理GIT目录安全检查机制引发的编译异常
 
@@ -208,7 +446,6 @@ title: 一次ecall引发的trap
 flowchart TB
 
     subgraph registers
-
         stvec("stvec"):::pink
         scause("scause"):::pink
         sepc("sepc"):::pink
@@ -217,8 +454,6 @@ flowchart TB
         sscratch("sscratch"):::pink
         a0("a0 ~ a7"):::pink
     end
-
-
 
     用户态触发trap("用户态触发trap"):::green
     内核trap处理("内核trap处理"):::error
@@ -253,14 +488,14 @@ classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25
 ---
 title: 跳转
 ---
+
 flowchart TB
 
-    subgraph registers
-        stvec("stvec"):::pink
-        scause("scause"):::pink
-        sstatus("sstatus"):::pink
-        stval("stval"):::pink
-    end
+
+    stvec("stvec"):::pink
+    scause("scause"):::pink
+    sstatus("sstatus"):::pink
+    stval("stval"):::pink
 
 
 
@@ -272,14 +507,15 @@ flowchart TB
     scause -->|2. 读取trap原因-缺页？系统调用？| 内核trap处理
     sstatus -->|3. 原特权等级-自陷？| 内核trap处理
 
-    内核trap处理 -->|4. 根据scause解析stval并解析执行| stval
+    stval -->|4. 根据scause解析stval并解析执行| 内核trap处理
 
-classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+
 ```
 
 ### rust是如何组织依赖的
