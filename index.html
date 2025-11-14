@@ -122,7 +122,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-count">32</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -144,6 +144,99 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/13/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%882%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/11/13/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%882%EF%BC%89/" class="post-title-link" itemprop="url">uCore：一个基于Rust的简单操作系统实现（2）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-13 11:35:28" itemprop="dateCreated datePublished" datetime="2025-11-13T11:35:28+08:00">2025-11-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-14 18:47:19" itemprop="dateModified" datetime="2025-11-14T18:47:19+08:00">2025-11-14</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="批处理系统">批处理系统</h1>
+<blockquote>
+<p>本文描述了第一个简单的批处理系统的实现。代码量约 <code>600</code> 行。 全部的源代码位于</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch2">rCore kernel - ch2</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test">rCore test</a></li>
+</ul>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">➜  ~/code/2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext=rs,s,S,asm os        </span><br><span class="line">     191 text files.</span><br><span class="line">     150 unique files.                                          </span><br><span class="line">     184 files ignored.</span><br><span class="line"></span><br><span class="line">1 error:</span><br><span class="line">Unable to read:  os/.gdb_history</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.82  T=0.02 s (1154.8 files/s, 54212.4 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Rust                            15             77            114            515</span><br><span class="line">Assembly                         3             10             16            113</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            18             87            130            628</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h2 id="综述">综述</h2>
+<p>在本章节中，我们实现一个简单的<strong>批处理系统</strong>，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/11/13/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%882%EF%BC%89/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -181,9 +274,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2025-11-12 11:29:13 / 修改时间：18:17:21" itemprop="dateCreated datePublished" datetime="2025-11-12T11:29:13+08:00">2025-11-12</time>
+      <time title="创建时间：2025-11-12 11:29:13" itemprop="dateCreated datePublished" datetime="2025-11-12T11:29:13+08:00">2025-11-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-13 10:15:53" itemprop="dateModified" datetime="2025-11-13T10:15:53+08:00">2025-11-13</time>
     </span>
 
   
@@ -1089,115 +1188,6 @@ classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25
           <h1 id="game-log-sdk-go">game-log-sdk-go</h1>
 <p>经过两年多的测试，新版本的腾讯游戏日志服务（TencentGameLog，简称TGLog）的go语言版本SDK <a target="_blank" rel="noopener" href="https://github.com/Tencent/game-log-sdk-go/tree/main">game-log-sdk-go</a> 正式开源了，本服务支撑了腾讯互娱内部的PB级日志上报，支持了TCP/UDP日志上报，具体可以参考我们的文档。</p>
 
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/" class="post-title-link" itemprop="url">MHRD(Micro Hard Rock Deluxe)</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-02-12 11:23:29" itemprop="dateCreated datePublished" datetime="2025-02-12T11:23:29+08:00">2025-02-12</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-10-10 16:17:35" itemprop="dateModified" datetime="2025-10-10T16:17:35+08:00">2025-10-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>最近因为开了两个 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/Ardi">操作系统</a> 和 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-linkers">linkers</a> 的新坑，一直在学习硬件和汇编相关的知识，所以这里找了一个简单的小游戏 <a target="_blank" rel="noopener" href="https://store.steampowered.com/app/576030/MHRD/">MHRD(Micro Hard Rock Deluxe)</a> 用来复习一些基础的CPU相关的知识，以下是官方的描述：</p>
-<blockquote>
-<p>MHRD is a hardware design game, in which you design various hardware circuits in a hardware description language. The hardware circuits you design get more complex as you go until you create a fully functional CPU design.</p>
-</blockquote>
-<h2 id="语法">语法</h2>
-<p>A design consists of the <code>Inputs</code>, <code>Outputs</code>, <code>Parts</code> and <code>Wires</code> section:</p>
-<pre class="mermaid">---
-title: GRAMMER
----
-flowchart LR
-
-design("design"):::pink
-
-subgraph grammer
-    direction LR
-    input_section("input_section"):::green
-    output_section("output_section"):::green
-    part_section("part_section"):::green
-    wire_section("wire_section"):::green
-end
-
-design --> grammer
-
-classDef pink 1,fill:#FFCCCC,stroke:#333;
-classDef green fill: #696,color: #fff,font-weight: bold;
-classDef purple fill:#969,stroke:#333;
-classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</pre>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
       
     </div>
 
