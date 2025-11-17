@@ -42,7 +42,7 @@ SUM:                            18             87            130            628
 2. 实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如 `privilege`。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于任何程序的。
 3. 操作系统通过trap机制来处理 `interruption` 和 `exception` 事件。
 
-### `rCore` 和 `rCore-test` 是怎么组织代码的？
+### rCore和rCore-test如何组织代码？{#rcore-code-organization}
 
 在 [rCore-test](https://github.com/0x822a5b87/rCore-Tutorial-Test) 这个项目中，构建系统主要包含两个文件分别是 [build.py](https://github.com/0x822a5b87/rCore-Tutorial-Test/blob/main/build.py) 和 [linker.ld](https://github.com/0x822a5b87/rCore-Tutorial-Test/blob/main/src/linker.ld)。
 
@@ -332,7 +332,7 @@ flowchart TB
     sstatus -->|3. 原特权等级-自陷？| 内核trap处理
 
     stval -->|4. 根据scause解析stval并解析执行| 内核trap处理
-    
+
     TrapHandler --> scause
     TrapHandler --> sstatus
     TrapHandler --> stval
@@ -486,8 +486,17 @@ __alltraps:
 
 接下来 `__restore` 的逻辑就比较简单了，就是按照先进后出的顺序，恢复上下文。并且释放内核空间的栈，最后退出到用户态；
 
+但是需要注意的，在这里 `a0` 是 `__restore` 的第一个参数，也就是 `sp`，这个 `sp` 指向的是内核栈中的 `TrapContext`。
+
 ```nasm
 __restore:
+    # THIS IS IMPORTANT!!! a0 IS THE FIRST ARGUMENT OF __restore,
+    # WHICH MEANS a0 POINTS TO THE KERNEL STACK WHERE THE TrapContext IS STORED.
+    # 
+    #    __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(
+    #        APP_BASE_ADDRESS,
+    #        USER_STACK.get_sp(),
+    #    )) as *const _ as usize);
     # case1: start running app by __restore
     # case2: back to U after handling trap
     mv sp, a0
@@ -517,6 +526,245 @@ __restore:
     csrrw sp, sscratch, sp
     sret
 ```
+
+### running app
+
+>接下来，我们开始解析 `rCore` 是如何将多个程序加载到内核空间，并且在内核空间执行。
+
+- `build.rs` 读取 `user` 下生成的二进制文件，并生成一个 `link_app.S` 文件，文件中包含了全部用户程序等待执行。
+- `link_app.S` 由 `build.rs` 生成的汇编文件，会被 `APP_MANAGER` 加载并执行；
+- `AppManager` 应用程序管理器，负责管理当前执行的用户程序，例如加载用户程序到内核栈；
+- `APP_MANAGER` 一个 `AppManager` 的单线程单核下可变实例，支持 `exclusive_access`；
+- `USER_STACK` 用户栈的地址，目前其实没有真正的用于存储用户数据。只是在 `__alltraps` 和 `__restore` 中会和 `sscratch` 进行交换时会用到。
+- `KERNEL_STACK` 内核栈，目前在 `__alltraps` 和 `__restore` 中用于存储和还原trap的上下文；
+- `syscall` 系统调用的实现mod，当trap是 `Exception::UserEnvCall` 时，`trap_handler` 会通过 `syscall` 下面的包来调用系统调用函数。
+
+```mermaid
+---
+title: 执行程序
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    registers("寄存器"):::pink
+    dir("文件夹"):::green
+    object("对象"):::purple
+    products("源文件/生成文件"):::animate
+    t("中断"):::error
+    p("用户程序"):::coral
+end
+
+subgraph run
+    direction TB
+
+    exception_or_interruption("用户中断"):::error
+
+    program("用户程序"):::coral
+
+    build("build.rs"):::animate
+    link_app("link_app.S"):::animate
+    trap("trap.s"):::animate
+    trap_handler("trap_handler"):::animate
+
+    source_bin("user/build/bin"):::green
+    APP_MANAGER("APP_MANAGER"):::purple
+    USER_STACK("USER_STACK"):::purple
+    KERNEL_STACK("KERNEL_STACK"):::purple
+
+    subgraph TrapContext
+        user_registers("User-Purpose Registers"):::pink
+        sstatus("sstatus"):::pink
+        sepc("sepc"):::pink
+    end
+
+    source_bin -->|二进制文件| build -->|生成文件| link_app
+
+    link_app -->|汇编文件| APP_MANAGER
+
+    
+    APP_MANAGER -->|1. 加载用户程序到内存| program
+    APP_MANAGER -->|2. 初始化context，包含了一个sepc指向用户程序的地址| TrapContext
+    APP_MANAGER -->|3. 将context压入内核栈| KERNEL_STACK
+    APP_MANAGER -->|4. 调用__restore，会将context中的sepc写入到寄存器| trap
+
+    KERNEL_STACK -->|从内核栈读取并设置寄存器| trap
+
+    program -.->|执行时可能触发中断| trap --> exception_or_interruption -->|如果触发中断，则进行中断处理| trap_handler
+end
+
+desc --> run
+
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+
+
+linkStyle 3,4,5,6,7 color:red;
+```
+
+#### build.rs
+
+`build.rs` 的逻辑非常简单，就是读取 `user/build/bin` 下的所有二进制文件，最后生成一个可执行的汇编程序到 `link_app.S` 下。
+
+具体 `user/build/bin` 目录下的内容是从哪里来的，可以参考 [rCore和rCore-test如何组织代码？](#rcore-code-organization)。
+
+#### link_app.S
+
+`link_app.S` 的生成逻辑非常简单，就是两个部分：
+
+1. 一个数组，数组包含了所有用户程序的开始地址，以及最后一个用户程序的结束地址；所以数组的长度是 `n+1`，具体原因在源码的注释中有解释；
+2. 通过 `incbin` 将二进制文件引入，并且程序地址和数组前面的代码一一对应。
+
+```nasm
+    .align 3
+    .section .data
+    .global _num_app
+_num_app:
+    .quad 7
+    .quad app_0_start
+    # ...
+    .quad app_6_start
+    # This is essential: we need the length of each application.
+    # For all applications except the last one, their lengths can be calculated as (app_n+1_start - app_n_start).
+    # Therefore, we introduce an extra pointer pointing to the end address of the last application.
+    .quad app_6_end
+
+    .section .data
+    .global app_0_start
+    .global app_0_end
+app_0_start:
+    .incbin "../user/build/bin/ch2b_bad_address.bin"
+app_0_end:
+
+    # ...
+```
+
+#### APP_MANAGER
+
+`APP_MANAGER` 是一个 `AppManager` 的可变实例，主要负责：
+
+1. 从 `link_app.S` 中加载用户程序到内存；
+2. 执行用户程序。
+3. 在执行完用户程序之后，通过 `trap.S` 恢复上下文并跳转回用户态。
+
+>加载用户程序到内存。这里需要注意的是，在汇编中使用了一个很有意思的小技巧：
+> 1. 程序的开始地址和结束地址是通过 `link_app.S` 中的 `_num_app` 符号来获取的。
+> 2. 通过 `_num_app` 符号，我们可以获取到一个数组，数组的长度是 `应用数量+1`，后面的元素是每个用户程序的开始地址，最后一个元素是最后一个用户程序的结束地址。
+> 3. 除了最后一个用户程序的结束地址之外，其他用户程序的长度都可以通过 `app_n+1_start - app_n_start` 来计算得到。
+> 4. 而最后一个用户程序的结束地址，则是通过数组的最后一个元素（也就是最后一个程序的结束地址）减去最后一个程序的开始地址来计算得到。
+
+```rust
+lazy_static! {
+    static ref APP_MANAGER: UPSafeCell<AppManager> = unsafe {
+        UPSafeCell::new({
+            extern "C" {
+                fn _num_app();
+            }
+            // parse application info from link_app.S
+            //
+            //_num_app:
+            // .quad 7
+            //     .quad app_0_start
+            //     ...
+            //     .quad app_6_end
+            let num_app_ptr = _num_app as usize as *const usize;
+
+            let num_app = num_app_ptr.read_volatile();
+            // This is essential: it is an array with a length equal to MAX_APP_NUM + 1,
+            // because the generated pointers include an extra pointer pointing to the end of the last application.
+            let mut app_start: [usize; MAX_APP_NUM + 1] = [0; MAX_APP_NUM + 1];
+            // Skip the initial ".quad 7" (application count) and read all application-related entries, including the extra end pointer.
+            let app_start_raw: &[usize] =
+                core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1);
+            // copy (num_app + 1) elements from app_start_raw, which includes all start pointer of application
+            // and the end pointer of the last application.
+            app_start[..=num_app].copy_from_slice(app_start_raw);
+            AppManager {
+                num_app,
+                current_app: 0,
+                app_start,
+            }
+        })
+    };
+}
+```
+
+>加载用户程序：
+> - `load_app` 把应用二进制拷贝到内存（`APP_BASE_ADDRESS`），并执行 `fence.i`，保证指令抓取能看到刚写入的代码。
+- 调用 `TrapContext::app_init_context(APP_BASE_ADDRESS, USER_STACK.get_sp())` 创建一个用户上下文（设置 sepc 为应用入口、把用户栈指针放到上下文里等）。
+- 用 `KERNEL_STACK.push_context(...)` 把这个 `TrapContext` 压到内核栈上，然后把该上下文地址传给外部汇编例程 `__restore`。
+- `__restore`（在汇编文件里，通常是 `restore.S` / `restore.s` / `trap.s`）会把 `TrapContext` 中的寄存器恢复到 CPU（包括把用户 SP 恢复到 `sp`、把 `sepc`/`sstatus` 写入相应 CSR），并执行 `sret` 跳回到 S 模式下的用户态，从而开始执行加载到 `APP_BASE_ADDRESS` 的程序。
+
+```rust
+    unsafe fn load_app(&self, app_id: usize) {
+        if app_id >= self.num_app {
+            println!("All applications completed!");
+            use crate::board::QEMUExit;
+            crate::board::QEMU_EXIT_HANDLE.exit_success();
+        }
+        println!("[kernel] Loading app_{}", app_id);
+        // clear app area
+        core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, APP_SIZE_LIMIT).fill(0);
+        // copy data from memory.
+        // as we mentioned before, the start pointer is app_start[n] and the end pointer is app_start[n+1]
+        let app_src = core::slice::from_raw_parts(
+            self.app_start[app_id] as *const u8,
+            self.app_start[app_id + 1] - self.app_start[app_id],
+        );
+        let app_dst = core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, app_src.len());
+        app_dst.copy_from_slice(app_src);
+        // Memory fence about fetching the instruction memory
+        // It is guaranteed that a subsequent instruction fetch must
+        // observes all previous writes to the instruction memory.
+        // Therefore, fence.i must be executed after we have loaded
+        // the code of the next app into the instruction memory.
+        // See also: riscv non-priv spec chapter 3, 'Zifencei' extension.
+        asm!("fence.i");
+    }
+```
+
+>执行用户程序：这段代码中，我们最重要的代码是调用 `__restore`，这个函数定义在 `trap.S` 中，他的作用是从内核栈中恢复用户程序的上下文，并且通过 `sret` 指令跳转到用户态执行用户程序。
+> 1. 初始化 `TrapContext`，这个上下文中包含了用户程序的入口地址（`APP_BASE_ADDRESS`）和用户栈的地址（`USER_STACK.get_sp()`）；
+> 2. 将 `TrapContext` 压入内核栈中，准备恢复现场；
+> 3. 调用 `__restore`，**此时一定要注意，__retore 的参数 `a0` 对应的是内核栈的地址；**
+> 4. 在 `__restore` 中，会从内核栈中恢复 `TrapContext`，而这个上下文中包含了
+>       - 用户的程序地址（`sepc`）；
+>       - 用户的栈地址（`sp`）；
+> 5. 最后通过 `sret` 指令跳转到用户态执行用户程序。
+
+```rust
+/// run next app
+pub fn run_next_app() -> ! {
+    let mut app_manager = APP_MANAGER.exclusive_access();
+    let current_app = app_manager.get_current_app();
+    unsafe {
+        app_manager.load_app(current_app);
+    }
+    app_manager.move_to_next_app();
+    drop(app_manager);
+    // before this we have to drop local variables related to resources manually
+    // and release the resources
+    extern "C" {
+        fn __restore(cx_addr: usize);
+    }
+    unsafe {
+        // After the application runs, restore the user context from the kernel stack.
+        // USER_STACK.get_sp() return the address pointing to the next address of self.data.
+        __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(
+            APP_BASE_ADDRESS,
+            USER_STACK.get_sp(),
+        )) as *const _ as usize);
+    }
+    panic!("Unreachable in batch::run_current_app!");
+}
+```
+
+#### KERNEL_STACK & USER_STACK
 
 ## QA
 
