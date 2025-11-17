@@ -257,9 +257,7 @@ for app in apps:
 
 ### linker.ld
 
-`linker.ld` 的逻辑和 `rCore-kernel` 的逻辑基本没有什么区别，就是老生常谈的指定 `.text`, `.bss`, `.data` 等区域的初始地址，唯一值得注意的是，他这里的基址指定为 `0x0`。
-
-
+`linker.ld` 的逻辑和 `rCore-kernel` 的逻辑基本没有什么区别，就是老生常谈的指定 `.text`, `.bss`, `.data` 等区域的初始地址，唯一值得注意的是，他这里的基址指定为 `0x0`，因为这里是需要生成一个静态链接库，具体的他在程序里的偏移量是在链接时由引用他的程序来确定。
 
 ```
 OUTPUT_ARCH(riscv)
@@ -269,6 +267,256 @@ BASE_ADDRESS = 0x0;
 ```
 
 ## rCore-kernel
+
+>接下来介绍 `kernel` 的部分。
+
+从main函数入手，我们可以看到相对于第一章初始化完成之后，我们多了三个额外操作：
+
+
+```rust
+/// the rust entry-point of os
+#[no_mangle]
+pub fn rust_main()  {
+    // ...
+    trap::init();
+    batch::init();
+    batch::run_next_app();
+}
+```
+
+```mermaid
+---
+title: trap and batch
+---
+flowchart LR
+
+os("OS"):::green --> trap
+os --> batch
+
+trap("trap.s") --> trap_desc("注册中断向量表（stvec），处理异常")
+batch("batch.s") --> batch_desc("加载test的app到内核空间并执行")
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+```
+
+### trap
+
+我们可以再回顾一下，一个 trap 触发的流程：
+
+```mermaid
+---
+title: 跳转
+---
+
+flowchart TB
+
+
+    stvec("stvec"):::pink
+    scause("scause"):::pink
+    sstatus("sstatus"):::pink
+    stval("stval"):::pink
+
+
+
+    用户态触发trap("用户态触发trap"):::green
+    内核trap处理("内核trap处理"):::error
+
+    stvec -->|1. 读取stvec| 用户态触发trap --> TrapHandler("TrapHandler"):::error
+
+    scause -->|2. 读取trap原因-缺页？系统调用？| 内核trap处理
+    sstatus -->|3. 原特权等级-自陷？| 内核trap处理
+
+    stval -->|4. 根据scause解析stval并解析执行| 内核trap处理
+    
+    TrapHandler --> scause
+    TrapHandler --> sstatus
+    TrapHandler --> stval
+
+classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+```
+
+一次trap的处理，我们需要三个重要寄存器合作：
+
+1. `stvec` 找到中断向量表；
+2. `scause` 找到trap的原因，例如系统调用，缺页异常等；
+3. `stval` trap相关的值，不同的scause下，stval有不同的含义。例如，对于缺页异常，stval会保存导致缺页异常的虚拟地址。
+
+#### trap handler
+
+`trap` handler 从某种程度来说，就是一个普通的函数，区别是：
+
+1. **调用权限与触发方式**：普通函数可由任意权限（U/S 态）主动调用（如 call 指令）；而 trap handler 是「被动触发」的 —— 只有 CPU 检测到 trap（ecall、缺页、中断等）时，才会自动从 U 态切到 S 态，跳转到 stvec 指向的入口，U 态程序无法主动「调用」它（本质是 CPU 强制触发的跳转，而非函数调用）；
+2. **入口地址的存储与使用**：普通函数的地址是链接时确定的，调用时直接嵌入代码（如 call 0x80201000）；而 trap handler 的基址存储在 stvec 寄存器中（内核初始化时设置），CPU 触发 trap 时会动态读取 stvec 的值来跳转，而非硬编码地址。
+3. **统一入口与分发逻辑**：所有 trap 共享同一个「入口点」（stvec 指向的起始地址），而非像普通函数那样有各自独立的入口；入口处会先读取 scause 识别 trap 类型，再分发到对应的处理逻辑（如系统调用、缺页异常），这和普通函数「一个函数对应一个功能」的模式完全不同。
+
+> 值得注意的是：
+> 1. trap handler 由 CPU 触发（硬件行为），内核仅提供实现并提前设置 stvec；
+> 2. 系统调用的本质是「用户态通过 ecall 触发 trap，内核态处理 trap 并提供服务」，核心依赖 trap 机制；
+> 3. CPU 负责「切换特权态、跳转 trap handler」，内核负责「权限检查、 trap 类型分发、业务逻辑处理」。
+
+```rust
+#[no_mangle]
+/// handle an interrupt, exception, or system call from user space
+/// [`TrapContext`] is the context of the trap, which contains 32 registers, sstatus and sepc
+pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
+    let scause = scause::read(); // get trap cause
+    let stval = stval::read(); // get extra value
+    match scause.cause() {
+        // handle ecall
+        Trap::Exception(Exception::UserEnvCall) => {
+            // ecall is an instruction with 4 bytes, so we have to step forward 4 bytes; otherwise we will enter an infinite loop.
+            cx.sepc += 4;
+            // As we mentioned before, a0 holds the return value, a0 ~ a6 hold the parameters of the called function;
+            // a7 holds the system call ID.
+            cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
+        }
+        Trap::Exception(Exception::StoreFault) | Trap::Exception(Exception::StorePageFault) => {
+            println!("[kernel] PageFault in application, kernel killed it.");
+            run_next_app();
+        }
+        Trap::Exception(Exception::IllegalInstruction) => {
+            println!("[kernel] IllegalInstruction in application, kernel killed it.");
+            run_next_app();
+        }
+        _ => {
+            panic!(
+                "Unsupported trap {:?}, stval = {:#x}!",
+                scause.cause(),
+                stval
+            );
+        }
+    }
+    cx
+}
+```
+
+#### __alltraps
+
+>首先是定义的两个宏用于保存现场，这样我们在trap完成之后可以正常的执行trap之前在执行的代码：
+> 1. 存储寄存器到栈
+> 2. 栈读取到寄存器
+
+```nasm
+# enable alternate macro syntax
+.altmacro
+# Store the n-th register into the stack pointer at an offset of n * 8.
+.macro SAVE_GP n
+    sd x\n, \n*8(sp)
+.endm
+# load register from stack
+.macro LOAD_GP n
+    ld x\n, \n*8(sp)
+.endm
+```
+
+随后，我们的第一个 `__alltraps`来了，我们再回顾前面的代码会发现，我们注册到 `stvec` 的是 `__alltraps` 而不是 `trap_handler`。
+
+```rust
+/// initialize CSR `stvec` as the entry of `__alltraps`
+pub fn init() {
+    extern "C" {
+        fn __alltraps();
+    }
+    unsafe {
+        stvec::write(__alltraps as usize, TrapMode::Direct);
+    }
+}
+```
+
+为什么？其实只要细想就能知道，我们还缺少了两个机器关键的步骤：
+
+1. 在处理trap的业务逻辑前，我们要保存用户程序的context；
+2. 在处理trap的业务逻辑后，我们要恢复用户程序的context；
+
+这就是 `__alltraps` 和 `__restore` 存在的原因，他们一个为我们保存现场，一个为我们恢复现场。
+
+这里需要注意的点有几个：
+
+1. `sscratch`，`sepc`，`sstatus` 三个寄存器不能直接写入内存，必须通过用户寄存器进行中转；
+2. `x4(tp)` 不需要存，应用用不到；
+3. `x2(sp)` 
+
+```nasm
+__alltraps:
+    # swap sp and sscratch in order to avoid using sp of user
+    csrrw sp, sscratch, sp
+    # now sp->kernel stack, sscratch->user stack
+    # allocate a TrapContext on kernel stack, which includes 32 general-purpose registers, sstatus and sepc
+    addi sp, sp, -34*8
+    # save general-purpose registers
+    sd x1, 1*8(sp)
+    # skip sp(x2), we will save it later
+    sd x3, 3*8(sp)
+    # skip tp(x4), application does not use it
+    # save x5~x31
+    .set n, 5
+    .rept 27
+        SAVE_GP %n
+        .set n, n+1
+    .endr
+
+    # Now the user's context is completely stored on the kernel stack, so we can use t0/t1/t2 freely.
+    # Here's another tip: sstatus and sepc are not user-purpose registers, which means they can only be
+    # operated via csrr rather than ld.
+    # On the other hand, sstatus and sepc cannot be directly transferred from system registers to memory.
+    # Therefore, using user-purpose registers as an intermediate buffer is necessary.
+    csrr t0, sstatus
+    csrr t1, sepc
+    sd t0, 32*8(sp)
+    sd t1, 33*8(sp)
+
+    # read user stack from sscratch and save it on the kernel stack
+    csrr t2, sscratch
+    sd t2, 2*8(sp)
+    # set input argument of trap_handler(cx: &mut TrapContext)
+    mv a0, sp
+    
+    call trap_handler
+```
+
+接下来 `__restore` 的逻辑就比较简单了，就是按照先进后出的顺序，恢复上下文。并且释放内核空间的栈，最后退出到用户态；
+
+```nasm
+__restore:
+    # case1: start running app by __restore
+    # case2: back to U after handling trap
+    mv sp, a0
+    # now sp points to kernel stack(after allocated), sscratch points to user stack
+    # restore sstatus/sepc
+
+    # t0 equals sstatus, t1 equals sepc, t2 equals sscratch
+    ld t0, 32*8(sp)
+    ld t1, 33*8(sp)
+    ld t2, 2*8(sp)
+    csrw sstatus, t0
+    csrw sepc, t1
+    csrw sscratch, t2
+
+    # restore general-purpuse registers except sp/tp
+    ld x1, 1*8(sp)
+    ld x3, 3*8(sp)
+    .set n, 5
+    .rept 27
+        LOAD_GP %n
+        .set n, n+1
+    .endr
+
+    # release TrapContext on kernel stack
+    addi sp, sp, 34*8
+    # now sp->kernel stack, sscratch->user stack
+    csrrw sp, sscratch, sp
+    sret
+```
 
 ## QA
 
@@ -508,6 +756,10 @@ flowchart TB
     sstatus -->|3. 原特权等级-自陷？| 内核trap处理
 
     stval -->|4. 根据scause解析stval并解析执行| 内核trap处理
+    
+    TrapHandler --> scause
+    TrapHandler --> sstatus
+    TrapHandler --> stval
 
 classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
@@ -515,7 +767,6 @@ classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
-
 ```
 
 ### rust是如何组织依赖的
