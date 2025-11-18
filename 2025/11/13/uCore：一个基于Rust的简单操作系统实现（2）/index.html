@@ -26,12 +26,14 @@
 <meta property="og:site_name" content="0x822a5b87的博客">
 <meta property="og:description" content="批处理系统  本文描述了第一个简单的批处理系统的实现。代码量约 600 行。 全部的源代码位于  rCore kernel - ch2 rCore test   1234567891011121314151617➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext&#x3D;rs,s,S,asm os             191">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251118/fp.png">
 <meta property="article:published_time" content="2025-11-13T03:35:28.000Z">
-<meta property="article:modified_time" content="2025-11-17T13:33:26.212Z">
+<meta property="article:modified_time" content="2025-11-18T10:08:53.396Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="os">
 <meta property="article:tag" content="rust">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251118/fp.png">
 
 
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/11/13/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%882%EF%BC%89/">
@@ -114,7 +116,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.</span> <span class="nav-text">批处理系统</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">综述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#rcore-code-organization"><span class="nav-number">1.1.1.</span> <span class="nav-text">rCore和rCore-test如何组织代码？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcore-test"><span class="nav-number">1.2.</span> <span class="nav-text">rCore-test</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile"><span class="nav-number">1.2.1.</span> <span class="nav-text">makefile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#build.py"><span class="nav-number">1.2.2.</span> <span class="nav-text">build.py</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.2.3.</span> <span class="nav-text">linker.ld</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcore-kernel"><span class="nav-number">1.3.</span> <span class="nav-text">rCore-kernel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#trap"><span class="nav-number">1.3.1.</span> <span class="nav-text">trap</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#trap-handler"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">trap handler</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#alltraps"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">__alltraps</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#running-app"><span class="nav-number">1.3.2.</span> <span class="nav-text">running app</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#build.rs"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">build.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#app_manager"><span class="nav-number">1.3.2.3.</span> <span class="nav-text">APP_MANAGER</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kernel_stack-user_stack"><span class="nav-number">1.3.2.4.</span> <span class="nav-text">KERNEL_STACK &amp; USER_STACK</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.4.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.4.1.</span> <span class="nav-text">代码树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86git%E7%9B%AE%E5%BD%95%E5%AE%89%E5%85%A8%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%E5%BC%95%E5%8F%91%E7%9A%84%E7%BC%96%E8%AF%91%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.2.</span> <span class="nav-text">如何处理GIT目录安全检查机制引发的编译异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#riscv%E7%89%B9%E6%9D%83%E7%BA%A7%E5%88%87%E6%8D%A2"><span class="nav-number">1.4.3.</span> <span class="nav-text">riscv特权级切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E7%9B%B8%E5%85%B3%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">异常处理相关的寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">异常处理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E6%98%AF%E5%A6%82%E4%BD%95%E7%BB%84%E7%BB%87%E4%BE%9D%E8%B5%96%E7%9A%84"><span class="nav-number">1.4.4.</span> <span class="nav-text">rust是如何组织依赖的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E4%B8%ADlib.rs%E5%92%8Cmod.rs%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.4.5.</span> <span class="nav-text">rust中lib.rs和mod.rs的区别是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#lib.rs"><span class="nav-number">1.4.5.1.</span> <span class="nav-text">lib.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mod.rs"><span class="nav-number">1.4.5.2.</span> <span class="nav-text">mod.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.5.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#macro_use-%E5%92%8C-macro_export"><span class="nav-number">1.4.6.</span> <span class="nav-text">#[macro_use] 和 #[macro_export]</span></a></li></ol></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.</span> <span class="nav-text">批处理系统</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">综述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#rcore-code-organization"><span class="nav-number">1.1.1.</span> <span class="nav-text">rCore和rCore-test如何组织代码？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcore-test"><span class="nav-number">1.2.</span> <span class="nav-text">rCore-test</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile"><span class="nav-number">1.2.1.</span> <span class="nav-text">makefile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#build.py"><span class="nav-number">1.2.2.</span> <span class="nav-text">build.py</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.2.3.</span> <span class="nav-text">linker.ld</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcore-kernel"><span class="nav-number">1.3.</span> <span class="nav-text">rCore-kernel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#trap"><span class="nav-number">1.3.1.</span> <span class="nav-text">trap</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#trap-handler"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">trap handler</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#alltraps"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">__alltraps</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#running-app"><span class="nav-number">1.3.2.</span> <span class="nav-text">running app</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#build.rs"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">build.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#app_manager"><span class="nav-number">1.3.2.3.</span> <span class="nav-text">APP_MANAGER</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kernel_stack-user_stack"><span class="nav-number">1.3.2.4.</span> <span class="nav-text">KERNEL_STACK &amp; USER_STACK</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.4.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.4.1.</span> <span class="nav-text">代码树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86git%E7%9B%AE%E5%BD%95%E5%AE%89%E5%85%A8%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%E5%BC%95%E5%8F%91%E7%9A%84%E7%BC%96%E8%AF%91%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.2.</span> <span class="nav-text">如何处理GIT目录安全检查机制引发的编译异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#riscv%E7%89%B9%E6%9D%83%E7%BA%A7%E5%88%87%E6%8D%A2"><span class="nav-number">1.4.3.</span> <span class="nav-text">riscv特权级切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E7%9B%B8%E5%85%B3%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">异常处理相关的寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">异常处理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E6%98%AF%E5%A6%82%E4%BD%95%E7%BB%84%E7%BB%87%E4%BE%9D%E8%B5%96%E7%9A%84"><span class="nav-number">1.4.4.</span> <span class="nav-text">rust是如何组织依赖的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E4%B8%ADlib.rs%E5%92%8Cmod.rs%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.4.5.</span> <span class="nav-text">rust中lib.rs和mod.rs的区别是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#lib.rs"><span class="nav-number">1.4.5.1.</span> <span class="nav-text">lib.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mod.rs"><span class="nav-number">1.4.5.2.</span> <span class="nav-text">mod.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.5.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#macro_use-%E5%92%8C-macro_export"><span class="nav-number">1.4.6.</span> <span class="nav-text">#[macro_use] 和 #[macro_export]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fp-%E7%9A%84%E4%BD%9C%E7%94%A8%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.4.7.</span> <span class="nav-text">fp 的作用是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#riscv%E4%B8%AD%E7%9A%84%E5%B8%B8%E8%A7%81%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.8.</span> <span class="nav-text">RISCV中的常见异常</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E6%A0%B8%E5%BF%83%E9%80%9A%E7%94%A8%E5%BC%82%E5%B8%B8%E4%BB%BB%E6%84%8F%E7%89%B9%E6%9D%83%E7%BA%A7%E5%8F%AF%E8%83%BD%E8%A7%A6%E5%8F%91"><span class="nav-number">1.4.8.1.</span> <span class="nav-text">一、核心通用异常（任意特权级可能触发）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8%E4%B8%BB%E5%8A%A8%E8%A7%A6%E5%8F%91%E7%94%A8%E4%BA%8E%E7%89%B9%E6%9D%83%E7%BA%A7%E5%88%87%E6%8D%A2"><span class="nav-number">1.4.8.2.</span> <span class="nav-text">二、系统调用相关异常（主动触发，用于特权级切换）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E9%A1%B5%E8%A1%A8%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8%E7%BC%BA%E9%A1%B5-%E9%A1%B5%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E5%8F%AF%E6%81%A2%E5%A4%8D"><span class="nav-number">1.4.8.3.</span> <span class="nav-text">三、页表相关异常（缺页 &#x2F; 页权限错误，可恢复）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E6%89%A9%E5%B1%95%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8%E4%BB%85%E6%94%AF%E6%8C%81-v-%E6%89%A9%E5%B1%95%E6%97%B6%E7%94%9F%E6%95%88"><span class="nav-number">1.4.8.4.</span> <span class="nav-text">四、虚拟化扩展相关异常（仅支持 V 扩展时生效）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E5%85%9C%E5%BA%95%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.8.5.</span> <span class="nav-text">五、兜底异常</span></a></li></ol></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -195,7 +197,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-11-17 21:33:26" itemprop="dateModified" datetime="2025-11-17T21:33:26+08:00">2025-11-17</time>
+      <time title="修改时间：2025-11-18 18:08:53" itemprop="dateModified" datetime="2025-11-18T18:08:53+08:00">2025-11-18</time>
     </span>
 
   
@@ -527,7 +529,18 @@ linkStyle 3,4,5,6,7 color:red;</pre>
 </blockquote>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">load_app</span>(&amp;<span class="keyword">self</span>, app_id: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> app_id &gt;= <span class="keyword">self</span>.num_app &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;All applications completed!&quot;</span>);</span><br><span class="line">        <span class="keyword">use</span> crate::board::QEMUExit;</span><br><span class="line">        crate::board::QEMU_EXIT_HANDLE.<span class="title function_ invoke__">exit_success</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;[kernel] Loading app_&#123;&#125;&quot;</span>, app_id);</span><br><span class="line">    <span class="comment">// clear app area</span></span><br><span class="line">    core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(APP_BASE_ADDRESS <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>, APP_SIZE_LIMIT).<span class="title function_ invoke__">fill</span>(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// copy data from memory.</span></span><br><span class="line">    <span class="comment">// as we mentioned before, the start pointer is app_start[n] and the end pointer is app_start[n+1]</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">app_src</span> = core::slice::<span class="title function_ invoke__">from_raw_parts</span>(</span><br><span class="line">        <span class="keyword">self</span>.app_start[app_id] <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>,</span><br><span class="line">        <span class="keyword">self</span>.app_start[app_id + <span class="number">1</span>] - <span class="keyword">self</span>.app_start[app_id],</span><br><span class="line">    );</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">app_dst</span> = core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(APP_BASE_ADDRESS <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>, app_src.<span class="title function_ invoke__">len</span>());</span><br><span class="line">    app_dst.<span class="title function_ invoke__">copy_from_slice</span>(app_src);</span><br><span class="line">    <span class="comment">// Memory fence about fetching the instruction memory</span></span><br><span class="line">    <span class="comment">// It is guaranteed that a subsequent instruction fetch must</span></span><br><span class="line">    <span class="comment">// observes all previous writes to the instruction memory.</span></span><br><span class="line">    <span class="comment">// Therefore, fence.i must be executed after we have loaded</span></span><br><span class="line">    <span class="comment">// the code of the next app into the instruction memory.</span></span><br><span class="line">    <span class="comment">// See also: riscv non-priv spec chapter 3, &#x27;Zifencei&#x27; extension.</span></span><br><span class="line">    asm!(<span class="string">&quot;fence.i&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
-<p>执行用户程序：这段代码中，我们最重要的代码是调用 <code>__restore</code>，这个函数定义在 <code>trap.S</code> 中，他的作用是从内核栈中恢复用户程序的上下文，并且通过 <code>sret</code> 指令跳转到用户态执行用户程序。 1. 初始化 <code>TrapContext</code>，这个上下文中包含了用户程序的入口地址（<code>APP_BASE_ADDRESS</code>）和用户栈的地址（<code>USER_STACK.get_sp()</code>）； 2. 将 <code>TrapContext</code> 压入内核栈中，准备恢复现场； 3. 调用 <code>__restore</code>，**此时一定要注意，__retore 的参数 <code>a0</code> 对应的是内核栈的地址；** 4. 在 <code>__restore</code> 中，会从内核栈中恢复 <code>TrapContext</code>，而这个上下文中包含了 - 用户的程序地址（<code>sepc</code>）； - 用户的栈地址（<code>sp</code>）； 5. 最后通过 <code>sret</code> 指令跳转到用户态执行用户程序。</p>
+<p>执行用户程序：这段代码中，我们最重要的代码是调用 <code>__restore</code>，这个函数定义在 <code>trap.S</code> 中，他的作用是从内核栈中恢复用户程序的上下文，并且通过 <code>sret</code> 指令跳转到用户态执行用户程序。</p>
+<ol type="1">
+<li>初始化 <code>TrapContext</code>，这个上下文中包含了用户程序的入口地址（<code>APP_BASE_ADDRESS</code>）和用户栈的地址（<code>USER_STACK.get_sp()</code>）；</li>
+<li>将 <code>TrapContext</code> 压入内核栈中，准备恢复现场；</li>
+<li>调用 <code>__restore</code>，**此时一定要注意，__retore 的参数 <code>a0</code> 对应的是内核栈的地址；**</li>
+<li>在 <code>__restore</code> 中，会从内核栈中恢复 <code>TrapContext</code>，而这个上下文中包含了
+<ul>
+<li>用户的程序地址（<code>sepc</code>）；</li>
+<li>用户的栈地址（<code>sp</code>）；</li>
+</ul></li>
+<li>最后通过 <code>sret</code> 指令跳转到用户态执行用户程序。</li>
+</ol>
 </blockquote>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// run next app</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">run_next_app</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">app_manager</span> = APP_MANAGER.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">current_app</span> = app_manager.<span class="title function_ invoke__">get_current_app</span>();</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        app_manager.<span class="title function_ invoke__">load_app</span>(current_app);</span><br><span class="line">    &#125;</span><br><span class="line">    app_manager.<span class="title function_ invoke__">move_to_next_app</span>();</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(app_manager);</span><br><span class="line">    <span class="comment">// before this we have to drop local variables related to resources manually</span></span><br><span class="line">    <span class="comment">// and release the resources</span></span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__restore</span>(cx_addr: <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        <span class="comment">// After the application runs, restore the user context from the kernel stack.</span></span><br><span class="line">        <span class="comment">// USER_STACK.get_sp() return the address pointing to the next address of self.data.</span></span><br><span class="line">        __restore(KERNEL_STACK.<span class="title function_ invoke__">push_context</span>(TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">            APP_BASE_ADDRESS,</span><br><span class="line">            USER_STACK.<span class="title function_ invoke__">get_sp</span>(),</span><br><span class="line">        )) <span class="keyword">as</span> *<span class="keyword">const</span> _ <span class="keyword">as</span> <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">panic!</span>(<span class="string">&quot;Unreachable in batch::run_current_app!&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="kernel_stack-user_stack">KERNEL_STACK &amp; USER_STACK</h4>
@@ -810,6 +823,227 @@ classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25
 <li><code>#[macro_use]</code> 就是针对于宏的 <code>import</code>；</li>
 <li><code>#[macro_export]</code> 就是针对于宏的 <code>export</code>；</li>
 </ul>
+<h3 id="fp-的作用是什么"><code>fp</code> 的作用是什么？</h3>
+<p><code>fp</code> 是 Frame Pointer（帧指针） 的缩写，在 RISC-V 等架构中对应通用寄存器 x8，核心作用是 作为函数调用栈帧的「固定锚点」，定位栈帧内的关键数据（如返回地址、上一层帧指针、局部变量、函数参数）—— 配合 sp（栈指针）管理函数调用栈，是栈回溯、调试、函数调用 / 返回的核心依赖。</p>
+<p>在函数中，每一个函数都有自己的栈帧（Stack Frame），栈帧中存储了函数的局部变量、参数、返回地址等信息。而 <code>fp</code> 就是用来指向当前函数的栈帧的起始位置。</p>
+<p>每一个函数在调用时，都会创建一个新的栈帧，并且将 <code>fp</code> 指向这个新的栈帧的起始位置。当函数执行完毕后，<code>fp</code> 会被恢复到上一个栈帧的位置。</p>
+<p>而一个函数的完整栈帧可以通过如下方式还原：</p>
+<ol type="1">
+<li><code>fp</code> 指向当前栈帧的起始位置；</li>
+<li><code>fp - 1</code> 存储了上一个栈帧的 <code>save_ra</code>（返回地址）；</li>
+<li><code>fp - 2</code> 存储了上一个栈帧的 <code>save_fp</code>（上一个帧指针）；</li>
+<li><code>fp - 3</code> 开始存储了当前函数的局部变量和参数；</li>
+<li>也就是说，通过 <code>fp - 2</code> 可以找到上一个栈帧的 <code>fp</code>，从而实现栈帧的回溯。</li>
+</ol>
+<blockquote>
+<p>假设存在一个 <code>a -&gt; b -&gt; c</code> 的函数调用链，那么他的栈帧结构如下所示：</p>
+</blockquote>
+<figure>
+<img src="/images/20251118/fp.png" alt="diagram" /><figcaption>diagram</figcaption>
+</figure>
+<blockquote>
+<p>下面是一个打印栈回溯的例子：</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> core::&#123;arch::asm, ptr&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">print_stack_trace</span>() <span class="punctuation">-&gt;</span> () &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">fp</span>: *<span class="keyword">const</span> <span class="type">usize</span>;</span><br><span class="line">    asm!(<span class="string">&quot;mv &#123;&#125;, fp&quot;</span>, <span class="title function_ invoke__">out</span>(reg) fp);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;== Begin stack trace ==&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> fp != ptr::<span class="title function_ invoke__">null</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">saved_ra</span> = *fp.<span class="title function_ invoke__">sub</span>(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">saved_fp</span> = *fp.<span class="title function_ invoke__">sub</span>(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;0x&#123;:016x&#125;, fp = 0x&#123;:016x&#125;&quot;</span>, saved_ra, saved_fp);</span><br><span class="line"></span><br><span class="line">        fp = saved_fp <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">usize</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;== End stack trace ==&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="riscv中的常见异常">RISCV中的常见异常</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Copy, Clone, Debug, Eq, PartialEq)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Exception</span> &#123;</span><br><span class="line">    InstructionMisaligned,</span><br><span class="line">    InstructionFault,</span><br><span class="line">    IllegalInstruction,</span><br><span class="line">    Breakpoint,</span><br><span class="line">    LoadFault,</span><br><span class="line">    StoreMisaligned,</span><br><span class="line">    StoreFault,</span><br><span class="line">    UserEnvCall,</span><br><span class="line">    VirtualSupervisorEnvCall,</span><br><span class="line">    InstructionPageFault,</span><br><span class="line">    LoadPageFault,</span><br><span class="line">    StorePageFault,</span><br><span class="line">    InstructionGuestPageFault,</span><br><span class="line">    LoadGuestPageFault,</span><br><span class="line">    VirtualInstruction,</span><br><span class="line">    StoreGuestPageFault,</span><br><span class="line">    Unknown,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="一核心通用异常任意特权级可能触发">一、核心通用异常（任意特权级可能触发）</h4>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 4%" />
+<col style="width: 38%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>InstructionMisaligned</code></td>
+<td>指令地址未对齐</td>
+<td>CPU 取指令时，指令地址未满足 RISC-V 要求的对齐规则（默认 4 字节对齐，C 扩展支持 2 字节对齐）。</td>
+<td>跳转到非 4 字节对齐地址执行指令（如 <code>j 0x80001231</code>）；程序计数器 <code>pc</code> 被栈溢出覆盖为非对齐地址。</td>
+</tr>
+<tr class="even">
+<td><code>InstructionFault</code></td>
+<td>指令访问错误</td>
+<td>CPU 取指令时，虚拟地址无法通过 MMU 地址转换（无有效映射），或访问权限不足（如 U 态取内核态指令）。</td>
+<td>U 态程序尝试执行内核态地址（如 <code>0x80000000</code> 以上）的指令；取指令地址为未映射的空指针 <code>0x0</code>。</td>
+</tr>
+<tr class="odd">
+<td><code>IllegalInstruction</code></td>
+<td>非法指令</td>
+<td>CPU 解码指令时，发现指令编码无效（非 RISC-V 标准指令），或所需扩展未启用（如未开 F 扩展却执行浮点指令），或特权级不足执行特权指令。</td>
+<td>执行随机二进制数据（非标准指令编码）；U 态执行 M 态特权指令 <code>csrrw</code>；未启用 F 扩展却执行 <code>fadd</code>。</td>
+</tr>
+<tr class="even">
+<td><code>Breakpoint</code></td>
+<td>断点</td>
+<td>执行 <code>ebreak</code> 断点指令，或调试器设置硬件断点后，程序执行到目标地址触发。</td>
+<td>代码中插入 <code>ebreak</code> 调试断点；GDB 设置硬件断点后，程序运行到断点地址。</td>
+</tr>
+<tr class="odd">
+<td><code>LoadFault</code></td>
+<td>加载故障</td>
+<td>执行加载指令（<code>lb</code>/<code>lh</code>/<code>lw</code>/<code>ld</code> 等）时，虚拟地址无有效映射，或访问权限不足（如 U 态访问内核态数据）。</td>
+<td>U 态程序读取内核栈地址数据；加载未映射的无效地址（如 <code>*((int*)0x1234)</code>）。</td>
+</tr>
+<tr class="even">
+<td><code>StoreMisaligned</code></td>
+<td>存储地址未对齐</td>
+<td>执行存储指令（<code>sb</code>/<code>sh</code>/<code>sw</code>/<code>sd</code> 等）时，地址未满足对齐规则（如 <code>sd</code> 需 8 字节对齐、<code>sw</code> 需 4 字节对齐）。</td>
+<td>用 <code>sd</code> 指令将 8 字节数据写入 <code>0x80001234</code>（非 8 字节对齐）；<code>char* p=0x80001231; *(long long*)p=1;</code>。</td>
+</tr>
+<tr class="odd">
+<td><code>StoreFault</code></td>
+<td>存储访问错误</td>
+<td>执行存储指令时，虚拟地址无有效映射，或访问权限不足（如写入只读内存、U 态写入内核态地址）。</td>
+<td>U 态程序写入内核全局变量地址；向 <code>.rodata</code> 只读段写入数据（如 <code>const int a=5; a=6;</code>）。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="二系统调用相关异常主动触发用于特权级切换">二、系统调用相关异常（主动触发，用于特权级切换）</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 7%" />
+<col style="width: 38%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>UserEnvCall</code></td>
+<td>用户态系统调用</td>
+<td>U 态程序执行 <code>ecall</code> 指令，主动请求内核提供服务（如文件操作、内存分配）。</td>
+<td>用户态调用 <code>open</code>/<code>read</code> 系统调用时，编译器生成 <code>ecall</code> 指令触发异常。</td>
+</tr>
+<tr class="even">
+<td><code>VirtualSupervisorEnvCall</code></td>
+<td>虚拟监督态系统调用</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行 <code>ecall</code> 指令，请求宿主 OS（Host）提供虚拟化服务。</td>
+<td>来宾 OS 请求宿主分配虚拟内存；Guest 调用需 Host 模拟的硬件相关系统调用。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="三页表相关异常缺页-页权限错误可恢复">三、页表相关异常（缺页 / 页权限错误，可恢复）</h4>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 4%" />
+<col style="width: 40%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>InstructionPageFault</code></td>
+<td>指令页故障</td>
+<td>取指令时，虚拟地址对应页表项（PTE）存在，但 PTE 无效（<code>valid</code> 位 0）或权限不足（如无执行权限）。</td>
+<td>虚拟地址已分配 PTE 但未分配物理内存（缺页）；PTE <code>execute</code> 位为 0 却执行该页指令。</td>
+</tr>
+<tr class="even">
+<td><code>LoadPageFault</code></td>
+<td>加载页故障</td>
+<td>加载指令访问时，虚拟地址对应 PTE 存在，但 PTE 无效或权限不足（如无读取权限）。</td>
+<td>加载地址对应的页被换出到交换分区；PTE <code>valid</code> 位为 0 但虚拟地址已分配。</td>
+</tr>
+<tr class="odd">
+<td><code>StorePageFault</code></td>
+<td>存储页故障</td>
+<td>存储指令访问时，虚拟地址对应 PTE 存在，但 PTE 无效或权限不足（如无写入权限）。</td>
+<td>写入只读页（PTE <code>w</code> 位为 0）；存储地址对应的页未分配物理内存（缺页）。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="四虚拟化扩展相关异常仅支持-v-扩展时生效">四、虚拟化扩展相关异常（仅支持 V 扩展时生效）</h4>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 5%" />
+<col style="width: 36%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>InstructionGuestPageFault</code></td>
+<td>来宾指令页故障</td>
+<td>虚拟化场景中，来宾 OS（Guest）取指令时，触发 Guest 层面的页表故障（PTE 无效/权限不足）。</td>
+<td>Guest 程序取指令地址的 PTE 未分配物理内存；Guest PTE 权限不允许执行指令。</td>
+</tr>
+<tr class="even">
+<td><code>LoadGuestPageFault</code></td>
+<td>来宾加载页故障</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行加载指令时，触发 Guest 层面的页表故障。</td>
+<td>Guest 加载地址对应的 PTE 无效；Guest PTE 无读取权限却执行加载操作。</td>
+</tr>
+<tr class="odd">
+<td><code>VirtualInstruction</code></td>
+<td>虚拟指令异常</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行需 Host 模拟的指令（如未授权的特权指令）。</td>
+<td>Guest 尝试修改 <code>mtvec</code> 控制寄存器（Host 未授权）；Guest 执行 Host 独占的硬件操作指令。</td>
+</tr>
+<tr class="even">
+<td><code>StoreGuestPageFault</code></td>
+<td>来宾存储页故障</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行存储指令时，触发 Guest 层面的页表故障。</td>
+<td>Guest 存储地址对应的 PTE 无效；Guest PTE 无写入权限却执行存储操作。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="五兜底异常">五、兜底异常</h4>
+<table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 5%" />
+<col style="width: 46%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Unknown</code></td>
+<td>未知异常</td>
+<td><code>mcause</code>/<code>scause</code> 寄存器记录的异常代码未匹配任何标准异常（如扩展异常、寄存器值错误）。</td>
+<td>遇到 RISC-V 新扩展定义的未适配异常；<code>mcause</code> 寄存器被错误修改为无效值。</td>
+</tr>
+</tbody>
+</table>
 
     </div>
 
