@@ -111,8 +111,477 @@ SUM:                            33            203            412           2006
 -------------------------------------------------------------------------------
 ```
 
+## 管理SV39多级页表
+
+### 物理页帧管理
+
+```mermaid
+flowchart TD
+    %% 初始化阶段：延迟加载（首次访问时触发）
+    A["内核启动完成，进入运行阶段"] --> B{"首次调用 frame_alloc() / 首次访问 FRAME_ALLOCATOR？"}
+    B -->|是| C["lazy_static! 触发延迟初始化"]
+    C --> D["调用 FrameAllocatorImpl::new() 创建分配器实例"]
+    D --> E["调用 init(l: PhysPageNum, r: PhysPageNum)"]
+    E --> F["设置空闲物理页范围：current=ekernel（内核结束页），end=MEMORY_END（物理内存结束页）"]
+    F --> G["FRAME_ALLOCATOR 初始化完成（存入 UPSafeCell 中）"]
+    
+    %% 非首次访问：直接使用已初始化的分配器
+    B -->|否| G["直接使用已初始化的 FRAME_ALLOCATOR（从 UPSafeCell 取出）"]
+
+    %% 分配流程：内核/用户申请物理内存
+    G --> H["内核模块/用户进程调用 frame_alloc()"]
+    H --> I["通过 UPSafeCell 获取 FRAME_ALLOCATOR 可变引用（线程安全）"]
+    I --> J["调用 FrameAllocatorImpl::alloc()"]
+    
+    %% 分配逻辑分支：优先回收池，再新分配
+    J --> K{"回收池 recycled 非空？"}
+    K -->|是| L["弹出回收池中的 PhysPageNum"]
+    K -->|否| M{"current < end？"}
+    M -->|是| N["分配 current 对应的 PhysPageNum，current += 1"]
+    M -->|否| O["分配失败，返回 None"]
+    
+    %% 封装为 RAII 句柄
+    L --> P["将 PhysPageNum 封装为 FrameTracker（持有唯一所有权）"]
+    N --> P
+    P --> Q["释放 UPSafeCell 引用，返回 FrameTracker 给调用方"]
+    Q --> R["调用方使用 FrameTracker"]
+    R --> S["通过 FrameTracker.ppn() 获取 PhysPageNum"]
+    S --> T["将 PhysPageNum 转为 PhysAddr，用于页表映射（VA→PA）或直接操作物理内存"]
+
+    %% 自动释放流程：RAII 核心（无需手动调用）
+    R --> U["FrameTracker 离开作用域（如变量失效、函数返回）"]
+    U --> V["触发 FrameTracker::Drop 实现"]
+    V --> W["通过 UPSafeCell 获取 FRAME_ALLOCATOR 可变引用"]
+    W --> X["调用 FrameAllocatorImpl::dealloc(ppn)"]
+    X --> Y["将 PhysPageNum 存入 recycled 回收池"]
+    Y --> Z["释放 UPSafeCell 引用，物理页帧回归空闲状态"]
+
+    %% 手动释放流程（可选分支）
+    R --> AA{"调用方主动调用 frame_dealloc(frame: FrameTracker)"}
+    AA -->|是| AB["FrameTracker 转移所有权到模块"]
+    %% 复用自动释放的后续逻辑
+    AB --> W["通过 UPSafeCell 获取 FRAME_ALLOCATOR 可变引用"]
+    AA -->|否| U["等待自动释放"]
+
+    %% 样式优化（增强可读性）
+    classDef lazy_init fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef alloc fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef free fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+
+    class A,B,C,D,E,F,G lazy_init
+    class H,I,J,K,L,M,N,O,P,Q,R,S,T alloc
+    class U,V,W,X,Y,Z,AA,AB free
+    class O error
+```
+
+物理页帧存放的数据从内容上来说分为两种：
+
+1. 应用/内核的数据或者代码；
+2. 应用/内核的多级页表；
+
+本质上，物理页帧的核心是 “存储单元”—— 无论存放的是代码、应用数据，还是页表本身，在物理内存层面都是 “二进制数据块”，页表只是 “具有特殊用途的数据”（用于地址转换的 “映射表数据”）
+
+#### 可用物理页的分配与回收
+
+>区分内核空间和物理空间可以参考 [内存的内核空间和用户空间](#内存的内核空间和用户空间)
+
+物理页的实际大小，由三个参数共同决定。他们大小从也是 `virt memory` < `ekernel` < `MEMORY_END`。**这里需要注意的是，这三个值都是物理地址而非虚拟地址。**
+
+1. qemu模拟的 `virt` 硬件平台上的物理内存的起始地址 `0x80000000`；
+2. `ekernel` 在 `linker` 中，我们在完成 `.bss` 并且进行内存对齐之后，指定了 `ekernel` 这个参数，表示内核代码的结束位置；
+3. `MEMORY_END` 在 `config.rs` 中硬编码的地址 `0x88000000`。
+
+随后，我们定义：
+
+1. `trait` `FrameAllocator` 用于管理我们全部可用的物理内存；
+2. `impl` `StackFrameAllocator` 是基于Vec的一个简单实现；
+
+```rust
+// os/src/mm/frame_allocator.rs
+
+trait FrameAllocator {
+    fn new() -> Self;
+    fn alloc(&mut self) -> Option<PhysPageNum>;
+    fn dealloc(&mut self, ppn: PhysPageNum);
+}
+```
+
+`StackFrameAllocator` 的实现逻辑也非常简单：
+
+1. `current` 和 `end` 表示空闲内存的页号，这个页号初始由 `ekernel` 和 `MEMORY_END` 进行内存对齐后计算得出；
+2. `recycled` 表示 `alloc` 后 `dealloc` 的内存，我们分配时也优先从这里开始分配；
+
+```rust
+// os/src/mm/frame_allocator.rs
+
+pub struct StackFrameAllocator {
+    current: usize,  //空闲内存的起始物理页号
+    end: usize,      //空闲内存的结束物理页号
+    recycled: Vec<usize>,
+}
+
+// os/src/mm/frame_allocator.rs
+
+impl FrameAllocator for StackFrameAllocator {
+    fn new() -> Self {
+        Self {
+            current: 0,
+            end: 0,
+            recycled: Vec::new(),
+        }
+    }
+    fn alloc(&mut self) -> Option<PhysPageNum> {
+        if let Some(ppn) = self.recycled.pop() {
+            Some(ppn.into())
+        } else {
+            if self.current == self.end {
+                None
+            } else {
+                self.current += 1;
+                Some((self.current - 1).into())
+            }
+        }
+    }
+    fn dealloc(&mut self, ppn: PhysPageNum) {
+        let ppn = ppn.0;
+        // validity check
+        if ppn >= self.current || self.recycled
+            .iter()
+            .find(|&v| {*v == ppn})
+            .is_some() {
+            panic!("Frame ppn={:#x} has not been allocated!", ppn);
+        }
+        // recycle
+        self.recycled.push(ppn);
+    }
+}
+
+impl StackFrameAllocator {
+    pub fn init(&mut self, l: PhysPageNum, r: PhysPageNum) {
+        self.current = l.0;
+        self.end = r.0;
+    }
+}
+```
+
+随后初始化一个全局的 `FRAME_ALLOCATOR`，这里需要注意的是，我们要把物理地址 `ekernel` 和 `MEMORY_END` 转换为对应的页号。
+
+```rust
+type FrameAllocatorImpl = StackFrameAllocator;
+
+lazy_static! {
+    /// frame allocator instance through lazy_static!
+    pub static ref FRAME_ALLOCATOR: UPSafeCell<FrameAllocatorImpl> =
+        unsafe { UPSafeCell::new(FrameAllocatorImpl::new()) };
+}
+/// initiate the frame allocator using `ekernel` and `MEMORY_END`
+pub fn init_frame_allocator() {
+    extern "C" {
+        fn ekernel();
+    }
+    FRAME_ALLOCATOR.exclusive_access().init(
+        PhysAddr::from(ekernel as usize).ceil(),
+        PhysAddr::from(MEMORY_END).floor(),
+    );
+}
+```
+
+
+#### 分配/回收物理页帧的接口
+
+1. `alloc` 和 `dealloc` 都是非pub的函数，我们需要对外暴露分配的接口。
+2. 这里非常值得注意的一点是，我们 `frame_alloc()` 分配得到的是 `FrameTracker` 而不是 `PhysPageNum`，这个设计很巧妙，可以参考 [PhysPageNum和FrameTracker](#physpagenum和frametracker)
+
+```rust
+// os/src/mm/frame_allocator.rs
+
+pub fn frame_alloc() -> Option<FrameTracker> {
+    FRAME_ALLOCATOR
+        .exclusive_access()
+        .alloc()
+        .map(|ppn| FrameTracker::new(ppn))
+}
+
+fn frame_dealloc(ppn: PhysPageNum) {
+    FRAME_ALLOCATOR
+        .exclusive_access()
+        .dealloc(ppn);
+}
+```
+
+`FrameTracker` 的实现
+
+```rust
+/// tracker for physical page frame allocation and deallocation
+pub struct FrameTracker {
+    /// physical page number
+    pub ppn: PhysPageNum,
+}
+
+impl FrameTracker {
+    /// Create a new FrameTracker
+    pub fn new(ppn: PhysPageNum) -> Self {
+        // page cleaning
+        let bytes_array = ppn.get_bytes_array();
+        for i in bytes_array {
+            *i = 0;
+        }
+        Self { ppn }
+    }
+}
+
+impl Drop for FrameTracker {
+    fn drop(&mut self) {
+        frame_dealloc(self.ppn);
+    }
+}
+```
+
+### 多级页表管理
+
+#### 页表基本数据结构与访问接口
+
+页表是一个多级的数据结构，他的作用就是将 `VPN` 映射到 `PPN`，而这里有一点需要注意的是：
+
+1. 页表本身也是数据，每一个页表都会有一个唯一的入口地址，而这个地址是他的 PPN；
+2. 页表内部 `frames` 是通过 `FrameTracker` 来实现 PPN 管理，这里在我们当前的逻辑下是可以的：因为我们暂时没有**共享物理页**的场景。在实际的应用中：当多个进程共享一个 PPN 时（例如进程创建时的 COW），会导致内存管理异常，因为当共享的某一个进程结束时，这个内存将被释放，而另外一个引用该 PPN 的进程会引用一个悬垂指针。
+3. 此外，在开启分页后，无论是内核态还是用户态都是通过虚拟地址来访问物理内存。也就是说，我们必须将物理内存中**所有需要访问的物理页**都设定一个 `VPN` -> `PPN` 的映射关系并且存储到页表中。而具体的这个映射逻辑，请参考 [虚拟内存到物理内存](#虚拟内存到物理内存)。
+
+```rust
+/// page table structure
+pub struct PageTable {
+    /// Each user-facing application has a corresponding unique multi-level page table,
+    /// which means the starting address of each page table is unique.
+    /// That also means we must save root ppn as a `identifier`.
+    root_ppn: PhysPageNum,
+    /// `frames` contains all page table entries (including the root PTE) and stores them as a vector.
+    frames: Vec<FrameTracker>,
+}
+
+impl PageTable {
+    /// set the map between virtual page number and physical page number
+    pub fn map(&mut self, vpn: VirtPageNum, ppn: PhysPageNum, flags: PTEFlags){}
+    /// remove the map between virtual page number and physical page number
+    pub fn unmap(&mut self, vpn: VirtPageNum){}
+}
+```
+
+#### 内核中访问物理页帧的方法
+
+- `get_pte_array` 返回的是一个页表项定长数组的可变引用，代表多级页表中的一个节点；
+- `get_bytes_array` 返回的是一个字节数组的可变引用，可以以字节为粒度对物理页帧上的数据进行访问，前面进行数据清零就用到了这个方法；
+- `get_mut` 是个泛型函数，可以获取一个恰好放在一个物理页帧开头的类型为 T 的数据的可变引用。例如，我们获取 `TrapContext` 就可以使用它。
+
+>这里值得注意的是，`get_pte_array` 这个方法只能对于 `PageTable#root_ppn` 调用。
+
+```rust
+impl PhysAddr {
+    ///Get mutable reference to `PhysAddr` value
+    /// Get the mutable reference of physical address
+    pub fn get_mut<T>(&self) -> &'static mut T {
+        unsafe { (self.0 as *mut T).as_mut().unwrap() }
+    }
+}
+impl PhysPageNum {
+    /// Get the reference of page table(array of PTEs)
+    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
+        let pa: PhysAddr = (*self).into();
+        unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut PageTableEntry, 512) }
+    }
+    /// Get the reference of page(array of bytes)
+    pub fn get_bytes_array(&self) -> &'static mut [u8] {
+        let pa: PhysAddr = (*self).into();
+        unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut u8, 4096) }
+    }
+    /// Get the mutable reference of physical address
+    pub fn get_mut<T>(&self) -> &'static mut T {
+        let pa: PhysAddr = (*self).into();
+        pa.get_mut()
+    }
+}
+```
+
+#### 建立和拆除虚实地址映射关系
+
+这个逻辑较为简单，就是使用VPN的三级索引去查询PageTable，这里需要注意的几个点是：
+
+1. `RV39` 中 `VPN` 是三个 `9bit` 的 `usize`；
+2. `VPN` 不是 `VA`，他和 `offset` 结合才是 `VA`；
+3. `ppn.get_pte_array()` 获取的是通过 `root_ppn` 读取的连续的 PTE 对象。
+
+```rust
+impl VirtPageNum {
+    /// Get the indexes of the page table entry
+    pub fn indexes(&self) -> [usize; 3] {
+        let mut vpn = self.0;
+        let mut idx = [0usize; 3];
+        for i in (0..3).rev() {
+            idx[i] = vpn & 0x1FF;
+            vpn >>= 9;
+        }
+        idx
+    }
+}
+
+impl PageTable {
+    /// Find PageTableEntry by VirtPageNum, create a frame for a 4KB page table if not exist
+    fn find_pte_create(&mut self, vpn: VirtPageNum) -> Option<&mut PageTableEntry> {
+        let idxs = vpn.indexes();
+        let mut ppn = self.root_ppn;
+        let mut result: Option<&mut PageTableEntry> = None;
+        for (i, idx) in idxs.iter().enumerate() {
+            let pte = &mut ppn.get_pte_array()[*idx];
+            if i == 2 {
+                result = Some(pte);
+                break;
+            }
+            if !pte.is_valid() {
+                let frame = frame_alloc().unwrap();
+                *pte = PageTableEntry::new(frame.ppn, PTEFlags::V);
+                self.frames.push(frame);
+            }
+            ppn = pte.ppn();
+        }
+        result
+    }
+
+}
+```
+
+此外，我们在一些场景下可能需要访问非当前地址空间的页表（例如，在系统调用时内核态需要访问用户态的内存空间），此时我们需要一个方法，能查询到其他地址空间的页表但是不影响其所有权，我们提供了下面这个方法：
+
+```rust
+impl PageTable {
+    /// Temporarily used to get arguments from user space.
+    pub fn from_token(satp: usize) -> Self {
+        Self {
+            root_ppn: PhysPageNum::from(satp & ((1usize << 44) - 1)),
+            frames: Vec::new(),
+        }
+    }
+    /// get the page table entry from the virtual page number
+    pub fn translate(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
+        self.find_pte(vpn).map(|pte| *pte)
+    }
+}
+```
+
+## 内核与应用的地址空间
+## 基于地址空间的分时多任务
+## 超越物理内存的地址空间
 
 ## QA
+
+### 虚拟内存到物理内存
+
+#### 内核态的分页逻辑
+
+>开启分页后，CPU 不会区分 “内核态地址” 和 “用户态地址”——所有访存地址都会被视为虚拟地址，必须经过 MMU 查页表转换。哪怕是内核访问自己的代码、数据，也得通过映射才能找到对应的物理页。
+
+举个例子，在我们的 `rCore` 实现中，我们在链接器中设置的起始地址是 `0x80200000`，我们的访问是这样的：
+
+1. 内核代码段存放在物理地址 0x80200000（ekernel 之前）；
+2. 启用分页前，CPU 执行 lw x1, 0x80200000，直接访问物理内存 0x80200000；
+3. 启用分页后，CPU 会把 0x80200000 当成 虚拟地址：
+   1. 若页表中没有 “虚拟地址 0x80200000 → 物理地址 0x80200000” 的映射，MMU 会触发页错误，内核直接崩溃；
+   2. 只有建立了映射，MMU 才会把虚拟地址转成物理地址，内核才能正常执行代码、访问数据。
+
+>内核态的内存（代码、数据、栈、页表本身），是 “需要访问的物理页” 中最核心的一部分，必须优先建立映射 —— 否则内核自己都跑不起来。
+
+#### 内核态需要映射的物理页具体有哪些
+
+1. 内核自身的代码段（.text）、数据段（.data）、.bss 段：内核的指令、全局变量、未初始化变量都存在这些物理页中，是内核运行的基础 —— 必须建立映射，否则内核无法执行指令、访问全局变量。
+2. 内核栈（Kernel Stack）：内核线程 / 进程的栈空间（用于函数调用、局部变量存储），本质是一块物理页 —— 必须建立映射，否则内核函数调用会栈溢出或访问非法地址。 
+3. **页表页（根页表、中间级页表）：页表本身也是物理页，内核需要修改页表项（如为用户进程建立映射），就必须访问这些物理页 —— 因此页表页自身也需要建立映射（通常是恒等映射）。 **
+4. 内核管理的空闲物理页（按需映射）： 内核需要分配 / 回收物理页（如用户进程 malloc 时），就必须访问这些空闲物理页 —— 通过恒等映射，内核可以直接用 “物理地址作为虚拟地址” 访问它们，无需额外计算偏移。
+
+>这些映射通常在内核初始化阶段、启用分页之前就建立完成，确保启用分页后内核能正常运行。
+
+#### 如何建立映射
+
+>除了 “用户态私有数据页” 和 “按需动态映射的空闲物理页”，内核态所有需要访问的物理页（代码段、数据段、.bss、内核栈、页表页），均使用恒等映射（VA=PA）。
+
+- 以下场景必须使用 `恒等映射`，因为必须直接访问物理页，且地址不能变：
+  - 内核代码段（.text）、数据段（.data）、.bss 段： 链接器指定的地址就是物理地址，内核代码 / 全局变量的引用直接依赖这个地址，改用非恒等映射会导致 “代码指令地址找不到”“全局变量访问错位”，内核无法运行；
+  - 内核栈（Kernel Stack）： 栈指针（sp）指向的是物理地址，函数调用、局部变量存储依赖这个地址的连续性，非恒等映射会导致栈访问异常（如栈溢出、数据错乱）；
+  - 页表页（根页表、中间级页表）： 页表项（PTE）中存储的是物理页号（PPN），内核修改页表时需要直接访问页表页的物理地址，恒等映射能让内核 “以物理地址为虚拟地址” 直接操作，无需额外计算偏移。
+- 空闲物理页是每次用户态程序申请内存时，从 FRAME_ALLOCATOR 中得到的随机映射。
+
+我们整体的流程可以总结为：
+
+```mermaid
+flowchart TD
+    A["启动内核（分页关闭，PA 直访）"] --> B["初始化 FRAME_ALLOCATOR、PageTable、KERNEL_STACK 等"]
+    B --> C["在 PageTable 中建立内核相关物理页的恒等映射（.text/.data/栈/页表页）"]
+    C --> D["配置 satp 寄存器（模式+根 PPn）+ sfence.vma 刷新 TLB"]
+    D --> E["分页开启成功（VA 访存，MMU 转换）"]
+    E --> F["用户进程创建：初始化专属 PageTable"]
+    F --> G["用户 malloc：分配物理页 + 动态建立 VA→PA 映射（用户页表）"]
+    G --> H["进程切换：切换 satp 到用户页表 + 刷新 TLB"]
+```
+
+### PhysPageNum和FrameTracker
+
+使用 `FrameTracker` 代替 `PhysPageNum` 这个是基于 `RAII` 的思想的设计：我们为 `FrameTracker` 实现了 `Drop`，这样我们就不用手动的在物理栈帧退出作用域时手动的 `dealloc()` 了。
+
+而这里，我们之所以使用 `FrameTracker` 来实现，而不是直接为 `PhysPageNum` 实现 `Drop` 接口，是因为两者的语义是完全不一样的：
+
+1. `PhysPageNum` 是物理页帧的编号，他是一个无所有权的 “标识”；
+2. `FrameTracker` 是物理页帧的 “资源句柄”，是 **所有权的管理者。**
+
+| 类型            | 	核心语义                      | 	角色定位           | 	关键特性                                                                                               |
+|---------------|----------------------------|-----------------|-----------------------------------------------------------------------------------------------------|
+| PhysPageNum	  | 物理页帧的 “编号”（如 0x100、0x200）	 | 无所有权的 “标识 / 索引” | 1. 仅存储页号，不关联 “分配状态”； <br/>2. 可复制、可传递，不影响物理页；<br/> 3. 无法感知 “是否被分配”。                                  |
+| FrameTracker	 | 物理页帧的 “资源句柄”	              | 有所有权的 “管理者”	    | 1. 持有 PhysPageNum，代表 “独占该物理页”；<br/>2. 实现 Drop，离开作用域自动调用 dealloc；<br/> 3. 不可随意复制（通常 !Clone），确保所有权唯一。 |
+
+类似于房间，`PhysPageNum` 是房间号，而`FrameTracker`是业主。
+
+再从两个struct的实现来看：
+
+1. PhysPageNum 是简单的包装类型（struct PhysPageNum(pub usize)），可复制，可拷贝等；
+2. FrameTracker 不可复制，不可拷贝；
+
+```rust
+/// physical page number
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct PhysPageNum(pub usize);
+
+
+/// tracker for physical page frame allocation and deallocation
+pub struct FrameTracker {
+    /// physical page number
+    pub ppn: PhysPageNum,
+}
+```
+
+### 内存的内核空间和用户空间
+
+>在我们使用内存的过程中，有两个一直被提到的名词：`内核空间` 和 `用户空间`，那硬件和操作系统是怎么区分内核空间和用户空间的呢？
+
+**首先需要知道的是，这两个空间都是操作系统的概念。** 硬件（CPU/MMU）对物理内存的所有页帧一视同仁。所谓 “内核物理内存”“用户物理内存”，是操作系统为了管理方便（避免冲突、统一回收）而做的软件划分（比如把物理地址 0x80000000~0xFFFF0000 划分为内核专用），硬件不感知这个划分。
+
+硬件判断 “当前访问的是内核空间还是用户空间”，核心依据是 虚拟地址（VA），而非物理地址（PA）—— 具体是 “VA 高位特征 + 页表项 U 位 + 当前 CPU 特权级” 三者协同：
+
+- VA 高位：初步归类（例如如 Sv39 的 0x0000_0000_0000~0x7FFF_FFFF_FFFF 为用户 VA，0x8000_0000_0000~0xFFFF_FFFF_FFFF 为内核 VA）；
+- 页表项 U 位：精准权限（`U=1`→允许用户态访问，`U=0`→仅允许内核态访问）；
+- CPU 特权级：最终校验（用户态不能访问 U=0 的 VA，内核态可访问所有 VA）。
+
+总结来说：
+
+- 硬件：只认 “VA 高位 + PTE U 位 + 特权级”，不管物理内存的软件划分；
+- 操作系统：制定 VA 划分规则、设置 PTE 权限、管理 PA 分配，让硬件的判断逻辑服务于 “内核 / 用户隔离”；
+
+而在 `rCore` 的开发过程中： 这个特权级切换路径是：M 模式（引导）→ S 模式（内核运行）→ U 模式（用户进程运行）
+
+我们通常是在M模式下，开始加载一段内核引导代码：
+
+1. 通常我们会在链接器里声明一个 ekernel 表示内核代码的结束地址，并且进行内存对齐；
+2. 内核会维护一个memory allocator，这个memory allocator 会使用 ekernel 物理内存作为分配的起始点，也就是用户态内存的起始点，并在内核代码的配置中声明一个值作为用户态地址的终点。
+
+随后，内核在分配内存的过程中就围绕这一片被划分到用户态的虚拟内存来分配对应的物理内存，同时维护页表项。也就是说，我们现在已经满足了VA高位+PTE U位这两个条件。
+
+而特权级这个条件，我们是基于trap来实现的，在用户态下，如果需要访问内核空间代码，则需要通过trap跳转到对应的特权级。
 
 ### `from` 和 `into`
 
