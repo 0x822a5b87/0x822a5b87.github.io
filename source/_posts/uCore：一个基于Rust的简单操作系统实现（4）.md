@@ -184,6 +184,84 @@ flowchart TD
 
 #### 可用物理页的分配与回收
 
+```mermaid
+flowchart TB
+%% 样式定义：区分类型、Trait、实例、模块、层级，提升可读性
+    classDef type fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600, font-size:12px;
+    classDef trait fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-weight:600, font-size:12px;
+    classDef instance fill:#e8f5e8, stroke:#2e7d32, rounded:8px, font-weight:600, font-size:12px;
+    classDef module fill:#f8fafc, stroke:#94a3b8, rounded:8px, font-size:12px;
+    classDef layer fill:#fef2f8, stroke:#f43f5e, rounded:8px, font-size:12px;
+    classDef arrow stroke:#64748b, stroke-width:1.5px, font-size:11px;
+    classDef raii_arrow stroke:#e11d48, stroke-width:2px, font-style:italic, font-size:11px;
+
+%% 核心基础类型（地址/页号抽象）
+    PhysAddr["PhysAddr<br/>物理地址"]:::type
+    VirtAddr["VirtAddr<br/>虚拟地址"]:::type
+    PhysPageNum["PhysPageNum<br/>物理页号"]:::type
+    VirtPageNum["VirtPageNum<br/>虚拟页号"]:::type
+
+%% 核心管理组件（Trait + 实现 + 全局实例 + RAII封装）
+    FrameAllocator["FrameAllocator<br/>物理页帧分配器Trait<br/>{alloc(), dealloc()}"]:::trait
+    StackFrameAllocator["StackFrameAllocator<br/>FrameAllocator实现"]:::type
+    FRAME_ALLOCATOR["FRAME_ALLOCATOR<br/>全局唯一实例<br/>(StackFrameAllocator)"]:::instance
+    FrameTracker["FrameTracker<br/>RAII物理页持有者"]:::type
+
+%% 模块、层级结构
+    allocator["frame_allocator.rs<br/>模块<br/>{frame_alloc(), frame_dealloc()}"]:::module
+
+    subgraph 页表管理[PageTable 页表]
+        direction LR
+        root_ppn["root_ppn<br/>根页号"]:::type
+        subgraph 页表帧集合[页表帧集合]
+            direction LR
+            FT0["FrameTracker0"]:::type
+            FT1["..."]:::type
+            FTn["FrameTracker511"]:::type
+        end
+        root_ppn --> 页表帧集合
+    end
+
+    subgraph 用户层[用户应用]
+        vm1["用户应用1<br/>虚拟内存空间"]:::layer
+        vm2["用户应用2<br/>虚拟内存空间"]:::layer
+    end
+
+    subgraph 硬件层[PC硬件]
+        memory["硬件内存<br/>物理地址空间"]:::layer
+    end
+
+%% 1. 地址→页号的基础转换（转义特殊字符）
+    VirtAddr -.->|"into() 转换"| VirtPageNum:::arrow
+    PhysAddr -.->|"into() 转换"| PhysPageNum:::arrow
+
+%% 2. 虚拟地址与应用/页表的关联
+    vm1 -->|"使用"| VirtAddr:::arrow
+    vm2 -->|"使用"| VirtAddr:::arrow
+    VirtPageNum -.->|"通过页表映射"| 页表管理:::arrow
+
+%% 3. 分配器Trait→实现→全局实例的依赖链
+    FrameAllocator -->|"被实现"| StackFrameAllocator:::arrow
+    StackFrameAllocator -->|"延迟加载初始化"| FRAME_ALLOCATOR:::arrow
+    FRAME_ALLOCATOR -->|"归属"| allocator:::arrow
+
+%% 4. 核心分配流程（突出模块接口 + RAII封装）
+    allocator -->|"frame_alloc() 对外接口"| FRAME_ALLOCATOR:::arrow
+    FRAME_ALLOCATOR -->|"alloc() 分配物理页号"| PhysPageNum:::arrow
+    PhysPageNum -->|"wrap 封装为RAII持有者"| FrameTracker:::arrow
+
+%% 5. RAII自动回收流程（高亮核心特性）
+    FrameTracker -.->|"drop() 自动触发"| allocator:::raii_arrow
+    allocator -.->|"frame_dealloc() 内部调用"| FRAME_ALLOCATOR:::raii_arrow
+    FRAME_ALLOCATOR -.->|"dealloc() 回收物理页号"| PhysPageNum:::raii_arrow
+
+%% 6. 物理页与硬件/页表的绑定
+    FrameTracker -->|"持有并映射为"| 页表帧集合:::arrow
+    PhysPageNum -->|"对应"| PhysAddr:::arrow
+    PhysAddr -->|"映射到"| memory:::arrow
+    页表管理 -.->|"翻译虚拟地址得到"| PhysAddr:::arrow
+```
+
 >区分内核空间和物理空间可以参考 [内存的内核空间和用户空间](#内存的内核空间和用户空间)
 
 物理页的实际大小，由三个参数共同决定。他们大小从也是 `virt memory` < `ekernel` < `MEMORY_END`。**这里需要注意的是，这三个值都是物理地址而非虚拟地址。**
@@ -468,10 +546,270 @@ impl PageTable {
 ```
 
 ## 内核与应用的地址空间
+
+`PageTable` 以页为单位维护虚拟内存到物理内存的映射关系，但是在实际的应用中，每个应用都会维护一个自己的页表（包括内核）。而这个应用间独立的页表由 `地址空间` 来维护。
+
+### 实现地址空间抽象
+
+#### 逻辑段：一段连续地址的虚拟内存
+
+```rust
+/// map area structure, controls a contiguous piece of virtual memory
+pub struct MapArea {
+    vpn_range: VPNRange,
+    data_frames: BTreeMap<VirtPageNum, FrameTracker>,
+    map_type: MapType,
+    map_perm: MapPermission,
+}
+```
+
+1. MapArea 代表一段连续的 虚拟内存区间（逻辑段）；
+    - vpn_range：保存该段包含的连续 VirtPageNum 区间，明确虚拟内存的范围（段内连续）； 
+    - data_frames：仅当逻辑段采用 MapType::Framed 映射时有效，是存储 “虚拟页（VPN）→ 物理页帧（FrameTracker）” 的键值对容器（BTreeMap）。这些物理页帧用于存放实际数据（而非多级页表的中间节点），核心作用是持有物理页的所有权； 
+    - map_type：指定该段虚拟内存的映射方式（如恒等映射、动态映射，后续可扩展文件映射等）； 
+    - map_perm：指定该段的访问权限（R/W/X/ 用户态可访问，即 U 位），与页表项（PTE）的权限一致；
+2. VPNRange：通过 SimpleRange<VirtPageNum> 组织连续的 VirtPageNum 区间，为 vpn_range 提供底层支持；
+   - 这些逻辑段的虚拟地址通常是连续的，因此用 vpn_range 明确其范围； 
+   - 不同段的访问权限不同（.data 为 R/W、`.rodata` 为 R、.text 为 R/X），因此用 map_perm 定义权限；
+   - 不同段的映射方式不同（用户 heap 需动态映射、内核 .text/.data 需恒等映射），因此用 map_type 区分； 
+   - MapArea 管理一段连续的虚拟内存及其对应的物理内存，需对二者的生命周期负责：虚拟内存的范围由 vpn_range 界定，物理内存的所有权由 data_frames 持有（销毁 MapArea 时自动回收物理页）；同时 data_frames 提供 “VPN→FrameTracker” 的高效反向查询，比遍历页表更快； 
+   - data_frames 与 PageTable 的核心差别：data_frames 是物理内存的 “所有者”（管归属、管生命周期），PageTable 是地址翻译的 “查询工具”（管 VA→PA 映射、管权限检查），二者分工协作，缺一不可。
+
+#### 地址空间：一系列有关联的逻辑段
+
+```rust
+/// address space
+pub struct MemorySet {
+    page_table: PageTable,
+    areas: Vec<MapArea>,
+}
+```
+
+1. MemorySet 一个有关联但是不一定连续的逻辑段的集合。前面提到一个进程里会有 `.data`， `.text`， `.rodata` 等逻辑段，这些逻辑段用 `MapArea` 来表示，而 MemorySet 是这些逻辑段的集合。
+    - page_table 页表，每个进程都有自己的独立的页表。不同进程的同一个VA会通过页表映射到独立的PA；
+    - areas 是 MapArea 的集合，包含了一个程序的所有逻辑段；
+
+```rust
+impl MemorySet {
+    /// 1. Map a `MapArea` to the page table.
+    /// 2. If any input files are provided, copy the data from the input files into the newly initialized `MapArea`.
+    /// 3. Push MapArea into `MemorySet`
+    fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {}
+
+    /// Create a `MapArea` spanning the virtual address (VA) range from `start_va` to `end_va` with the given `permission`.
+    pub fn insert_framed_area(
+        &mut self,
+        start_va: VirtAddr,
+        end_va: VirtAddr,
+        permission: MapPermission,
+    ) {}
+
+    /// Without kernel stacks.
+    pub fn new_kernel() -> Self {}
+
+
+    /// Include sections in elf and trampoline and TrapContext and user stack,
+    /// also returns user_sp_base and entry point.
+    pub fn from_elf(elf_data: &[u8]) -> (Self, usize, usize) {}
+}
+```
+
+>`MemorySet`
+
+- `push`：
+    1. 为 `map_area` 中所有的 `vpn` 分配对应的 `ppn`，并更新页表，**注意，此时我们只是初始化了 VPN -> PPN 的映射关系，此时数据是没有写入到内存的。**
+    2. 如果提供了 `data` 作为输入，我们将 `data` 复制到主存。**注意，在这个时刻我们已经开始需要使用PageTable来映射VPN -> PPN了。**
+    3. 将构造好的 `map_area` 加入我们的地址空间 -- 也就是 MemorySet。
+- `insert_framed_area` 创建一个从 `start_va` 开始到 `end_va` 结束的 MapArea。
+
+#### 内核地址空间
+
+启用分页模式下，内核代码的访存地址也会被视为一个虚拟地址并需要经过 MMU 的地址转换，因此我们也需要为内核对应构造一个地址空间，它除了仍然需要允许内核的各数据段能够被正常访问之后，还需要包含所有应用的内核栈以及一个 跳板 (Trampoline) 。
+
+在开始梳理代码之前，我们需要先了解以下两个内容：
+
+- [sv39模式下的地址空间](#sv39模式下的地址空间)
+- [应用栈和应用内核栈以及内核栈](#应用栈和应用内核栈以及内核栈)
+
+`new_kernel()` 方法将 `.text/.rodata/.data/.bss` 以及 `内核->内存结束` 的这五个逻辑段初始化完成。
+
+>**这里最需要注意的是：我们所有的 memory_set.push() 方法都是不带 `data` 参数的，这是因为我们这里使用的恒等映射，他所访问的内存区域本身就是存在数据的。**
+
+```rust
+// os/src/mm/memory_set.rs
+
+extern "C" {
+    fn stext();
+    fn etext();
+    // ...
+}
+
+impl MemorySet {
+    /// Without kernel stacks.
+    pub fn new_kernel() -> Self {
+        let mut memory_set = Self::new_bare();
+        // map trampoline
+        memory_set.map_trampoline();
+        // map kernel sections
+        println!("[main][kernel] Hello, world!");
+        // ...
+        println!("mapping .text section");
+        memory_set.push(MapArea::new(
+            (stext as usize).into(),
+            (etext as usize).into(),
+            MapType::Identical,
+            MapPermission::R | MapPermission::X,
+        ), None);
+        // ...
+        memory_set
+    }
+}
+```
+
+上面的代码我们可以把LOG日志打开测试：
+
+```bash
+make run BASE=4 TEST=4 LOG=TRACE
+```
+
+可以看到我们的输出，起始位置和我们 linker.ld 的声明是一致的：
+
+```terminaloutput
+[TRACE] [main][kernel] .text [0x80200000, 0x8020c000)
+[DEBUG] [main][kernel] .rodata [0x8020c000, 0x80210000)
+[ INFO] [main][kernel] .data [0x80210000, 0x8023a000)
+[ WARN] [main][kernel] boot_stack top=bottom=0x8024a000, lower_bound=0x8023a000
+[ERROR] [main][kernel] .bss [0x8024a000, 0x8224b000)
+```
+
+### 应用地址空间
+
+新的输入，我们将会把源码编译为 `elf` 文件作为kernel的输入：这里 `eh_frame` 是 ELF 文件中的 “异常处理帧（Exception Handling Frame）。
+
+```
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+
+BASE_ADDRESS = 0x0;
+
+SECTIONS
+{
+    . = BASE_ADDRESS;
+    .text : {
+        *(.text.entry)
+        *(.text .text.*)
+    }
+    . = ALIGN(4K);
+    .rodata : {
+        *(.rodata .rodata.*)
+        *(.srodata .srodata.*)
+    }
+    . = ALIGN(4K);
+    .data : {
+        *(.data .data.*)
+        *(.sdata .sdata.*)
+    }
+    .bss : {
+        start_bss = .;
+        *(.bss .bss.*)
+        *(.sbss .sbss.*)
+        end_bss = .;
+    }
+    /DISCARD/ : {
+        *(.eh_frame)
+        *(.debug*)
+    }
+}
+```
+
+![app-as-full.png](/images/20251121/app-as-full.png)
+
+在 `os/src/build.rs` 中，我们的逻辑也非常简单：
+
+```rust
+/// Get the total number of applications.
+pub fn get_num_app() -> usize {
+    // The value _num_app is declared in link_app.S, a file generated by build.rs.
+    extern "C" {
+        fn _num_app();
+    }
+    unsafe { (_num_app as usize as *const usize).read_volatile() }
+}
+
+/// get applications data
+pub fn get_app_data(app_id: usize) -> &'static [u8] {
+    extern "C" {
+        fn _num_app();
+    }
+    let num_app_ptr = _num_app as usize as *const usize;
+    
+    // get app address array
+    let num_app = get_num_app();
+    let app_start = unsafe { core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1) };
+    assert!(app_id < num_app);
+    
+    // read data of specific app_id
+    unsafe {
+        core::slice::from_raw_parts(
+            app_start[app_id] as *const u8,
+            app_start[app_id + 1] - app_start[app_id],
+        )
+    }
+}
+```
+
+随后，我们需要做两件事：
+
+1. 使用 elf 文件初始化一个完整的 `MemorySet`；
+2. 使用 `MemorySet` 初始化一个 `TaskControlBlock(TCB)`；
+
 ## 基于地址空间的分时多任务
-## 超越物理内存的地址空间
 
 ## QA
+
+### 应用栈和应用内核栈以及内核栈
+
+应用的内核栈，是操作系统为每个应用程序（进程）单独分配的、仅在应用 “陷入内核态” 时使用的专属栈—— 本质是一块内核地址空间中的物理内存，专门用于承载应用在核内态运行时的函数调用、局部变量、上下文数据（比如系统调用处理、异常处理的栈帧）。
+
+简单说：应用在用户态（比如运行自己的代码）时，用的是「用户栈」；一旦触发系统调用、异常 / 中断（比如 ecall 指令、页错误），切换到内核态后，内核会自动切换栈指针（sp）到该应用的「内核栈」，所有内核代码（如 trap_handler、系统调用处理函数）都在这个栈上运行。
+
+而内核自身还有一个 “内核主栈”（Kernel Main Stack），与所有应用的内核栈独立：
+
+- 内核主栈：用于内核初始化（如 main 函数）、硬件中断处理（与应用无关的中断，如时钟中断）等内核原生流程；
+- 应用的内核栈：仅用于 “该应用触发的内核态操作”（如该应用的系统调用、该应用导致的页错误）；
+- 两者物理页独立、地址空间独立，互不干扰。
+
+### SV39模式下的地址空间
+
+`SV39` 模式遵循符号扩展（Sign Extension）规则，所以地址空间的 `[63:39]` 必须和第`38`位保持一致，否则无法通过 MMU 的校验，也就是说，地址空间被分为了 `[0, 0x3F FFFF FFFF FFFF)` 和 `[0xFFFF FFC0 0000 0000, 0xFFFF FFFF FFFF FFFF)` 两个不连续的 `256GiB` 的地址空间。
+
+在 `rCore` 中，我们一般把高256GiB的内存空间用来存储 `trampoline` 和应用内核栈，按照如下格式：
+
+1. `trampoline` 4KiB；
+2. `app 0 kernel stack` 根据 config#KERNEL_STACK_SIZE 定义；
+3. `Guard Page`；
+4. `app 1 kernel stack`；
+5. `Guard Page`；
+6. ...
+
+![kernel-as-high.png](/images/20251121/kernel-as-high.png)
+
+低256GiB，我们用来存储内核的段，以及空闲物理页帧（Available Physical Frames），按照如下格式：
+
+1. Available Physical Frames
+2. `.bss`
+3. `.data`
+4. `.rodata`
+5. `.text`
+
+![kernel-as-low.png](/images/20251121/kernel-as-low.png)
+
+1. 这里在初始化的过程中，通过恒等映射将 `.bss/.data/.rodata/.text` 段映射到了物理内存，这也是我们在 linker.ld 内声明的。此外，们的项目是基于qemu模拟的，而qemu的内存空间从 0x80000000开始，也就是说如果我们在linker里设置了错误的物理内存地址，例如 0x78000000，那么程序会直接启动失败。
+2. 代码段的 `U` 都设置为0，也就是只能在内核态访问；
+3. `.text` 不允许被修改；
+4. `.rodata` 不允许被修改，也不允许从它上面取指执行；
+5. `.data/.bss` 均允许被读写，但是不允许从它上面取指执行
+
 
 ### 虚拟内存到物理内存
 
