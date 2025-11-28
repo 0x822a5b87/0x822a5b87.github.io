@@ -9,90 +9,6 @@ tags:
 
 >在这个章节，我们会实现虚拟内存机制。
 
-```mermaid
-flowchart LR
-%% 样式定义：区分目录、新增文件、修改文件、普通文件
-    classDef dir fill:#e0f7fa, stroke:#00695c, rounded:8px, font-weight:bold, font-size:13px;
-    classDef new_file fill:#e8f5e8, stroke:#2e7d32, rounded:6px, font-size:12px, color:#1b5e20;
-    classDef modified fill:#fff3e0, stroke:#ef6c00, rounded:6px, font-size:12px, color:#e65100;
-    classDef normal_file fill:#f5f5f5, stroke:#78909c, rounded:6px, font-size:12px;
-
-    root["os/"]:::dir
-    os_src["src/"]:::dir
-
-%% 一级文件（src 目录下）
-    config["config.rs<br/>(修改：新增内存管理配置)"]:::modified
-    linker["linker.ld<br/>(修改：引入跳板页)"]:::modified
-    loader["loader.rs<br/>(修改：保留应用数据功能)"]:::modified
-    main["main.rs<br/>(修改)"]:::modified
-    src_other["..."]:::normal_file
-
-%% 新增 mm 子模块
-    mm["mm/<br/>(新增：内存管理子模块)"]:::dir
-    mm_address["address.rs<br/>(物理/虚拟地址抽象)"]:::new_file
-    mm_frame["frame_allocator.rs<br/>(物理页帧分配器)"]:::new_file
-    mm_heap["heap_allocator.rs<br/>(内核动态内存分配器)"]:::new_file
-    mm_memory_set["memory_set.rs<br/>(地址空间相关)"]:::new_file
-    mm_mod["mod.rs<br/>(mm 模块初始化)"]:::new_file
-    mm_page_table["page_table.rs<br/>(多级页表抽象)"]:::new_file
-
-%% syscall 子模块
-    syscall["syscall/"]:::dir
-    syscall_fs["fs.rs<br/>(修改：基于地址空间的 sys_write)"]:::modified
-    syscall_mod["mod.rs"]:::normal_file
-    syscall_process["process.rs"]:::normal_file
-
-%% task 子模块
-    task["task/"]:::dir
-    task_context["context.rs<br/>(修改：构造初始任务上下文)"]:::modified
-    task_mod["mod.rs<br/>(修改，详见文档)"]:::modified
-    task_switch["switch.rs"]:::normal_file
-    task_switch_S["switch.S"]:::normal_file
-    task_task["task.rs<br/>(修改，详见文档)"]:::modified
-
-%% trap 子模块
-    trap["trap/"]:::dir
-    trap_context["context.rs<br/>(修改：扩展 Trap 上下文)"]:::modified
-    trap_mod["mod.rs<br/>(修改：基于地址空间的 Trap 机制)"]:::modified
-    trap_S["trap.S<br/>(修改：Trap 上下文保存/恢复)"]:::modified
-
-%% 层级连接
-    root --> os_src
-    os_src --> config
-    os_src --> linker
-    os_src --> loader
-    os_src --> main
-    os_src --> src_other
-    os_src --> mm
-    os_src --> syscall
-    os_src --> task
-    os_src --> trap
-
-%% mm 子模块连接
-    mm --> mm_address
-    mm --> mm_frame
-    mm --> mm_heap
-    mm --> mm_memory_set
-    mm --> mm_mod
-    mm --> mm_page_table
-
-%% syscall 子模块连接
-    syscall --> syscall_fs
-    syscall --> syscall_mod
-    syscall --> syscall_process
-
-%% task 子模块连接
-    task --> task_context
-    task --> task_mod
-    task --> task_switch
-    task --> task_switch_S
-    task --> task_task
-
-%% trap 子模块连接
-    trap --> trap_context
-    trap --> trap_mod
-    trap --> trap_S
-```
 
 ```terminaloutput
 ➜  ~/code/2025a-rcore-0x822a5b87 git:(ch4) cloc --include-ext=rs,s,S,asm os
@@ -684,90 +600,186 @@ make run BASE=4 TEST=4 LOG=TRACE
 
 ### 应用地址空间
 
-> 在开始之前，我们需要了解一下 [trampoline](#trampoline)
-
-新的输入，我们将会把源码编译为 `elf` 文件作为kernel的输入：这里 `eh_frame` 是 ELF 文件中的 “异常处理帧（Exception Handling Frame）。
-
-```
-OUTPUT_ARCH(riscv)
-ENTRY(_start)
-
-BASE_ADDRESS = 0x0;
-
-SECTIONS
-{
-    . = BASE_ADDRESS;
-    .text : {
-        *(.text.entry)
-        *(.text .text.*)
-    }
-    . = ALIGN(4K);
-    .rodata : {
-        *(.rodata .rodata.*)
-        *(.srodata .srodata.*)
-    }
-    . = ALIGN(4K);
-    .data : {
-        *(.data .data.*)
-        *(.sdata .sdata.*)
-    }
-    .bss : {
-        start_bss = .;
-        *(.bss .bss.*)
-        *(.sbss .sbss.*)
-        end_bss = .;
-    }
-    /DISCARD/ : {
-        *(.eh_frame)
-        *(.debug*)
-    }
-}
-```
+>在开始之前，我们需要了解一下 [trampoline](#trampoline)
 
 ![app-as-full.png](/images/20251121/app-as-full.png)
 
-在 `os/src/build.rs` 中，我们的逻辑也非常简单：
+应用地址空间的初始化逻辑如下：
+
+1. 初始化高256GiB：
+    1. 初始化 `trampoline`，trampoline 位于高256GiB的最高点起始位置，仅仅使用一页；
+    2. 初始化 `TrapContext`，他在trampoline的下方，也仅仅使用一页；
+2. 初始化低256GiB：
+    1. 初始化`.text/.rodata/.data/.bss` ：解析 `elf` 文件，将elf文件中的所有 program headers 复制到内核中：
+        1. 解析elf，为每个ph创建一个MapArea；
+        2. 将ph复制到我们创建的MapArea中，并初始化对应的权限；
+        3. 这里一定需要注意的是，我们在 `xmas_elf::ElfFile::new(elf_data)` 的时候已经将数据加载到物理内存了，为什么还需要复制到我们对应的MapArea呢？
+            - 现在读取到的数据虽然已经在物理内存中了，但是他只是在这个函数下的一段临时的数据，我们需要把他转换为一个生命周期和应用一致的程序，也就是MapArea；如果我们不把他转换为MapArea，那么rust编译器会保证在该函数退出后他对应的物理内存被回收；
+            - 读取到数据之后，`[ph.virtual_addr(), ph.virtual_addr() + ph.mem_size())` 这段虚拟内存保证是可用的。我们其实也可以选择自己重新为它生成一个新的虚拟内存片地址，但是意义不大。
+    2. 初始化 `user stack`；
+    3. 初始化 `sbrk`；
+
+#### 初始化 trampoline
+
+下面的代码中，在高256G中初始化了一页作为trampoline，我们需要注意以下几个点：
+
+1. `strampoline` 在 `linker.ld` 中声明，他紧跟在 `*(.text.entry)` 进行4K对齐之后；
+2. `strampoline` 自身的内容也需要4K对齐，这样可以正好去适配我们的一个内存页；
+3. `strampoline` 的大小不能超过4K，否则在map的时候将出现数据缺失；
+4. `trampoline` 的范围是高256的最高位开始向下计算一页。
+
+```
+    .text : {
+        *(.text.entry)
+        . = ALIGN(4K);
+        strampoline = .;
+        *(.text.trampoline);
+        . = ALIGN(4K);
+        *(.text .text.*)
+    }
+```
 
 ```rust
-/// Get the total number of applications.
-pub fn get_num_app() -> usize {
-    // The value _num_app is declared in link_app.S, a file generated by build.rs.
-    extern "C" {
-        fn _num_app();
-    }
-    unsafe { (_num_app as usize as *const usize).read_volatile() }
+/// config.rs
+/// The virtual address of the trampoline.
+/// The trampoline is placed at the top of the high 256 GiB virtual address space,
+/// with its starting address set to `usize::MAX - PAGE_SIZE + 1`.
+pub const TRAMPOLINE: usize = usize::MAX - PAGE_SIZE + 1;
+
+/// memory_set.rs
+extern "C" {
+    fn strampoline();
 }
 
-/// get applications data
-pub fn get_app_data(app_id: usize) -> &'static [u8] {
-    extern "C" {
-        fn _num_app();
-    }
-    let num_app_ptr = _num_app as usize as *const usize;
-    
-    // get app address array
-    let num_app = get_num_app();
-    let app_start = unsafe { core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1) };
-    assert!(app_id < num_app);
-    
-    // read data of specific app_id
-    unsafe {
-        core::slice::from_raw_parts(
-            app_start[app_id] as *const u8,
-            app_start[app_id + 1] - app_start[app_id],
-        )
+/// memory_set.rs
+impl MemorySet {
+    /// Mention that trampoline is not collected by areas.
+    fn map_trampoline(&mut self) {
+        self.page_table.map(
+            VirtAddr::from(TRAMPOLINE).into(),
+            PhysAddr::from(strampoline as usize).into(),
+            PTEFlags::R | PTEFlags::X,
+        );
     }
 }
 ```
 
-随后，我们需要做两件事：
+#### 从elf初始化.text/.rodata/.data/.bss
 
-1. 使用 elf 文件初始化一个完整的 `MemorySet`；
-2. 使用 `MemorySet` 初始化一个 `TaskControlBlock(TCB)`；
+>APPENDIX：[elf文件的VA和PA](#elf文件的va和pa)
+
+1. 遍历elf文件内的 `program headers`。这样，ph会被加载到内存中，我们就可以用他们来创建出一个MapArea了；
+2. 在创建 `MapArea` 之后，有非常重要的一个步骤，**那就是把我们elf的逻辑段数据映射到我们新创建的MapArea**。不同于 `trampoline`, `TrapContext`, `user_stack`, `sbrk` 这几个逻辑段，elf的逻辑数据段是有初始值的 -- 也就是elf文件里的值。**我们现在只是为elf文件创建了映射，映射指向的物理内存数据仍然不存在。**
+3. 在 `push()` 的时候将数据作为参数传入，初始化elf的逻辑段到虚拟内存 `(&elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize])`。
+
+```rust
+fn map_elf(memory_set: &mut MemorySet, elf: & xmas_elf::ElfFile) -> VirtPageNum {
+    let elf_header = elf.header;
+    let magic = elf_header.pt1.magic;
+    assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "invalid elf!");
+    let ph_count = elf_header.pt2.ph_count();
+    let mut max_end_vpn = VirtPageNum(0);
+    for i in 0..ph_count {
+        let ph = elf.program_header(i).unwrap();
+        if ph.get_type().unwrap() == xmas_elf::program::Type::Load {
+            // Notice that the elf file has been loaded into virtual memory
+            let start_va: VirtAddr = (ph.virtual_addr() as usize).into();
+            let end_va: VirtAddr = ((ph.virtual_addr() + ph.mem_size()) as usize).into();
+            let mut map_perm = MapPermission::U;
+            let ph_flags = ph.flags();
+            if ph_flags.is_read() {
+                map_perm |= MapPermission::R;
+            }
+            if ph_flags.is_write() {
+                map_perm |= MapPermission::W;
+            }
+            if ph_flags.is_execute() {
+                map_perm |= MapPermission::X;
+            }
+            let map_area = MapArea::new(start_va, end_va, MapType::Framed, map_perm);
+            max_end_vpn = map_area.vpn_range.get_end();
+            // init MapArea and copy program header into the newly created MapArea
+            memory_set.push(
+                map_area,
+                Some(&elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize]),
+            );
+        }
+    }
+
+    max_end_vpn
+}
+```
+
+#### 其他部分初始化
+
+除了 trampoline 之外，其他的逻辑基本
 
 ## 基于地址空间的分时多任务
 
 ## QA
+
+### elf文件的VA和PA
+
+>在我们通过elf初始化 `.text/.rodata/.data/.bss` 逻辑段时，elf文件自身存在VA和PA，而我们需要把这个数据转换为MapArea，这个过程是怎么样的呢？
+
+在分析这段代码的内存情况之前，我们需要知道目前内核的初始化状态：
+
+1. `KERNEL_SPACE` 已经初始化，这意味着 `new_kernel()` 已经被调用，**内核的页表已经初始化完成**；
+2. `MemorySet#activate()` 已经调用，这意味着**分页访问已经开启**；
+3. 我们的目的是初始化用户地址空间，此时程序从头至尾均在内核态下执行。
+
+那么整体的转换过程可以如下表示：
+
+1. 内核读取 ELF 数据到内核地址空间：
+    1. 内核通过块设备驱动（如磁盘），将 ELF 文件读取到当前函数的栈 / 堆 / 全局缓冲区（`elf_data`）；
+    2. `elf_data` 的地址是内核 VA，通过内核页表翻译后，得到对应的物理地址 PA_ELF —— ELF 原始数据（.text/.data 等）存储在 PA_ELF 对应的物理内存中。
+2. 解析 ELF 得到元数据，提取关键信息并复制；
+3. 此时：我们的elf文件存储在 `内核栈` 上：
+    - 这些 ELF 原始数据（.text/.data 等）在「内核地址空间」的 VA 范围是 `[elf_data, elf_data + elf_data_size)`；
+    - 而 `[ph.virtual_addr(), ph.virtual_addr() + ph.mem_size()]` 是这些数据在「用户地址空间」的「目标 VA 范围」—— 这个目标 VA 是链接阶段确定的，内核加载时会将数据拷贝到用户物理内存，并建立「用户目标 VA → 用户物理 PA」的映射。这也是为什么每一个应用程序能通过同一个VA访问到不同PA的根本原因 -- 这些数据将被映射到不同的PA；
+4. 最后，我们通过 `memory_set.push(map_area, elf.data)` 的方法，将这一份数据复制到了用户态的 `MemorySet` 中。**注意，MemorySet是存在于内核态，对用户态完全透明的。**
+
+### sbrk
+
+`sbrk(n)` 是经典的 Unix 系统调用，功能是 “扩展 / 收缩进程的堆空间”（或栈空间，取决于内核设计）：在我们的 `rCore` 中， `sbrk` 是紧跟着 `user_stack_top`。
+
+```rust
+fn map() {
+    user_stack_bottom += PAGE_SIZE;
+    let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
+    memory_set.push(
+        MapArea::new(
+            user_stack_bottom.into(),
+            user_stack_top.into(),
+            MapType::Framed,
+            MapPermission::R | MapPermission::W | MapPermission::U,
+        ),
+        None,
+    );
+    // used in sbrk
+    memory_set.push(
+        MapArea::new(
+            user_stack_top.into(),
+            user_stack_top.into(),
+            MapType::Framed,
+            MapPermission::R | MapPermission::W | MapPermission::U,
+        ),
+        None,
+    );
+}
+```
+
+我们可以通过调整 sbrk 来伸缩我们的栈大小：
+
+- 当 n>0 时，向内核申请 n 字节的内存，堆 / 栈空间扩大；
+- 当 n<0 时，释放 |n| 字节的内存，堆 / 栈空间缩小；
+- 返回值是扩展前的堆 / 栈顶指针（或出错时返回 -1）。
+
+如果需要初始化 `sbrk`，可以在初始化的时候，设定一个 `start == end` 的MapArea。
+
+- 正常的 MapArea 是 start_va < end_va（有实际地址范围），但这里 start_va == end_va，表示这是一个 “空映射” —— 不占用实际虚拟地址空间，仅作为 “预留标识”；
+- 目的：告诉内核 “user_stack_top 以下的区域（用户栈的预期扩展方向）是合法的栈空间”，后续 sbrk 扩展时，只需修改 end_va 扩大地址范围，无需重新创建 MapArea（避免重复映射冲突）；
+- 补充：用户栈的扩展方向通常是 “从高地址向低地址扩展”（user_stack_top 是栈顶高地址，扩展时栈底向低地址移动，end_va 减小），所以这里以 user_stack_top 为起点占位。
 
 ### trampoline
 
@@ -1243,3 +1255,91 @@ flowchart LR
 带来的问题是，我们需要引入更为复杂的硬件结构辅助我们映射应用内存到物理内存。
 
 ![page-table.png](/images/20251121/page-table.png)
+
+
+### 代码修改
+
+```mermaid
+flowchart LR
+%% 样式定义：区分目录、新增文件、修改文件、普通文件
+    classDef dir fill:#e0f7fa, stroke:#00695c, rounded:8px, font-weight:bold, font-size:13px;
+    classDef new_file fill:#e8f5e8, stroke:#2e7d32, rounded:6px, font-size:12px, color:#1b5e20;
+    classDef modified fill:#fff3e0, stroke:#ef6c00, rounded:6px, font-size:12px, color:#e65100;
+    classDef normal_file fill:#f5f5f5, stroke:#78909c, rounded:6px, font-size:12px;
+
+    root["os/"]:::dir
+    os_src["src/"]:::dir
+
+%% 一级文件（src 目录下）
+    config["config.rs<br/>(修改：新增内存管理配置)"]:::modified
+    linker["linker.ld<br/>(修改：引入跳板页)"]:::modified
+    loader["loader.rs<br/>(修改：保留应用数据功能)"]:::modified
+    main["main.rs<br/>(修改)"]:::modified
+    src_other["..."]:::normal_file
+
+%% 新增 mm 子模块
+    mm["mm/<br/>(新增：内存管理子模块)"]:::dir
+    mm_address["address.rs<br/>(物理/虚拟地址抽象)"]:::new_file
+    mm_frame["frame_allocator.rs<br/>(物理页帧分配器)"]:::new_file
+    mm_heap["heap_allocator.rs<br/>(内核动态内存分配器)"]:::new_file
+    mm_memory_set["memory_set.rs<br/>(地址空间相关)"]:::new_file
+    mm_mod["mod.rs<br/>(mm 模块初始化)"]:::new_file
+    mm_page_table["page_table.rs<br/>(多级页表抽象)"]:::new_file
+
+%% syscall 子模块
+    syscall["syscall/"]:::dir
+    syscall_fs["fs.rs<br/>(修改：基于地址空间的 sys_write)"]:::modified
+    syscall_mod["mod.rs"]:::normal_file
+    syscall_process["process.rs"]:::normal_file
+
+%% task 子模块
+    task["task/"]:::dir
+    task_context["context.rs<br/>(修改：构造初始任务上下文)"]:::modified
+    task_mod["mod.rs<br/>(修改，详见文档)"]:::modified
+    task_switch["switch.rs"]:::normal_file
+    task_switch_S["switch.S"]:::normal_file
+    task_task["task.rs<br/>(修改，详见文档)"]:::modified
+
+%% trap 子模块
+    trap["trap/"]:::dir
+    trap_context["context.rs<br/>(修改：扩展 Trap 上下文)"]:::modified
+    trap_mod["mod.rs<br/>(修改：基于地址空间的 Trap 机制)"]:::modified
+    trap_S["trap.S<br/>(修改：Trap 上下文保存/恢复)"]:::modified
+
+%% 层级连接
+    root --> os_src
+    os_src --> config
+    os_src --> linker
+    os_src --> loader
+    os_src --> main
+    os_src --> src_other
+    os_src --> mm
+    os_src --> syscall
+    os_src --> task
+    os_src --> trap
+
+%% mm 子模块连接
+    mm --> mm_address
+    mm --> mm_frame
+    mm --> mm_heap
+    mm --> mm_memory_set
+    mm --> mm_mod
+    mm --> mm_page_table
+
+%% syscall 子模块连接
+    syscall --> syscall_fs
+    syscall --> syscall_mod
+    syscall --> syscall_process
+
+%% task 子模块连接
+    task --> task_context
+    task --> task_mod
+    task --> task_switch
+    task --> task_switch_S
+    task --> task_task
+
+%% trap 子模块连接
+    trap --> trap_context
+    trap --> trap_mod
+    trap --> trap_S
+```
