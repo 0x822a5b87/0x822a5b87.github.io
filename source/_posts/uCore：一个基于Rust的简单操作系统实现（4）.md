@@ -712,11 +712,157 @@ fn map_elf(memory_set: &mut MemorySet, elf: & xmas_elf::ElfFile) -> VirtPageNum 
 
 #### 其他部分初始化
 
-除了 trampoline 之外，其他的逻辑基本
+除了 trampoline 之外，其他的逻辑基本不复杂，这里就不做赘述。
 
 ## 基于地址空间的分时多任务
 
+### 建立并开启基于分页模式的虚拟地址空间
+
+机器启动时是 `M` 模式，SBI加载并初始化完成后进入 `S` 模式，随后内核初始化页表等信息后，修改 `satp` 开启分页模式。
+
+#### 创建内核地址空间
+
+>`lazy_static!` 的描述参考 [lazy_static!](#lazy_static)
+
+```rust
+// os/src/mm/memory_set.rs
+
+lazy_static! {
+    pub static ref KERNEL_SPACE: Arc<UPSafeCell<MemorySet>> = Arc::new(unsafe {
+        UPSafeCell::new(MemorySet::new_kernel()
+    )});
+}
+```
+
+创建内核地址空间需要有三部：
+
+1. 为rust初始化一个 HEAP；
+2. 为kernel初始化一个物理内存分配器；
+3. 修改 `satp` 开启分页模式。
+
+```rust
+// os/src/mm/mod.rs
+
+pub use memory_set::KERNEL_SPACE;
+
+pub fn init() {
+    heap_allocator::init_heap();
+    frame_allocator::init_frame_allocator();
+    KERNEL_SPACE.exclusive_access().activate();
+}
+```
+
+>我们先通过 `init_heap()` 初始化了堆，这里初始化的过程可以参考 [堆的初始化](#堆的初始化)
+
+随后我们初始化 `FRAME_ALLOCATOR`，这个模块绑定了 `[ekernel, MEMORY_END)` 这段 **物理内存空间**；
+
+```rust
+/// `frame_allocator.rs`
+/// initiate the frame allocator using `ekernel` and `MEMORY_END`
+pub fn init_frame_allocator() {
+    extern "C" {
+        fn ekernel();
+    }
+    FRAME_ALLOCATOR.exclusive_access().init(
+        PhysAddr::from(ekernel as usize).ceil(),
+        PhysAddr::from(MEMORY_END).floor(),
+    );
+}
+```
+
+```
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+BASE_ADDRESS = 0x80200000;
+
+SECTIONS
+{
+    // ...
+    . = BASE_ADDRESS;
+    . = ALIGN(4K);
+    ebss = .;
+    ekernel = .;
+
+    /DISCARD/ : {
+        *(.eh_frame)
+    }
+}
+```
+
+最后，我们开启了分页模式：
+
+1. `self.page_table.token()` 按照CSR要求开启 `SV39` 分页模式；
+2. `sfence.vma` 将快表清空。
+
+![satp.png](/images/20251121/satp.png)
+
+```rust
+impl MemorySet {
+    /// Change page table by writing satp CSR Register.
+    pub fn activate(&self) {
+        let satp = self.page_table.token();
+        unsafe {
+            satp::write(satp);
+            asm!("sfence.vma");
+        }
+        info!("[kernel]: enable kernel space.")
+    }
+}
+```
+
+### trampoline的实现
+
+>在 [trampoline](#trampoline) 中我们分析了为什么需要这样一个中间层。
+
 ## QA
+
+### 堆的初始化
+
+>在本项目中，HEAP_ALLOCATOR 靠 Rust 的 `#[global_allocator]` 编译器属性 “注册为全局堆分配器”，HEAP_SPACE 是堆的 “物理内存载体”，通过 init_heap() 手动绑定到分配器 —— 两者无需外部显式引用，靠编译器约定和初始化逻辑协同工作，最终让内核的 Box/Vec/Arc 等动态分配操作自动路由到这个堆。
+
+#### 三个核心组件
+
+| 组件	             | 角色	                                        | 关键特性                                                                |
+|-----------------|--------------------------------------------|---------------------------------------------------------------------|
+| HEAP_ALLOCATOR	 | 全局堆分配器实例（buddy_system_allocator 的伙伴系统分配器）	 | 被 #[global_allocator] 标记，编译器会自动将所有堆分配请求路由到它；LockedHeap 带锁，支持多线程安全。  |
+| HEAP_SPACE	     | 内核堆的 “内存空间载体”（一块静态数组）	                     | 本质是 `.bss` 段的连续内存（编译期分配大小 KERNEL_HEAP_SIZE，加载时操作系统清零），是堆分配的 “物理基础”。 |
+| init_heap()	    | 绑定 “载体” 和 “分配器” 的初始化函数	                    | 手动将 HEAP_SPACE 的地址和大小告诉 HEAP_ALLOCATOR，让分配器知道 “管理哪块内存”。             |
+
+#### `#[global_allocator]`
+
+Rust 没有内置的内核堆，必须手动实现 / 指定 “全局分配器”——`#[global_allocator]` 就是编译器提供的 “注册约定”：
+
+只要有一个静态变量被 `#[global_allocator]` 标记，且该变量实现了 `core::alloc::GlobalAlloc` trait（LockedHeap 已实现），编译器就会将所有 “动态内存分配操作”（如 `Box::new()`、`Vec::push()`、`Arc::new()`、`String::from()`等）路由到这个分配器的 `alloc/dealloc` 方法。
+
+#### HEAP_SPACE和HEAP_ALLOCATOR
+
+HEAP_ALLOCATOR 初始化时是 `LockedHeap::empty()`（空分配器，不知道要管理哪块内存），而 HEAP_SPACE 是一块 “静态分配的连续内存”（.bss 段），init_heap() 的作用就是把两者 “绑在一起”：
+
+### lazy_static
+
+>lazy_static! 是 Rust 社区提供的 “延迟初始化静态变量” 宏（属于 lazy_static crate），核心解决 “无法在编译期初始化复杂静态变量” 的问题
+
+`MemorySet::new_kernel()` 是运行时执行的函数（需要初始化页表、映射内核段等），不能直接用 static 定义（static 要求编译期常量初始化）。
+
+`lazy_static!` 的实现原理是：
+
+- 编译期：宏会生成一个隐藏的静态变量（标记为 lazy），并分配一小块空间在 .data 段（或 .bss 段，取决于是否有初始值），用于存储 “初始化状态”（是否已创建实例）和 “实例指针”；
+- 运行时：首次访问 KERNEL_SPACE 时，会检查初始化状态 —— 若未初始化，执行 MemorySet::new_kernel() 创建实例，将实例的所有权交给 Arc，再把 Arc 指针存入之前分配的 .data 段空间；后续访问直接复用该实例，不再重复初始化。
+
+`lazy_static!` 会包含三个模块：
+
+1. 实例指针：用于存储后续初始化完成后，Arc<UPSafeCell<MemorySet>> 的指针（初始值为 null 或占位符）；
+2. 初始化状态标记：一个原子变量（如 AtomicBool 或枚举 Uninit/Init），标记实例是否已初始化（初始状态为 “未初始化”）；
+3. 同步锁：用于多线程环境下的初始化互斥（避免多个线程同时触发初始化，导致实例重复创建）—— 这是 lazy_static! 默认提供的线程安全保障。
+
+实际的执行过程可以概括为：
+
+1. 获取同步锁，成功则进入 `<2>`
+2. 查询初始化状态
+    - 如果未初始化，则初始化对象，并给实例指针赋值；修改初始化状态标记；
+    - 如果已经初始化，则直接使用对象；
+3. 释放锁。
+
 
 ### elf文件的VA和PA
 
