@@ -812,9 +812,380 @@ impl MemorySet {
 
 ### trampoline的实现
 
->在 [trampoline](#trampoline) 中我们分析了为什么需要这样一个中间层。
+>在 [trampoline](#trampoline) 中我们分析了为什么需要这样一个中间层，下面我们来实现他的具体逻辑。
+
+> 在开始之前，我们可以讨论一下实现内核的两个方式：
+>
+> 1. 每个进程的地址空间都会将逻辑段分为 `内核段` 和 `用户段` 两个部分；
+> 2. 每个进程的地址空间值包含 `用户段`，他们共享一个 `内核段`。
+>
+> 第一种方式的好处是，用户和内核的切换不需要切换地址空间，只需要在进程之间切换内核段，这样实现较为简单。但是带来的问题是，每个进程都需要存储一份冗余的内核代码，浪费了大量的内存。
+>
+> 第二种方式节省内存，但是实现较为复杂。
+
+![memory.png](/images/20251121/memory.png)
+
+可以看到，我们的TrapContext**位于 `应用地址空间的次高页面` 而不是内核地址空间**。原因在于，假如我们将其放在内核栈 中，在保存 Trap 上下文之前我们必须先切换到内核地址空间，这就需要我们做两件事：
+
+1. 将内核地址空间的 token 写入 satp 寄存器，注意 satp 不是单纯的页表地址，因为它还指定了CPU的分页模式；
+2. 之后我们还需要有一个通用寄存器保存内核栈栈顶的位置，这样才能以它为基址保存 Trap 上下文。
+
+在保存 Trap 上下文之前我们必须完成这 两项工作。然而，我们无法在不破坏任何一个通用寄存器的情况下做到这一点。
+
+因为事实上我们需要用到内核的两条信息：内核地址空间 的 token 还有应用内核栈顶的位置，硬件却只提供一个 `sscratch` 可以用来进行周转。所以，我们不得不将 Trap 上下文保存在 应用地址空间的一个虚拟页面中以避免切换到内核地址空间才能保存。
+
+```rust
+#[repr(C)]
+#[derive(Debug)]
+pub struct TrapContext {
+    pub x: [usize; 32],
+    pub sstatus: Sstatus,
+    pub sepc: usize,
+    pub kernel_satp: usize,
+    pub kernel_sp: usize,
+    pub trap_handler: usize,
+}
+```
+
+老的 TrapContext 如下定义：
+
+```rust
+#[repr(C)]
+#[derive(Debug)]
+pub struct TrapContext {
+    pub x: [usize; 32],
+    pub sstatus: Sstatus,
+    pub sepc: usize,
+}
+```
+
+相对于之前，额外增加了 `kernel_satp`， `kernel_sp`， `trap_handler` 三个字段：
+
+- `kernel_satp` 表示内核地址空间的 token ；
+- `kernel_sp` 表示当前应用在内核地址空间中的内核栈栈顶的虚拟地址；
+- `trap_handler` 表示内核中 trap handler 入口点的虚拟地址。
+
+
 
 ## QA
+
+### TrapContext的初始化
+
+> 再回忆一次 `TaskContext` 和 `TrapContext` 的区别：
+>
+> TrapContext 是应用和内核切换时的上下文，而TaskContext是应用之间切换的上下文切换。
+>
+> TrapContext 是不可预测的，所以他需要保存全部的寄存器。而TaskContext是用户基于时钟或者主动调用的，是可预测的，所以只需要保存callee-saved寄存器。 
+
+`TrapContext` 是和应用强绑定的，内核在初始化应用时，会为每一个应用初始化一个 `TaskControlBlock(TCB)`，而 TrapContext 就是 TCB 的一部分。
+
+```rust
+/// The task control block (TCB) of a task.
+pub struct TaskControlBlock {
+		/// ...
+    /// The phys page number of trap context
+    pub trap_cx_ppn: PhysPageNum,
+}
+```
+
+可以看到，我们的 `TrapContext` 实际上是单独的一个内存页，TrapContext 的虚拟地址是 `0xffff_ffff_ffff_e000`（TRAP_CONTEXT_BASE），trampoline 的虚拟地址是 `0xffff_ffff_ffff_f000`（TRAMPOLINE）—— 两者是 **连续的两个高地址页**，TrapContext 紧邻 trampoline 的 “下方”（低地址侧） -- 对于任意一个进程，它的TrapContext的虚拟地址是固定的！
+
+```rust
+impl TaskControlBlock {
+    pub fn new(elf_data: &[u8], app_id: usize) -> Self {
+        // memory_set with elf program headers/trampoline/trap context/user stack
+        let (memory_set, user_sp, entry_point) = MemorySet::from_elf(elf_data);
+        let trap_cx_ppn = memory_set
+            .translate(VirtAddr::from(TRAP_CONTEXT_BASE).into())
+            .unwrap()
+            .ppn();
+  }
+}
+```
+
+而它被当做一个逻辑段，在用户内存地址初始化的时候被初始化：
+
+```rust
+impl MemorySet {
+  pub fn from_elf(elf_data: &[u8]) -> (Self, usize, usize) {
+        // map TrapContext
+        memory_set.push(
+            MapArea::new(
+                TRAP_CONTEXT_BASE.into(),
+                TRAMPOLINE.into(),
+                MapType::Framed,
+                MapPermission::R | MapPermission::W,
+            ),
+            None,
+        );
+  }
+}
+```
+
+### sscratch
+
+> 先说结论，`sscratch` 是 `trap_return` 函数第一次调用的时候，使用 `TRAP_CONTEXT_BASE` 初始化的一个指向 `TrapContext` 的指针。
+
+在用户进程启动时，内核会为每个进程初始化 TaskControlBlock：
+
+```rust
+lazy_static! {
+    /// a `TaskManager` global instance through lazy_static!
+    pub static ref TASK_MANAGER: TaskManager = {
+        // ...
+        for i in 0..num_app {
+            tasks.push(TaskControlBlock::new(get_app_data(i), i));			/// init TCB here
+        }
+        // ...
+    };
+}
+```
+
+而在初始化 TaskControlBlock 的过程中，会初始化 `TaskContext`
+
+```rust
+impl TaskControlBlock {
+  pub fn new(elf_data: &[u8], app_id: usize) -> Self {
+        let task_control_block = Self {
+            task_status,
+            task_cx: TaskContext::goto_trap_return(kernel_stack_top),			/// init task context
+            memory_set,
+            trap_cx_ppn,
+            base_size: user_sp,
+            heap_bottom: user_sp,
+            program_brk: user_sp,
+        };
+  }
+}
+```
+
+这个时候，会为 `TaskContext` 中的 `ra` 赋值：
+
+```rust
+impl TaskContext {
+    pub fn goto_trap_return(kstack_ptr: usize) -> Self {
+        Self {
+            ra: trap_return as usize,																				/// init return address
+            sp: kstack_ptr,
+            s: [0; 12],
+        }
+    }
+}
+```
+
+这里，`ra` 的值就是 `trap_return` ：也就是说，当内核第一次调度该进程的时候，内核在执行完内核态的所有指令后，会跳转到 `trap_return`。
+
+```rust
+#[no_mangle]
+pub fn trap_return() -> ! {
+    // set stvec to trampoline
+    set_user_trap_entry();
+    // get trap context pointer
+    let trap_cx_ptr = TRAP_CONTEXT_BASE;
+    // get the user page table addr with other satp fields
+    let user_satp = current_user_token();
+    extern "C" {
+        fn __alltraps();
+        fn __restore();
+    }
+    // 
+    let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
+    // trace!("[kernel] trap_return: ..before return");
+    unsafe {
+        asm!(
+            "fence.i",
+            "jr {restore_va}",         // jump to new addr of __restore asm function
+            restore_va = in(reg) restore_va,
+            in("a0") trap_cx_ptr,      // a0 = virt addr of Trap Context
+            in("a1") user_satp,        // a1 = phy addr of usr page table
+            options(noreturn)
+        );
+    }
+}
+```
+
+`trap_return` 中初始化了 `stvec`，并使用 `trap_cx_ptr -> TRAP_CONTEXT_BASE` 和 `user_stap` 作为参数调用了方法 `__restore`，值得注意的是：
+
+1. 我们使用的是 `jr restore_va` 指令而不是 `call __restore`；
+2. `restore_va` 也不是直接使用 `jr __restore`；
+
+这个逻辑可以在 [restore_va](#restore_va) 中找到具体解析，这里我们先看 `sscratch` 相关的内容。
+
+在 `__restore` 中，我们将 `a0 = trap_cx_ptr`  赋值给了 `sscratch`，于是初始化完成。
+
+### restore_va
+
+> 在开始之前，我们需要先了解 `linker.ld` 中声明的地址和物理地址的关系 -- 是的，linker.ld 中的地址是虚拟地址。细节参考 [linker.ld](#linker.ld)
+
+```rust
+pub fn trap_return() -> ! {
+    extern "C" {
+        fn __alltraps();
+        fn __restore();
+    }
+    // 
+    let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
+    // trace!("[kernel] trap_return: ..before return");
+    unsafe {
+        asm!(
+            "fence.i",
+            "jr {restore_va}",         // jump to new addr of __restore asm function
+            restore_va = in(reg) restore_va,
+            in("a0") trap_cx_ptr,      // a0 = virt addr of Trap Context
+            in("a1") user_satp,        // a1 = phy addr of usr page table
+            options(noreturn)
+        );
+    }
+}
+```
+
+在内核态将控制权交还给用户态的时候，我们需要调用 `__restore`，而这里是通过 `restore_va` 这个奇怪的地址来跳转的，这是为什么？我们可以先看看 `restore_va`  这个值是怎么计算出来的。
+
+我们可以找到，我们的 `strampoline` 实在 `linkder.ld` 上定义的，它被包含在了内核的 `.text` 逻辑段中：**在加载内核代码的过程中，`strampoline` 这个 VA 被以恒等映射的方式映射到物理内存。**
+
+```assembly
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+BASE_ADDRESS = 0x80200000;
+
+SECTIONS
+{
+    . = BASE_ADDRESS;
+    skernel = .;
+
+    stext = .;
+    .text : {
+        *(.text.entry)
+        . = ALIGN(4K);
+        strampoline = .;								/// strampoline is defined here
+        *(.text.trampoline);							/// .text.trampoline is included here 
+        . = ALIGN(4K);
+        *(.text .text.*)
+    }
+}
+```
+
+在 `memory_set.rs` 中，我们提供了方法来映射 `VA` 到 `PA`：
+
+```rust
+extern "C" {
+    fn strampoline();
+}
+
+impl MemorySet {
+    /// Mention that trampoline is not collected by areas.
+    fn map_trampoline(&mut self) {
+        self.page_table.map(
+            VirtAddr::from(TRAMPOLINE).into(),
+            PhysAddr::from(strampoline as usize).into(),
+            PTEFlags::R | PTEFlags::X,
+        );
+    }
+}
+```
+
+随后，我们在**加载内核**以及**内核加载应用程序**的时候，都调用 `map_tramploine` 这个函数，将 `TRAMPOLINE` 这个VA映射到了同一个 PA。
+
+再回到 `__alltraps` 和 `__restore`，在 `trap.S` 中，我们声明 `.text.trampoline` 逻辑段和这两个方法：
+
+```assembly
+    .section .text.trampoline
+    .globl __alltraps
+    .globl __restore
+    .align 2
+__alltraps:
+	# ...
+__restore:
+	# ...
+```
+
+这里存在的一个问题是：`__alltraps` 和 `__restore` 是被引入到了 `linker.ld`  的 `.text` 段，并且它加载时尚未开启分页模式，也就是 `__alltraps` 和 `__restore` 标签的值是一个 `PA`。此时，当我们执行 `call __alltraps` 或者 `call __restore` 时将发生异常，因为此时我们已经开启了分页模式。因此，我们只能手动的计算这个他们的值。
+
+那么，我们现在可以知道几个信息：VA `TRAMPOLINE` 指向了 PA `strampoline`：
+
+- 访问 `__alltraps` 我们可以直接使用 VA `TRAMPOLINE`；
+- 访问 `__restore` 我们可以使用 VA `TRAMPOLINE + len(__alltraps)` = `TRAMPOLINE + (__restore - __alltraps)`。
+
+> 在上面的地址计算中，有一个需要注意的地方是，画内存布局图时从高到低画，但代码实际从低地址往高地址加载（trampoline 代码从下往上）
+>
+> 以 `trampoline` 为例，trampoline 的指针是 `TRAMPOLINE`，那么实际的加载的数据是从 `TRAMPOLINE` -> `TRAMPOLINE + PAGE_SIZE - 1` 这个方向去加载的。
+>
+> 也就是说，如果把 trampoline 的代码也画到内存布局图上的话，它的代码是从下往上的。
+>
+> ![addresses.png](/images/20251121/addresses.png)
+
+### linker.ld
+
+我们的 `linker.ld` 一般是如下形式，而其中声明的地址例如 `BASE_ADDRESS = 0x80200000` 都是虚拟地址 -- 不管是内核态的 linker.ld 还是用户态的 linker.ld。这也是为什么我们在之前处理 `elf` 文件的时候，可以通过 `ph.virtual_addr()` 获取到一个逻辑段的虚拟地址的原因（最简单的理解是，物理地址是运行时才有的概念，在静态文件中根本就不可能知道任何物理地址的信息）。
+
+```assembly
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+BASE_ADDRESS = 0x80200000;
+
+SECTIONS
+{
+    . = BASE_ADDRESS;
+    skernel = .;
+}
+```
+
+在 `.cargo/config.yml` 中，我们指定了该 linker.ld：
+
+```yaml
+[build]
+target = "riscv64gc-unknown-none-elf"
+
+[target.riscv64gc-unknown-none-elf]
+rustflags = [
+    "-Clink-arg=-Tsrc/linker.ld", "-Cforce-frame-pointers=yes"
+]
+```
+
+然而，在编译的过程中，我们在加载这个程序到内存时是一个裸机程序，他和其他的应用程序不一样。他是从 `M` 模式启动加载的，此时PC尚未开启分页模式 -- 也就是我们的`VA`会直接被映射到对应的 `PA`。
+
+当内核加载完成，开启分页模式后，此时再加载应用程序，此时的 `VA` 已经在加载阶段被我们映射到了 `PA`。
+
+#### M 模式启动加载
+
+1. RISC-V 复位后，CPU 进入 **M 模式**，执行 bootloader（通常是开源的 OpenSBI，或简易 bootloader）；
+2. bootloader 完成硬件初始化（如内存初始化、串口配置）后，会将内核 ELF 加载到物理地址 `0x80200000`；
+3. 随后 bootloader 切换到 **S 模式**（监督模式），并跳转到内核的入口地址（`_start`，虚拟地址 = 物理地址 = 0x80200000）；
+4. 内核后续在 S 模式运行（管理页表、处理 Trap、调度应用），M 模式仅用于 bootloader 初始化，内核运行时不涉及 M 模式。
+
+再回头看我们的 `entry.asm` 文件，这里声明了 `.text.entry` 段和 `_start`：
+
+```assembly
+    .section .text.entry								# 这里声明了 .text.entry
+    .globl _start
+_start:
+    la sp, boot_stack_top
+    call rust_main										# 这就是内核的入口地址
+```
+
+而 `linker.ld` 中将 `text.entry` 加载到了 `.text` 的起始位置：
+
+```assembly
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+BASE_ADDRESS = 0x80200000;
+
+SECTIONS
+{
+    . = BASE_ADDRESS;
+    skernel = .;
+
+    stext = .;
+    .text : {
+        *(.text.entry)									# 这里将 .text.entry 加载到 .text
+        . = ALIGN(4K);
+        strampoline = .;
+        *(.text.trampoline);
+        . = ALIGN(4K);
+        *(.text .text.*)
+    }
+}
+```
 
 ### 堆的初始化
 
