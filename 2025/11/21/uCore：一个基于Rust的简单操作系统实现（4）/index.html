@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="在这个章节，我们会实现虚拟内存机制。  1234567891011121314➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch4) cloc --include-ext&#x3D;rs,s,S,asm os     152 text files.     121 unique files.                                   126 file">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore：一个基于Rust的简单操作系统实现（4）">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="在这个章节，我们会实现虚拟内存机制。  1234567891011121314➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch4) cloc --include-ext&#x3D;rs,s,S,asm os     152 text files.     121 unique files.                                   126 file">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/app-as-full.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/satp.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/memory.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/addresses.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/kernel-as-high.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/kernel-as-low.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/satp.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/sv39-va-pa.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/sv39-pte.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/linear-table.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/linear-table.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/trie-1.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/sv39-full.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/address-translation.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/simple-base-bound.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/segmentation.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/page-table.png">
+<meta property="article:published_time" content="2025-11-21T09:11:09.000Z">
+<meta property="article:modified_time" content="2025-11-29T12:54:34.130Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="memory">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251121/app-as-full.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/","path":"2025/11/21/uCore：一个基于Rust的简单操作系统实现（4）/","title":"uCore：一个基于Rust的简单操作系统实现（4）"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore：一个基于Rust的简单操作系统实现（4） | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%A1%E7%90%86sv39%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">管理SV39多级页表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E9%A1%B5%E5%B8%A7%E7%AE%A1%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">物理页帧管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E7%89%A9%E7%90%86%E9%A1%B5%E7%9A%84%E5%88%86%E9%85%8D%E4%B8%8E%E5%9B%9E%E6%94%B6"><span class="nav-number">1.1.1.</span> <span class="nav-text">可用物理页的分配与回收</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E5%9B%9E%E6%94%B6%E7%89%A9%E7%90%86%E9%A1%B5%E5%B8%A7%E7%9A%84%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.1.2.</span> <span class="nav-text">分配&#x2F;回收物理页帧的接口</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%AE%A1%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">多级页表管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E8%AE%BF%E9%97%AE%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.2.1.</span> <span class="nav-text">页表基本数据结构与访问接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E4%B8%AD%E8%AE%BF%E9%97%AE%E7%89%A9%E7%90%86%E9%A1%B5%E5%B8%A7%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">1.2.2.</span> <span class="nav-text">内核中访问物理页帧的方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B%E5%92%8C%E6%8B%86%E9%99%A4%E8%99%9A%E5%AE%9E%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.2.3.</span> <span class="nav-text">建立和拆除虚实地址映射关系</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E4%B8%8E%E5%BA%94%E7%94%A8%E7%9A%84%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4"><span class="nav-number">2.</span> <span class="nav-text">内核与应用的地址空间</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E6%8A%BD%E8%B1%A1"><span class="nav-number">2.1.</span> <span class="nav-text">实现地址空间抽象</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E6%AE%B5%E4%B8%80%E6%AE%B5%E8%BF%9E%E7%BB%AD%E5%9C%B0%E5%9D%80%E7%9A%84%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98"><span class="nav-number">2.1.1.</span> <span class="nav-text">逻辑段：一段连续地址的虚拟内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E4%B8%80%E7%B3%BB%E5%88%97%E6%9C%89%E5%85%B3%E8%81%94%E7%9A%84%E9%80%BB%E8%BE%91%E6%AE%B5"><span class="nav-number">2.1.2.</span> <span class="nav-text">地址空间：一系列有关联的逻辑段</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4"><span class="nav-number">2.1.3.</span> <span class="nav-text">内核地址空间</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4"><span class="nav-number">2.2.</span> <span class="nav-text">应用地址空间</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96-trampoline"><span class="nav-number">2.2.1.</span> <span class="nav-text">初始化 trampoline</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8Eelf%E5%88%9D%E5%A7%8B%E5%8C%96.text.rodata.data.bss"><span class="nav-number">2.2.2.</span> <span class="nav-text">从elf初始化.text&#x2F;.rodata&#x2F;.data&#x2F;.bss</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E9%83%A8%E5%88%86%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">2.2.3.</span> <span class="nav-text">其他部分初始化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E7%9A%84%E5%88%86%E6%97%B6%E5%A4%9A%E4%BB%BB%E5%8A%A1"><span class="nav-number">3.</span> <span class="nav-text">基于地址空间的分时多任务</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B%E5%B9%B6%E5%BC%80%E5%90%AF%E5%9F%BA%E4%BA%8E%E5%88%86%E9%A1%B5%E6%A8%A1%E5%BC%8F%E7%9A%84%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4"><span class="nav-number">3.1.</span> <span class="nav-text">建立并开启基于分页模式的虚拟地址空间</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%86%85%E6%A0%B8%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4"><span class="nav-number">3.1.1.</span> <span class="nav-text">创建内核地址空间</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trampoline%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.2.</span> <span class="nav-text">trampoline的实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">4.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#trapcontext%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">TrapContext的初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sscratch"><span class="nav-number">4.2.</span> <span class="nav-text">sscratch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#restore_va"><span class="nav-number">4.3.</span> <span class="nav-text">restore_va</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">4.4.</span> <span class="nav-text">linker.ld</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#m-%E6%A8%A1%E5%BC%8F%E5%90%AF%E5%8A%A8%E5%8A%A0%E8%BD%BD"><span class="nav-number">4.4.1.</span> <span class="nav-text">M 模式启动加载</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A0%86%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">4.5.</span> <span class="nav-text">堆的初始化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E4%B8%AA%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6"><span class="nav-number">4.5.1.</span> <span class="nav-text">三个核心组件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#global_allocator"><span class="nav-number">4.5.2.</span> <span class="nav-text">#[global_allocator]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heap_space%E5%92%8Cheap_allocator"><span class="nav-number">4.5.3.</span> <span class="nav-text">HEAP_SPACE和HEAP_ALLOCATOR</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lazy_static"><span class="nav-number">4.6.</span> <span class="nav-text">lazy_static</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E6%96%87%E4%BB%B6%E7%9A%84va%E5%92%8Cpa"><span class="nav-number">4.7.</span> <span class="nav-text">elf文件的VA和PA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sbrk"><span class="nav-number">4.8.</span> <span class="nav-text">sbrk</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trampoline"><span class="nav-number">4.9.</span> <span class="nav-text">trampoline</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%B6%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">4.9.1.</span> <span class="nav-text">零、系统调用的流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E6%9C%89-trampoline"><span class="nav-number">4.9.2.</span> <span class="nav-text">一、为什么必须有 trampoline？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%A0%88%E5%92%8C%E5%BA%94%E7%94%A8%E5%86%85%E6%A0%B8%E6%A0%88%E4%BB%A5%E5%8F%8A%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">4.10.</span> <span class="nav-text">应用栈和应用内核栈以及内核栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sv39%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4"><span class="nav-number">4.11.</span> <span class="nav-text">SV39模式下的地址空间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E5%88%B0%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98"><span class="nav-number">4.12.</span> <span class="nav-text">虚拟内存到物理内存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%80%81%E7%9A%84%E5%88%86%E9%A1%B5%E9%80%BB%E8%BE%91"><span class="nav-number">4.12.1.</span> <span class="nav-text">内核态的分页逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%80%81%E9%9C%80%E8%A6%81%E6%98%A0%E5%B0%84%E7%9A%84%E7%89%A9%E7%90%86%E9%A1%B5%E5%85%B7%E4%BD%93%E6%9C%89%E5%93%AA%E4%BA%9B"><span class="nav-number">4.12.2.</span> <span class="nav-text">内核态需要映射的物理页具体有哪些</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%BB%BA%E7%AB%8B%E6%98%A0%E5%B0%84"><span class="nav-number">4.12.3.</span> <span class="nav-text">如何建立映射</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#physpagenum%E5%92%8Cframetracker"><span class="nav-number">4.13.</span> <span class="nav-text">PhysPageNum和FrameTracker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%9A%84%E5%86%85%E6%A0%B8%E7%A9%BA%E9%97%B4%E5%92%8C%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4"><span class="nav-number">4.14.</span> <span class="nav-text">内存的内核空间和用户空间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#from-%E5%92%8C-into"><span class="nav-number">4.15.</span> <span class="nav-text">from 和 into</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sv39%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%9A%84%E7%A1%AC%E4%BB%B6%E5%9F%BA%E5%9D%80"><span class="nav-number">4.16.</span> <span class="nav-text">SV39多级页表的硬件基址</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E6%A0%BC%E5%BC%8F%E4%B8%8E%E7%BB%84%E6%88%90"><span class="nav-number">4.16.1.</span> <span class="nav-text">地址格式与组成</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E9%A1%B9%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E6%8A%BD%E8%B1%A1%E4%B8%8E%E7%B1%BB%E5%9E%8B%E5%AE%9A%E4%B9%89"><span class="nav-number">4.16.2.</span> <span class="nav-text">页表项的数据结构抽象与类型定义</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E7%9A%84%E9%A1%B5%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">4.17.</span> <span class="nav-text">全局物理内存的页置换算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E9%A1%B5%E9%9D%A2%E6%8D%A2%E5%87%BA"><span class="nav-number">4.18.</span> <span class="nav-text">优化页面换出</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2"><span class="nav-number">4.18.1.</span> <span class="nav-text">优化页面置换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0cow"><span class="nav-number">4.18.2.</span> <span class="nav-text">实现COW</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8"><span class="nav-number">4.19.</span> <span class="nav-text">多级页表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%BA%BF%E6%80%A7%E8%A1%A8"><span class="nav-number">4.19.1.</span> <span class="nav-text">单级页表&#x2F;线性表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%97%E5%85%B8%E6%A0%91"><span class="nav-number">4.19.2.</span> <span class="nav-text">字典树</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%A7%E8%A1%A8"><span class="nav-number">4.20.</span> <span class="nav-text">大表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sv39%E8%BD%AC%E6%8D%A2%E8%BF%87%E7%A8%8B"><span class="nav-number">4.21.</span> <span class="nav-text">SV39转换过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E7%9A%84%E4%B8%80%E4%BA%9B%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.22.</span> <span class="nav-text">内存管理的一些示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E6%AE%B5%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">4.22.1.</span> <span class="nav-text">分段内存管理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">4.22.2.</span> <span class="nav-text">分页内存管理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E4%BF%AE%E6%94%B9"><span class="nav-number">4.23.</span> <span class="nav-text">代码修改</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore：一个基于Rust的简单操作系统实现（4） | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore：一个基于Rust的简单操作系统实现（4）
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-21 17:11:09" itemprop="dateCreated datePublished" datetime="2025-11-21T17:11:09+08:00">2025-11-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-29 20:54:34" itemprop="dateModified" datetime="2025-11-29T20:54:34+08:00">2025-11-29</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>在这个章节，我们会实现虚拟内存机制。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">➜  ~/code/2025a-rcore-0x822a5b87 git:(ch4) cloc --include-ext=rs,s,S,asm os</span><br><span class="line">     152 text files.</span><br><span class="line">     121 unique files.                              </span><br><span class="line">     126 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.82  T=0.01 s (2328.7 files/s, 184956.7 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Rust                            29            193            386           1866</span><br><span class="line">Assembly                         4             10             26            140</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            33            203            412           2006</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h2 id="管理sv39多级页表">管理SV39多级页表</h2>
+<h3 id="物理页帧管理">物理页帧管理</h3>
+<pre class="mermaid">flowchart TD
+    %% 初始化阶段：延迟加载（首次访问时触发）
+    A["内核启动完成，进入运行阶段"] --> B{"首次调用 frame_alloc() / 首次访问 FRAME_ALLOCATOR？"}
+    B -->|是| C["lazy_static! 触发延迟初始化"]
+    C --> D["调用 FrameAllocatorImpl::new() 创建分配器实例"]
+    D --> E["调用 init(l: PhysPageNum, r: PhysPageNum)"]
+    E --> F["设置空闲物理页范围：current=ekernel（内核结束页），end=MEMORY_END（物理内存结束页）"]
+    F --> G["FRAME_ALLOCATOR 初始化完成（存入 UPSafeCell 中）"]
+    
+    %% 非首次访问：直接使用已初始化的分配器
+    B -->|否| G["直接使用已初始化的 FRAME_ALLOCATOR（从 UPSafeCell 取出）"]
+
+    %% 分配流程：内核/用户申请物理内存
+    G --> H["内核模块/用户进程调用 frame_alloc()"]
+    H --> I["通过 UPSafeCell 获取 FRAME_ALLOCATOR 可变引用（线程安全）"]
+    I --> J["调用 FrameAllocatorImpl::alloc()"]
+    
+    %% 分配逻辑分支：优先回收池，再新分配
+    J --> K{"回收池 recycled 非空？"}
+    K -->|是| L["弹出回收池中的 PhysPageNum"]
+    K -->|否| M{"current < end？"}
+    M -->|是| N["分配 current 对应的 PhysPageNum，current += 1"]
+    M -->|否| O["分配失败，返回 None"]
+    
+    %% 封装为 RAII 句柄
+    L --> P["将 PhysPageNum 封装为 FrameTracker（持有唯一所有权）"]
+    N --> P
+    P --> Q["释放 UPSafeCell 引用，返回 FrameTracker 给调用方"]
+    Q --> R["调用方使用 FrameTracker"]
+    R --> S["通过 FrameTracker.ppn() 获取 PhysPageNum"]
+    S --> T["将 PhysPageNum 转为 PhysAddr，用于页表映射（VA→PA）或直接操作物理内存"]
+
+    %% 自动释放流程：RAII 核心（无需手动调用）
+    R --> U["FrameTracker 离开作用域（如变量失效、函数返回）"]
+    U --> V["触发 FrameTracker::Drop 实现"]
+    V --> W["通过 UPSafeCell 获取 FRAME_ALLOCATOR 可变引用"]
+    W --> X["调用 FrameAllocatorImpl::dealloc(ppn)"]
+    X --> Y["将 PhysPageNum 存入 recycled 回收池"]
+    Y --> Z["释放 UPSafeCell 引用，物理页帧回归空闲状态"]
+
+    %% 手动释放流程（可选分支）
+    R --> AA{"调用方主动调用 frame_dealloc(frame: FrameTracker)"}
+    AA -->|是| AB["FrameTracker 转移所有权到模块"]
+    %% 复用自动释放的后续逻辑
+    AB --> W["通过 UPSafeCell 获取 FRAME_ALLOCATOR 可变引用"]
+    AA -->|否| U["等待自动释放"]
+
+    %% 样式优化（增强可读性）
+    classDef lazy_init fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef alloc fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef free fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+
+    class A,B,C,D,E,F,G lazy_init
+    class H,I,J,K,L,M,N,O,P,Q,R,S,T alloc
+    class U,V,W,X,Y,Z,AA,AB free
+    class O error</pre>
+<p>物理页帧存放的数据从内容上来说分为两种：</p>
+<ol type="1">
+<li>应用/内核的数据或者代码；</li>
+<li>应用/内核的多级页表；</li>
+</ol>
+<p>本质上，物理页帧的核心是 “存储单元”——
+无论存放的是代码、应用数据，还是页表本身，在物理内存层面都是
+“二进制数据块”，页表只是 “具有特殊用途的数据”（用于地址转换的
+“映射表数据”）</p>
+<h4 id="可用物理页的分配与回收">可用物理页的分配与回收</h4>
+<pre class="mermaid">flowchart TB
+%% 样式定义：区分类型、Trait、实例、模块、层级，提升可读性
+    classDef type fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600, font-size:12px;
+    classDef trait fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-weight:600, font-size:12px;
+    classDef instance fill:#e8f5e8, stroke:#2e7d32, rounded:8px, font-weight:600, font-size:12px;
+    classDef module fill:#f8fafc, stroke:#94a3b8, rounded:8px, font-size:12px;
+    classDef layer fill:#fef2f8, stroke:#f43f5e, rounded:8px, font-size:12px;
+    classDef arrow stroke:#64748b, stroke-width:1.5px, font-size:11px;
+    classDef raii_arrow stroke:#e11d48, stroke-width:2px, font-style:italic, font-size:11px;
+
+%% 核心基础类型（地址/页号抽象）
+    PhysAddr["PhysAddr<br/>物理地址"]:::type
+    VirtAddr["VirtAddr<br/>虚拟地址"]:::type
+    PhysPageNum["PhysPageNum<br/>物理页号"]:::type
+    VirtPageNum["VirtPageNum<br/>虚拟页号"]:::type
+
+%% 核心管理组件（Trait + 实现 + 全局实例 + RAII封装）
+    FrameAllocator["FrameAllocator<br/>物理页帧分配器Trait<br/>{alloc(), dealloc()}"]:::trait
+    StackFrameAllocator["StackFrameAllocator<br/>FrameAllocator实现"]:::type
+    FRAME_ALLOCATOR["FRAME_ALLOCATOR<br/>全局唯一实例<br/>(StackFrameAllocator)"]:::instance
+    FrameTracker["FrameTracker<br/>RAII物理页持有者"]:::type
+
+%% 模块、层级结构
+    allocator["frame_allocator.rs<br/>模块<br/>{frame_alloc(), frame_dealloc()}"]:::module
+
+    subgraph 页表管理[PageTable 页表]
+        direction LR
+        root_ppn["root_ppn<br/>根页号"]:::type
+        subgraph 页表帧集合[页表帧集合]
+            direction LR
+            FT0["FrameTracker0"]:::type
+            FT1["..."]:::type
+            FTn["FrameTracker511"]:::type
+        end
+        root_ppn --> 页表帧集合
+    end
+
+    subgraph 用户层[用户应用]
+        vm1["用户应用1<br/>虚拟内存空间"]:::layer
+        vm2["用户应用2<br/>虚拟内存空间"]:::layer
+    end
+
+    subgraph 硬件层[PC硬件]
+        memory["硬件内存<br/>物理地址空间"]:::layer
+    end
+
+%% 1. 地址→页号的基础转换（转义特殊字符）
+    VirtAddr -.->|"into() 转换"| VirtPageNum:::arrow
+    PhysAddr -.->|"into() 转换"| PhysPageNum:::arrow
+
+%% 2. 虚拟地址与应用/页表的关联
+    vm1 -->|"使用"| VirtAddr:::arrow
+    vm2 -->|"使用"| VirtAddr:::arrow
+    VirtPageNum -.->|"通过页表映射"| 页表管理:::arrow
+
+%% 3. 分配器Trait→实现→全局实例的依赖链
+    FrameAllocator -->|"被实现"| StackFrameAllocator:::arrow
+    StackFrameAllocator -->|"延迟加载初始化"| FRAME_ALLOCATOR:::arrow
+    FRAME_ALLOCATOR -->|"归属"| allocator:::arrow
+
+%% 4. 核心分配流程（突出模块接口 + RAII封装）
+    allocator -->|"frame_alloc() 对外接口"| FRAME_ALLOCATOR:::arrow
+    FRAME_ALLOCATOR -->|"alloc() 分配物理页号"| PhysPageNum:::arrow
+    PhysPageNum -->|"wrap 封装为RAII持有者"| FrameTracker:::arrow
+
+%% 5. RAII自动回收流程（高亮核心特性）
+    FrameTracker -.->|"drop() 自动触发"| allocator:::raii_arrow
+    allocator -.->|"frame_dealloc() 内部调用"| FRAME_ALLOCATOR:::raii_arrow
+    FRAME_ALLOCATOR -.->|"dealloc() 回收物理页号"| PhysPageNum:::raii_arrow
+
+%% 6. 物理页与硬件/页表的绑定
+    FrameTracker -->|"持有并映射为"| 页表帧集合:::arrow
+    PhysPageNum -->|"对应"| PhysAddr:::arrow
+    PhysAddr -->|"映射到"| memory:::arrow
+    页表管理 -.->|"翻译虚拟地址得到"| PhysAddr:::arrow</pre>
+<blockquote>
+<p>区分内核空间和物理空间可以参考 <a
+href="#内存的内核空间和用户空间">内存的内核空间和用户空间</a></p>
+</blockquote>
+<p>物理页的实际大小，由三个参数共同决定。他们大小从也是
+<code>virt memory</code> &lt; <code>ekernel</code> &lt;
+<code>MEMORY_END</code>。<strong>这里需要注意的是，这三个值都是物理地址而非虚拟地址。</strong></p>
+<ol type="1">
+<li>qemu模拟的 <code>virt</code> 硬件平台上的物理内存的起始地址
+<code>0x80000000</code>；</li>
+<li><code>ekernel</code> 在 <code>linker</code> 中，我们在完成
+<code>.bss</code> 并且进行内存对齐之后，指定了 <code>ekernel</code>
+这个参数，表示内核代码的结束位置；</li>
+<li><code>MEMORY_END</code> 在 <code>config.rs</code> 中硬编码的地址
+<code>0x88000000</code>。</li>
+</ol>
+<p>随后，我们定义：</p>
+<ol type="1">
+<li><code>trait</code> <code>FrameAllocator</code>
+用于管理我们全部可用的物理内存；</li>
+<li><code>impl</code> <code>StackFrameAllocator</code>
+是基于Vec的一个简单实现；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/mm/frame_allocator.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">trait</span> <span class="title class_">FrameAllocator</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">alloc</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;PhysPageNum&gt;;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">dealloc</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, ppn: PhysPageNum);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>StackFrameAllocator</code> 的实现逻辑也非常简单：</p>
+<ol type="1">
+<li><code>current</code> 和 <code>end</code>
+表示空闲内存的页号，这个页号初始由 <code>ekernel</code> 和
+<code>MEMORY_END</code> 进行内存对齐后计算得出；</li>
+<li><code>recycled</code> 表示 <code>alloc</code> 后
+<code>dealloc</code> 的内存，我们分配时也优先从这里开始分配；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/mm/frame_allocator.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">StackFrameAllocator</span> &#123;</span><br><span class="line">    current: <span class="type">usize</span>,  <span class="comment">//空闲内存的起始物理页号</span></span><br><span class="line">    end: <span class="type">usize</span>,      <span class="comment">//空闲内存的结束物理页号</span></span><br><span class="line">    recycled: <span class="type">Vec</span>&lt;<span class="type">usize</span>&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// os/src/mm/frame_allocator.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">FrameAllocator</span> <span class="keyword">for</span> <span class="title class_">StackFrameAllocator</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            current: <span class="number">0</span>,</span><br><span class="line">            end: <span class="number">0</span>,</span><br><span class="line">            recycled: <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">alloc</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;PhysPageNum&gt; &#123;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(ppn) = <span class="keyword">self</span>.recycled.<span class="title function_ invoke__">pop</span>() &#123;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(ppn.<span class="title function_ invoke__">into</span>())</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">self</span>.current == <span class="keyword">self</span>.end &#123;</span><br><span class="line">                <span class="literal">None</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">self</span>.current += <span class="number">1</span>;</span><br><span class="line">                <span class="title function_ invoke__">Some</span>((<span class="keyword">self</span>.current - <span class="number">1</span>).<span class="title function_ invoke__">into</span>())</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">dealloc</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, ppn: PhysPageNum) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">ppn</span> = ppn.<span class="number">0</span>;</span><br><span class="line">        <span class="comment">// validity check</span></span><br><span class="line">        <span class="keyword">if</span> ppn &gt;= <span class="keyword">self</span>.current || <span class="keyword">self</span>.recycled</span><br><span class="line">            .<span class="title function_ invoke__">iter</span>()</span><br><span class="line">            .<span class="title function_ invoke__">find</span>(|&amp;v| &#123;*v == ppn&#125;)</span><br><span class="line">            .<span class="title function_ invoke__">is_some</span>() &#123;</span><br><span class="line">            <span class="built_in">panic!</span>(<span class="string">&quot;Frame ppn=&#123;:#x&#125; has not been allocated!&quot;</span>, ppn);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// recycle</span></span><br><span class="line">        <span class="keyword">self</span>.recycled.<span class="title function_ invoke__">push</span>(ppn);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">StackFrameAllocator</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">init</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, l: PhysPageNum, r: PhysPageNum) &#123;</span><br><span class="line">        <span class="keyword">self</span>.current = l.<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">self</span>.end = r.<span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>随后初始化一个全局的
+<code>FRAME_ALLOCATOR</code>，这里需要注意的是，我们要把物理地址
+<code>ekernel</code> 和 <code>MEMORY_END</code> 转换为对应的页号。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="title class_">FrameAllocatorImpl</span> = StackFrameAllocator;</span><br><span class="line"></span><br><span class="line">lazy_static! &#123;</span><br><span class="line">    <span class="comment">/// frame allocator instance through lazy_static!</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">static</span> <span class="keyword">ref</span> FRAME_ALLOCATOR: UPSafeCell&lt;FrameAllocatorImpl&gt; =</span><br><span class="line">        <span class="keyword">unsafe</span> &#123; UPSafeCell::<span class="title function_ invoke__">new</span>(FrameAllocatorImpl::<span class="title function_ invoke__">new</span>()) &#125;;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/// initiate the frame allocator using `ekernel` and `MEMORY_END`</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">init_frame_allocator</span>() &#123;</span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">ekernel</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    FRAME_ALLOCATOR.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">init</span>(</span><br><span class="line">        PhysAddr::<span class="title function_ invoke__">from</span>(ekernel <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">ceil</span>(),</span><br><span class="line">        PhysAddr::<span class="title function_ invoke__">from</span>(MEMORY_END).<span class="title function_ invoke__">floor</span>(),</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="分配回收物理页帧的接口">分配/回收物理页帧的接口</h4>
+<ol type="1">
+<li><code>alloc</code> 和 <code>dealloc</code>
+都是非pub的函数，我们需要对外暴露分配的接口。</li>
+<li>这里非常值得注意的一点是，我们 <code>frame_alloc()</code>
+分配得到的是 <code>FrameTracker</code> 而不是
+<code>PhysPageNum</code>，这个设计很巧妙，可以参考 <a
+href="#physpagenum和frametracker">PhysPageNum和FrameTracker</a></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/mm/frame_allocator.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">frame_alloc</span>() <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;FrameTracker&gt; &#123;</span><br><span class="line">    FRAME_ALLOCATOR</span><br><span class="line">        .<span class="title function_ invoke__">exclusive_access</span>()</span><br><span class="line">        .<span class="title function_ invoke__">alloc</span>()</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|ppn| FrameTracker::<span class="title function_ invoke__">new</span>(ppn))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">frame_dealloc</span>(ppn: PhysPageNum) &#123;</span><br><span class="line">    FRAME_ALLOCATOR</span><br><span class="line">        .<span class="title function_ invoke__">exclusive_access</span>()</span><br><span class="line">        .<span class="title function_ invoke__">dealloc</span>(ppn);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>FrameTracker</code> 的实现</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// tracker for physical page frame allocation and deallocation</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">FrameTracker</span> &#123;</span><br><span class="line">    <span class="comment">/// physical page number</span></span><br><span class="line">    <span class="keyword">pub</span> ppn: PhysPageNum,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">FrameTracker</span> &#123;</span><br><span class="line">    <span class="comment">/// Create a new FrameTracker</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(ppn: PhysPageNum) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="comment">// page cleaning</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">bytes_array</span> = ppn.<span class="title function_ invoke__">get_bytes_array</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> bytes_array &#123;</span><br><span class="line">            *i = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">Self</span> &#123; ppn &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">FrameTracker</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="title function_ invoke__">frame_dealloc</span>(<span class="keyword">self</span>.ppn);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="多级页表管理">多级页表管理</h3>
+<h4 id="页表基本数据结构与访问接口">页表基本数据结构与访问接口</h4>
+<p>页表是一个多级的数据结构，他的作用就是将 <code>VPN</code> 映射到
+<code>PPN</code>，而这里有一点需要注意的是：</p>
+<ol type="1">
+<li>页表本身也是数据，每一个页表都会有一个唯一的入口地址，而这个地址是他的
+PPN；</li>
+<li>页表内部 <code>frames</code> 是通过 <code>FrameTracker</code> 来实现
+PPN
+管理，这里在我们当前的逻辑下是可以的：因为我们暂时没有<strong>共享物理页</strong>的场景。在实际的应用中：当多个进程共享一个
+PPN 时（例如进程创建时的
+COW），会导致内存管理异常，因为当共享的某一个进程结束时，这个内存将被释放，而另外一个引用该
+PPN 的进程会引用一个悬垂指针。</li>
+<li>此外，在开启分页后，无论是内核态还是用户态都是通过虚拟地址来访问物理内存。也就是说，我们必须将物理内存中<strong>所有需要访问的物理页</strong>都设定一个
+<code>VPN</code> -&gt; <code>PPN</code>
+的映射关系并且存储到页表中。而具体的这个映射逻辑，请参考 <a
+href="#虚拟内存到物理内存">虚拟内存到物理内存</a>。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// page table structure</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">PageTable</span> &#123;</span><br><span class="line">    <span class="comment">/// Each user-facing application has a corresponding unique multi-level page table,</span></span><br><span class="line">    <span class="comment">/// which means the starting address of each page table is unique.</span></span><br><span class="line">    <span class="comment">/// That also means we must save root ppn as a `identifier`.</span></span><br><span class="line">    root_ppn: PhysPageNum,</span><br><span class="line">    <span class="comment">/// `frames` contains all page table entries (including the root PTE) and stores them as a vector.</span></span><br><span class="line">    frames: <span class="type">Vec</span>&lt;FrameTracker&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">PageTable</span> &#123;</span><br><span class="line">    <span class="comment">/// set the map between virtual page number and physical page number</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">map</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, vpn: VirtPageNum, ppn: PhysPageNum, flags: PTEFlags)&#123;&#125;</span><br><span class="line">    <span class="comment">/// remove the map between virtual page number and physical page number</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">unmap</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, vpn: VirtPageNum)&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="内核中访问物理页帧的方法">内核中访问物理页帧的方法</h4>
+<ul>
+<li><code>get_pte_array</code>
+返回的是一个页表项定长数组的可变引用，代表多级页表中的一个节点；</li>
+<li><code>get_bytes_array</code>
+返回的是一个字节数组的可变引用，可以以字节为粒度对物理页帧上的数据进行访问，前面进行数据清零就用到了这个方法；</li>
+<li><code>get_mut</code>
+是个泛型函数，可以获取一个恰好放在一个物理页帧开头的类型为 T
+的数据的可变引用。例如，我们获取 <code>TrapContext</code>
+就可以使用它。</li>
+</ul>
+<blockquote>
+<p>这里值得注意的是，<code>get_pte_array</code> 这个方法只能对于
+<code>PageTable#root_ppn</code> 调用。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">PhysAddr</span> &#123;</span><br><span class="line">    <span class="comment">///Get mutable reference to `PhysAddr` value</span></span><br><span class="line">    <span class="comment">/// Get the mutable reference of physical address</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">get_mut</span>&lt;T&gt;(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> T &#123;</span><br><span class="line">        <span class="keyword">unsafe</span> &#123; (<span class="keyword">self</span>.<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">mut</span> T).<span class="title function_ invoke__">as_mut</span>().<span class="title function_ invoke__">unwrap</span>() &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">PhysPageNum</span> &#123;</span><br><span class="line">    <span class="comment">/// Get the reference of page table(array of PTEs)</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">get_pte_array</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> [PageTableEntry] &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pa</span>: PhysAddr = (*<span class="keyword">self</span>).<span class="title function_ invoke__">into</span>();</span><br><span class="line">        <span class="keyword">unsafe</span> &#123; core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(pa.<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">mut</span> PageTableEntry, <span class="number">512</span>) &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// Get the reference of page(array of bytes)</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">get_bytes_array</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> [<span class="type">u8</span>] &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pa</span>: PhysAddr = (*<span class="keyword">self</span>).<span class="title function_ invoke__">into</span>();</span><br><span class="line">        <span class="keyword">unsafe</span> &#123; core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(pa.<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>, <span class="number">4096</span>) &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// Get the mutable reference of physical address</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">get_mut</span>&lt;T&gt;(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> T &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pa</span>: PhysAddr = (*<span class="keyword">self</span>).<span class="title function_ invoke__">into</span>();</span><br><span class="line">        pa.<span class="title function_ invoke__">get_mut</span>()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="建立和拆除虚实地址映射关系">建立和拆除虚实地址映射关系</h4>
+<p>这个逻辑较为简单，就是使用VPN的三级索引去查询PageTable，这里需要注意的几个点是：</p>
+<ol type="1">
+<li><code>RV39</code> 中 <code>VPN</code> 是三个 <code>9bit</code> 的
+<code>usize</code>；</li>
+<li><code>VPN</code> 不是 <code>VA</code>，他和 <code>offset</code>
+结合才是 <code>VA</code>；</li>
+<li><code>ppn.get_pte_array()</code> 获取的是通过 <code>root_ppn</code>
+读取的连续的 PTE 对象。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">VirtPageNum</span> &#123;</span><br><span class="line">    <span class="comment">/// Get the indexes of the page table entry</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">indexes</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> [<span class="type">usize</span>; <span class="number">3</span>] &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">vpn</span> = <span class="keyword">self</span>.<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">idx</span> = [<span class="number">0usize</span>; <span class="number">3</span>];</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> (<span class="number">0</span>..<span class="number">3</span>).<span class="title function_ invoke__">rev</span>() &#123;</span><br><span class="line">            idx[i] = vpn &amp; <span class="number">0x1FF</span>;</span><br><span class="line">            vpn &gt;&gt;= <span class="number">9</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        idx</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">PageTable</span> &#123;</span><br><span class="line">    <span class="comment">/// Find PageTableEntry by VirtPageNum, create a frame for a 4KB page table if not exist</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">find_pte_create</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, vpn: VirtPageNum) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;&amp;<span class="keyword">mut</span> PageTableEntry&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">idxs</span> = vpn.<span class="title function_ invoke__">indexes</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">ppn</span> = <span class="keyword">self</span>.root_ppn;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">result</span>: <span class="type">Option</span>&lt;&amp;<span class="keyword">mut</span> PageTableEntry&gt; = <span class="literal">None</span>;</span><br><span class="line">        <span class="keyword">for</span> (i, idx) <span class="keyword">in</span> idxs.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">enumerate</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">pte</span> = &amp;<span class="keyword">mut</span> ppn.<span class="title function_ invoke__">get_pte_array</span>()[*idx];</span><br><span class="line">            <span class="keyword">if</span> i == <span class="number">2</span> &#123;</span><br><span class="line">                result = <span class="title function_ invoke__">Some</span>(pte);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> !pte.<span class="title function_ invoke__">is_valid</span>() &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">frame</span> = <span class="title function_ invoke__">frame_alloc</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">                *pte = PageTableEntry::<span class="title function_ invoke__">new</span>(frame.ppn, PTEFlags::V);</span><br><span class="line">                <span class="keyword">self</span>.frames.<span class="title function_ invoke__">push</span>(frame);</span><br><span class="line">            &#125;</span><br><span class="line">            ppn = pte.<span class="title function_ invoke__">ppn</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        result</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此外，我们在一些场景下可能需要访问非当前地址空间的页表（例如，在系统调用时内核态需要访问用户态的内存空间），此时我们需要一个方法，能查询到其他地址空间的页表但是不影响其所有权，我们提供了下面这个方法：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">PageTable</span> &#123;</span><br><span class="line">    <span class="comment">/// Temporarily used to get arguments from user space.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">from_token</span>(satp: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            root_ppn: PhysPageNum::<span class="title function_ invoke__">from</span>(satp &amp; ((<span class="number">1usize</span> &lt;&lt; <span class="number">44</span>) - <span class="number">1</span>)),</span><br><span class="line">            frames: <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// get the page table entry from the virtual page number</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">translate</span>(&amp;<span class="keyword">self</span>, vpn: VirtPageNum) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;PageTableEntry&gt; &#123;</span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">find_pte</span>(vpn).<span class="title function_ invoke__">map</span>(|pte| *pte)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="内核与应用的地址空间">内核与应用的地址空间</h2>
+<p><code>PageTable</code>
+以页为单位维护虚拟内存到物理内存的映射关系，但是在实际的应用中，每个应用都会维护一个自己的页表（包括内核）。而这个应用间独立的页表由
+<code>地址空间</code> 来维护。</p>
+<h3 id="实现地址空间抽象">实现地址空间抽象</h3>
+<h4
+id="逻辑段一段连续地址的虚拟内存">逻辑段：一段连续地址的虚拟内存</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// map area structure, controls a contiguous piece of virtual memory</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MapArea</span> &#123;</span><br><span class="line">    vpn_range: VPNRange,</span><br><span class="line">    data_frames: BTreeMap&lt;VirtPageNum, FrameTracker&gt;,</span><br><span class="line">    map_type: MapType,</span><br><span class="line">    map_perm: MapPermission,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li>MapArea 代表一段连续的 虚拟内存区间（逻辑段）；
+<ul>
+<li>vpn_range：保存该段包含的连续 VirtPageNum
+区间，明确虚拟内存的范围（段内连续）；</li>
+<li>data_frames：仅当逻辑段采用 MapType::Framed 映射时有效，是存储
+“虚拟页（VPN）→ 物理页帧（FrameTracker）”
+的键值对容器（BTreeMap）。这些物理页帧用于存放实际数据（而非多级页表的中间节点），核心作用是持有物理页的所有权；</li>
+<li>map_type：指定该段虚拟内存的映射方式（如恒等映射、动态映射，后续可扩展文件映射等）；</li>
+<li>map_perm：指定该段的访问权限（R/W/X/ 用户态可访问，即 U
+位），与页表项（PTE）的权限一致；</li>
+</ul></li>
+<li>VPNRange：通过 SimpleRange<VirtPageNum> 组织连续的 VirtPageNum
+区间，为 vpn_range 提供底层支持；
+<ul>
+<li>这些逻辑段的虚拟地址通常是连续的，因此用 vpn_range 明确其范围；</li>
+<li>不同段的访问权限不同（.data 为 R/W、<code>.rodata</code> 为 R、.text
+为 R/X），因此用 map_perm 定义权限；</li>
+<li>不同段的映射方式不同（用户 heap 需动态映射、内核 .text/.data
+需恒等映射），因此用 map_type 区分；</li>
+<li>MapArea
+管理一段连续的虚拟内存及其对应的物理内存，需对二者的生命周期负责：虚拟内存的范围由
+vpn_range 界定，物理内存的所有权由 data_frames 持有（销毁 MapArea
+时自动回收物理页）；同时 data_frames 提供 “VPN→FrameTracker”
+的高效反向查询，比遍历页表更快；</li>
+<li>data_frames 与 PageTable 的核心差别：data_frames 是物理内存的
+“所有者”（管归属、管生命周期），PageTable 是地址翻译的 “查询工具”（管
+VA→PA 映射、管权限检查），二者分工协作，缺一不可。</li>
+</ul></li>
+</ol>
+<h4
+id="地址空间一系列有关联的逻辑段">地址空间：一系列有关联的逻辑段</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// address space</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    page_table: PageTable,</span><br><span class="line">    areas: <span class="type">Vec</span>&lt;MapArea&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li>MemorySet
+一个有关联但是不一定连续的逻辑段的集合。前面提到一个进程里会有
+<code>.data</code>， <code>.text</code>， <code>.rodata</code>
+等逻辑段，这些逻辑段用 <code>MapArea</code> 来表示，而 MemorySet
+是这些逻辑段的集合。
+<ul>
+<li>page_table
+页表，每个进程都有自己的独立的页表。不同进程的同一个VA会通过页表映射到独立的PA；</li>
+<li>areas 是 MapArea 的集合，包含了一个程序的所有逻辑段；</li>
+</ul></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="comment">/// 1. Map a `MapArea` to the page table.</span></span><br><span class="line">    <span class="comment">/// 2. If any input files are provided, copy the data from the input files into the newly initialized `MapArea`.</span></span><br><span class="line">    <span class="comment">/// 3. Push MapArea into `MemorySet`</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">push</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, <span class="keyword">mut</span> map_area: MapArea, data: <span class="type">Option</span>&lt;&amp;[<span class="type">u8</span>]&gt;) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Create a `MapArea` spanning the virtual address (VA) range from `start_va` to `end_va` with the given `permission`.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">insert_framed_area</span>(</span><br><span class="line">        &amp;<span class="keyword">mut</span> <span class="keyword">self</span>,</span><br><span class="line">        start_va: VirtAddr,</span><br><span class="line">        end_va: VirtAddr,</span><br><span class="line">        permission: MapPermission,</span><br><span class="line">    ) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Without kernel stacks.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new_kernel</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Include sections in elf and trampoline and TrapContext and user stack,</span></span><br><span class="line">    <span class="comment">/// also returns user_sp_base and entry point.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">from_elf</span>(elf_data: &amp;[<span class="type">u8</span>]) <span class="punctuation">-&gt;</span> (<span class="keyword">Self</span>, <span class="type">usize</span>, <span class="type">usize</span>) &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>MemorySet</code></p>
+</blockquote>
+<ul>
+<li><code>push</code>：
+<ol type="1">
+<li>为 <code>map_area</code> 中所有的 <code>vpn</code> 分配对应的
+<code>ppn</code>，并更新页表，<strong>注意，此时我们只是初始化了 VPN
+-&gt; PPN 的映射关系，此时数据是没有写入到内存的。</strong></li>
+<li>如果提供了 <code>data</code> 作为输入，我们将 <code>data</code>
+复制到主存。<strong>注意，在这个时刻我们已经开始需要使用PageTable来映射VPN
+-&gt; PPN了。</strong></li>
+<li>将构造好的 <code>map_area</code> 加入我们的地址空间 -- 也就是
+MemorySet。</li>
+</ol></li>
+<li><code>insert_framed_area</code> 创建一个从 <code>start_va</code>
+开始到 <code>end_va</code> 结束的 MapArea。</li>
+</ul>
+<h4 id="内核地址空间">内核地址空间</h4>
+<p>启用分页模式下，内核代码的访存地址也会被视为一个虚拟地址并需要经过
+MMU
+的地址转换，因此我们也需要为内核对应构造一个地址空间，它除了仍然需要允许内核的各数据段能够被正常访问之后，还需要包含所有应用的内核栈以及一个
+跳板 (Trampoline) 。</p>
+<p>在开始梳理代码之前，我们需要先了解以下两个内容：</p>
+<ul>
+<li><a href="#sv39模式下的地址空间">sv39模式下的地址空间</a></li>
+<li><a
+href="#应用栈和应用内核栈以及内核栈">应用栈和应用内核栈以及内核栈</a></li>
+</ul>
+<p><code>new_kernel()</code> 方法将
+<code>.text/.rodata/.data/.bss</code> 以及
+<code>内核-&gt;内存结束</code> 的这五个逻辑段初始化完成。</p>
+<blockquote>
+<p><strong>这里最需要注意的是：我们所有的 memory_set.push() 方法都是不带
+<code>data</code>
+参数的，这是因为我们这里使用的恒等映射，他所访问的内存区域本身就是存在数据的。</strong></p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/mm/memory_set.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">stext</span>();</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">etext</span>();</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="comment">/// Without kernel stacks.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new_kernel</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">memory_set</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">new_bare</span>();</span><br><span class="line">        <span class="comment">// map trampoline</span></span><br><span class="line">        memory_set.<span class="title function_ invoke__">map_trampoline</span>();</span><br><span class="line">        <span class="comment">// map kernel sections</span></span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;[main][kernel] Hello, world!&quot;</span>);</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;mapping .text section&quot;</span>);</span><br><span class="line">        memory_set.<span class="title function_ invoke__">push</span>(MapArea::<span class="title function_ invoke__">new</span>(</span><br><span class="line">            (stext <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            (etext <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            MapType::Identical,</span><br><span class="line">            MapPermission::R | MapPermission::X,</span><br><span class="line">        ), <span class="literal">None</span>);</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        memory_set</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的代码我们可以把LOG日志打开测试：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make run BASE=4 TEST=4 LOG=TRACE</span><br></pre></td></tr></table></figure>
+<p>可以看到我们的输出，起始位置和我们 linker.ld 的声明是一致的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[TRACE] [main][kernel] .text [0x80200000, 0x8020c000)</span><br><span class="line">[DEBUG] [main][kernel] .rodata [0x8020c000, 0x80210000)</span><br><span class="line">[ INFO] [main][kernel] .data [0x80210000, 0x8023a000)</span><br><span class="line">[ WARN] [main][kernel] boot_stack top=bottom=0x8024a000, lower_bound=0x8023a000</span><br><span class="line">[ERROR] [main][kernel] .bss [0x8024a000, 0x8224b000)</span><br></pre></td></tr></table></figure>
+<h3 id="应用地址空间">应用地址空间</h3>
+<blockquote>
+<p>在开始之前，我们需要了解一下 <a href="#trampoline">trampoline</a></p>
+</blockquote>
+<figure>
+<img src="/images/20251121/app-as-full.png" alt="app-as-full.png" />
+<figcaption aria-hidden="true">app-as-full.png</figcaption>
+</figure>
+<p>应用地址空间的初始化逻辑如下：</p>
+<ol type="1">
+<li>初始化高256GiB：
+<ol type="1">
+<li>初始化 <code>trampoline</code>，trampoline
+位于高256GiB的最高点起始位置，仅仅使用一页；</li>
+<li>初始化
+<code>TrapContext</code>，他在trampoline的下方，也仅仅使用一页；</li>
+</ol></li>
+<li>初始化低256GiB：
+<ol type="1">
+<li>初始化<code>.text/.rodata/.data/.bss</code> ：解析 <code>elf</code>
+文件，将elf文件中的所有 program headers 复制到内核中：
+<ol type="1">
+<li>解析elf，为每个ph创建一个MapArea；</li>
+<li>将ph复制到我们创建的MapArea中，并初始化对应的权限；</li>
+<li>这里一定需要注意的是，我们在
+<code>xmas_elf::ElfFile::new(elf_data)</code>
+的时候已经将数据加载到物理内存了，为什么还需要复制到我们对应的MapArea呢？
+<ul>
+<li>现在读取到的数据虽然已经在物理内存中了，但是他只是在这个函数下的一段临时的数据，我们需要把他转换为一个生命周期和应用一致的程序，也就是MapArea；如果我们不把他转换为MapArea，那么rust编译器会保证在该函数退出后他对应的物理内存被回收；</li>
+<li>读取到数据之后，<code>[ph.virtual_addr(), ph.virtual_addr() + ph.mem_size())</code>
+这段虚拟内存保证是可用的。我们其实也可以选择自己重新为它生成一个新的虚拟内存片地址，但是意义不大。</li>
+</ul></li>
+</ol></li>
+<li>初始化 <code>user stack</code>；</li>
+<li>初始化 <code>sbrk</code>；</li>
+</ol></li>
+</ol>
+<h4 id="初始化-trampoline">初始化 trampoline</h4>
+<p>下面的代码中，在高256G中初始化了一页作为trampoline，我们需要注意以下几个点：</p>
+<ol type="1">
+<li><code>strampoline</code> 在 <code>linker.ld</code> 中声明，他紧跟在
+<code>*(.text.entry)</code> 进行4K对齐之后；</li>
+<li><code>strampoline</code>
+自身的内容也需要4K对齐，这样可以正好去适配我们的一个内存页；</li>
+<li><code>strampoline</code>
+的大小不能超过4K，否则在map的时候将出现数据缺失；</li>
+<li><code>trampoline</code> 的范围是高256的最高位开始向下计算一页。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.text : &#123;</span><br><span class="line">    *(.text.entry)</span><br><span class="line">    . = ALIGN(4K);</span><br><span class="line">    strampoline = .;</span><br><span class="line">    *(.text.trampoline);</span><br><span class="line">    . = ALIGN(4K);</span><br><span class="line">    *(.text .text.*)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// config.rs</span></span><br><span class="line"><span class="comment">/// The virtual address of the trampoline.</span></span><br><span class="line"><span class="comment">/// The trampoline is placed at the top of the high 256 GiB virtual address space,</span></span><br><span class="line"><span class="comment">/// with its starting address set to `usize::MAX - PAGE_SIZE + 1`.</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">const</span> TRAMPOLINE: <span class="type">usize</span> = <span class="type">usize</span>::MAX - PAGE_SIZE + <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// memory_set.rs</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">strampoline</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// memory_set.rs</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="comment">/// Mention that trampoline is not collected by areas.</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">map_trampoline</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.page_table.<span class="title function_ invoke__">map</span>(</span><br><span class="line">            VirtAddr::<span class="title function_ invoke__">from</span>(TRAMPOLINE).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            PhysAddr::<span class="title function_ invoke__">from</span>(strampoline <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            PTEFlags::R | PTEFlags::X,</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4
+id="从elf初始化.text.rodata.data.bss">从elf初始化.text/.rodata/.data/.bss</h4>
+<blockquote>
+<p>APPENDIX：<a href="#elf文件的va和pa">elf文件的VA和PA</a></p>
+</blockquote>
+<ol type="1">
+<li>遍历elf文件内的
+<code>program headers</code>。这样，ph会被加载到内存中，我们就可以用他们来创建出一个MapArea了；</li>
+<li>在创建 <code>MapArea</code>
+之后，有非常重要的一个步骤，<strong>那就是把我们elf的逻辑段数据映射到我们新创建的MapArea</strong>。不同于
+<code>trampoline</code>, <code>TrapContext</code>,
+<code>user_stack</code>, <code>sbrk</code>
+这几个逻辑段，elf的逻辑数据段是有初始值的 --
+也就是elf文件里的值。<strong>我们现在只是为elf文件创建了映射，映射指向的物理内存数据仍然不存在。</strong></li>
+<li>在 <code>push()</code>
+的时候将数据作为参数传入，初始化elf的逻辑段到虚拟内存
+<code>(&amp;elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize])</code>。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">map_elf</span>(memory_set: &amp;<span class="keyword">mut</span> MemorySet, elf: &amp; xmas_elf::ElfFile) <span class="punctuation">-&gt;</span> VirtPageNum &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">elf_header</span> = elf.header;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">magic</span> = elf_header.pt1.magic;</span><br><span class="line">    <span class="built_in">assert_eq!</span>(magic, [<span class="number">0x7f</span>, <span class="number">0x45</span>, <span class="number">0x4c</span>, <span class="number">0x46</span>], <span class="string">&quot;invalid elf!&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ph_count</span> = elf_header.pt2.<span class="title function_ invoke__">ph_count</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">max_end_vpn</span> = <span class="title function_ invoke__">VirtPageNum</span>(<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..ph_count &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">ph</span> = elf.<span class="title function_ invoke__">program_header</span>(i).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="keyword">if</span> ph.<span class="title function_ invoke__">get_type</span>().<span class="title function_ invoke__">unwrap</span>() == xmas_elf::program::Type::Load &#123;</span><br><span class="line">            <span class="comment">// Notice that the elf file has been loaded into virtual memory</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">start_va</span>: VirtAddr = (ph.<span class="title function_ invoke__">virtual_addr</span>() <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">into</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">end_va</span>: VirtAddr = ((ph.<span class="title function_ invoke__">virtual_addr</span>() + ph.<span class="title function_ invoke__">mem_size</span>()) <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">into</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">map_perm</span> = MapPermission::U;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">ph_flags</span> = ph.<span class="title function_ invoke__">flags</span>();</span><br><span class="line">            <span class="keyword">if</span> ph_flags.<span class="title function_ invoke__">is_read</span>() &#123;</span><br><span class="line">                map_perm |= MapPermission::R;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> ph_flags.<span class="title function_ invoke__">is_write</span>() &#123;</span><br><span class="line">                map_perm |= MapPermission::W;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> ph_flags.<span class="title function_ invoke__">is_execute</span>() &#123;</span><br><span class="line">                map_perm |= MapPermission::X;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">map_area</span> = MapArea::<span class="title function_ invoke__">new</span>(start_va, end_va, MapType::Framed, map_perm);</span><br><span class="line">            max_end_vpn = map_area.vpn_range.<span class="title function_ invoke__">get_end</span>();</span><br><span class="line">            <span class="comment">// init MapArea and copy program header into the newly created MapArea</span></span><br><span class="line">            memory_set.<span class="title function_ invoke__">push</span>(</span><br><span class="line">                map_area,</span><br><span class="line">                <span class="title function_ invoke__">Some</span>(&amp;elf.input[ph.<span class="title function_ invoke__">offset</span>() <span class="keyword">as</span> <span class="type">usize</span>..(ph.<span class="title function_ invoke__">offset</span>() + ph.<span class="title function_ invoke__">file_size</span>()) <span class="keyword">as</span> <span class="type">usize</span>]),</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    max_end_vpn</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="其他部分初始化">其他部分初始化</h4>
+<p>除了 trampoline 之外，其他的逻辑基本不复杂，这里就不做赘述。</p>
+<h2 id="基于地址空间的分时多任务">基于地址空间的分时多任务</h2>
+<h3
+id="建立并开启基于分页模式的虚拟地址空间">建立并开启基于分页模式的虚拟地址空间</h3>
+<p>机器启动时是 <code>M</code> 模式，SBI加载并初始化完成后进入
+<code>S</code> 模式，随后内核初始化页表等信息后，修改 <code>satp</code>
+开启分页模式。</p>
+<h4 id="创建内核地址空间">创建内核地址空间</h4>
+<blockquote>
+<p><code>lazy_static!</code> 的描述参考 <a
+href="#lazy_static">lazy_static!</a></p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/mm/memory_set.rs</span></span><br><span class="line"></span><br><span class="line">lazy_static! &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">static</span> <span class="keyword">ref</span> KERNEL_SPACE: Arc&lt;UPSafeCell&lt;MemorySet&gt;&gt; = Arc::<span class="title function_ invoke__">new</span>(<span class="keyword">unsafe</span> &#123;</span><br><span class="line">        UPSafeCell::<span class="title function_ invoke__">new</span>(MemorySet::<span class="title function_ invoke__">new_kernel</span>()</span><br><span class="line">    )&#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建内核地址空间需要有三部：</p>
+<ol type="1">
+<li>为rust初始化一个 HEAP；</li>
+<li>为kernel初始化一个物理内存分配器；</li>
+<li>修改 <code>satp</code> 开启分页模式。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/mm/mod.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">use</span> memory_set::KERNEL_SPACE;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">init</span>() &#123;</span><br><span class="line">    heap_allocator::<span class="title function_ invoke__">init_heap</span>();</span><br><span class="line">    frame_allocator::<span class="title function_ invoke__">init_frame_allocator</span>();</span><br><span class="line">    KERNEL_SPACE.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">activate</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>我们先通过 <code>init_heap()</code>
+初始化了堆，这里初始化的过程可以参考 <a
+href="#堆的初始化">堆的初始化</a></p>
+</blockquote>
+<p>随后我们初始化 <code>FRAME_ALLOCATOR</code>，这个模块绑定了
+<code>[ekernel, MEMORY_END)</code> 这段
+<strong>物理内存空间</strong>；</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// `frame_allocator.rs`</span></span><br><span class="line"><span class="comment">/// initiate the frame allocator using `ekernel` and `MEMORY_END`</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">init_frame_allocator</span>() &#123;</span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">ekernel</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    FRAME_ALLOCATOR.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">init</span>(</span><br><span class="line">        PhysAddr::<span class="title function_ invoke__">from</span>(ekernel <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">ceil</span>(),</span><br><span class="line">        PhysAddr::<span class="title function_ invoke__">from</span>(MEMORY_END).<span class="title function_ invoke__">floor</span>(),</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line">BASE_ADDRESS = 0x80200000;</span><br><span class="line"></span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    // ...</span><br><span class="line">    . = BASE_ADDRESS;</span><br><span class="line">    . = ALIGN(4K);</span><br><span class="line">    ebss = .;</span><br><span class="line">    ekernel = .;</span><br><span class="line"></span><br><span class="line">    /DISCARD/ : &#123;</span><br><span class="line">        *(.eh_frame)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后，我们开启了分页模式：</p>
+<ol type="1">
+<li><code>self.page_table.token()</code> 按照CSR要求开启
+<code>SV39</code> 分页模式；</li>
+<li><code>sfence.vma</code> 将快表清空。</li>
+</ol>
+<figure>
+<img src="/images/20251121/satp.png" alt="satp.png" />
+<figcaption aria-hidden="true">satp.png</figcaption>
+</figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="comment">/// Change page table by writing satp CSR Register.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">activate</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">satp</span> = <span class="keyword">self</span>.page_table.<span class="title function_ invoke__">token</span>();</span><br><span class="line">        <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            satp::<span class="title function_ invoke__">write</span>(satp);</span><br><span class="line">            asm!(<span class="string">&quot;sfence.vma&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        info!(<span class="string">&quot;[kernel]: enable kernel space.&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="trampoline的实现">trampoline的实现</h3>
+<blockquote>
+<p>在 <a href="#trampoline">trampoline</a>
+中我们分析了为什么需要这样一个中间层，下面我们来实现他的具体逻辑。</p>
+</blockquote>
+<blockquote>
+<p>在开始之前，我们可以讨论一下实现内核的两个方式：</p>
+<ol type="1">
+<li>每个进程的地址空间都会将逻辑段分为 <code>内核段</code> 和
+<code>用户段</code> 两个部分；</li>
+<li>每个进程的地址空间值包含 <code>用户段</code>，他们共享一个
+<code>内核段</code>。</li>
+</ol>
+<p>第一种方式的好处是，用户和内核的切换不需要切换地址空间，只需要在进程之间切换内核段，这样实现较为简单。但是带来的问题是，每个进程都需要存储一份冗余的内核代码，浪费了大量的内存。</p>
+<p>第二种方式节省内存，但是实现较为复杂。</p>
+</blockquote>
+<figure>
+<img src="/images/20251121/memory.png" alt="memory.png" />
+<figcaption aria-hidden="true">memory.png</figcaption>
+</figure>
+<p>可以看到，我们的TrapContext<strong>位于
+<code>应用地址空间的次高页面</code>
+而不是内核地址空间</strong>。原因在于，假如我们将其放在内核栈 中，在保存
+Trap 上下文之前我们必须先切换到内核地址空间，这就需要我们做两件事：</p>
+<ol type="1">
+<li>将内核地址空间的 token 写入 satp 寄存器，注意 satp
+不是单纯的页表地址，因为它还指定了CPU的分页模式；</li>
+<li>之后我们还需要有一个通用寄存器保存内核栈栈顶的位置，这样才能以它为基址保存
+Trap 上下文。</li>
+</ol>
+<p>在保存 Trap 上下文之前我们必须完成这
+两项工作。然而，我们无法在不破坏任何一个通用寄存器的情况下做到这一点。</p>
+<p>因为事实上我们需要用到内核的两条信息：内核地址空间 的 token
+还有应用内核栈顶的位置，硬件却只提供一个 <code>sscratch</code>
+可以用来进行周转。所以，我们不得不将 Trap 上下文保存在
+应用地址空间的一个虚拟页面中以避免切换到内核地址空间才能保存。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[repr(C)]</span></span><br><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TrapContext</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> x: [<span class="type">usize</span>; <span class="number">32</span>],</span><br><span class="line">    <span class="keyword">pub</span> sstatus: Sstatus,</span><br><span class="line">    <span class="keyword">pub</span> sepc: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> kernel_satp: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> kernel_sp: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> trap_handler: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>老的 TrapContext 如下定义：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[repr(C)]</span></span><br><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TrapContext</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> x: [<span class="type">usize</span>; <span class="number">32</span>],</span><br><span class="line">    <span class="keyword">pub</span> sstatus: Sstatus,</span><br><span class="line">    <span class="keyword">pub</span> sepc: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>相对于之前，额外增加了 <code>kernel_satp</code>，
+<code>kernel_sp</code>， <code>trap_handler</code> 三个字段：</p>
+<ul>
+<li><code>kernel_satp</code> 表示内核地址空间的 token ；</li>
+<li><code>kernel_sp</code>
+表示当前应用在内核地址空间中的内核栈栈顶的虚拟地址；</li>
+<li><code>trap_handler</code> 表示内核中 trap handler
+入口点的虚拟地址。</li>
+</ul>
+<h2 id="qa">QA</h2>
+<h3 id="trapcontext的初始化">TrapContext的初始化</h3>
+<blockquote>
+<p>再回忆一次 <code>TaskContext</code> 和 <code>TrapContext</code>
+的区别：</p>
+<p>TrapContext
+是应用和内核切换时的上下文，而TaskContext是应用之间切换的上下文切换。</p>
+<p>TrapContext
+是不可预测的，所以他需要保存全部的寄存器。而TaskContext是用户基于时钟或者主动调用的，是可预测的，所以只需要保存callee-saved寄存器。</p>
+</blockquote>
+<p><code>TrapContext</code>
+是和应用强绑定的，内核在初始化应用时，会为每一个应用初始化一个
+<code>TaskControlBlock(TCB)</code>，而 TrapContext 就是 TCB
+的一部分。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// The task control block (TCB) of a task.</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">		<span class="comment">/// ...</span></span><br><span class="line">    <span class="comment">/// The phys page number of trap context</span></span><br><span class="line">    <span class="keyword">pub</span> trap_cx_ppn: PhysPageNum,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，我们的 <code>TrapContext</code>
+实际上是单独的一个内存页，TrapContext 的虚拟地址是
+<code>0xffff_ffff_ffff_e000</code>（TRAP_CONTEXT_BASE），trampoline
+的虚拟地址是 <code>0xffff_ffff_ffff_f000</code>（TRAMPOLINE）—— 两者是
+<strong>连续的两个高地址页</strong>，TrapContext 紧邻 trampoline 的
+“下方”（低地址侧） --
+对于任意一个进程，它的TrapContext的虚拟地址是固定的！</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(elf_data: &amp;[<span class="type">u8</span>], app_id: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="comment">// memory_set with elf program headers/trampoline/trap context/user stack</span></span><br><span class="line">        <span class="keyword">let</span> (memory_set, user_sp, entry_point) = MemorySet::<span class="title function_ invoke__">from_elf</span>(elf_data);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx_ppn</span> = memory_set</span><br><span class="line">            .<span class="title function_ invoke__">translate</span>(VirtAddr::<span class="title function_ invoke__">from</span>(TRAP_CONTEXT_BASE).<span class="title function_ invoke__">into</span>())</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .<span class="title function_ invoke__">ppn</span>();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而它被当做一个逻辑段，在用户内存地址初始化的时候被初始化：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">from_elf</span>(elf_data: &amp;[<span class="type">u8</span>]) <span class="punctuation">-&gt;</span> (<span class="keyword">Self</span>, <span class="type">usize</span>, <span class="type">usize</span>) &#123;</span><br><span class="line">        <span class="comment">// map TrapContext</span></span><br><span class="line">        memory_set.<span class="title function_ invoke__">push</span>(</span><br><span class="line">            MapArea::<span class="title function_ invoke__">new</span>(</span><br><span class="line">                TRAP_CONTEXT_BASE.<span class="title function_ invoke__">into</span>(),</span><br><span class="line">                TRAMPOLINE.<span class="title function_ invoke__">into</span>(),</span><br><span class="line">                MapType::Framed,</span><br><span class="line">                MapPermission::R | MapPermission::W,</span><br><span class="line">            ),</span><br><span class="line">            <span class="literal">None</span>,</span><br><span class="line">        );</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="sscratch">sscratch</h3>
+<blockquote>
+<p>先说结论，<code>sscratch</code> 是 <code>trap_return</code>
+函数第一次调用的时候，使用 <code>TRAP_CONTEXT_BASE</code>
+初始化的一个指向 <code>TrapContext</code> 的指针。</p>
+</blockquote>
+<p>在用户进程启动时，内核会为每个进程初始化 TaskControlBlock：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">lazy_static! &#123;</span><br><span class="line">    <span class="comment">/// a `TaskManager` global instance through lazy_static!</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">static</span> <span class="keyword">ref</span> TASK_MANAGER: TaskManager = &#123;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..num_app &#123;</span><br><span class="line">            tasks.<span class="title function_ invoke__">push</span>(TaskControlBlock::<span class="title function_ invoke__">new</span>(<span class="title function_ invoke__">get_app_data</span>(i), i));			<span class="comment">/// init TCB here</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而在初始化 TaskControlBlock 的过程中，会初始化
+<code>TaskContext</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(elf_data: &amp;[<span class="type">u8</span>], app_id: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">task_control_block</span> = <span class="keyword">Self</span> &#123;</span><br><span class="line">            task_status,</span><br><span class="line">            task_cx: TaskContext::<span class="title function_ invoke__">goto_trap_return</span>(kernel_stack_top),			<span class="comment">/// init task context</span></span><br><span class="line">            memory_set,</span><br><span class="line">            trap_cx_ppn,</span><br><span class="line">            base_size: user_sp,</span><br><span class="line">            heap_bottom: user_sp,</span><br><span class="line">            program_brk: user_sp,</span><br><span class="line">        &#125;;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个时候，会为 <code>TaskContext</code> 中的 <code>ra</code>
+赋值：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskContext</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">goto_trap_return</span>(kstack_ptr: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            ra: trap_return <span class="keyword">as</span> <span class="type">usize</span>,																				<span class="comment">/// init return address</span></span><br><span class="line">            sp: kstack_ptr,</span><br><span class="line">            s: [<span class="number">0</span>; <span class="number">12</span>],</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里，<code>ra</code> 的值就是 <code>trap_return</code>
+：也就是说，当内核第一次调度该进程的时候，内核在执行完内核态的所有指令后，会跳转到
+<code>trap_return</code>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">trap_return</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="comment">// set stvec to trampoline</span></span><br><span class="line">    <span class="title function_ invoke__">set_user_trap_entry</span>();</span><br><span class="line">    <span class="comment">// get trap context pointer</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">trap_cx_ptr</span> = TRAP_CONTEXT_BASE;</span><br><span class="line">    <span class="comment">// get the user page table addr with other satp fields</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">user_satp</span> = <span class="title function_ invoke__">current_user_token</span>();</span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__alltraps</span>();</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__restore</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// </span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">restore_va</span> = __restore <span class="keyword">as</span> <span class="type">usize</span> - __alltraps <span class="keyword">as</span> <span class="type">usize</span> + TRAMPOLINE;</span><br><span class="line">    <span class="comment">// trace!(&quot;[kernel] trap_return: ..before return&quot;);</span></span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        asm!(</span><br><span class="line">            <span class="string">&quot;fence.i&quot;</span>,</span><br><span class="line">            <span class="string">&quot;jr &#123;restore_va&#125;&quot;</span>,         <span class="comment">// jump to new addr of __restore asm function</span></span><br><span class="line">            restore_va = <span class="title function_ invoke__">in</span>(reg) restore_va,</span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a0&quot;</span>) trap_cx_ptr,      <span class="comment">// a0 = virt addr of Trap Context</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a1&quot;</span>) user_satp,        <span class="comment">// a1 = phy addr of usr page table</span></span><br><span class="line">            <span class="title function_ invoke__">options</span>(noreturn)</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>trap_return</code> 中初始化了 <code>stvec</code>，并使用
+<code>trap_cx_ptr -&gt; TRAP_CONTEXT_BASE</code> 和
+<code>user_stap</code> 作为参数调用了方法
+<code>__restore</code>，值得注意的是：</p>
+<ol type="1">
+<li>我们使用的是 <code>jr restore_va</code> 指令而不是
+<code>call __restore</code>；</li>
+<li><code>restore_va</code> 也不是直接使用
+<code>jr __restore</code>；</li>
+</ol>
+<p>这个逻辑可以在 <a href="#restore_va">restore_va</a>
+中找到具体解析，这里我们先看 <code>sscratch</code> 相关的内容。</p>
+<p>在 <code>__restore</code> 中，我们将 <code>a0 = trap_cx_ptr</code>
+赋值给了 <code>sscratch</code>，于是初始化完成。</p>
+<h3 id="restore_va">restore_va</h3>
+<blockquote>
+<p>在开始之前，我们需要先了解 <code>linker.ld</code>
+中声明的地址和物理地址的关系 -- 是的，linker.ld
+中的地址是虚拟地址。细节参考 <a href="#linker.ld">linker.ld</a></p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">trap_return</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__alltraps</span>();</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__restore</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// </span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">restore_va</span> = __restore <span class="keyword">as</span> <span class="type">usize</span> - __alltraps <span class="keyword">as</span> <span class="type">usize</span> + TRAMPOLINE;</span><br><span class="line">    <span class="comment">// trace!(&quot;[kernel] trap_return: ..before return&quot;);</span></span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        asm!(</span><br><span class="line">            <span class="string">&quot;fence.i&quot;</span>,</span><br><span class="line">            <span class="string">&quot;jr &#123;restore_va&#125;&quot;</span>,         <span class="comment">// jump to new addr of __restore asm function</span></span><br><span class="line">            restore_va = <span class="title function_ invoke__">in</span>(reg) restore_va,</span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a0&quot;</span>) trap_cx_ptr,      <span class="comment">// a0 = virt addr of Trap Context</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a1&quot;</span>) user_satp,        <span class="comment">// a1 = phy addr of usr page table</span></span><br><span class="line">            <span class="title function_ invoke__">options</span>(noreturn)</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在内核态将控制权交还给用户态的时候，我们需要调用
+<code>__restore</code>，而这里是通过 <code>restore_va</code>
+这个奇怪的地址来跳转的，这是为什么？我们可以先看看
+<code>restore_va</code> 这个值是怎么计算出来的。</p>
+<p>我们可以找到，我们的 <code>strampoline</code> 实在
+<code>linkder.ld</code> 上定义的，它被包含在了内核的 <code>.text</code>
+逻辑段中：<strong>在加载内核代码的过程中，<code>strampoline</code> 这个
+VA 被以恒等映射的方式映射到物理内存。</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line">BASE_ADDRESS = 0x80200000;</span><br><span class="line"></span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    . = BASE_ADDRESS;</span><br><span class="line">    skernel = .;</span><br><span class="line"></span><br><span class="line">    stext = .;</span><br><span class="line">    .text : &#123;</span><br><span class="line">        *(.text.entry)</span><br><span class="line">        . = ALIGN(4K);</span><br><span class="line">        strampoline = .;								/// strampoline is defined here</span><br><span class="line">        *(.text.trampoline);							/// .text.trampoline is included here </span><br><span class="line">        . = ALIGN(4K);</span><br><span class="line">        *(.text .text.*)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>memory_set.rs</code> 中，我们提供了方法来映射
+<code>VA</code> 到 <code>PA</code>：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">strampoline</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="comment">/// Mention that trampoline is not collected by areas.</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">map_trampoline</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.page_table.<span class="title function_ invoke__">map</span>(</span><br><span class="line">            VirtAddr::<span class="title function_ invoke__">from</span>(TRAMPOLINE).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            PhysAddr::<span class="title function_ invoke__">from</span>(strampoline <span class="keyword">as</span> <span class="type">usize</span>).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            PTEFlags::R | PTEFlags::X,</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>随后，我们在<strong>加载内核</strong>以及<strong>内核加载应用程序</strong>的时候，都调用
+<code>map_tramploine</code> 这个函数，将 <code>TRAMPOLINE</code>
+这个VA映射到了同一个 PA。</p>
+<p>再回到 <code>__alltraps</code> 和 <code>__restore</code>，在
+<code>trap.S</code> 中，我们声明 <code>.text.trampoline</code>
+逻辑段和这两个方法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">    .section .text.trampoline</span><br><span class="line">    .globl __alltraps</span><br><span class="line">    .globl __restore</span><br><span class="line">    .align 2</span><br><span class="line">__alltraps:</span><br><span class="line">	# ...</span><br><span class="line">__restore:</span><br><span class="line">	# ...</span><br></pre></td></tr></table></figure>
+<p>这里存在的一个问题是：<code>__alltraps</code> 和
+<code>__restore</code> 是被引入到了 <code>linker.ld</code> 的
+<code>.text</code> 段，并且它加载时尚未开启分页模式，也就是
+<code>__alltraps</code> 和 <code>__restore</code> 标签的值是一个
+<code>PA</code>。此时，当我们执行 <code>call __alltraps</code> 或者
+<code>call __restore</code>
+时将发生异常，因为此时我们已经开启了分页模式。因此，我们只能手动的计算这个他们的值。</p>
+<p>那么，我们现在可以知道几个信息：VA <code>TRAMPOLINE</code> 指向了 PA
+<code>strampoline</code>：</p>
+<ul>
+<li>访问 <code>__alltraps</code> 我们可以直接使用 VA
+<code>TRAMPOLINE</code>；</li>
+<li>访问 <code>__restore</code> 我们可以使用 VA
+<code>TRAMPOLINE + len(__alltraps)</code> =
+<code>TRAMPOLINE + (__restore - __alltraps)</code>。</li>
+</ul>
+<blockquote>
+<p>在上面的地址计算中，有一个需要注意的地方是，画内存布局图时从高到低画，但代码实际从低地址往高地址加载（trampoline
+代码从下往上）</p>
+<p>以 <code>trampoline</code> 为例，trampoline 的指针是
+<code>TRAMPOLINE</code>，那么实际的加载的数据是从
+<code>TRAMPOLINE</code> -&gt; <code>TRAMPOLINE + PAGE_SIZE - 1</code>
+这个方向去加载的。</p>
+<p>也就是说，如果把 trampoline
+的代码也画到内存布局图上的话，它的代码是从下往上的。</p>
+<figure>
+<img src="/images/20251121/addresses.png" alt="addresses.png" />
+<figcaption aria-hidden="true">addresses.png</figcaption>
+</figure>
+</blockquote>
+<h3 id="linker.ld">linker.ld</h3>
+<p>我们的 <code>linker.ld</code> 一般是如下形式，而其中声明的地址例如
+<code>BASE_ADDRESS = 0x80200000</code> 都是虚拟地址 -- 不管是内核态的
+linker.ld 还是用户态的 linker.ld。这也是为什么我们在之前处理
+<code>elf</code> 文件的时候，可以通过 <code>ph.virtual_addr()</code>
+获取到一个逻辑段的虚拟地址的原因（最简单的理解是，物理地址是运行时才有的概念，在静态文件中根本就不可能知道任何物理地址的信息）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line">BASE_ADDRESS = 0x80200000;</span><br><span class="line"></span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    . = BASE_ADDRESS;</span><br><span class="line">    skernel = .;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>.cargo/config.yml</code> 中，我们指定了该 linker.ld：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">build</span>]</span><br><span class="line"><span class="string">target</span> <span class="string">=</span> <span class="string">&quot;riscv64gc-unknown-none-elf&quot;</span></span><br><span class="line"></span><br><span class="line">[<span class="string">target.riscv64gc-unknown-none-elf</span>]</span><br><span class="line"><span class="string">rustflags</span> <span class="string">=</span> [</span><br><span class="line">    <span class="string">&quot;-Clink-arg=-Tsrc/linker.ld&quot;</span>, <span class="string">&quot;-Cforce-frame-pointers=yes&quot;</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>然而，在编译的过程中，我们在加载这个程序到内存时是一个裸机程序，他和其他的应用程序不一样。他是从
+<code>M</code> 模式启动加载的，此时PC尚未开启分页模式 --
+也就是我们的<code>VA</code>会直接被映射到对应的 <code>PA</code>。</p>
+<p>当内核加载完成，开启分页模式后，此时再加载应用程序，此时的
+<code>VA</code> 已经在加载阶段被我们映射到了 <code>PA</code>。</p>
+<h4 id="m-模式启动加载">M 模式启动加载</h4>
+<ol type="1">
+<li>RISC-V 复位后，CPU 进入 <strong>M 模式</strong>，执行
+bootloader（通常是开源的 OpenSBI，或简易 bootloader）；</li>
+<li>bootloader 完成硬件初始化（如内存初始化、串口配置）后，会将内核 ELF
+加载到物理地址 <code>0x80200000</code>；</li>
+<li>随后 bootloader 切换到 <strong>S
+模式</strong>（监督模式），并跳转到内核的入口地址（<code>_start</code>，虚拟地址
+= 物理地址 = 0x80200000）；</li>
+<li>内核后续在 S 模式运行（管理页表、处理 Trap、调度应用），M 模式仅用于
+bootloader 初始化，内核运行时不涉及 M 模式。</li>
+</ol>
+<p>再回头看我们的 <code>entry.asm</code> 文件，这里声明了
+<code>.text.entry</code> 段和 <code>_start</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">    .section .text.entry								# 这里声明了 .text.entry</span><br><span class="line">    .globl _start</span><br><span class="line">_start:</span><br><span class="line">    la sp, boot_stack_top</span><br><span class="line">    call rust_main										# 这就是内核的入口地址</span><br></pre></td></tr></table></figure>
+<p>而 <code>linker.ld</code> 中将 <code>text.entry</code> 加载到了
+<code>.text</code> 的起始位置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line">BASE_ADDRESS = 0x80200000;</span><br><span class="line"></span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    . = BASE_ADDRESS;</span><br><span class="line">    skernel = .;</span><br><span class="line"></span><br><span class="line">    stext = .;</span><br><span class="line">    .text : &#123;</span><br><span class="line">        *(.text.entry)									# 这里将 .text.entry 加载到 .text</span><br><span class="line">        . = ALIGN(4K);</span><br><span class="line">        strampoline = .;</span><br><span class="line">        *(.text.trampoline);</span><br><span class="line">        . = ALIGN(4K);</span><br><span class="line">        *(.text .text.*)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="堆的初始化">堆的初始化</h3>
+<blockquote>
+<p>在本项目中，HEAP_ALLOCATOR 靠 Rust 的
+<code>#[global_allocator]</code> 编译器属性
+“注册为全局堆分配器”，HEAP_SPACE 是堆的 “物理内存载体”，通过 init_heap()
+手动绑定到分配器 ——
+两者无需外部显式引用，靠编译器约定和初始化逻辑协同工作，最终让内核的
+Box/Vec/Arc 等动态分配操作自动路由到这个堆。</p>
+</blockquote>
+<h4 id="三个核心组件">三个核心组件</h4>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 33%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr>
+<th>组件</th>
+<th>角色</th>
+<th>关键特性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HEAP_ALLOCATOR</td>
+<td>全局堆分配器实例（buddy_system_allocator 的伙伴系统分配器）</td>
+<td>被 #[global_allocator]
+标记，编译器会自动将所有堆分配请求路由到它；LockedHeap
+带锁，支持多线程安全。</td>
+</tr>
+<tr>
+<td>HEAP_SPACE</td>
+<td>内核堆的 “内存空间载体”（一块静态数组）</td>
+<td>本质是 <code>.bss</code> 段的连续内存（编译期分配大小
+KERNEL_HEAP_SIZE，加载时操作系统清零），是堆分配的 “物理基础”。</td>
+</tr>
+<tr>
+<td>init_heap()</td>
+<td>绑定 “载体” 和 “分配器” 的初始化函数</td>
+<td>手动将 HEAP_SPACE 的地址和大小告诉 HEAP_ALLOCATOR，让分配器知道
+“管理哪块内存”。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="global_allocator"><code>#[global_allocator]</code></h4>
+<p>Rust 没有内置的内核堆，必须手动实现 / 指定
+“全局分配器”——<code>#[global_allocator]</code> 就是编译器提供的
+“注册约定”：</p>
+<p>只要有一个静态变量被 <code>#[global_allocator]</code>
+标记，且该变量实现了 <code>core::alloc::GlobalAlloc</code>
+trait（LockedHeap 已实现），编译器就会将所有 “动态内存分配操作”（如
+<code>Box::new()</code>、<code>Vec::push()</code>、<code>Arc::new()</code>、<code>String::from()</code>等）路由到这个分配器的
+<code>alloc/dealloc</code> 方法。</p>
+<h4 id="heap_space和heap_allocator">HEAP_SPACE和HEAP_ALLOCATOR</h4>
+<p>HEAP_ALLOCATOR 初始化时是
+<code>LockedHeap::empty()</code>（空分配器，不知道要管理哪块内存），而
+HEAP_SPACE 是一块 “静态分配的连续内存”（.bss 段），init_heap()
+的作用就是把两者 “绑在一起”：</p>
+<h3 id="lazy_static">lazy_static</h3>
+<blockquote>
+<p>lazy_static! 是 Rust 社区提供的 “延迟初始化静态变量” 宏（属于
+lazy_static crate），核心解决 “无法在编译期初始化复杂静态变量”
+的问题</p>
+</blockquote>
+<p><code>MemorySet::new_kernel()</code>
+是运行时执行的函数（需要初始化页表、映射内核段等），不能直接用 static
+定义（static 要求编译期常量初始化）。</p>
+<p><code>lazy_static!</code> 的实现原理是：</p>
+<ul>
+<li>编译期：宏会生成一个隐藏的静态变量（标记为
+lazy），并分配一小块空间在 .data 段（或 .bss
+段，取决于是否有初始值），用于存储 “初始化状态”（是否已创建实例）和
+“实例指针”；</li>
+<li>运行时：首次访问 KERNEL_SPACE 时，会检查初始化状态 ——
+若未初始化，执行 MemorySet::new_kernel() 创建实例，将实例的所有权交给
+Arc，再把 Arc 指针存入之前分配的 .data
+段空间；后续访问直接复用该实例，不再重复初始化。</li>
+</ul>
+<p><code>lazy_static!</code> 会包含三个模块：</p>
+<ol type="1">
+<li>实例指针：用于存储后续初始化完成后，Arc&lt;UPSafeCell<MemorySet>&gt;
+的指针（初始值为 null 或占位符）；</li>
+<li>初始化状态标记：一个原子变量（如 AtomicBool 或枚举
+Uninit/Init），标记实例是否已初始化（初始状态为 “未初始化”）；</li>
+<li>同步锁：用于多线程环境下的初始化互斥（避免多个线程同时触发初始化，导致实例重复创建）——
+这是 lazy_static! 默认提供的线程安全保障。</li>
+</ol>
+<p>实际的执行过程可以概括为：</p>
+<ol type="1">
+<li>获取同步锁，成功则进入 <code>&lt;2&gt;</code></li>
+<li>查询初始化状态
+<ul>
+<li>如果未初始化，则初始化对象，并给实例指针赋值；修改初始化状态标记；</li>
+<li>如果已经初始化，则直接使用对象；</li>
+</ul></li>
+<li>释放锁。</li>
+</ol>
+<h3 id="elf文件的va和pa">elf文件的VA和PA</h3>
+<blockquote>
+<p>在我们通过elf初始化 <code>.text/.rodata/.data/.bss</code>
+逻辑段时，elf文件自身存在VA和PA，而我们需要把这个数据转换为MapArea，这个过程是怎么样的呢？</p>
+</blockquote>
+<p>在分析这段代码的内存情况之前，我们需要知道目前内核的初始化状态：</p>
+<ol type="1">
+<li><code>KERNEL_SPACE</code> 已经初始化，这意味着
+<code>new_kernel()</code>
+已经被调用，<strong>内核的页表已经初始化完成</strong>；</li>
+<li><code>MemorySet#activate()</code>
+已经调用，这意味着<strong>分页访问已经开启</strong>；</li>
+<li>我们的目的是初始化用户地址空间，此时程序从头至尾均在内核态下执行。</li>
+</ol>
+<p>那么整体的转换过程可以如下表示：</p>
+<ol type="1">
+<li>内核读取 ELF 数据到内核地址空间：
+<ol type="1">
+<li>内核通过块设备驱动（如磁盘），将 ELF 文件读取到当前函数的栈 / 堆 /
+全局缓冲区（<code>elf_data</code>）；</li>
+<li><code>elf_data</code> 的地址是内核
+VA，通过内核页表翻译后，得到对应的物理地址 PA_ELF —— ELF
+原始数据（.text/.data 等）存储在 PA_ELF 对应的物理内存中。</li>
+</ol></li>
+<li>解析 ELF 得到元数据，提取关键信息并复制；</li>
+<li>此时：我们的elf文件存储在 <code>内核栈</code> 上：
+<ul>
+<li>这些 ELF 原始数据（.text/.data 等）在「内核地址空间」的 VA 范围是
+<code>[elf_data, elf_data + elf_data_size)</code>；</li>
+<li>而
+<code>[ph.virtual_addr(), ph.virtual_addr() + ph.mem_size()]</code>
+是这些数据在「用户地址空间」的「目标 VA 范围」—— 这个目标 VA
+是链接阶段确定的，内核加载时会将数据拷贝到用户物理内存，并建立「用户目标
+VA → 用户物理
+PA」的映射。这也是为什么每一个应用程序能通过同一个VA访问到不同PA的根本原因
+-- 这些数据将被映射到不同的PA；</li>
+</ul></li>
+<li>最后，我们通过 <code>memory_set.push(map_area, elf.data)</code>
+的方法，将这一份数据复制到了用户态的 <code>MemorySet</code>
+中。<strong>注意，MemorySet是存在于内核态，对用户态完全透明的。</strong></li>
+</ol>
+<h3 id="sbrk">sbrk</h3>
+<p><code>sbrk(n)</code> 是经典的 Unix 系统调用，功能是 “扩展 /
+收缩进程的堆空间”（或栈空间，取决于内核设计）：在我们的
+<code>rCore</code> 中， <code>sbrk</code> 是紧跟着
+<code>user_stack_top</code>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">map</span>() &#123;</span><br><span class="line">    user_stack_bottom += PAGE_SIZE;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">user_stack_top</span> = user_stack_bottom + USER_STACK_SIZE;</span><br><span class="line">    memory_set.<span class="title function_ invoke__">push</span>(</span><br><span class="line">        MapArea::<span class="title function_ invoke__">new</span>(</span><br><span class="line">            user_stack_bottom.<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            user_stack_top.<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            MapType::Framed,</span><br><span class="line">            MapPermission::R | MapPermission::W | MapPermission::U,</span><br><span class="line">        ),</span><br><span class="line">        <span class="literal">None</span>,</span><br><span class="line">    );</span><br><span class="line">    <span class="comment">// used in sbrk</span></span><br><span class="line">    memory_set.<span class="title function_ invoke__">push</span>(</span><br><span class="line">        MapArea::<span class="title function_ invoke__">new</span>(</span><br><span class="line">            user_stack_top.<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            user_stack_top.<span class="title function_ invoke__">into</span>(),</span><br><span class="line">            MapType::Framed,</span><br><span class="line">            MapPermission::R | MapPermission::W | MapPermission::U,</span><br><span class="line">        ),</span><br><span class="line">        <span class="literal">None</span>,</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以通过调整 sbrk 来伸缩我们的栈大小：</p>
+<ul>
+<li>当 n&gt;0 时，向内核申请 n 字节的内存，堆 / 栈空间扩大；</li>
+<li>当 n&lt;0 时，释放 |n| 字节的内存，堆 / 栈空间缩小；</li>
+<li>返回值是扩展前的堆 / 栈顶指针（或出错时返回 -1）。</li>
+</ul>
+<p>如果需要初始化 <code>sbrk</code>，可以在初始化的时候，设定一个
+<code>start == end</code> 的MapArea。</p>
+<ul>
+<li>正常的 MapArea 是 start_va &lt; end_va（有实际地址范围），但这里
+start_va == end_va，表示这是一个 “空映射” ——
+不占用实际虚拟地址空间，仅作为 “预留标识”；</li>
+<li>目的：告诉内核 “user_stack_top
+以下的区域（用户栈的预期扩展方向）是合法的栈空间”，后续 sbrk
+扩展时，只需修改 end_va 扩大地址范围，无需重新创建
+MapArea（避免重复映射冲突）；</li>
+<li>补充：用户栈的扩展方向通常是 “从高地址向低地址扩展”（user_stack_top
+是栈顶高地址，扩展时栈底向低地址移动，end_va 减小），所以这里以
+user_stack_top 为起点占位。</li>
+</ul>
+<h3 id="trampoline">trampoline</h3>
+<blockquote>
+<p><strong>trampoline 是 “跳板” 或 “过渡代码段”</strong>——
+本质是一段固定在内核高地址空间（高 256GiB）的汇编代码，核心作用是
+<strong>解决 “用户态（U 特权级）↔︎ 内核态（S 特权级）切换时的特权级 +
+地址空间切换难题”</strong></p>
+</blockquote>
+<h4 id="零系统调用的流程">零、系统调用的流程</h4>
+<p>如果没有<code>trampoline</code>，一次完整的系统调用流程如下所示：</p>
+<ol type="1">
+<li>最开始，CPU处于 <code>U</code> 模式，<code>satp</code>
+指向用户态页表；</li>
+<li>调用 <code>ecall</code> 提升CPU到 <code>S</code> 模式，此时
+<code>satp</code> 指向用户态页表；</li>
+<li><strong>CPU尝试通过 <code>stvec</code>
+跳转到异常处理流程</strong>，这个会直接失败，因为<code>__alltrap</code>
+指令是存放在内核态的 <code>.text</code>
+段中，CPU取值会尝试使用VA查询PA，而此时用户态的页表根本查不到这个VA相关的信息。，</li>
+</ol>
+<h4 id="一为什么必须有-trampoline">一、为什么必须有 trampoline？</h4>
+<p>RISC-V 架构下，用户态和内核态切换（系统调用、异常 /
+中断）有两个硬件限制，直接切换会失败，必须靠 trampoline 过渡：</p>
+<ol type="1">
+<li><strong>特权级与页表切换的 “顺序矛盾”</strong>：<code>RV39</code>
+模式下，内存空间被分为两个不连续的虚拟内存空间，分别存储了用户态的数据和内核态的数据：
+<code>user_satp</code> 只知道用户态的页表地址；<code>kernel_satp</code>
+只知道内核态的页表地址；
+<ol type="1">
+<li>如果我们先修改 <code>satp</code> 再调用
+<code>ecall</code>：此时修改satp会直接异常，因为用户态不允许修改satp页表；</li>
+<li>如果我们先调用 <code>ecall</code> 再修改
+<code>satp</code>，我们的执行是这样的：
+<ol type="1">
+<li>执行 <code>ecall</code> 陷入内核态，此时 <code>satp</code> 仍然指向
+<code>user_satp</code>；</li>
+<li><strong><code>ecall</code> 或异常触发后，CPU 会自动跳转到
+<code>stvec</code> 寄存器指向的地址（也就是 <code>__alltrap</code>
+函数的 VA）</strong>。然而，<code>__alltrap</code> 指令是存放在内核态的
+<code>.text</code>
+段中，CPU取值会尝试使用VA查询PA，而此时用户态的页表根本查不到这个VA相关的信息。</li>
+</ol></li>
+</ol></li>
+<li>切换时内核态数据/代码的可访问性：在任意trap（主动ecall触发或被动触发）发生时：
+<ol type="1">
+<li>CPU会提升到S模式，此时 <code>satp</code> 还指向
+<code>user_satp</code>；</li>
+<li>CPU尝试从 <code>stvec</code> 加载异常处理的代码，这会直接异常，因为
+<code>stvec</code> 指向的代码是在内核态的 <code>.text</code>
+中，用户态页表根本无法访问。</li>
+</ol></li>
+</ol>
+<h3 id="应用栈和应用内核栈以及内核栈">应用栈和应用内核栈以及内核栈</h3>
+<p>应用的内核栈，是操作系统为每个应用程序（进程）单独分配的、仅在应用
+“陷入内核态” 时使用的专属栈——
+本质是一块内核地址空间中的物理内存，专门用于承载应用在核内态运行时的函数调用、局部变量、上下文数据（比如系统调用处理、异常处理的栈帧）。</p>
+<p>简单说：应用在用户态（比如运行自己的代码）时，用的是「用户栈」；一旦触发系统调用、异常
+/ 中断（比如 ecall
+指令、页错误），切换到内核态后，内核会自动切换栈指针（sp）到该应用的「内核栈」，所有内核代码（如
+trap_handler、系统调用处理函数）都在这个栈上运行。</p>
+<p>而内核自身还有一个 “内核主栈”（Kernel Main
+Stack），与所有应用的内核栈独立：</p>
+<ul>
+<li>内核主栈：用于内核初始化（如 main
+函数）、硬件中断处理（与应用无关的中断，如时钟中断）等内核原生流程；</li>
+<li>应用的内核栈：仅用于
+“该应用触发的内核态操作”（如该应用的系统调用、该应用导致的页错误）；</li>
+<li>两者物理页独立、地址空间独立，互不干扰。</li>
+</ul>
+<h3 id="sv39模式下的地址空间">SV39模式下的地址空间</h3>
+<p><code>SV39</code> 模式遵循符号扩展（Sign
+Extension）规则，所以地址空间的 <code>[63:39]</code>
+必须和第<code>38</code>位保持一致，否则无法通过 MMU
+的校验，也就是说，地址空间被分为了 <code>[0, 0x3F FFFF FFFF FFFF)</code>
+和 <code>[0xFFFF FFC0 0000 0000, 0xFFFF FFFF FFFF FFFF)</code>
+两个不连续的 <code>256GiB</code> 的地址空间。</p>
+<p>在 <code>rCore</code> 中，我们一般把高256GiB的内存空间用来存储
+<code>trampoline</code> 和应用内核栈，按照如下格式：</p>
+<ol type="1">
+<li><code>trampoline</code> 4KiB；</li>
+<li><code>app 0 kernel stack</code> 根据 config#KERNEL_STACK_SIZE
+定义；</li>
+<li><code>Guard Page</code>；</li>
+<li><code>app 1 kernel stack</code>；</li>
+<li><code>Guard Page</code>；</li>
+<li>...</li>
+</ol>
+<figure>
+<img src="/images/20251121/kernel-as-high.png"
+alt="kernel-as-high.png" />
+<figcaption aria-hidden="true">kernel-as-high.png</figcaption>
+</figure>
+<p>低256GiB，我们用来存储内核的段，以及空闲物理页帧（Available Physical
+Frames），按照如下格式：</p>
+<ol type="1">
+<li>Available Physical Frames</li>
+<li><code>.bss</code></li>
+<li><code>.data</code></li>
+<li><code>.rodata</code></li>
+<li><code>.text</code></li>
+</ol>
+<figure>
+<img src="/images/20251121/kernel-as-low.png" alt="kernel-as-low.png" />
+<figcaption aria-hidden="true">kernel-as-low.png</figcaption>
+</figure>
+<ol type="1">
+<li>这里在初始化的过程中，通过恒等映射将
+<code>.bss/.data/.rodata/.text</code> 段映射到了物理内存，这也是我们在
+linker.ld 内声明的。此外，们的项目是基于qemu模拟的，而qemu的内存空间从
+0x80000000开始，也就是说如果我们在linker里设置了错误的物理内存地址，例如
+0x78000000，那么程序会直接启动失败。</li>
+<li>代码段的 <code>U</code> 都设置为0，也就是只能在内核态访问；</li>
+<li><code>.text</code> 不允许被修改；</li>
+<li><code>.rodata</code> 不允许被修改，也不允许从它上面取指执行；</li>
+<li><code>.data/.bss</code>
+均允许被读写，但是不允许从它上面取指执行</li>
+</ol>
+<h3 id="虚拟内存到物理内存">虚拟内存到物理内存</h3>
+<h4 id="内核态的分页逻辑">内核态的分页逻辑</h4>
+<blockquote>
+<p>开启分页后，CPU 不会区分 “内核态地址” 和
+“用户态地址”——所有访存地址都会被视为虚拟地址，必须经过 MMU
+查页表转换。哪怕是内核访问自己的代码、数据，也得通过映射才能找到对应的物理页。</p>
+</blockquote>
+<p>举个例子，在我们的 <code>rCore</code>
+实现中，我们在链接器中设置的起始地址是
+<code>0x80200000</code>，我们的访问是这样的：</p>
+<ol type="1">
+<li>内核代码段存放在物理地址 0x80200000（ekernel 之前）；</li>
+<li>启用分页前，CPU 执行 lw x1, 0x80200000，直接访问物理内存
+0x80200000；</li>
+<li>启用分页后，CPU 会把 0x80200000 当成 虚拟地址：
+<ol type="1">
+<li>若页表中没有 “虚拟地址 0x80200000 → 物理地址 0x80200000” 的映射，MMU
+会触发页错误，内核直接崩溃；</li>
+<li>只有建立了映射，MMU
+才会把虚拟地址转成物理地址，内核才能正常执行代码、访问数据。</li>
+</ol></li>
+</ol>
+<blockquote>
+<p>内核态的内存（代码、数据、栈、页表本身），是 “需要访问的物理页”
+中最核心的一部分，必须优先建立映射 —— 否则内核自己都跑不起来。</p>
+</blockquote>
+<h4
+id="内核态需要映射的物理页具体有哪些">内核态需要映射的物理页具体有哪些</h4>
+<ol type="1">
+<li>内核自身的代码段（.text）、数据段（.data）、.bss
+段：内核的指令、全局变量、未初始化变量都存在这些物理页中，是内核运行的基础
+—— 必须建立映射，否则内核无法执行指令、访问全局变量。</li>
+<li>内核栈（Kernel Stack）：内核线程 /
+进程的栈空间（用于函数调用、局部变量存储），本质是一块物理页 ——
+必须建立映射，否则内核函数调用会栈溢出或访问非法地址。</li>
+<li><strong>页表页（根页表、中间级页表）：页表本身也是物理页，内核需要修改页表项（如为用户进程建立映射），就必须访问这些物理页
+—— 因此页表页自身也需要建立映射（通常是恒等映射）。 </strong></li>
+<li>内核管理的空闲物理页（按需映射）： 内核需要分配 /
+回收物理页（如用户进程 malloc 时），就必须访问这些空闲物理页 ——
+通过恒等映射，内核可以直接用 “物理地址作为虚拟地址”
+访问它们，无需额外计算偏移。</li>
+</ol>
+<blockquote>
+<p>这些映射通常在内核初始化阶段、启用分页之前就建立完成，确保启用分页后内核能正常运行。</p>
+</blockquote>
+<h4 id="如何建立映射">如何建立映射</h4>
+<blockquote>
+<p>除了 “用户态私有数据页” 和
+“按需动态映射的空闲物理页”，内核态所有需要访问的物理页（代码段、数据段、.bss、内核栈、页表页），均使用恒等映射（VA=PA）。</p>
+</blockquote>
+<ul>
+<li>以下场景必须使用
+<code>恒等映射</code>，因为必须直接访问物理页，且地址不能变：
+<ul>
+<li>内核代码段（.text）、数据段（.data）、.bss 段：
+链接器指定的地址就是物理地址，内核代码 /
+全局变量的引用直接依赖这个地址，改用非恒等映射会导致
+“代码指令地址找不到”“全局变量访问错位”，内核无法运行；</li>
+<li>内核栈（Kernel Stack）：
+栈指针（sp）指向的是物理地址，函数调用、局部变量存储依赖这个地址的连续性，非恒等映射会导致栈访问异常（如栈溢出、数据错乱）；</li>
+<li>页表页（根页表、中间级页表）：
+页表项（PTE）中存储的是物理页号（PPN），内核修改页表时需要直接访问页表页的物理地址，恒等映射能让内核
+“以物理地址为虚拟地址” 直接操作，无需额外计算偏移。</li>
+</ul></li>
+<li>空闲物理页是每次用户态程序申请内存时，从 FRAME_ALLOCATOR
+中得到的随机映射。</li>
+</ul>
+<p>我们整体的流程可以总结为：</p>
+<pre class="mermaid">flowchart TD
+    A["启动内核（分页关闭，PA 直访）"] --> B["初始化 FRAME_ALLOCATOR、PageTable、KERNEL_STACK 等"]
+    B --> C["在 PageTable 中建立内核相关物理页的恒等映射（.text/.data/栈/页表页）"]
+    C --> D["配置 satp 寄存器（模式+根 PPn）+ sfence.vma 刷新 TLB"]
+    D --> E["分页开启成功（VA 访存，MMU 转换）"]
+    E --> F["用户进程创建：初始化专属 PageTable"]
+    F --> G["用户 malloc：分配物理页 + 动态建立 VA→PA 映射（用户页表）"]
+    G --> H["进程切换：切换 satp 到用户页表 + 刷新 TLB"]</pre>
+<h3 id="physpagenum和frametracker">PhysPageNum和FrameTracker</h3>
+<p>使用 <code>FrameTracker</code> 代替 <code>PhysPageNum</code>
+这个是基于 <code>RAII</code> 的思想的设计：我们为
+<code>FrameTracker</code> 实现了
+<code>Drop</code>，这样我们就不用手动的在物理栈帧退出作用域时手动的
+<code>dealloc()</code> 了。</p>
+<p>而这里，我们之所以使用 <code>FrameTracker</code> 来实现，而不是直接为
+<code>PhysPageNum</code> 实现 <code>Drop</code>
+接口，是因为两者的语义是完全不一样的：</p>
+<ol type="1">
+<li><code>PhysPageNum</code> 是物理页帧的编号，他是一个无所有权的
+“标识”；</li>
+<li><code>FrameTracker</code> 是物理页帧的 “资源句柄”，是
+<strong>所有权的管理者。</strong></li>
+</ol>
+<table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 17%" />
+<col style="width: 10%" />
+<col style="width: 62%" />
+</colgroup>
+<thead>
+<tr>
+<th>类型</th>
+<th>核心语义</th>
+<th>角色定位</th>
+<th>关键特性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PhysPageNum</td>
+<td>物理页帧的 “编号”（如 0x100、0x200）</td>
+<td>无所有权的 “标识 / 索引”</td>
+<td>1. 仅存储页号，不关联 “分配状态”； <br/>2.
+可复制、可传递，不影响物理页；<br/> 3. 无法感知 “是否被分配”。</td>
+</tr>
+<tr>
+<td>FrameTracker</td>
+<td>物理页帧的 “资源句柄”</td>
+<td>有所有权的 “管理者”</td>
+<td>1. 持有 PhysPageNum，代表 “独占该物理页”；<br/>2. 实现
+Drop，离开作用域自动调用 dealloc；<br/> 3. 不可随意复制（通常
+!Clone），确保所有权唯一。</td>
+</tr>
+</tbody>
+</table>
+<p>类似于房间，<code>PhysPageNum</code>
+是房间号，而<code>FrameTracker</code>是业主。</p>
+<p>再从两个struct的实现来看：</p>
+<ol type="1">
+<li>PhysPageNum 是简单的包装类型（struct PhysPageNum(pub
+usize)），可复制，可拷贝等；</li>
+<li>FrameTracker 不可复制，不可拷贝；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// physical page number</span></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">PhysPageNum</span>(<span class="keyword">pub</span> <span class="type">usize</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/// tracker for physical page frame allocation and deallocation</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">FrameTracker</span> &#123;</span><br><span class="line">    <span class="comment">/// physical page number</span></span><br><span class="line">    <span class="keyword">pub</span> ppn: PhysPageNum,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="内存的内核空间和用户空间">内存的内核空间和用户空间</h3>
+<blockquote>
+<p>在我们使用内存的过程中，有两个一直被提到的名词：<code>内核空间</code>
+和
+<code>用户空间</code>，那硬件和操作系统是怎么区分内核空间和用户空间的呢？</p>
+</blockquote>
+<p><strong>首先需要知道的是，这两个空间都是操作系统的概念。</strong>
+硬件（CPU/MMU）对物理内存的所有页帧一视同仁。所谓
+“内核物理内存”“用户物理内存”，是操作系统为了管理方便（避免冲突、统一回收）而做的软件划分（比如把物理地址
+0x80000000~0xFFFF0000 划分为内核专用），硬件不感知这个划分。</p>
+<p>硬件判断 “当前访问的是内核空间还是用户空间”，核心依据是
+虚拟地址（VA），而非物理地址（PA）—— 具体是 “VA 高位特征 + 页表项 U 位 +
+当前 CPU 特权级” 三者协同：</p>
+<ul>
+<li>VA 高位：初步归类（例如如 Sv39 的 0x0000_0000_0000~0x7FFF_FFFF_FFFF
+为用户 VA，0x8000_0000_0000~0xFFFF_FFFF_FFFF 为内核 VA）；</li>
+<li>页表项 U
+位：精准权限（<code>U=1</code>→允许用户态访问，<code>U=0</code>→仅允许内核态访问）；</li>
+<li>CPU 特权级：最终校验（用户态不能访问 U=0 的 VA，内核态可访问所有
+VA）。</li>
+</ul>
+<p>总结来说：</p>
+<ul>
+<li>硬件：只认 “VA 高位 + PTE U 位 +
+特权级”，不管物理内存的软件划分；</li>
+<li>操作系统：制定 VA 划分规则、设置 PTE 权限、管理 PA
+分配，让硬件的判断逻辑服务于 “内核 / 用户隔离”；</li>
+</ul>
+<p>而在 <code>rCore</code> 的开发过程中： 这个特权级切换路径是：M
+模式（引导）→ S 模式（内核运行）→ U 模式（用户进程运行）</p>
+<p>我们通常是在M模式下，开始加载一段内核引导代码：</p>
+<ol type="1">
+<li>通常我们会在链接器里声明一个 ekernel
+表示内核代码的结束地址，并且进行内存对齐；</li>
+<li>内核会维护一个memory allocator，这个memory allocator 会使用 ekernel
+物理内存作为分配的起始点，也就是用户态内存的起始点，并在内核代码的配置中声明一个值作为用户态地址的终点。</li>
+</ol>
+<p>随后，内核在分配内存的过程中就围绕这一片被划分到用户态的虚拟内存来分配对应的物理内存，同时维护页表项。也就是说，我们现在已经满足了VA高位+PTE
+U位这两个条件。</p>
+<p>而特权级这个条件，我们是基于trap来实现的，在用户态下，如果需要访问内核空间代码，则需要通过trap跳转到对应的特权级。</p>
+<h3 id="from-和-into"><code>from</code> 和 <code>into</code></h3>
+<p>在 Rust 中，From 和 Into 是一对 类型转换相关的 trait，核心作用是 定义
+“安全、无歧义的类型转换规则”，避免手动写重复的转换代码，同时让代码更简洁、可读性更强。二者本质是
+“同一转换的正反两面”，遵循 “实现 <code>From&lt;A&gt;</code> for
+B，自动获得 <code>Into&lt;B&gt;</code> for A”
+的设计（无需重复实现）。</p>
+<p>一般而言，当我们为类型 U 实现了 From<T> Trait 之后，可以使用
+U::from(_: T) 来从一个 T 类型的实例来构造一个 U
+类型的实例；而当我们为类型 U 实现了 Into<T> Trait 之后，对于一个 U
+类型的实例 u ，可以使用 u.into() 来将其转化为一个类型为 T 的实例。</p>
+<h3 id="sv39多级页表的硬件基址">SV39多级页表的硬件基址</h3>
+<ul>
+<li><code>SATP</code> Supervisor Address Translation and
+Protection，直接控制处理器是否启用虚拟地址转换（MMU
+功能），并指定页表的物理地址。</li>
+</ul>
+<figure>
+<img src="/images/20251121/satp.png" alt="satp.png" />
+<figcaption aria-hidden="true">satp.png</figcaption>
+</figure>
+<ul>
+<li><p><code>MODE</code> 控制 CPU 使用哪种页表实现；</p></li>
+<li><p><code>ASID</code>
+表示地址空间标识符，这里还没有涉及到进程的概念，我们不需要管这个地方；</p></li>
+<li><p><code>PPN(Pyhsical Page Number)</code>
+存的是根页表所在的物理页号。这样，给定一个虚拟页号，CPU
+就可以从三级页表的根页表开始一步步的将其映射到一个物理页号。</p></li>
+<li><p>当 MODE 设置为 0 的时候，代表所有访存都被视为物理地址；</p></li>
+<li><p>而设置为 8 的时候，SV39 分页机制被启用，所有 S/U
+特权级的访存被视为一个 39 位的虚拟地址，它们需要先经过 MMU
+的地址转换流程，如果顺利的话，则会变成一个 56
+位的物理地址来访问物理内存；否则则会触发异常，这体现了分页机制的内存保护能力。</p></li>
+</ul>
+<h4 id="地址格式与组成">地址格式与组成</h4>
+<figure>
+<img src="/images/20251121/sv39-va-pa.png" alt="sv39-va-pa.png" />
+<figcaption aria-hidden="true">sv39-va-pa.png</figcaption>
+</figure>
+<p>在 <code>SV39</code> 下，我们的 VA 总共有 39
+位。并且分为两个部分：</p>
+<ul>
+<li><code>PO(Page Offset)</code>
+用于表示页内偏移量，这个和我们页的大小有关，假设每页是
+<code>4KB</code>，那么就需要 <code>12</code> 位；</li>
+<li><code>VPN(Virtual Page Number)</code> 用于
+PPN，在映射完之后通常被扩展，例如可能从 <code>27</code> 位扩展到
+<code>44</code> 位。</li>
+</ul>
+<blockquote>
+<p>这里需要注意的是，我们的PPN的范围是要大于VPN的，核心是为了
+“解耦虚拟空间需求和物理空间能力”： 1.
+虚拟空间只需要满足应用的“观感需求”: 应用需要的是
+“连续、足够大的地址空间”，而非 “实际的物理内存”，而512GB
+虚拟空间足够覆盖绝大多数场景 2. 物理空间需要满足硬件的 “扩展需求”。</p>
+<p>而解耦的核心价值在于： - 应用不依赖物理内存大小：即使物理内存只有
+8GB，应用也能使用 512GB 虚拟空间（通过 “按需分页” 和
+“交换分区”，裸机场景可省略交换分区）； -
+物理内存可灵活分配：多个应用的虚拟空间可以映射到物理内存的不同区域，物理内存不足时，内核可以回收不常用的物理页（换出到磁盘），再分配给需要的应用；
+- 硬件升级无需修改应用：当物理内存从 8GB 升级到 64GB，应用无需重新编译
+—— 内核只需更新页表映射，应用的虚拟地址空间完全不变。</p>
+</blockquote>
+<h4
+id="页表项的数据结构抽象与类型定义">页表项的数据结构抽象与类型定义</h4>
+<figure>
+<img src="/images/20251121/sv39-pte.png" alt="sv39-pte.png" />
+<figcaption aria-hidden="true">sv39-pte.png</figcaption>
+</figure>
+<ul>
+<li>SV39是一个三级页表，其中 <code>[53: 10]</code> 这 44
+位是物理页号，并且对应了在TLB中的一级索引，二级索引一级三级索引；</li>
+<li>低8位是对应的物理页的标志位：
+<ul>
+<li><code>V</code> 对应物理页是否有效；</li>
+<li><code>R</code>, <code>W</code>, <code>X</code>
+表示物理页的读，写，执行；</li>
+<li><code>U</code> 代表了在 User Mode 下是否有权限执行；</li>
+<li><code>G</code></li>
+<li><code>A</code> 代表了页面代表对应的虚拟页面是否被访问过，是
+<strong><a
+href="#全局物理内存的页置换算法">全局物理内存的页置换算法</a></strong>
+的核心数据；</li>
+<li><code>D</code>
+代表了页面代表对应的物理页面是否被修改过，用于判断缓存是否可用。此外，它可以协助我们判断
+<a href="#优化页面换出">优化页面换出</a>。</li>
+</ul></li>
+</ul>
+<h3 id="全局物理内存的页置换算法">全局物理内存的页置换算法</h3>
+<p>“全局物理内存的页置换算法（如clock，二次机会算法）”
+是缓存淘汰的核心逻辑，具体规则可能如下：</p>
+<ol type="1">
+<li>内核扫描页表，检查 <code>A</code> 位；</li>
+<li>所有 <code>A</code> 为0的页面最近未被访问过，直接淘汰；</li>
+<li>如果 <code>A</code>
+为1，则页面最近被访问过，<strong>我们此时将其设置为0</strong>；</li>
+<li>再回到 <code>&lt;1&gt;</code>，如果 <code>A</code>
+为0，则近期未访问，进行淘汰；</li>
+</ol>
+<p>核心逻辑在于，<code>A</code> 的状态为 <code>1</code>
+只是代表过去有被访问过，所以我们每次都需要重置，这样在下次扫描的时候我们就知道最近有没有被访问过。</p>
+<h3 id="优化页面换出">优化页面换出</h3>
+<h4 id="优化页面置换">优化页面置换</h4>
+<blockquote>
+<p>D 位的核心价值是 减少磁盘 I/O
+开销（这是操作系统中最昂贵的操作之一）：</p>
+</blockquote>
+<p>当我们在进行内存操作时，并不会立即数据全部写入到硬盘（或其他I/O），而是先修改内存，并且将页表中的
+<code>D</code> 设置为1。</p>
+<p>而当我们需要进行页面置换，或者 <code>flush</code>
+之类的操作将数据更新时，<code>D</code>
+位可以帮我们判断，当前内存页是可以直接释放还是需要刷新到硬盘！</p>
+<h4 id="实现cow">实现COW</h4>
+<p>假设父进程 P 创建子进程 C，共享某物理页
+PhysPage(<code>0x100</code>)，页表项初始状态：V=1, R=1, W=0, U=1, A=0,
+D=0（有效、可读、禁止写、用户态可访问、未访问、未修改）。</p>
+<ol type="1">
+<li>进程创建阶段：共享物理页 + 权限初始化
+<ul>
+<li>父进程 P 的页表：虚拟页 VPN=0x200 → 物理页 PPN=0x100（W=0）；</li>
+<li>子进程 C 的页表：相同虚拟页 VPN=0x200 → 相同物理页
+PPN=0x100（W=0）；</li>
+<li>内核维护 “物理页引用计数”：PhysPage(0x100) 的引用计数 = 2（P 和 C
+共享）；</li>
+<li>关键：父子进程的页表项都设为
+W=0（禁止写）、D=0（初始无修改），确保写操作触发异常。</li>
+</ul></li>
+<li>写操作触发异常：进入 Trap Handler
+<ul>
+<li>假设子进程 C 尝试写 VPN=0x200 对应的虚拟页；</li>
+<li>处理器检查页表项：V=1（有效）但 W=0（禁止写）→ 触发写保护异常（Store
+Page Fault）；</li>
+<li>RISC-V 会将异常原因（cause=0x24，Store Page
+Fault）、触发写操作的虚拟地址（stval=VPN=0x200）存入 CSR
+寄存器，跳转到内核的 Trap Handler。</li>
+</ul></li>
+<li>Trap Handler 处理逻辑（核心步骤）：Handler 需完成 “识别 COW 页 →
+复制物理页 → 更新页表 → 恢复执行”，具体：
+<ol type="1">
+<li>识别当前页是 COW 共享页
+<ul>
+<li>从 stval 取出触发异常的虚拟地址 VA，找到子进程 C 对应页表项；</li>
+<li>检查页表项特征：V=1, W=0, D=0 + 物理页 PPN=0x100 的引用计数 &gt; 1 →
+确认是 COW 共享页（非普通写保护页）。</li>
+</ul></li>
+<li>分配新物理页并复制数据
+<ul>
+<li>内核从空闲物理页池分配新页 PhysPage(0x101)；</li>
+<li>将旧页 PhysPage(0x100) 的所有数据复制到新页
+PhysPage(0x101)（仅复制一次，完成后两页数据完全一致）。</li>
+</ul></li>
+<li>更新页表项权限和标志位，<strong>这里需要注意的是，现在是内核在进行内存页复制，复制前后的两个内存页的
+<code>D = 0</code>，因为此时仅仅只是处理Storage Page
+Fault，真正的页面操作不在这个异常处理的范畴中。</strong></li>
+<li>刷新 TLB（避免旧映射干扰）</li>
+</ol></li>
+<li>恢复进程执行，此时写入操作完成，将页面 <code>D = 1</code>。</li>
+</ol>
+<h3 id="多级页表">多级页表</h3>
+<h4 id="单级页表线性表">单级页表/线性表</h4>
+<figure>
+<img src="/images/20251121/linear-table.png" alt="linear-table.png" />
+<figcaption aria-hidden="true">linear-table.png</figcaption>
+</figure>
+<p>最简单的页表实现，就是将全部的<strong>VPN -&gt;
+PPN</strong>的映射关系全部存储到内存中，按照我们目前的RV39中页大小4KB，我们总共需要
+<code>2^27 * 8</code> 也就是
+1GB。并且，每个进程都必须有一个。这是完全不可接受的。
+<strong>为此，我们需要引入一个多级页表</strong>。</p>
+<h4 id="字典树">字典树</h4>
+<p>假设存在一个输入字符集为 <code>x = {a, b, c}</code>，长度为
+<code>n</code> 的字符集，那么它的结构可能如下所示</p>
+<figure>
+<img src="/images/20251121/linear-table.png" alt="linear-table.png" />
+<figcaption aria-hidden="true">linear-table.png</figcaption>
+</figure>
+<p>可以看到，上面是一颗完整的字典树，而在我们构造这个字段树的过程中，最开始整棵树是空的。只有当我们写入到一个特定的字符时才会有新的节点生成。</p>
+<figure>
+<img src="/images/20251121/trie-1.png" alt="trie-1.png" />
+<figcaption aria-hidden="true">trie-1.png</figcaption>
+</figure>
+<p>可以看到，我们此时只有一个节点。</p>
+<blockquote>
+<p><strong>事实上 SV39
+分页机制等价于一颗字典树</strong>。<code>27</code> 位的 VPN
+可以看作长度为 <code>3</code> 的三个字符串，字符集为
+<code>x = {0, 1, 2, ..., 511}</code></p>
+</blockquote>
+<h3 id="大表">大表</h3>
+<blockquote>
+<p><code>RV39</code> 支持大表查找和访问，具体逻辑如下</p>
+</blockquote>
+<ol type="1">
+<li>虚拟地址（VA）结构：39 位有效位，拆分为 4 部分：
+<ul>
+<li>高位 2 位：保留（必须为 0，否则为非法地址）；</li>
+<li>VPN [2]：一级页表索引（9 位，对应一级页表项位置）；</li>
+<li>VPN [1]：二级页表索引（9 位，对应二级页表项位置）；</li>
+<li>VPN [0]：三级页表索引（9 位，对应三级页表项位置）；</li>
+</ul></li>
+<li>页表项（PTE）结构：64 位，低 8 位为标志位（V/R/W/X/U/A/D/G），高 56
+位为物理页号（PPN）或下一级页表的 PPN（因 Sv39 物理地址最大 56
+位）。</li>
+<li>核心标志位 V 的语义
+<ul>
+<li>V=1：页表项有效（Valid），是 “合法的页表项”（可能是 “指向下级页表”
+的页目录项，也可能是 “指向物理页” 的叶节点项，或 “大页映射” 项）；</li>
+<li>V=0：页表项无效，访问时触发缺页异常（Page Fault）</li>
+</ul></li>
+</ol>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 25%" />
+<col style="width: 41%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr>
+<th>大页级别</th>
+<th>叶节点页表项</th>
+<th>映射粒度</th>
+<th>VA 中 “用于偏移” 的位数</th>
+<th>对应范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4KB 页</td>
+<td>三级页项</td>
+<td>4KB = 2^12</td>
+<td>12 位（仅 Offset）</td>
+<td>单个 4KB 页</td>
+</tr>
+<tr>
+<td>2MB 大页</td>
+<td>二级页表</td>
+<td>2MB = 2^(9+12)</td>
+<td>9（VPN [0]）+12=21 位</td>
+<td>2MB</td>
+</tr>
+<tr>
+<td>1GB 大页</td>
+<td>一级页表</td>
+<td>1GB = 2^(9+9+12)</td>
+<td>9（VPN [1]）+9（VPN [0]）+12=30 位</td>
+<td>1GB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sv39转换过程">SV39转换过程</h3>
+<figure>
+<img src="/images/20251121/sv39-full.png" alt="sv39-full.png" />
+<figcaption aria-hidden="true">sv39-full.png</figcaption>
+</figure>
+<h3 id="内存管理的一些示例">内存管理的一些示例</h3>
+<blockquote>
+<p>内存管理的完全抽象</p>
+</blockquote>
+<figure>
+<img src="/images/20251121/address-translation.png"
+alt="address translation" />
+<figcaption aria-hidden="true">address translation</figcaption>
+</figure>
+<h4 id="分段内存管理">分段内存管理</h4>
+<blockquote>
+<p>分段内存管理一：使用固定内存大小及物理SLOT进行映射</p>
+</blockquote>
+<figure>
+<img src="/images/20251121/simple-base-bound.png"
+alt="simple-base-bound" />
+<figcaption aria-hidden="true">simple-base-bound</figcaption>
+</figure>
+<p>每个应用的地址空间大小限制为一个固定的常数 bound
+，也即每个应用的可用虚拟地址区间均为
+<code>[0, bound)</code>。随后，就可以以这个大小为单位，将物理内存除了内核预留空间之外的部分划分为若干个大小相同的<strong>插槽
+(Slot)</strong>
+，每个应用的所有数据都被内核放置在其中一个插槽中，对应于物理内存上的一段连续物理地址区间，假设其起始物理地址为
+<code>base</code>，则由于二者大小相同，这个区间实际为
+<code>[base, base + bound)</code>。</p>
+<pre class="mermaid">flowchart LR
+    %% 样式定义（区分内存区域、碎片、映射关系）
+    classDef app_seg fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600, font-size:12px;
+    classDef phys_seg fill:#f0f8fb, stroke:#0ea5e9, rounded:8px, font-weight:600, font-size:12px;
+    classDef fragment fill:#fef2f8, stroke:#f43f5e, rounded:8px, color:#be123c, font-size:11px;
+    classDef arrow stroke:#64748b, stroke-width:1.5px, font-size:11px;
+    classDef title fill:#1e293b, font-weight:bold, font-size:14px;
+    classDef slot fill:#f8fafc, stroke:#94a3b8, rounded:8px, font-weight:600, font-size:12px;
+
+
+    subgraph 应用逻辑内存
+        app_text[".text 段<br/>(代码区)"]:::app_seg
+        app_data[".data 段<br/>(数据区)"]:::app_seg
+        app_stack["stack 段<br/>(栈区)"]:::app_seg
+        app_heap["heap 段<br/>(堆区)"]:::app_seg
+    end
+
+    subgraph 物理内存
+        subgraph 已分配
+            phys_text[".text 段<br/>{base ~ base+text_size}"]:::phys_seg
+            frag1["内碎片1<br/>{未使用}"]:::fragment
+            phys_data[".data 段<br/>{base+text_size+frag1_size ~ ...}"]:::phys_seg
+            frag2["内碎片2<br/>(未使用)"]:::fragment
+            phys_stack["stack 段<br/>(... ~ ...)"]:::phys_seg
+            frag3["内碎片3<br/>(未使用)"]:::fragment
+            phys_heap["heap 段<br/>(... ~ base+bound)"]:::phys_seg
+        end
+        slot1_idle["未分配<br/>(可容纳其他应用)"]:::slot
+        slot2_idle["未分配<br/>(可容纳其他应用)"]:::slot
+
+    end
+
+    app_text --> phys_text
+    app_text -.->|直接映射| phys_text
+    app_data -.->|直接映射| phys_data
+    app_stack -.->|直接映射| phys_stack
+    app_heap -.->|直接映射| phys_heap</pre>
+<blockquote>
+<p>分段内存管理二：使用应用地址空间中的一个逻辑段作为单位来安排应用的数据在物理内存中的布局</p>
+</blockquote>
+<figure>
+<img src="/images/20251121/segmentation.png" alt="segmentation" />
+<figcaption aria-hidden="true">segmentation</figcaption>
+</figure>
+<p>相对于分段内存管理一中的内存分配方式，这种方式不是将应用的整个内存空间直接映射到物理内存。
+而是将应用的物理内存按照 <code>.text</code>, <code>.data</code>,
+<code>stack</code>, <code>heap</code>
+等逻辑段按照一定的规则映射到物理内存。</p>
+<p>注意到每个段都只会在内存中占据一块与它实际所用到的大小相等的空间。堆的情况可能比较特殊，它的大小可能会在运行时增长，但是那需要应用通过系统调用向内核请求。也就是说这是一种按需分配，而不再是内核在开始时就给每个应用分配一大块很可能用不完的内存。由此，不再有内碎片了。</p>
+<p>尽管内碎片被消除了，但内存浪费问题并没有完全解决。这是因为每个段的大小都是不同的（它们可能来自不同的应用，功能也不同），内核就需要使用更加通用、也更加复杂的连续内存分配算法来进行内存管理，而不能像之前的插槽那样以一个比特为单位。顾名思义，连续内存分配算法就是每次需要分配一块连续内存来存放一个段的数据。随着一段时间的分配和回收，物理内存还剩下一些相互不连续的较小的可用连续块，其中有一些只是两个已分配内存块之间的很小的间隙，它们自己可能由于空间较小，已经无法被用于分配，这就是<code>外碎片 (External Fragment)</code>
+。</p>
+<pre class="mermaid">flowchart LR
+    %% 样式定义（区分应用、空闲内存、外碎片、箭头）
+    classDef app fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600, font-size:12px;
+    classDef free fill:#e8f5e8, stroke:#2e7d32, rounded:8px, font-weight:600, font-size:12px;
+    classDef frag fill:#fef2f8, stroke:#f43f5e, rounded:8px, color:#be123c, font-size:12px;
+    classDef arrow stroke:#64748b, stroke-width:1.5px, font-size:11px;
+    classDef note fill:#1e293b, font-weight:bold, font-size:14px;
+
+    %% 步骤1：初始状态（物理内存连续空闲）
+    subgraph Step1["初始状态"]
+        total_free["物理内存<br/>[0 ~ 1024MB] 连续空闲"]:::free
+    end
+    style Step1 font-weight:bold, font-size:14px, fill:#f8fafc, stroke:#e2e8f0, padding:10px;
+
+    %% 步骤2：分配多个不连续应用（占用部分内存）
+    subgraph Step2["分配应用"]
+        direction TB
+        app1["App1 (200MB)<br/>{0 ~ 200MB}"]:::app
+        app2["App2 (300MB)<br/>{300 ~ 600MB}"]:::app
+        app3["App3 (150MB)<br/>{700 ~ 850MB}"]:::app
+        free1["空闲块1 (100MB)<br/>{200 ~ 300MB}"]:::free
+        free2["空闲块2 (100MB)<br/>{600 ~ 700MB}"]:::free
+        free3["空闲块3 (174MB)<br/>{850 ~ 1024MB}"]:::free
+
+        app1 --> free1 --> app2 --> free2 --> app3 --> free3
+    end
+    style Step2 font-weight:bold, font-size:14px, fill:#f8fafc, stroke:#e2e8f0, padding:10px;
+
+    %% 步骤3：释放部分应用（产生离散空闲块）
+    subgraph Step3["Step 3: 释放应用 - 空闲块分散"]
+        direction TB
+        app3_1["App1 (200MB)<br/>{0 ~ 200MB}"]:::app
+        free3_1["空闲块1 (100MB)<br/>{200 ~ 300MB}"]:::free
+        free3_2["空闲块2 (400MB)<br/>{300 ~ 700MB} → 释放App2"]:::free
+        app3_3["App3 (150MB)<br/>{700 ~ 850MB}"]:::app
+        free3_3["空闲块3 (174MB)<br/>{850 ~ 1024MB}"]:::free
+        app3_1 --> free3_1 --> free3_2 --> app3_3 --> free3_3
+    end
+    style Step3 font-weight:bold, font-size:14px, fill:#f8fafc, stroke:#e2e8f0, padding:10px;
+
+    %% 步骤4：外碎片产生（总空闲足够但离散，无法分配）
+    subgraph Step4["外碎片形成"]
+        direction LR
+        app41["App1 (200MB)<br/>{0 ~ 200MB}"]:::app
+        frag41["外碎片1 (100MB)<br/>{200 ~ 300MB}"]:::frag
+        frag42["外碎片2 (400MB)<br/>{300 ~ 700MB}"]:::frag
+        app43["App3 (150MB)<br/>{700 ~ 850MB}"]:::app
+        frag43["外碎片3 (174MB)<br/>{850 ~ 1024MB}"]:::frag
+        new_app["新应用需求：500MB 连续内存<br/>→ 总空闲674MB，但无连续块 → 分配失败"]:::app
+    end
+    style Step4 font-weight:bold, font-size:14px, fill:#f8fafc, stroke:#e2e8f0, padding:10px;
+
+    %% 流程连接（时间线顺序）
+    Step1 --> Step2:::arrow
+    Step2 --> Step3:::arrow
+    Step3 --> Step4:::arrow
+
+    %% 核心原因标注
+    Note["外碎片核心成因：<br/>1. 多次分配/释放后，空闲内存被已分配应用分割成离散块；<br/>2. 总空闲内存大小足够，但无单个连续块满足新应用的连续内存需求；<br/>3. 碎片无法被直接利用，导致内存浪费。"]:::note
+    style Note fill:#f8fafc, stroke:#94a3b8, padding:10px, rounded:8px, font-size:13px;</pre>
+<h4 id="分页内存管理">分页内存管理</h4>
+<p>之前的两种分段管理的方式：</p>
+<ul>
+<li>将应用内存看做一个整体：由于应用内部段的不连续性，将产生大量的内碎片；</li>
+<li>将应用内存分为多个逻辑段，并按段进行映射：在这种情况下，在经过多次分配和释放后空闲内存将分散在物理内存中无法统一的使用。例如假设我们存在一个内存块
+<code>[0, 1, 2, 3, 4]</code>：
+<ul>
+<li>将五个内存块都分配，此时使用的内存块为
+<code>[0, 1, 2, 3, 4]</code>；</li>
+<li>释放内存块
+<code>0</code>，<code>2</code>，<code>4</code>，此时使用的内存块为
+<code>[1, 3]</code>，而空闲的内存块为 <code>[0, 2, 4]</code>；</li>
+<li>此时如果分配一个需要两个内存块的应用，我们内存将分配失败。</li>
+</ul></li>
+</ul>
+<p>若要结合二者的优点的话，就需要内核始终以一个<strong>同样大小的单位来在物理内存</strong>上放置应用地址空间中的数据：</p>
+<ol type="1">
+<li>这样内核就可以使用简单的插槽式内存管理，使得内存分配算法比较简单且不会产生外碎片；</li>
+<li>同时，这个单位的大小要足够小，从而其内部没有被用到的内碎片的大小也足够小，尽可能提高内存利用率。</li>
+</ol>
+<p>这便是我们将要介绍的分页内存管理，总体的思想就是：</p>
+<ol type="1">
+<li>假设我们每个代码块的大小是 <code>M</code>，应用内存大小为
+<code>AM</code>，物理内存大小为 <code>PM</code>；</li>
+<li>那么应用可以分为 <code>AM / M</code> 个代码块，物理内存可以分为
+<code>PM / M</code> 个代码块；</li>
+<li>我们通过某些方式（页表，MMU,TLB等），将应用的代码块映射到物理内存的代码块；</li>
+</ol>
+<p>带来的问题是，我们需要引入更为复杂的硬件结构辅助我们映射应用内存到物理内存。</p>
+<figure>
+<img src="/images/20251121/page-table.png" alt="page-table.png" />
+<figcaption aria-hidden="true">page-table.png</figcaption>
+</figure>
+<h3 id="代码修改">代码修改</h3>
+<pre class="mermaid">flowchart LR
+%% 样式定义：区分目录、新增文件、修改文件、普通文件
+    classDef dir fill:#e0f7fa, stroke:#00695c, rounded:8px, font-weight:bold, font-size:13px;
+    classDef new_file fill:#e8f5e8, stroke:#2e7d32, rounded:6px, font-size:12px, color:#1b5e20;
+    classDef modified fill:#fff3e0, stroke:#ef6c00, rounded:6px, font-size:12px, color:#e65100;
+    classDef normal_file fill:#f5f5f5, stroke:#78909c, rounded:6px, font-size:12px;
+
+    root["os/"]:::dir
+    os_src["src/"]:::dir
+
+%% 一级文件（src 目录下）
+    config["config.rs<br/>(修改：新增内存管理配置)"]:::modified
+    linker["linker.ld<br/>(修改：引入跳板页)"]:::modified
+    loader["loader.rs<br/>(修改：保留应用数据功能)"]:::modified
+    main["main.rs<br/>(修改)"]:::modified
+    src_other["..."]:::normal_file
+
+%% 新增 mm 子模块
+    mm["mm/<br/>(新增：内存管理子模块)"]:::dir
+    mm_address["address.rs<br/>(物理/虚拟地址抽象)"]:::new_file
+    mm_frame["frame_allocator.rs<br/>(物理页帧分配器)"]:::new_file
+    mm_heap["heap_allocator.rs<br/>(内核动态内存分配器)"]:::new_file
+    mm_memory_set["memory_set.rs<br/>(地址空间相关)"]:::new_file
+    mm_mod["mod.rs<br/>(mm 模块初始化)"]:::new_file
+    mm_page_table["page_table.rs<br/>(多级页表抽象)"]:::new_file
+
+%% syscall 子模块
+    syscall["syscall/"]:::dir
+    syscall_fs["fs.rs<br/>(修改：基于地址空间的 sys_write)"]:::modified
+    syscall_mod["mod.rs"]:::normal_file
+    syscall_process["process.rs"]:::normal_file
+
+%% task 子模块
+    task["task/"]:::dir
+    task_context["context.rs<br/>(修改：构造初始任务上下文)"]:::modified
+    task_mod["mod.rs<br/>(修改，详见文档)"]:::modified
+    task_switch["switch.rs"]:::normal_file
+    task_switch_S["switch.S"]:::normal_file
+    task_task["task.rs<br/>(修改，详见文档)"]:::modified
+
+%% trap 子模块
+    trap["trap/"]:::dir
+    trap_context["context.rs<br/>(修改：扩展 Trap 上下文)"]:::modified
+    trap_mod["mod.rs<br/>(修改：基于地址空间的 Trap 机制)"]:::modified
+    trap_S["trap.S<br/>(修改：Trap 上下文保存/恢复)"]:::modified
+
+%% 层级连接
+    root --> os_src
+    os_src --> config
+    os_src --> linker
+    os_src --> loader
+    os_src --> main
+    os_src --> src_other
+    os_src --> mm
+    os_src --> syscall
+    os_src --> task
+    os_src --> trap
+
+%% mm 子模块连接
+    mm --> mm_address
+    mm --> mm_frame
+    mm --> mm_heap
+    mm --> mm_memory_set
+    mm --> mm_mod
+    mm --> mm_page_table
+
+%% syscall 子模块连接
+    syscall --> syscall_fs
+    syscall --> syscall_mod
+    syscall --> syscall_process
+
+%% task 子模块连接
+    task --> task_context
+    task --> task_mod
+    task --> task_switch
+    task --> task_switch_S
+    task --> task_task
+
+%% trap 子模块连接
+    trap --> trap_context
+    trap --> trap_mod
+    trap --> trap_S</pre>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+              <a href="/tags/memory/" rel="tag"># memory</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/18/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%883%EF%BC%89/" rel="prev" title="uCore：一个基于Rust的简单操作系统实现（3）">
+                  <i class="fa fa-angle-left"></i> uCore：一个基于Rust的简单操作系统实现（3）
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+
+</body>
+</html>
