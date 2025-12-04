@@ -452,7 +452,7 @@ pub fn main() -> i32 {
 
 最终生成的文件格式如下：唯一需要注意的是 `.string "ch2b_bad_address"` 会自动的在 `.string` 后面增加 `\0` 作为结尾，**但是这个和 exec 的参数必须以 '\0' 没有关系，可以参考 [exec](#exec)**
 
-```assembly
+```nasm
     .global _num_app
 _num_app:
     .quad 19
@@ -857,8 +857,89 @@ impl TaskControlBlock {
 
 `fork` 系统调用的实现存在两个需要注意的地方：
 
-1. 为得到的进程生成一个`接近`一模一样的内存空间和布局 -- 包括堆和栈；这个实现并不复杂，直接将原进程的地址空间 `MemorySet` 复制到新进程的地址空间即可；这里需要注意的是，我们有两个特殊的 `MapArea` -- `trampoline` 和 `trap_cx`。这两个MapArea都是进程相关的，此外：
-   1. `trampoline` 是没有被 push 到 `memory_set` 的，所以除了在`for`循环里复制外还要额外的
+1. 修改用户进程的信息：为子进程生成一个接近一模一样的内存空间和布局（包括堆和栈）。需注意：这里未实现 COW（写时复制），所有 MapArea 都重新分配了物理内存；实现逻辑不复杂，直接将原进程的地址空间 MemorySet 复制到新进程即可。其中有两个特殊的 MapArea 需要单独处理：
+   1. `trampoline`：全局共享的物理页，属于 “特殊映射”（固定虚拟地址、仅可执行权限、全进程共享物理页），不会被包含在普通 MapArea 的遍历复制中，因此无法通过 for 循环完成 VA→PA 映射，需额外调用 `map_trampoline`（无需重新分配物理页，仅复用全局共享页完成映射）；
+   2. `trap_ctx`：完整复制父进程的 `trap_ctx` 内容，仅需修改 `kernel_sp` 字段（指向子进程新分配的内核栈顶，这个是内核态才会用到的），其余字段保持不变。
+2. **修改PCB信息**：
+   1. 重新分配了 `pid`；
+   2. 重新分配了 `kernel_stack`，这里是基于我们新实现的 `KSTACK_ALLOCATOR` 分配的；
+   3. 因为重新分配了 `kernel_stack`，所以 `kernel_stack_top` 也改变了；
+   4. 初始化 `task_cx`，**这里非常重要，因为当该进程初始化完毕被调度的时候，会直接将 `task_cx` 作为第一次的上下文；所以它的 `ra = trap_return`，`sp = kernel_stack_top`* *
+      - `ra = trap_return`：表示子进程首次执行时，会先跳转到 `trap_return` 函数（完成内核态→用户态的切换）；
+      - `sp = kernel_stack_top`：表示子进程的内核栈指针指向新分配的内核栈顶，这也体现了我们的栈从上往下扩展的特性；
+   5. **隐式的修改 `sepc`，父进程在执行完 `fork()` 之后CPU 会自动将 sepc 设置为 ecall 下一条指令的地址（在riscv中是 sepc = sepc + 4），而我们完整的复制了全部的 `trap_cx`，也就是相当于隐式的修改了 `sepc`，这样才保证子进程在第一次被调度的时候不会陷入死循环**。
+   6. 修改父进程和子进程的其他关联信息；
+
+
+##### MemorySet#from_existed_user
+
+```rust
+impl MemorySet {
+    pub fn from_existed_user(user_space: &Self) -> Self {
+        let mut memory_set = Self::new_bare();
+        // map trampoline
+        memory_set.map_trampoline();
+        // copy data sections/trap_context/user_stack
+        for area in user_space.areas.iter() {
+            let new_area = MapArea::from_another(area);
+            memory_set.push(new_area, None);
+            // copy data from another space
+            for vpn in area.vpn_range {
+                let src_ppn = user_space.translate(vpn).unwrap().ppn();
+                let dst_ppn = memory_set.translate(vpn).unwrap().ppn();
+                dst_ppn
+                    .get_bytes_array()
+                    .copy_from_slice(src_ppn.get_bytes_array());
+            }
+        }
+        memory_set
+    }
+}
+```
+
+##### MapArea#from_another
+
+```rust
+impl MapArea {
+    pub fn from_another(another: &Self) -> Self {
+        Self {
+            vpn_range: VPNRange::new(another.vpn_range.get_start(), another.vpn_range.get_end()),
+            data_frames: BTreeMap::new(),
+            map_type: another.map_type,
+            map_perm: another.map_perm,
+        }
+    }
+}
+```
+
+##### sys_fork的实现
+
+随后，我们还有一点需要注意的是：`sys_fork` 进程会存在两个返回值：
+
+1. 对于父进程会返回子进程的 `pid`；
+2. 对于子进程会返回 `0`。
+
+这里我们的实现逻辑是：
+
+1. 对于父进程，我们直接返回 `pid`；
+2. 对于子进程，我们修改它的 `trap_cx` 中的 `x10`，也就是 `trap_cx.x[10]`；
+
+```rust
+pub fn sys_fork() -> isize {
+    trace!("kernel:pid[{}] sys_fork", current_task().unwrap().pid.0);
+    let current_task = current_task().unwrap();
+    let new_task = current_task.fork();
+    let new_pid = new_task.pid.0;
+    // modify trap context of new_task, because it returns immediately after switching
+    let trap_cx = new_task.inner_exclusive_access().get_trap_cx();
+    // we do not have to move to next instruction since we have done it before
+    // for child process, fork returns 0
+    trap_cx.x[10] = 0;
+    // add new task to scheduler
+    add_task(new_task);
+    new_pid as isize
+}
+```
 
 
 
