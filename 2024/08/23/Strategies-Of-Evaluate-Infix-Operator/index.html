@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Strategies of Evaluate Infix Operator when we are implementing a compiler, there is always a difficult problem we will encounter.  How can we evaluate an infix operator?  What is Infix Operator An inf">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Strategies Of Evaluate Infix Operator">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="Strategies of Evaluate Infix Operator when we are implementing a compiler, there is always a difficult problem we will encounter.  How can we evaluate an infix operator?  What is Infix Operator An inf">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-23T03:51:10.000Z">
+<meta property="article:modified_time" content="2025-12-04T12:23:10.547Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="REPL">
+<meta property="article:tag" content="compiler">
+<meta property="article:tag" content="interpreter">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/","path":"2024/08/23/Strategies-Of-Evaluate-Infix-Operator/","title":"Strategies Of Evaluate Infix Operator"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Strategies Of Evaluate Infix Operator | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#strategies-of-evaluate-infix-operator"><span class="nav-number">1.</span> <span class="nav-text">Strategies of Evaluate
+Infix Operator</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#what-is-infix-operator"><span class="nav-number">1.1.</span> <span class="nav-text">What is Infix Operator</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#define-the-infix-expression"><span class="nav-number">1.2.</span> <span class="nav-text">Define the Infix Expression</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#node"><span class="nav-number">1.2.1.</span> <span class="nav-text">Node</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#expression"><span class="nav-number">1.2.2.</span> <span class="nav-text">Expression</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#infixexpression"><span class="nav-number">1.2.3.</span> <span class="nav-text">InfixExpression</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#evaluate"><span class="nav-number">1.3.</span> <span class="nav-text">Evaluate</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#enumeration"><span class="nav-number">1.3.1.</span> <span class="nav-text">enumeration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#generics"><span class="nav-number">1.3.2.</span> <span class="nav-text">Generics</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#subtract-and-multiply"><span class="nav-number">1.3.3.</span> <span class="nav-text">Subtract and Multiply</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#integer"><span class="nav-number">1.3.4.</span> <span class="nav-text">Integer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#float"><span class="nav-number">1.3.5.</span> <span class="nav-text">Float</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#evaluate-1"><span class="nav-number">1.3.6.</span> <span class="nav-text">Evaluate</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Strategies Of Evaluate Infix Operator | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Strategies Of Evaluate Infix Operator
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-08-23 11:51:10" itemprop="dateCreated datePublished" datetime="2024-08-23T11:51:10+08:00">2024-08-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-12-04 20:23:10" itemprop="dateModified" datetime="2025-12-04T20:23:10+08:00">2025-12-04</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="strategies-of-evaluate-infix-operator">Strategies of Evaluate
+Infix Operator</h1>
+<p>when we are implementing a compiler, there is always a difficult
+problem we will encounter.</p>
+<blockquote>
+<p>How can we evaluate an infix operator?</p>
+</blockquote>
+<h2 id="what-is-infix-operator">What is Infix Operator</h2>
+<p>An infix operator is an operator placed between two expressions, like
+minus, plus, asterisk, slash and so forth. Here are some common infix
+operator:</p>
+<ul>
+<li><code>+</code></li>
+<li><code>-</code></li>
+<li><code>*</code></li>
+<li><code>/</code></li>
+</ul>
+<p>the most common usage is described in the following diagram.</p>
+<pre class="mermaid">---
+title: Usage of Infix diagram
+---
+flowchart LR
+
+    LhsExpression --> InfixOperator:::literal --> RhsExpression
+
+classDef literal fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+<h2 id="define-the-infix-expression">Define the Infix Expression</h2>
+<h3 id="node">Node</h3>
+<p>every node in our AST has to implement the Node interface meaning it
+has to provide a TokenLiteral() function that returns the literal value
+of the token it's associated with. TokenLiteral() will used only for
+debugging and testing. The AST we are going to construct consists solely
+of Nodes that are connected to each other.</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> Node <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
+	<span class="token function">TokenLiteral</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">string</span>
+	<span class="token function">String</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">string</span> <span class="token comment">// String convert Node to code as string</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="expression">Expression</h3>
+<p>an expression is a combination of variables, constants, operators,
+and functions that are evaluated to produce a value.it can be simple,
+like a constant or variable, or complex, involving multiple operations.
+it can be nested with other expressions or statement. Expression produce
+value.</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> Expression <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
+	Node
+	<span class="token function">expressionNode</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// expressionNode a Node implement this method to specify itself is an Expression</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="infixexpression">InfixExpression</h3>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> InfixExpression <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
+	Token    token<span class="token punctuation">.</span>Token
+	Operator <span class="token builtin">string</span>
+	Lhs      Expression
+	Rhs      Expression
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="evaluate">Evaluate</h2>
+<p>We can simplify the problem by limiting the types of expressions and
+operators, because there is no difference between adding integers and
+multiplying floats. So let's say the expression is <code>Integer</code>
+and <code>Float</code> and the operator is <code>Plus</code>.</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> IntegerLiteral <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
+	Token token<span class="token punctuation">.</span>Token
+	Value <span class="token builtin">int64</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">type</span> FloatLiteral <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
+	Token token<span class="token punctuation">.</span>Token
+	Value <span class="token builtin">float64</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="enumeration">enumeration</h3>
+<p>the simplest way to evaluate a infix operator is by using
+enumeration.</p>
+<pre class="mermaid">---
+title: enumeration
+---
+flowchart LR
+
+CheckInfixOperator --Minus--> CheckMinusExpressionType
+CheckInfixOperator --Asterisk--> CheckMultiplyExpressionType
+
+CheckMinusExpressionType --Integer--> MinusInteger
+CheckMinusExpressionType --Float--> MinusFloat
+
+CheckMultiplyExpressionType --Integer--> MultiplyInteger
+CheckMultiplyExpressionType --Float--> MultiplyFloat
+
+subgraph MinusInteger
+    direction LR
+    LhsInteger0["LhsInteger"] --> Minus0["-"]:::operator --> RhsInteger0["RhsInteger"]
+end
+
+subgraph MinusFloat
+    direction LR
+    LhsFloat0["LhsFloat"] --> Minus1["-"]:::operator --> RhsFloat0["RhsFloat"]
+end
+
+subgraph MultiplyInteger
+    direction LR
+    LhsInteger["LhsInteger"] --> Mul0["*"]:::operator --> RhsInteger["RhsInteger"]
+end
+
+subgraph MultiplyFloat
+    direction LR
+    LhsFloat1["LhsFloat"] --> Mul1["*"]:::operator --> RhsFloat1["RhsFloat"]
+end
+
+classDef operator fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+<p>apparently, we can combine the <code>-</code>, <code>/</code>
+operations for integers, and the <code>-</code>, <code>/</code>
+operations for float, just like this:</p>
+<pre class="mermaid">---
+title: enumeration after merge
+---
+flowchart LR
+
+CheckInfixOperator --Minus--> CheckMinusExpressionType
+CheckInfixOperator --Asterisk--> CheckMultiplyExpressionType
+
+CheckMinusExpressionType --Integer--> Integer
+CheckMinusExpressionType --Float--> Float
+
+CheckMultiplyExpressionType --Integer--> Integer
+CheckMultiplyExpressionType --Float--> Float
+
+subgraph Integer
+    direction LR
+    LhsInteger0["LhsInteger"] --> Minus0["-"]:::operator --> RhsInteger0["RhsInteger"]
+    LhsInteger["LhsInteger"] --> Mul0["*"]:::operator --> RhsInteger["RhsInteger"]
+end
+
+subgraph Float
+    direction LR
+    LhsFloat0["LhsFloat"] --> Minus1["-"]:::operator --> RhsFloat0["RhsFloat"]
+    LhsFloat1["LhsFloat"] --> Mul1["*"]:::operator --> RhsFloat1["RhsFloat"]
+end
+
+classDef operator fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// evaluate infix expression</span>
+<span class="token keyword">func</span> <span class="token function">evalInfixExpression</span><span class="token punctuation">(</span>infix <span class="token operator">*</span>ast<span class="token punctuation">.</span>InfixExpression<span class="token punctuation">)</span> object<span class="token punctuation">.</span>Object <span class="token punctuation">&#123;</span>
+	lhsObj <span class="token operator">:=</span> <span class="token function">Eval</span><span class="token punctuation">(</span>infix<span class="token punctuation">.</span>Lhs<span class="token punctuation">)</span>
+	rhsObj <span class="token operator">:=</span> <span class="token function">Eval</span><span class="token punctuation">(</span>infix<span class="token punctuation">.</span>Rhs<span class="token punctuation">)</span>
+	<span class="token keyword">switch</span> infix<span class="token punctuation">.</span>Operator <span class="token punctuation">&#123;</span>
+	<span class="token keyword">case</span> <span class="token function">string</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>SUB<span class="token punctuation">)</span><span class="token punctuation">:</span>
+		<span class="token keyword">if</span> lhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjInteger <span class="token operator">&amp;&amp;</span> rhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjInteger <span class="token punctuation">&#123;</span>
+			<span class="token keyword">return</span> <span class="token function">evalInfixExpressionIntegerLiteral</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>SUB<span class="token punctuation">,</span> lhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">)</span><span class="token punctuation">,</span> rhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">)</span><span class="token punctuation">)</span>
+		<span class="token punctuation">&#125;</span>
+
+		<span class="token keyword">if</span> lhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjFloat <span class="token operator">&amp;&amp;</span> rhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjFloat <span class="token punctuation">&#123;</span>
+			<span class="token keyword">return</span> <span class="token function">evalInfixExpressionFloatLiteral</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>SUB<span class="token punctuation">,</span> lhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">)</span><span class="token punctuation">,</span> rhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">)</span><span class="token punctuation">)</span>
+		<span class="token punctuation">&#125;</span>
+	<span class="token keyword">case</span> <span class="token function">string</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>ASTERISK<span class="token punctuation">)</span><span class="token punctuation">:</span>
+		<span class="token keyword">if</span> lhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjInteger <span class="token operator">&amp;&amp;</span> rhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjInteger <span class="token punctuation">&#123;</span>
+			<span class="token keyword">return</span> <span class="token function">evalInfixExpressionIntegerLiteral</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>ASTERISK<span class="token punctuation">,</span> lhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">)</span><span class="token punctuation">,</span> rhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">)</span><span class="token punctuation">)</span>
+		<span class="token punctuation">&#125;</span>
+
+		<span class="token keyword">if</span> lhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjFloat <span class="token operator">&amp;&amp;</span> rhsObj<span class="token punctuation">.</span><span class="token function">Type</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> object<span class="token punctuation">.</span>ObjFloat <span class="token punctuation">&#123;</span>
+			<span class="token keyword">return</span> <span class="token function">evalInfixExpressionFloatLiteral</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>ASTERISK<span class="token punctuation">,</span> lhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">)</span><span class="token punctuation">,</span> rhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">)</span><span class="token punctuation">)</span>
+		<span class="token punctuation">&#125;</span>
+	<span class="token keyword">default</span><span class="token punctuation">:</span>
+		<span class="token keyword">return</span> object<span class="token punctuation">.</span>NativeNull
+	<span class="token punctuation">&#125;</span>
+
+	<span class="token comment">// TODO support more infix expression</span>
+	<span class="token keyword">return</span> object<span class="token punctuation">.</span>NativeNull
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token function">evalInfixExpressionIntegerLiteral</span><span class="token punctuation">(</span>operator token<span class="token punctuation">.</span>TokenType<span class="token punctuation">,</span> lhsIntegerObj<span class="token punctuation">,</span> rhsIntegerObj <span class="token operator">*</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">)</span> object<span class="token punctuation">.</span>Object <span class="token punctuation">&#123;</span>
+	<span class="token keyword">switch</span> operator <span class="token punctuation">&#123;</span>
+	<span class="token keyword">case</span> token<span class="token punctuation">.</span>SUB<span class="token punctuation">:</span>
+		<span class="token keyword">return</span> <span class="token operator">&amp;</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">&#123;</span>Value<span class="token punctuation">:</span> lhsIntegerObj<span class="token punctuation">.</span>Value <span class="token operator">-</span> rhsIntegerObj<span class="token punctuation">.</span>Value<span class="token punctuation">&#125;</span>
+	<span class="token keyword">case</span> token<span class="token punctuation">.</span>ASTERISK<span class="token punctuation">:</span>
+		<span class="token keyword">return</span> <span class="token operator">&amp;</span>object<span class="token punctuation">.</span>Integer<span class="token punctuation">&#123;</span>Value<span class="token punctuation">:</span> lhsIntegerObj<span class="token punctuation">.</span>Value <span class="token operator">*</span> rhsIntegerObj<span class="token punctuation">.</span>Value<span class="token punctuation">&#125;</span>
+	<span class="token keyword">default</span><span class="token punctuation">:</span>
+		<span class="token keyword">return</span> object<span class="token punctuation">.</span>NativeNull
+	<span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token function">evalInfixExpressionFloatLiteral</span><span class="token punctuation">(</span>operator token<span class="token punctuation">.</span>TokenType<span class="token punctuation">,</span> lhsIntegerObj<span class="token punctuation">,</span> rhsIntegerObj <span class="token operator">*</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">)</span> object<span class="token punctuation">.</span>Object <span class="token punctuation">&#123;</span>
+	<span class="token keyword">switch</span> operator <span class="token punctuation">&#123;</span>
+	<span class="token keyword">case</span> token<span class="token punctuation">.</span>SUB<span class="token punctuation">:</span>
+		<span class="token keyword">return</span> <span class="token operator">&amp;</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">&#123;</span>Value<span class="token punctuation">:</span> lhsIntegerObj<span class="token punctuation">.</span>Value <span class="token operator">-</span> rhsIntegerObj<span class="token punctuation">.</span>Value<span class="token punctuation">&#125;</span>
+	<span class="token keyword">case</span> token<span class="token punctuation">.</span>ASTERISK<span class="token punctuation">:</span>
+		<span class="token keyword">return</span> <span class="token operator">&amp;</span>object<span class="token punctuation">.</span>Float<span class="token punctuation">&#123;</span>Value<span class="token punctuation">:</span> lhsIntegerObj<span class="token punctuation">.</span>Value <span class="token operator">*</span> rhsIntegerObj<span class="token punctuation">.</span>Value<span class="token punctuation">&#125;</span>
+	<span class="token keyword">default</span><span class="token punctuation">:</span>
+		<span class="token keyword">return</span> object<span class="token punctuation">.</span>NativeNull
+	<span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>Until now, the problem seems to be solved. However, if we are going
+to add a new type such as <code>BigInteger</code>,We found that there is
+too much duplicate work to do, and this severely violates our principle:
+keep it simple, keep it stupid.</p>
+<p>To add a new type, we have to do the following:</p>
+<ol type="1">
+<li>add a new function for evaluate;</li>
+<li>add a new branch of type in swtich statement;</li>
+</ol>
+<p>both of these steps require midifying the main branch code, which
+presents a significant challenge to our testing and code quality.</p>
+<p><strong>We assume that in the process of adding a new type, the main
+branch code shouldn't be modified, and each type should have a more
+flexible approach to support infix operators</strong></p>
+<h3 id="generics">Generics</h3>
+<p>The most common approach is using <code>Generics</code> and
+<code>Interface</code>:</p>
+<pre class="mermaid">---
+title: Infix Operator With Generics
+---
+flowchart LR
+
+CheckInfixOperator --Minus--> GenericsSubtract:::generics
+CheckInfixOperator --Asterisk--> GenericsMultiply:::generics
+
+GenericsSubtract --> IntegerSub
+GenericsSubtract --> FloatSub
+
+GenericsMultiply --> IntegerMultiply
+GenericsMultiply --> FloatMultiply
+
+classDef generics fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+<p>t seems that this approach is similar to our initial enumeration
+method, but the internal implementation is completely different.</p>
+<p>For example, in the enumeration method, our <code>MinusInteger</code>
+and <code>MultiplyInteger</code> functions require conditional checks
+using <code>if</code> or <code>switch</code> statements. However, with
+generics, we can automatically bind methods to the object's methods.</p>
+<h3 id="subtract-and-multiply">Subtract and Multiply</h3>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// Subtract the behavior of the infix operator minus</span>
+<span class="token keyword">type</span> Subtract <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
+	Object
+	<span class="token function">Sub</span><span class="token punctuation">(</span>Object<span class="token punctuation">)</span> Object
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// Multiply the behavior of the infix operator asterisk</span>
+<span class="token keyword">type</span> Multiply <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
+	Object
+	<span class="token function">Mul</span><span class="token punctuation">(</span>Object<span class="token punctuation">)</span> Object
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="integer">Integer</h3>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>i <span class="token operator">*</span>Integer<span class="token punctuation">)</span> <span class="token function">Sub</span><span class="token punctuation">(</span>o Object<span class="token punctuation">)</span> Object <span class="token punctuation">&#123;</span>
+	<span class="token keyword">if</span> other<span class="token punctuation">,</span> ok <span class="token operator">:=</span> o<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Integer<span class="token punctuation">)</span><span class="token punctuation">;</span> ok <span class="token punctuation">&#123;</span>
+		i<span class="token punctuation">.</span>Value <span class="token operator">=</span> i<span class="token punctuation">.</span>Value <span class="token operator">-</span> other<span class="token punctuation">.</span>Value
+		<span class="token keyword">return</span> i
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">return</span> NativeNull
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>i <span class="token operator">*</span>Integer<span class="token punctuation">)</span> <span class="token function">Mul</span><span class="token punctuation">(</span>o Object<span class="token punctuation">)</span> Object <span class="token punctuation">&#123;</span>
+	<span class="token keyword">if</span> other<span class="token punctuation">,</span> ok <span class="token operator">:=</span> o<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Integer<span class="token punctuation">)</span><span class="token punctuation">;</span> ok <span class="token punctuation">&#123;</span>
+		i<span class="token punctuation">.</span>Value <span class="token operator">=</span> i<span class="token punctuation">.</span>Value <span class="token operator">*</span> other<span class="token punctuation">.</span>Value
+		<span class="token keyword">return</span> i
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">return</span> NativeNull
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="float">Float</h3>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>Float<span class="token punctuation">)</span> <span class="token function">Sub</span><span class="token punctuation">(</span>o Object<span class="token punctuation">)</span> Object <span class="token punctuation">&#123;</span>
+	<span class="token keyword">if</span> other<span class="token punctuation">,</span> ok <span class="token operator">:=</span> o<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Float<span class="token punctuation">)</span><span class="token punctuation">;</span> ok <span class="token punctuation">&#123;</span>
+		f<span class="token punctuation">.</span>Value <span class="token operator">=</span> f<span class="token punctuation">.</span>Value <span class="token operator">-</span> other<span class="token punctuation">.</span>Value
+		<span class="token keyword">return</span> f
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">return</span> NativeNull
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>Float<span class="token punctuation">)</span> <span class="token function">Mul</span><span class="token punctuation">(</span>o Object<span class="token punctuation">)</span> Object <span class="token punctuation">&#123;</span>
+	<span class="token keyword">if</span> other<span class="token punctuation">,</span> ok <span class="token operator">:=</span> o<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Float<span class="token punctuation">)</span><span class="token punctuation">;</span> ok <span class="token punctuation">&#123;</span>
+		f<span class="token punctuation">.</span>Value <span class="token operator">=</span> f<span class="token punctuation">.</span>Value <span class="token operator">*</span> other<span class="token punctuation">.</span>Value
+		<span class="token keyword">return</span> f
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">return</span> NativeNull
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="evaluate-1">Evaluate</h3>
+<p>Finally, the magic happens. When we calculate infix operators, our
+main branch code no longer needs to handle the actual types of objects.
+Instead, we bind a method to each infix operator. If an object needs to
+support a specific infix operator, it simply implements the
+corresponding interface, and it will naturally be bound to the
+appropriate method.</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">evalInfixExpression</span><span class="token punctuation">(</span>infix <span class="token operator">*</span>ast<span class="token punctuation">.</span>InfixExpression<span class="token punctuation">)</span> object<span class="token punctuation">.</span>Object <span class="token punctuation">&#123;</span>
+	lhsObj <span class="token operator">:=</span> <span class="token function">Eval</span><span class="token punctuation">(</span>infix<span class="token punctuation">.</span>Lhs<span class="token punctuation">)</span>
+	rhsObj <span class="token operator">:=</span> <span class="token function">Eval</span><span class="token punctuation">(</span>infix<span class="token punctuation">.</span>Rhs<span class="token punctuation">)</span>
+	<span class="token keyword">switch</span> infix<span class="token punctuation">.</span>Operator <span class="token punctuation">&#123;</span>
+	<span class="token keyword">case</span> <span class="token function">string</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>SUB<span class="token punctuation">)</span><span class="token punctuation">:</span>
+		<span class="token keyword">return</span> <span class="token function">evalSubtract</span><span class="token punctuation">(</span>lhsObj<span class="token punctuation">,</span> rhsObj<span class="token punctuation">)</span>
+	<span class="token keyword">case</span> <span class="token function">string</span><span class="token punctuation">(</span>token<span class="token punctuation">.</span>ASTERISK<span class="token punctuation">)</span><span class="token punctuation">:</span>
+		<span class="token keyword">return</span> <span class="token function">evalMultiply</span><span class="token punctuation">(</span>lhsObj<span class="token punctuation">,</span> rhsObj<span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+
+	<span class="token comment">// TODO support more infix expression</span>
+	<span class="token keyword">return</span> object<span class="token punctuation">.</span>NativeNull
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token function">evalSubtract</span><span class="token punctuation">(</span>lhsObj<span class="token punctuation">,</span> rhsObj object<span class="token punctuation">.</span>Object<span class="token punctuation">)</span> object<span class="token punctuation">.</span>Object <span class="token punctuation">&#123;</span>
+	l <span class="token operator">:=</span> lhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span>object<span class="token punctuation">.</span>Subtract<span class="token punctuation">)</span>
+	r <span class="token operator">:=</span> rhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span>object<span class="token punctuation">.</span>Subtract<span class="token punctuation">)</span>
+	<span class="token keyword">return</span> l<span class="token punctuation">.</span><span class="token function">Sub</span><span class="token punctuation">(</span>r<span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token function">evalMultiply</span><span class="token punctuation">(</span>lhsObj<span class="token punctuation">,</span> rhsObj object<span class="token punctuation">.</span>Object<span class="token punctuation">)</span> object<span class="token punctuation">.</span>Object <span class="token punctuation">&#123;</span>
+	l <span class="token operator">:=</span> lhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span>object<span class="token punctuation">.</span>Multiply<span class="token punctuation">)</span>
+	r <span class="token operator">:=</span> rhsObj<span class="token punctuation">.</span><span class="token punctuation">(</span>object<span class="token punctuation">.</span>Multiply<span class="token punctuation">)</span>
+	<span class="token keyword">return</span> l<span class="token punctuation">.</span><span class="token function">Mul</span><span class="token punctuation">(</span>r<span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/compiler/" rel="tag"># compiler</a>
+              <a href="/tags/interpreter/" rel="tag"># interpreter</a>
+              <a href="/tags/REPL/" rel="tag"># REPL</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/08/21/Strategies-Of-Evaluation/" rel="prev" title="Strategies Of Evaluation">
+                  <i class="fa fa-angle-left"></i> Strategies Of Evaluation
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/10/14/The-Crate-Package-and-Moudle-in-Rust/" rel="next" title="The Crate, Package, and Moudle in Rust">
+                  The Crate, Package, and Moudle in Rust <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

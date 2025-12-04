@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="引用  The yield statement Operators and Expressions in Python Syntactic Sugar: Why Python Is Sweet and Pythonic How to Use Generators and yield in Python When to Use a List Comprehension in Python Pytho">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python里的一些语法糖">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="引用  The yield statement Operators and Expressions in Python Syntactic Sugar: Why Python Is Sweet and Pythonic How to Use Generators and yield in Python When to Use a List Comprehension in Python Pytho">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-05-08T12:02:44.000Z">
+<meta property="article:modified_time" content="2025-12-04T12:23:10.547Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/","path":"2025/05/08/Python里的一些语法糖/","title":"Python里的一些语法糖"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Python里的一些语法糖 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E8%AF%8D"><span class="nav-number">2.</span> <span class="nav-text">关键词</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#operators"><span class="nav-number">3.</span> <span class="nav-text">Operators</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#membership-tests"><span class="nav-number">3.1.</span> <span class="nav-text">membership tests</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#chained-conditions"><span class="nav-number">4.</span> <span class="nav-text">Chained Conditions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#conditional-expressions"><span class="nav-number">5.</span> <span class="nav-text">Conditional
+expressions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#assignment-expressions"><span class="nav-number">6.</span> <span class="nav-text">Assignment Expressions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unpacking"><span class="nav-number">7.</span> <span class="nav-text">Unpacking</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iterable-unpacking"><span class="nav-number">7.1.</span> <span class="nav-text">Iterable Unpacking</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#args-and-kwargs"><span class="nav-number">7.2.</span> <span class="nav-text">*args and
+**kwargs</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#loops-and-comprehensions"><span class="nav-number">8.</span> <span class="nav-text">Loops and Comprehensions</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#exploring-for-loops"><span class="nav-number">8.1.</span> <span class="nav-text">Exploring for Loops</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#using-comprehensions"><span class="nav-number">8.2.</span> <span class="nav-text">Using Comprehensions</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#decorators"><span class="nav-number">9.</span> <span class="nav-text">Decorators</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#f-string-literals"><span class="nav-number">10.</span> <span class="nav-text">F-String Literals</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#the-yield-from-construct"><span class="nav-number">11.</span> <span class="nav-text">The yield from
+Construct</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#understanding-generators"><span class="nav-number">12.</span> <span class="nav-text">Understanding Generators</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#profiling-generator-performance"><span class="nav-number">12.1.</span> <span class="nav-text">Profiling Generator
+Performance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#understanding-the-python-yield-statement"><span class="nav-number">12.2.</span> <span class="nav-text">Understanding the
+python yield statement</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#using-advanced-generator-methods"><span class="nav-number">12.3.</span> <span class="nav-text">Using Advanced Generator
+Methods</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#the-with-statement"><span class="nav-number">13.</span> <span class="nav-text">The with Statement</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#list-comprehension"><span class="nav-number">14.</span> <span class="nav-text">List Comprehension</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#nested-list-comprehensions"><span class="nav-number">14.0.1.</span> <span class="nav-text">Nested
+List Comprehensions</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dictionary-and-dict-comprehensions"><span class="nav-number">15.</span> <span class="nav-text">Dictionary And dict
+comprehensions</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Python里的一些语法糖 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python里的一些语法糖
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-05-08 20:02:44" itemprop="dateCreated datePublished" datetime="2025-05-08T20:02:44+08:00">2025-05-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-12-04 20:23:10" itemprop="dateModified" datetime="2025-12-04T20:23:10+08:00">2025-12-04</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="引用">引用</h2>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/simple_stmts.html#grammar-token-python-grammar-yield_stmt">The
+<code>yield</code> statement</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/python-operators-expressions/">Operators
+and Expressions in Python</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/syntactic-sugar-python/#unpacking-in-python">Syntactic
+Sugar: Why Python Is Sweet and Pythonic</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/introduction-to-python-generators/">How to
+Use Generators and yield in Python</a></li>
+<li><a target="_blank" rel="noopener" href="https://realpython.com/list-comprehension-python/">When to
+Use a List Comprehension in Python</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/python-dictionary-comprehension/">Python
+Dictionary Comprehensions: How and When to Use Them</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://docs.python.org/2/tutorial/datastructures.html#list-comprehensions">List
+Comprehensions</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/tutorial/datastructures.html#dictionaries">Dictionaries</a></li>
+</ul>
+<h2 id="关键词">关键词</h2>
+<ul>
+<li>Syntactic Sugar</li>
+<li>Operators</li>
+<li>Assignment Expressions</li>
+<li>for loops</li>
+<li>comprehensions</li>
+<li>constructor</li>
+</ul>
+<h2 id="operators">Operators</h2>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 88%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Operator</th>
+<th style="text-align: center;">Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>+</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__add__"><code>__add__</code></a></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>-</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__sub__"><code>__sub__</code></a></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>*</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__mul__"><code>__mul__</code></a></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>/</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__truediv__"><code>__truediv__</code></a></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>//</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__floordiv__"><code>__floordiv__</code></a></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>**</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__pow__"><code>__pow__</code></a></td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>in</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__contains__"><code>__contains__</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>every time we use an operator, Python calls the corresponding special
+method for us. For example: <code>1 + 2</code> equals to
+<code>(1).__add__(2)</code> but way more complex and unreadable.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">class</span> <span class="token class-name">NumberOperator</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> number<span class="token punctuation">:</span> <span class="token builtin">int</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>number <span class="token operator">=</span> number
+
+    <span class="token keyword">def</span> <span class="token function">__add__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> other<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        v <span class="token operator">=</span> self<span class="token punctuation">.</span>number <span class="token operator">+</span> other<span class="token punctuation">.</span>number
+        <span class="token keyword">return</span> NumberOperator<span class="token punctuation">(</span>v<span class="token punctuation">)</span>
+
+<span class="token keyword">def</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    one <span class="token operator">=</span> NumberOperator<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+    two <span class="token operator">=</span> NumberOperator<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span>
+    three <span class="token operator">=</span> one <span class="token operator">+</span> two
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"one = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>one<span class="token punctuation">.</span>number<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"two = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>two<span class="token punctuation">.</span>number<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"three = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>three<span class="token punctuation">.</span>number<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="membership-tests">membership tests</h3>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">membership_test</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token keyword">not</span> <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token number">3</span> <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token number">3</span> <span class="token keyword">not</span> <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="chained-conditions">Chained Conditions</h2>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">chained_conditions</span><span class="token punctuation">(</span>number<span class="token punctuation">:</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">bool</span><span class="token punctuation">:</span>
+    <span class="token keyword">if</span> <span class="token number">1</span> <span class="token operator">&lt;=</span> number <span class="token operator">&lt;=</span> <span class="token number">10</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token boolean">True</span>
+    <span class="token keyword">else</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token boolean">False</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="conditional-expressions"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/expressions.html#conditional-expressions">Conditional
+expressions</a></h2>
+<pre class="line-numbers language-yacas" data-language="yacas"><code class="language-yacas">or_test  ::&#x3D; and_test | or_test &quot;or&quot; and_test
+and_test ::&#x3D; not_test | and_test &quot;and&quot; not_test
+not_test ::&#x3D; comparison | &quot;not&quot; not_test
+
+conditional_expression ::&#x3D; or_test [&quot;if&quot; or_test &quot;else&quot; expression]
+expression             ::&#x3D; conditional_expression | lambda_expr<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="assignment-expressions">Assignment Expressions</h2>
+<blockquote>
+<p>Traditional assignments built with the <code>=</code> operator don’t
+return a value, so they’re <a
+target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-statement">statements</a>
+but not <a
+target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-expression">expressions</a>.
+In contrast, <strong>assignment expressions</strong> are assignments
+that return a value. You can build them with the walrus operator
+(<code>:=</code>).</p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># this is an assignment expression, so it's syntactically correct.</span>
+<span class="token keyword">def</span> <span class="token function">assignment_expression</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span>line <span class="token operator">:=</span> <span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Type some text: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token string">"stop"</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>line<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># this is a normal assignment, it doesn't return a value, so it's syntactically incorrect</span>
+<span class="token keyword">def</span> <span class="token function">assignment</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment"># Unresolved reference 'line'</span>
+    <span class="token comment"># while (line = input("Type some text: ")) != "stop":</span>
+    <span class="token comment">#     print(line)</span>
+    <span class="token keyword">pass</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="unpacking">Unpacking</h2>
+<blockquote>
+<p>Unpacking an iterable means assigning its values to a series of
+variables one by one.</p>
+</blockquote>
+<h3 id="iterable-unpacking">Iterable Unpacking</h3>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># Once Python runs this assignment, the values are unpacked into the corresponding variable by position.</span>
+one<span class="token punctuation">,</span> two three<span class="token punctuation">,</span> four <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span>
+
+a <span class="token operator">=</span> <span class="token number">200</span>
+b <span class="token operator">=</span> <span class="token number">100</span>
+<span class="token comment"># using the unpacking syntactic sugar, we can swap values between variables without assigning temporary variable</span>
+a<span class="token punctuation">,</span> b <span class="token operator">=</span> b<span class="token punctuation">,</span> a<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="args-and-kwargs"><code>*args</code> and
+<code>**kwargs</code></h3>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># 1</span>
+<span class="token comment"># (2, 3, 4)</span>
+<span class="token comment"># &#123;'hello': 'hello', 'world': 'world'&#125;</span>
+<span class="token comment"># args will be bound to positional arguments, and kwargs will be bound to keyword arguments</span>
+<span class="token keyword">def</span> <span class="token function">args_func</span><span class="token punctuation">(</span>number<span class="token punctuation">:</span><span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>number<span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>args<span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>kwargs<span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    args_func<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> hello<span class="token operator">=</span><span class="token string">"hello"</span><span class="token punctuation">,</span> world<span class="token operator">=</span><span class="token string">"world"</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token comment"># I suppose that there are two different types of arguments in Python's arguments,</span>
+<span class="token comment"># The first type is named argument and the other type is anonymous argument.</span>
+<span class="token comment"># In this situation, "name" is a named argument, and "hello" and "world" is anonymous arguments,</span>
+<span class="token comment"># so "**kwargs" will be bound to anonymous arguments rather than being bound to all arguments</span>
+<span class="token keyword">def</span> <span class="token function">show_args</span><span class="token punctuation">(</span>number<span class="token punctuation">:</span> <span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token operator">*</span>args<span class="token punctuation">,</span> name<span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    args_func<span class="token punctuation">(</span>number<span class="token punctuation">,</span> <span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    <span class="token comment"># TypeError: show_args() missing 1 required keyword-only argument: 'name'</span>
+    <span class="token comment"># show_args(1, 2, 3, "name", 4, hello="hello", world="world")</span>
+
+    <span class="token comment"># TypeError: show_args() missing 1 required keyword-only argument: 'name'</span>
+    <span class="token comment"># show_args(1, 2, 3, 4, "name", hello="hello", world="world")</span>
+    
+    show_args<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> name<span class="token operator">=</span><span class="token string">"name"</span><span class="token punctuation">,</span> hello<span class="token operator">=</span><span class="token string">"hello"</span><span class="token punctuation">,</span> world<span class="token operator">=</span><span class="token string">"world"</span><span class="token punctuation">)</span>
+    <span class="token comment"># 1</span>
+		<span class="token comment"># (2, 3, 4)</span>
+		<span class="token comment"># &#123;'hello': 'hello', 'world': 'world'&#125;</span>
+		<span class="token comment"># name</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<blockquote>
+<p>What will be happening if we pass a list as a <code>*args</code> and
+pass a dict as a <code>**kwargs</code></p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">show_args2</span><span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>args<span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>kwargs<span class="token punctuation">)</span>
+
+
+<span class="token keyword">def</span> <span class="token function">call_show_args2</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    list1 <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span>
+    list2 <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">]</span>
+
+    dict1 <span class="token operator">=</span> <span class="token punctuation">&#123;</span><span class="token string">"k1"</span><span class="token punctuation">:</span> <span class="token string">"v1"</span><span class="token punctuation">,</span> <span class="token string">"k2"</span><span class="token punctuation">:</span> <span class="token string">"v2"</span><span class="token punctuation">&#125;</span>
+    show_args2<span class="token punctuation">(</span>list1<span class="token punctuation">,</span> list2<span class="token punctuation">,</span> dict1<span class="token operator">=</span>dict1<span class="token punctuation">)</span>
+    <span class="token comment"># both of list1 and list2 are bound to *args, it's worth noticing that each list is an entirety which being passed to *args</span>
+    <span class="token comment"># ([1, 2, 3, 4], [3, 4, 5, 6])</span>
+    <span class="token comment"># &#123;'dict1': &#123;'k1': 'v1', 'k2': 'v2'&#125;&#125;</span>
+
+    show_args2<span class="token punctuation">(</span>list1<span class="token punctuation">,</span> dict1<span class="token operator">=</span>dict1<span class="token punctuation">)</span>
+    <span class="token comment"># ([1, 2, 3, 4],)</span>
+    <span class="token comment"># &#123;'dict1': &#123;'k1': 'v1', 'k2': 'v2'&#125;&#125;</span>
+
+    show_args2<span class="token punctuation">(</span><span class="token operator">*</span>list1<span class="token punctuation">,</span> dict1<span class="token operator">=</span>dict1<span class="token punctuation">)</span>
+    <span class="token comment"># using *list1 will decompose list into a series of variables bound to *args</span>
+    <span class="token comment"># (1, 2, 3, 4)</span>
+    <span class="token comment"># &#123;'dict1': &#123;'k1': 'v1', 'k2': 'v2'&#125;&#125;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="loops-and-comprehensions">Loops and Comprehensions</h2>
+<h3 id="exploring-for-loops">Exploring <code>for</code> Loops</h3>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">simple_loops</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    numbers <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">]</span>
+    <span class="token keyword">for</span> number <span class="token keyword">in</span> numbers<span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>number<span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">', '</span><span class="token punctuation">)</span>
+
+<span class="token keyword">def</span> <span class="token function">iter_loops</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    numbers <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">]</span>
+    it <span class="token operator">=</span> <span class="token builtin">iter</span><span class="token punctuation">(</span>numbers<span class="token punctuation">)</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+        <span class="token keyword">try</span><span class="token punctuation">:</span>
+            number <span class="token operator">=</span> <span class="token builtin">next</span><span class="token punctuation">(</span>it<span class="token punctuation">)</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span>number<span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">' '</span><span class="token punctuation">)</span>
+        <span class="token keyword">except</span> StopIteration<span class="token punctuation">:</span>
+            <span class="token keyword">break</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    iter_loops<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="using-comprehensions">Using Comprehensions</h3>
+<blockquote>
+<p>say that we have a list of numbers as strings, and we want to convert
+them into numeric values and build a new list of squared values.</p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">square_string_list</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    strings <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">"1"</span><span class="token punctuation">,</span> <span class="token string">"2"</span><span class="token punctuation">,</span> <span class="token string">"3"</span><span class="token punctuation">,</span> <span class="token string">"4"</span><span class="token punctuation">,</span> <span class="token string">"5"</span><span class="token punctuation">,</span> <span class="token string">"6"</span><span class="token punctuation">,</span> <span class="token string">"7"</span><span class="token punctuation">,</span> <span class="token string">"8"</span><span class="token punctuation">,</span> <span class="token string">"9"</span><span class="token punctuation">]</span>
+    numbers <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin">int</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span><span class="token operator">**</span><span class="token number">2</span> <span class="token keyword">for</span> num <span class="token keyword">in</span> strings<span class="token punctuation">]</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>numbers<span class="token punctuation">)</span>
+    <span class="token comment"># [1, 4, 9, 16, 25, 36, 49, 64, 81]</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    square_string_list<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="decorators">Decorators</h2>
+<p>Decorators are functions that take another function as an argument
+and extend their behavior dynamically without explicitly modifying it.
+<strong>In Python, you have a dedicated syntax that allows you to apply
+a decorator to a given function</strong>: In this piece of syntax, the
+<code>@decorator</code> part tells Python to call
+<code>decorator()</code> with the <code>func</code> <strong>object as an
+argument</strong>.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token decorator annotation punctuation">@decorator</span>
+<span class="token keyword">def</span> <span class="token function">func</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token operator">&lt;</span>body<span class="token operator">></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<blockquote>
+<p>The following code produces a TypeError called ** 'NoneType' object
+is not callable** since decorator function prev returns nothing to be
+executed:</p>
+<ol type="1">
+<li>before <code>f()</code> executing, the decorator <code>prev()</code>
+was executed;</li>
+<li>the execution of <code>prev()</code> returns nothing which means the
+<code>()</code> in <code>f()</code> has nothing to execute;</li>
+</ol>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">prev</span><span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'args = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>args<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'kwargs = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>kwargs<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+
+<span class="token decorator annotation punctuation">@prev</span>
+<span class="token keyword">def</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">'running'</span><span class="token punctuation">)</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    f<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<blockquote>
+<p>The following code is correct.</p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">prev</span><span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'args = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>args<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'kwargs = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>kwargs<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span> args<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+
+<span class="token decorator annotation punctuation">@prev</span>
+<span class="token keyword">def</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">'running'</span><span class="token punctuation">)</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    f<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token comment"># args = (&lt;function f at 0x10b944ca0>,)</span>
+<span class="token comment"># kwargs = &#123;&#125;</span>
+<span class="token comment"># running</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<blockquote>
+<p>Here is a bizarre statement that we never call <code>f()</code> but
+its decorator <code>prev()</code> was invoked automatically by compiler.
+It's because <strong>decorator is loaded during loading
+modules</strong></p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">prev</span><span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'args = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>args<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'kwargs = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>kwargs<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span> args<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+
+<span class="token decorator annotation punctuation">@prev</span>
+<span class="token keyword">def</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">'running'</span><span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    <span class="token keyword">pass</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<blockquote>
+<p>decorator with <code>lambda</code></p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">decorator_with_arguments</span><span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">running</span><span class="token punctuation">(</span>name<span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">,</span> age<span class="token punctuation">:</span> <span class="token builtin">int</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'args = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>args<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'kwargs = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>kwargs<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'name = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>name<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'age = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>age<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+        outer <span class="token operator">=</span> args<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+        <span class="token keyword">return</span> outer<span class="token punctuation">(</span>name<span class="token operator">=</span>name<span class="token punctuation">,</span> age<span class="token operator">=</span>age<span class="token punctuation">)</span>
+
+    <span class="token keyword">return</span> running
+
+
+<span class="token decorator annotation punctuation">@decorator_with_arguments</span>
+<span class="token keyword">def</span> <span class="token function">func_with_arguments</span><span class="token punctuation">(</span>name<span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">,</span> age<span class="token punctuation">:</span> <span class="token builtin">int</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'name = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>name<span class="token punctuation">&#125;</span></span><span class="token string">, age = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>age<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    func_with_arguments<span class="token punctuation">(</span>name<span class="token operator">=</span><span class="token string">'tony'</span><span class="token punctuation">,</span> age<span class="token operator">=</span><span class="token number">20</span><span class="token punctuation">)</span>
+
+<span class="token comment"># args = (&lt;function func_with_arguments at 0x10b553ca0>,)</span>
+<span class="token comment"># kwargs = &#123;&#125;</span>
+<span class="token comment"># name = tony</span>
+<span class="token comment"># age = 20</span>
+<span class="token comment"># name = tony, age = 20</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<blockquote>
+<p>decorator with <code>lambda</code> two:</p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">decorator_with_arguments2</span><span class="token punctuation">(</span>func<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">wrapper</span><span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'args = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>args<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'kwargs = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>kwargs<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">return</span> func<span class="token punctuation">(</span><span class="token operator">*</span>args<span class="token punctuation">,</span> <span class="token operator">**</span>kwargs<span class="token punctuation">)</span>
+    <span class="token keyword">return</span> wrapper
+
+<span class="token decorator annotation punctuation">@decorator_with_arguments2</span>
+<span class="token keyword">def</span> <span class="token function">func_with_arguments2</span><span class="token punctuation">(</span>name<span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">,</span> age<span class="token punctuation">:</span> <span class="token builtin">int</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'func_with_arguments2 : name = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>name<span class="token punctuation">&#125;</span></span><span class="token string">, age = </span><span class="token interpolation"><span class="token punctuation">&#123;</span>age<span class="token punctuation">&#125;</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    func_with_arguments2<span class="token punctuation">(</span>name<span class="token operator">=</span><span class="token string">'tony'</span><span class="token punctuation">,</span> age<span class="token operator">=</span><span class="token number">20</span><span class="token punctuation">)</span>
+
+<span class="token comment"># args = ()</span>
+<span class="token comment"># kwargs = &#123;'name': 'tony', 'age': 20&#125;</span>
+<span class="token comment"># func_with_arguments2 : name = tony, age = 20</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="f-string-literals">F-String Literals</h2>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python">debit <span class="token operator">=</span> <span class="token number">300</span>
+credit <span class="token operator">=</span> <span class="token number">450</span>
+
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Debit: $</span><span class="token interpolation"><span class="token punctuation">&#123;</span>debit<span class="token punctuation">:</span><span class="token format-spec">.2f</span><span class="token punctuation">&#125;</span></span><span class="token string">, Credit: $</span><span class="token interpolation"><span class="token punctuation">&#123;</span>credit<span class="token punctuation">:</span><span class="token format-spec">.2f</span><span class="token punctuation">&#125;</span></span><span class="token string">, Balance: $</span><span class="token interpolation"><span class="token punctuation">&#123;</span>credit <span class="token operator">-</span> debit<span class="token punctuation">:</span><span class="token format-spec">.2f</span><span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="the-yield-from-construct">The <code>yield</code> from
+Construct</h2>
+<p>Introduced with <a
+target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0255">PEP 255</a>,
+<strong>generator functions</strong> are a special kind of function that
+return a <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Lazy_evaluation">lazy
+iterator</a>. These are objects that you can loop over like a <a
+target="_blank" rel="noopener" href="https://realpython.com/python-lists-tuples/">list</a>. However,
+unlike lists, lazy iterators do not store their contents in memory.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">gen_infinite_sequence</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    num <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+        <span class="token keyword">yield</span> num
+        num <span class="token operator">+=</span> <span class="token number">1</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    gen <span class="token operator">=</span> gen_infinite_sequence<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>gen<span class="token punctuation">)</span>
+    <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token builtin">next</span><span class="token punctuation">(</span>gen<span class="token punctuation">)</span><span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">' '</span><span class="token punctuation">)</span>
+
+<span class="token comment"># &lt;generator object gen_infinite_sequence at 0x10be6cf90></span>
+<span class="token comment"># 0 1 2 3 4</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="understanding-generators">Understanding Generators</h2>
+<blockquote>
+<p>Python yield statement and the code that follows it.
+<code>yield</code> indicates where a value is sent back to the caller,
+but unlike <code>return</code>, you don’t exit the function
+afterward.</p>
+<p>Instead, the <strong>state</strong> of the function is remembered.
+That way, when <code>next()</code> is called on a generator object
+(either explicitly or implicitly within a <code>for</code> loop), the
+previously yielded variable <code>num</code> is incremented, and then
+yielded again.</p>
+</blockquote>
+<h3 id="profiling-generator-performance">Profiling Generator
+Performance</h3>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">profiling_yield</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">import</span> cProfile
+    cProfile<span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token string">'sum([i * 2 for i in range(10000)])'</span><span class="token punctuation">)</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    profiling_yield<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-none"><code class="language-none">Ordered by: standard name
+
+ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     1    0.001    0.001    0.001    0.001 &lt;string&gt;:1(&lt;listcomp&gt;)
+     1    0.000    0.000    0.001    0.001 &lt;string&gt;:1(&lt;module&gt;)
+     1    0.000    0.000    0.001    0.001 &#123;built-in method builtins.exec&#125;
+     1    0.000    0.000    0.000    0.000 &#123;built-in method builtins.sum&#125;
+     1    0.000    0.000    0.000    0.000 &#123;method &#39;disable&#39; of &#39;_lsprof.Profiler&#39; objects&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="understanding-the-python-yield-statement">Understanding the
+python yield statement</h3>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">multi_yield</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    yield_string <span class="token operator">=</span> <span class="token string">"first string"</span>
+    <span class="token keyword">yield</span> yield_string
+    yield_string <span class="token operator">=</span> <span class="token string">"second string"</span>
+    <span class="token keyword">yield</span> yield_string
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    gen <span class="token operator">=</span> multi_yield<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token builtin">next</span><span class="token punctuation">(</span>gen<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token builtin">next</span><span class="token punctuation">(</span>gen<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token comment"># first string</span>
+<span class="token comment"># second string</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="using-advanced-generator-methods">Using Advanced Generator
+Methods</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">method</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>generator.send()</code></td>
+<td>Resumes the execution and “sends” a value into the generator
+function. The <code>value</code> argument becomes the result of the
+current <code>yield</code> expression. The <code>send()</code> method
+returns the next value yielded by the generator, or raises
+<code>StopIteration</code> if the generator exits without yielding
+another value.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>generator.throw()</code></td>
+<td><code>.throw()</code> allows you to throw exceptions with the
+generator. I</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>generator.close()</code></td>
+<td>As its name implies, <code>.close()</code> allows you to stop a
+generator.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-with-statement">The <code>with</code> Statement</h2>
+<p>Python’s <code>with</code> statement is a handy tool that allows you
+to manipulate <a
+target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-context-manager">context
+manager</a> objects. These objects automatically handle the
+<em>setup</em> and <em>teardown</em> phases whenever you’re dealing with
+external resources such as files.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">with</span> <span class="token builtin">open</span><span class="token punctuation">(</span><span class="token string">"hello.txt"</span><span class="token punctuation">,</span> mode<span class="token operator">=</span><span class="token string">"w"</span><span class="token punctuation">,</span> encoding<span class="token operator">=</span><span class="token string">"utf-8"</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token builtin">file</span><span class="token punctuation">:</span>
+    <span class="token builtin">file</span><span class="token punctuation">.</span>write<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
+
+<span class="token comment"># equals to</span>
+    
+<span class="token builtin">file</span> <span class="token operator">=</span> <span class="token builtin">open</span><span class="token punctuation">(</span><span class="token string">"hello.txt"</span><span class="token punctuation">,</span> mode<span class="token operator">=</span><span class="token string">"w"</span><span class="token punctuation">,</span> encoding<span class="token operator">=</span><span class="token string">"utf-8"</span><span class="token punctuation">)</span>
+
+<span class="token keyword">try</span><span class="token punctuation">:</span>
+    <span class="token builtin">file</span><span class="token punctuation">.</span>write<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
+<span class="token keyword">finally</span><span class="token punctuation">:</span>
+    <span class="token builtin">file</span><span class="token punctuation">.</span>close<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="list-comprehension">List Comprehension</h2>
+<blockquote>
+<p>List comprehensions provide a concise way to create lists. Common
+applications are to make new lists where each element is the result of
+some operations applied to each member of another sequence or iterable,
+or to create a subsequence of those elements that satisfy a certain
+condition.</p>
+</blockquote>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python">squares <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+
+<span class="token keyword">for</span> x <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+  	squares<span class="token punctuation">.</span>append<span class="token punctuation">(</span>x<span class="token operator">**</span><span class="token number">2</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>we can obtain the same result with</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python">squares <span class="token operator">=</span> <span class="token punctuation">[</span>x <span class="token operator">**</span> <span class="token number">2</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>This is also simliar to the following code, except that the following
+code return <strong>&lt;map object at 0x100d01760&gt;</strong> which is
+a stream of data that is lazily initiated when the it's called.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python">squares <span class="token operator">=</span> <span class="token builtin">map</span><span class="token punctuation">(</span><span class="token keyword">lambda</span> x<span class="token punctuation">:</span> x<span class="token operator">**</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span>squares<span class="token punctuation">)</span>
+<span class="token comment"># &lt;map object at 0x100d01760></span>
+<span class="token keyword">for</span> s <span class="token keyword">in</span> squares<span class="token punctuation">:</span>
+  <span class="token keyword">print</span><span class="token punctuation">(</span>s<span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">' '</span><span class="token punctuation">)</span>
+  <span class="token comment"># 0 1 4 9 16 25 36 49 64 81 </span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>A list comprehension consists of brackets containing an expression
+followed by a <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#for"><code>for</code></a>
+clause, then zero or more <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#for"><code>for</code></a>
+or <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#if"><code>if</code></a>
+clauses. The result will be a new list resulting from evaluating the
+expression in the context of the <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#for"><code>for</code></a>
+and <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#if"><code>if</code></a>
+clauses which follow it. For example, this listcomp combines the
+elements of two lists if they are not equal:</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">lc2</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    arr <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span>
+           <span class="token keyword">for</span> x <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span>
+           <span class="token keyword">for</span> y <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span>
+           <span class="token keyword">if</span> x <span class="token operator">!=</span> y<span class="token punctuation">]</span>
+    <span class="token keyword">for</span> item <span class="token keyword">in</span> arr<span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>item<span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">' '</span><span class="token punctuation">)</span>
+        <span class="token comment"># (1, 3) (1, 4) (2, 3) (2, 1) (2, 4) (3, 1) (3, 4)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>The forementioned code is equivalent to the following code but way
+more readable:</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python">for_arr <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+<span class="token keyword">for</span> x <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+    <span class="token keyword">for</span> y <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token keyword">if</span> x <span class="token operator">!=</span> y<span class="token punctuation">:</span>
+            for_arr<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token keyword">for</span> item <span class="token keyword">in</span> for_arr<span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>item<span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">' '</span><span class="token punctuation">)</span>
+<span class="token comment"># (1, 3) (1, 4) (2, 3) (2, 1) (2, 4) (3, 1) (3, 4) </span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>If the expression is a tuple (e.g. the <code>(x, y)</code> in the
+previous example), it must be parenthesized.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token punctuation">[</span>x<span class="token punctuation">,</span> x<span class="token operator">**</span><span class="token number">2</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+<span class="token comment">#   File "&lt;stdin>", line 1, in &lt;module></span>
+<span class="token comment">#    [x, x**2 for x in range(6)]</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h4 id="nested-list-comprehensions"><a
+target="_blank" rel="noopener" href="https://docs.python.org/2/tutorial/datastructures.html#nested-list-comprehensions">Nested
+List Comprehensions</a></h4>
+<p>The initial expression in a list comprehension can be any arbitrary
+expression, including another list comprehension.</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">nested_list_comprehensions</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    matrix <span class="token operator">=</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token punctuation">[</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">]</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>row<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token keyword">for</span> row <span class="token keyword">in</span> matrix<span class="token punctuation">]</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>matrix<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token comment"># [[1, 5, 9], [2, 6, 10], [3, 7, 11]]</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>row<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token keyword">for</span> row <span class="token keyword">in</span> matrix<span class="token punctuation">]</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token comment"># [[1, 5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]]</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="dictionary-and-dict-comprehensions">Dictionary And dict
+comprehensions</h2>
+<p>In addition, dict comprehensions can be used to create dictionaries
+from arbitrary key and value expressions:</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">dictionaries</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    v <span class="token operator">=</span> <span class="token punctuation">&#123;</span>x<span class="token punctuation">:</span> x <span class="token operator">**</span> <span class="token number">2</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> <span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">&#125;</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>v<span class="token punctuation">)</span>
+    <span class="token comment"># &#123;2: 4, 4: 16, 6: 36&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/" rel="prev" title="一个学习汇编的小游戏：BOX-256">
+                  <i class="fa fa-angle-left"></i> 一个学习汇编的小游戏：BOX-256
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/" rel="next" title="Conclusion of Linear Algebra For Everyone">
+                  Conclusion of Linear Algebra For Everyone <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>
