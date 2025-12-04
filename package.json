@@ -30,6 +30,7 @@
     "hexo-theme-next": "^8.20.0",
     "highlight.js": "^11.11.1",
     "markdown-it-mathjax": "^2.0.0",
-    "pandoc": "^0.2.0"
+    "pandoc": "^0.2.0",
+    "prismjs": "^1.29.0"
   }
 }
