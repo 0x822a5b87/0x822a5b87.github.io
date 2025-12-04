@@ -678,16 +678,10 @@ canvas_ribbon:
 
 # Multiple Comment System Support
 comments:
-  # Available values: tabs | buttons
   style: tabs
-  # Choose a comment system to be displayed by default.
-  # Available values: disqus | disqusjs | changyan | livere | gitalk | utterances
-  active:
-  # Setting `true` means remembering the comment system selected by the visitor.
+  active: utterances
   storage: true
-  # Lazyload all comment systems.
   lazyload: false
-  # Modify texts or order for any naves, here are some examples.
   nav:
     #disqus:
     #  text: Load Disqus
@@ -747,11 +741,9 @@ gitalk:
 # Utterances
 # For more information: https://utteranc.es
 utterances:
-  enable: false
-  repo: user-name/repo-name # Github repository owner and name
-  # Available values: pathname | url | title | og:title
+  enable: true
+  repo: 0x822a5b87/blog-comments
   issue_term: pathname
-  # Available values: github-light | github-dark | preferred-color-scheme | github-dark-orange | icy-dark | dark-blue | photon-dark | boxy-light
   theme: github-light
 
 # Isso
