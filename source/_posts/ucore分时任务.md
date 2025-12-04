@@ -1,5 +1,5 @@
 ---
-title: uCore：一个基于Rust的简单操作系统实现（3）
+title: "uCore分时任务"
 date: 2025-11-18 18:12:28
 tags:
     - rust

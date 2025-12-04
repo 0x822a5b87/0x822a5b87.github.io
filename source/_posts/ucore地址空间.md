@@ -1,5 +1,5 @@
 ---
-title: uCore：一个基于Rust的简单操作系统实现（4）
+title: "uCore地址空间"
 date: 2025-11-21 17:11:09
 tags:
   - os

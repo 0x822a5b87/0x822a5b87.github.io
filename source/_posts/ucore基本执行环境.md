@@ -1,5 +1,5 @@
 ---
-title: uCore：一个基于Rust的简单操作系统实现（1）
+title: "uCore基本执行环境"
 date: 2025-11-12 11:29:13
 tags:
   - os

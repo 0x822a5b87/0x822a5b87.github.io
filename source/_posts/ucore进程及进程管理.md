@@ -1,5 +1,5 @@
 ---
-title: uCore：一个基于Rust的简单操作系统实现（5）
+title: "uCore进程及进程管理"
 date: 2025-12-02 11:09:36
 tags:
   - os

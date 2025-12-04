@@ -1,5 +1,5 @@
 ---
-title: uCore：一个基于Rust的简单操作系统实现（2）
+title: "uCore批处理系统"
 date: 2025-11-13 11:35:28
 tags:
   - os
