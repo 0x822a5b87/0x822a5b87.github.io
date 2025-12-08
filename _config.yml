@@ -374,19 +374,19 @@ body_scrollbar:
   stable: false
 
 codeblock:
-  # Code Highlight theme
+  enable: true
+  highlight:
+    enable: true
   theme:
     light: default
     dark: stackoverflow-dark
   prism:
     light: prism
     dark: prism-dark
-  # Add copy button on codeblock
+    line_number: true
   copy_button:
-    enable: false
-    # Available values: default | flat | mac
+    enable: true
     style:
-  # Fold code block
   fold:
     enable: false
     height: 500
