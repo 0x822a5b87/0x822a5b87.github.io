@@ -19,17 +19,17 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  等待解决的问题  系统调用   fork 和 exec">
+    <meta name="description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  flowchart LR     subgraph i">
 <meta property="og:type" content="article">
 <meta property="og:title" content="uCore进程及进程管理">
 <meta property="og:url" content="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  等待解决的问题  系统调用   fork 和 exec">
+<meta property="og:description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  flowchart LR     subgraph i">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/kernel-as-high.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20251203/base_size.png">
 <meta property="article:published_time" content="2025-12-02T03:09:36.000Z">
-<meta property="article:modified_time" content="2025-12-04T15:12:37.397Z">
+<meta property="article:modified_time" content="2025-12-08T08:11:02.716Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="os">
 <meta property="article:tag" content="rust">
@@ -117,7 +117,8 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">uCore：进程及进程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">等待解决的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E8%BF%9B%E7%A8%8B%E6%9C%89%E5%85%B3%E7%9A%84%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.</span> <span class="nav-text">与进程有关的重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">fork 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">exec 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#waitpid-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">waitpid 系统调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.2.2.</span> <span class="nav-text">应用程序示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%88%9D%E5%A7%8B%E7%A8%8B%E5%BA%8F-initproc"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">用户初始程序-initproc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#shell%E7%A8%8B%E5%BA%8F-user_shell"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">shell程序-user_shell</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.3.</span> <span class="nav-text">进程管理的核心数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%BA%94%E7%94%A8%E5%90%8D%E7%9A%84%E5%BA%94%E7%94%A8%E9%93%BE%E6%8E%A5%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">1.3.1.</span> <span class="nav-text">基于应用名的应用链接&#x2F;加载器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6%E5%92%8C%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.3.2.</span> <span class="nav-text">进程标识符和内核栈</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">进程标识符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">内核栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-number">1.3.3.</span> <span class="nav-text">进程控制块</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#pcb"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">PCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tcb"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">TCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">1.3.4.</span> <span class="nav-text">任务管理器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%80%81%E7%89%88%E6%9C%AC"><span class="nav-number">1.3.4.1.</span> <span class="nav-text">老版本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC"><span class="nav-number">1.3.4.2.</span> <span class="nav-text">新版本</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.</span> <span class="nav-text">进程管理机制的设计实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">1.4.1.</span> <span class="nav-text">初始进程的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.2.</span> <span class="nav-text">进程调度机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E6%88%90%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.3.</span> <span class="nav-text">进程的生成机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">fork 系统调用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#memorysetfrom_existed_user"><span class="nav-number">1.4.3.1.1.</span> <span class="nav-text">MemorySet#from_existed_user</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mapareafrom_another"><span class="nav-number">1.4.3.1.2.</span> <span class="nav-text">MapArea#from_another</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sys_fork%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.3.1.3.</span> <span class="nav-text">sys_fork的实现</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#memory_set%E4%B8%AD%E7%9A%84trampoline%E5%92%8Ctrap_cx"><span class="nav-number">1.5.1.</span> <span class="nav-text">memory_set中的trampoline和trap_cx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E8%A7%A3%E6%9E%90"><span class="nav-number">1.5.2.</span> <span class="nav-text">elf解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.3.</span> <span class="nav-text">进程的内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.4.</span> <span class="nav-text">应用进程内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#base_size"><span class="nav-number">1.5.4.1.</span> <span class="nav-text">base_size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heap_bottom"><span class="nav-number">1.5.4.2.</span> <span class="nav-text">heap_bottom</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#program_brk"><span class="nav-number">1.5.4.3.</span> <span class="nav-text">program_brk</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.4.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%A0%86"><span class="nav-number">1.5.5.</span> <span class="nav-text">内核堆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exec"><span class="nav-number">1.5.6.</span> <span class="nav-text">exec</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6"><span class="nav-number">1.5.7.</span> <span class="nav-text">进程的资源回收</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1"><span class="nav-number">1.5.8.</span> <span class="nav-text">代码统计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.5.9.</span> <span class="nav-text">代码树</span></a></li></ol></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">uCore：进程及进程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E8%BF%9B%E7%A8%8B%E6%9C%89%E5%85%B3%E7%9A%84%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">与进程有关的重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.</span> <span class="nav-text">重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">fork 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">exec 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#waitpid-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">waitpid 系统调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.1.2.</span> <span class="nav-text">应用程序示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%88%9D%E5%A7%8B%E7%A8%8B%E5%BA%8F-initproc"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">用户初始程序-initproc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#shell%E7%A8%8B%E5%BA%8F-user_shell"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">shell程序-user_shell</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">进程管理的核心数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%BA%94%E7%94%A8%E5%90%8D%E7%9A%84%E5%BA%94%E7%94%A8%E9%93%BE%E6%8E%A5%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">基于应用名的应用链接&#x2F;加载器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6%E5%92%8C%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.2.2.</span> <span class="nav-text">进程标识符和内核栈</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">进程标识符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">内核栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-number">1.2.3.</span> <span class="nav-text">进程控制块</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#pcb"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">PCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tcb"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">TCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.3.3.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">1.2.4.</span> <span class="nav-text">任务管理器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%80%81%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">老版本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">新版本</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.</span> <span class="nav-text">进程管理机制的设计实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">1.3.1.</span> <span class="nav-text">初始进程的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.2.</span> <span class="nav-text">进程调度机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E6%88%90%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.3.</span> <span class="nav-text">进程的生成机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">fork 系统调用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#memorysetfrom_existed_user"><span class="nav-number">1.3.3.1.1.</span> <span class="nav-text">MemorySet#from_existed_user</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mapareafrom_another"><span class="nav-number">1.3.3.1.2.</span> <span class="nav-text">MapArea#from_another</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sys_fork%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.3.</span> <span class="nav-text">sys_fork的实现</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">exec 系统调用的实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%90%8E%E9%87%8D%E6%96%B0%E8%8E%B7%E5%8F%96-trap-%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">系统调用后重新获取 Trap
+上下文</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">进程资源回收机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA"><span class="nav-number">1.4.0.1.</span> <span class="nav-text">进程的退出</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E8%BF%9B%E7%A8%8B%E5%9B%9E%E6%94%B6%E5%AD%90%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90"><span class="nav-number">1.4.0.2.</span> <span class="nav-text">父进程回收子进程资源</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#user_stack%E5%92%8Ckernel_stack"><span class="nav-number">1.5.1.</span> <span class="nav-text">user_stack和kernel_stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1"><span class="nav-number">1.5.2.</span> <span class="nav-text">进程的退出</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#config.toml"><span class="nav-number">1.5.2.1.</span> <span class="nav-text">config.toml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#makefile"><span class="nav-number">1.5.2.2.</span> <span class="nav-text">Makefile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.5.2.3.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#start"><span class="nav-number">1.5.2.4.</span> <span class="nav-text">_start</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81"><span class="nav-number">1.5.2.5.</span> <span class="nav-text">汇编代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">1.5.3.</span> <span class="nav-text">进程状态机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernelstack"><span class="nav-number">1.5.4.</span> <span class="nav-text">KernelStack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kstack_allocator"><span class="nav-number">1.5.5.</span> <span class="nav-text">KSTACK_ALLOCATOR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.</span> <span class="nav-text">内存对齐</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90%E7%9A%84%E6%A0%B9%E6%9C%AC%E4%BD%9C%E7%94%A8"><span class="nav-number">1.5.6.1.</span> <span class="nav-text">内存对齐的根本作用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-cpu-%E8%A6%81%E6%B1%82%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.2.</span> <span class="nav-text">为什么 CPU 要求内存对齐</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%9C%BA%E6%99%AF%E7%9A%84%E5%AF%B9%E9%BD%90%E7%AD%96%E7%95%A5"><span class="nav-number">1.5.6.3.</span> <span class="nav-text">内核场景的对齐策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%9C%A8%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E5%92%8C%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E4%B8%AD%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.5.7.</span> <span class="nav-text">对象在物理地址和虚拟地址中的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory_set%E4%B8%AD%E7%9A%84trampoline%E5%92%8Ctrap_cx"><span class="nav-number">1.5.8.</span> <span class="nav-text">memory_set中的trampoline和trap_cx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#children%E5%92%8Cparent"><span class="nav-number">1.5.9.</span> <span class="nav-text">children和parent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E8%A7%A3%E6%9E%90"><span class="nav-number">1.5.10.</span> <span class="nav-text">elf解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.11.</span> <span class="nav-text">进程的内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.12.</span> <span class="nav-text">应用进程内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#base_size"><span class="nav-number">1.5.12.1.</span> <span class="nav-text">base_size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heap_bottom"><span class="nav-number">1.5.12.2.</span> <span class="nav-text">heap_bottom</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#program_brk"><span class="nav-number">1.5.12.3.</span> <span class="nav-text">program_brk</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.12.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%A0%86"><span class="nav-number">1.5.13.</span> <span class="nav-text">内核堆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.5.14.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exec"><span class="nav-number">1.5.15.</span> <span class="nav-text">exec</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%BB%E5%9D%80%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.1.</span> <span class="nav-text">寻址逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.2.</span> <span class="nav-text">执行逻辑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6"><span class="nav-number">1.5.16.</span> <span class="nav-text">进程的资源回收</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1"><span class="nav-number">1.6.</span> <span class="nav-text">代码统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.7.</span> <span class="nav-text">代码树</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -198,7 +199,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-04 23:12:37" itemprop="dateModified" datetime="2025-12-04T23:12:37+08:00">2025-12-04</time>
+      <time title="修改时间：2025-12-08 16:11:02" itemprop="dateModified" datetime="2025-12-08T16:11:02+08:00">2025-12-08</time>
     </span>
 
   
@@ -219,156 +220,6 @@
 <p>为此，我们要对任务建立新的抽象： <strong>进程</strong>
 ，并实现若干基于 <strong>进程</strong> 的强大系统调用。</p>
 </blockquote>
-<h2 id="等待解决的问题"><code>等待解决的问题</code></h2>
-<blockquote>
-<p>系统调用</p>
-</blockquote>
-<ol type="1">
-<li><code>fork</code> 和 <code>exec</code>
-这几个系统调用的使用场景，以及我们程序的调度实现逻辑是怎么样的？</li>
-<li>在 <code>exec(path:&amp;str)</code>
-方法中，这个寻址路径是怎么寻址的？</li>
-<li>为什么 <code>shell</code> 的最后一位一定要是 <code>\0</code>？</li>
-</ol>
-<blockquote>
-<p>进程标识符和内核栈</p>
-</blockquote>
-<ol type="1">
-<li><code>KernelStack</code> 的作用是什么？他和 <code>ch4</code>
-中有什么区别？</li>
-<li><code>KSTACK_ALLOCATOR</code> 的作用是什么？</li>
-<li>在 <code>ch4</code> 中，应用的标识符是
-<code>app_id: usize</code>，但是这个值只是在构造 TCB
-的时候计算了一下内核栈的虚拟地址；</li>
-</ol>
-<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">/// Return (bottom, top) of a kernel stack in kernel space.</span>
-<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">kernel_stack_position</span><span class="token punctuation">(</span>app_id<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token punctuation">(</span><span class="token keyword">usize</span><span class="token punctuation">,</span> <span class="token keyword">usize</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-    <span class="token keyword">let</span> top <span class="token operator">=</span> <span class="token constant">TRAMPOLINE</span> <span class="token operator">-</span> app_id <span class="token operator">*</span> <span class="token punctuation">(</span><span class="token constant">KERNEL_STACK_SIZE</span> <span class="token operator">+</span> <span class="token constant">PAGE_SIZE</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">let</span> bottom <span class="token operator">=</span> top <span class="token operator">-</span> <span class="token constant">KERNEL_STACK_SIZE</span><span class="token punctuation">;</span>
-    <span class="token punctuation">(</span>bottom<span class="token punctuation">,</span> top<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<ol start="4" type="1">
-<li>进程的内存结构图。</li>
-<li><code>TaskControlBlockInner</code> 在哪里会产生并发访问呢？</li>
-<li>画一个Process的状态转换图；</li>
-<li><code>exit_current_and_run_next</code>
-很多用户态应用并没有显示的调用改指令，如何判断这个指令有被调用呢？从ELF文件里如何确认这个指令有被调用？</li>
-<li>为什么在 <code>TaskControlBlockInner</code> 中需要
-<code>trap_cx_ppn</code> 和 <code>task_cx</code> 两个值？</li>
-<li><code>run_tasks()</code> 中在第一次调度时，PROCESSOR
-中应该会取到一个空的 context 后 <code>swithc()</code>
-如何避免这个switch再次切回到这个空的 context 呢？</li>
-<li><code>get_app_data_by_name</code> 是怎么查询并定位elf文件的？</li>
-<li>确认 <a href="#进程的内存模型">进程的内存模型</a> 中的
-<code>KERNEL_STACK</code>, <code>USER_STACK</code>,
-<code>KSTACK_ALLOCATOR</code> 分别是什么？</li>
-<li>为什么在 <code>fork()</code>
-的时候，只需要单独复制trampoline？<code>memory_set.map_trampoline()</code>：这是因为我们解析
-ELF
-创建地址空间的时候，并没有将跳板页作为一个单独的逻辑段插入到地址空间的逻辑段向量
-<code>areas</code> 中，所以这里需要单独映射上</li>
-<li><code>TaskControlBlockInner#parent</code> 为什么使用
-<code>Weak&lt;TaskControlBlock&gt;</code>？构造的时候
-<code>Some(Arc::downgrade(self))</code> 是什么意思？</li>
-<li>为什么 <code>TrapContext</code> 要放在用户地址空间的
-<code>trampolin</code> 下？为什么 <code>trampoline</code>
-在用户态和内核态都会在页表中映射同一个虚拟地址到同一个物理地址？</li>
-<li>重新简述一下 <code>trampoline</code> 和
-<code>.text.trampoline</code> 和 <code>TrapContext</code> 之间的关系。
-<ol type="1">
-<li><code>set_kernel_trap_entry</code></li>
-<li><code>set_user_trap_entry</code></li>
-<li>.text.trampoline</li>
-</ol></li>
-</ol>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown">你的理解完全精准！这是 rCore 中 TrapContext（陷阱上下文）设计的核心巧思——既要让内核态和用户态都能访问，又要适配虚拟地址空间的布局规则，最终通过 <span class="token code-snippet code keyword">`trap_cx_ppn`</span>（物理页号）实现了安全且高效的访问。我们一步步拆解这个设计的底层逻辑和实现细节：
-
-<span class="token title important"><span class="token punctuation">###</span> 一、先明确：为什么 TrapContext 要放在“应用地址最高位（除 Trampoline）”？</span>
-rCore 的应用虚拟地址空间布局（以 RV64 为例）是分层的，核心规则：
-<span class="token code"><span class="token punctuation">```</span>
-<span class="token code-block">0x0000_0000_0000_0000 ~ 0xFFFF_FFFF_7FFF_FFFF：用户态可访问的普通地址（代码/数据/堆/栈）
-0xFFFF_FFFF_8000_0000 ~ 0xFFFF_FFFF_FFFF_FFFF：高地址区域（Trampoline + TrapContext）
-  - Trampoline：固定在 0xFFFF_FFFF_FFFF_0000（一页，内核/用户态都可执行）
-  - TrapContext：紧邻 Trampoline 下方（比如 0xFFFF_FFFF_FFFE_0000），是高地址的最高位可用区域</span>
-<span class="token punctuation">```</span></span>
-把 TrapContext 放在这个位置的核心原因：
-<span class="token list punctuation">1.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">避免地址冲突</span><span class="token punctuation">**</span></span>：用户态的普通代码/堆/栈不会用到这么高的虚拟地址，不会和用户数据重叠；
-<span class="token list punctuation">2.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">跨特权级访问</span><span class="token punctuation">**</span></span>：Trampoline 是内核和用户态共享的“跳板页”，TrapContext 紧邻它，在陷阱切换（用户→内核/内核→用户）时，CPU 能以极低的开销访问到上下文；
-<span class="token list punctuation">3.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">地址固定</span><span class="token punctuation">**</span></span>：所有进程的 TrapContext 虚拟地址都固定在这个高地址，内核无需为每个进程动态分配虚拟地址，简化逻辑。
-
-<span class="token title important"><span class="token punctuation">###</span> 二、为什么要在 TCB 中记录 `trap_cx_ppn`（物理页号）？</span>
-TrapContext 需要<span class="token bold"><span class="token punctuation">**</span><span class="token content">内核态和用户态都能访问</span><span class="token punctuation">**</span></span>，但内核态和用户态的页表是隔离的——直接用虚拟地址会有问题：
-<span class="token list punctuation">-</span> 用户态页表：只映射用户地址空间（包括高地址的 TrapContext/Trampoline），但无法访问内核地址；
-<span class="token list punctuation">-</span> 内核态页表：映射内核地址空间，默认不映射用户的 TrapContext 虚拟地址。
-
-因此，TrapContext 的虚拟地址只在用户态页表中有效，内核态要访问时，必须通过<span class="token bold"><span class="token punctuation">**</span><span class="token content">物理地址</span><span class="token punctuation">**</span></span>（页号）来操作——这就是 <span class="token code-snippet code keyword">`trap_cx_ppn`</span> 的核心作用：
-<span class="token list punctuation">1.</span> <span class="token code-snippet code keyword">`trap_cx_ppn`</span>：是 TrapContext 所在物理页的页号（<span class="token code-snippet code keyword">`usize`</span> 类型），存储在进程的 TCB 中，内核态可随时访问；
-<span class="token list punctuation">2.</span> 内核态访问 TrapContext：通过 <span class="token code-snippet code keyword">`trap_cx_ppn`</span> 计算物理地址（<span class="token code-snippet code keyword">`ppn &lt;&lt; PAGE_SHIFT`</span>），再映射到内核的临时虚拟地址，即可读写；
-<span class="token list punctuation">3.</span> 用户态访问 TrapContext：直接用固定的高地址虚拟地址（如 0xFFFF_FFFF_FFFE_0000），用户态页表已映射到该物理页。
-
-<span class="token title important"><span class="token punctuation">###</span> 三、核心实现流程（帮你关联代码）</span>
-<span class="token title important"><span class="token punctuation">####</span> 1. 创建进程时：分配 TrapContext 物理页，记录 ppn</span>
-<span class="token code"><span class="token punctuation">```</span><span class="token code-language">rust</span>
-<span class="token code-block language-rust"><span class="token keyword">impl</span> <span class="token class-name">TaskControlBlock</span> <span class="token punctuation">&#123;</span>
-    <span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">new</span><span class="token punctuation">(</span>elf_data<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">Self</span> <span class="token punctuation">&#123;</span>
-        <span class="token comment">// 1. 分配 TrapContext 物理页</span>
-        <span class="token keyword">let</span> trap_cx_page <span class="token operator">=</span> <span class="token class-name">FrameAllocator</span><span class="token punctuation">::</span><span class="token function">alloc</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        <span class="token keyword">let</span> trap_cx_ppn <span class="token operator">=</span> trap_cx_page<span class="token punctuation">.</span><span class="token function">ppn</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        <span class="token comment">// 2. 初始化 TrapContext（物理地址）</span>
-        <span class="token keyword">let</span> trap_cx <span class="token operator">=</span> <span class="token keyword">unsafe</span> <span class="token punctuation">&#123;</span>
-            <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token operator">*</span><span class="token punctuation">(</span>trap_cx_ppn <span class="token operator">&lt;&lt;</span> <span class="token constant">PAGE_SHIFT</span> <span class="token keyword">as</span> <span class="token operator">*</span><span class="token keyword">mut</span> <span class="token class-name">TrapContext</span><span class="token punctuation">)</span>
-        <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
-        <span class="token operator">*</span>trap_cx <span class="token operator">=</span> <span class="token class-name">TrapContext</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token comment">/* 初始化参数：用户入口、栈指针等 */</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        
-        <span class="token comment">// 3. 构建用户页表：将 TrapContext 物理页映射到固定高地址</span>
-        <span class="token keyword">let</span> <span class="token keyword">mut</span> memory_set <span class="token operator">=</span> <span class="token class-name">MemorySet</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        memory_set<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>
-            <span class="token class-name">TrapContext</span><span class="token punctuation">::</span><span class="token constant">VADDR</span><span class="token punctuation">,</span> <span class="token comment">// 固定高地址</span>
-            trap_cx_ppn<span class="token punctuation">,</span>
-            <span class="token number">1</span><span class="token punctuation">,</span>
-            <span class="token class-name">MapPermission</span><span class="token punctuation">::</span><span class="token class-name">R</span> <span class="token operator">|</span> <span class="token class-name">MapPermission</span><span class="token punctuation">::</span><span class="token class-name">W</span><span class="token punctuation">,</span> <span class="token comment">// 读写权限</span>
-        <span class="token punctuation">)</span><span class="token punctuation">;</span>
-        <span class="token comment">// 4. TCB 中记录 trap_cx_ppn</span>
-        <span class="token class-name">TaskControlBlock</span> <span class="token punctuation">&#123;</span>
-            trap_cx_ppn<span class="token punctuation">,</span>
-            memory_set<span class="token punctuation">,</span>
-            <span class="token comment">// ... 其他字段</span>
-        <span class="token punctuation">&#125;</span>
-    <span class="token punctuation">&#125;</span>
-<span class="token punctuation">&#125;</span></span>
-<span class="token punctuation">```</span></span>
-
-<span class="token title important"><span class="token punctuation">####</span> 2. 陷阱处理时：跨特权级访问 TrapContext</span>
-<span class="token list punctuation">-</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">用户态→内核态（陷阱触发）</span><span class="token punctuation">**</span></span>：
-  CPU 跳转到 Trampoline 页的汇编代码，直接通过固定高地址访问 TrapContext，保存用户态寄存器；
-<span class="token list punctuation">-</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">内核态→用户态（陷阱返回）</span><span class="token punctuation">**</span></span>：
-  内核先通过 TCB 的 <span class="token code-snippet code keyword">`trap_cx_ppn`</span> 修改 TrapContext（更新返回地址、栈指针等），再跳回 Trampoline，通过虚拟地址加载 TrapContext 到寄存器，切换回用户态。
-
-<span class="token title important"><span class="token punctuation">####</span> 3. 内核态读写 TrapContext（比如修改返回值）</span>
-<span class="token code"><span class="token punctuation">```</span><span class="token code-language">rust</span>
-<span class="token code-block language-rust"><span class="token comment">// 内核态修改 TrapContext 的 a0 寄存器（syscall 返回值）</span>
-<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">set_syscall_ret</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">self</span><span class="token punctuation">,</span> ret<span class="token punctuation">:</span> <span class="token keyword">isize</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-    <span class="token keyword">let</span> trap_cx_ppn <span class="token operator">=</span> <span class="token keyword">self</span><span class="token punctuation">.</span>trap_cx_ppn<span class="token punctuation">;</span>
-    <span class="token comment">// 物理地址 → 内核临时虚拟地址映射（简化版）</span>
-    <span class="token keyword">let</span> trap_cx <span class="token operator">=</span> <span class="token keyword">unsafe</span> <span class="token punctuation">&#123;</span>
-        <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token operator">*</span><span class="token punctuation">(</span>trap_cx_ppn <span class="token operator">&lt;&lt;</span> <span class="token constant">PAGE_SHIFT</span> <span class="token keyword">as</span> <span class="token operator">*</span><span class="token keyword">mut</span> <span class="token class-name">TrapContext</span><span class="token punctuation">)</span>
-    <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
-    trap_cx<span class="token punctuation">.</span>x<span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">]</span> <span class="token operator">=</span> ret<span class="token punctuation">;</span> <span class="token comment">// a0 寄存器对应 x[10]</span>
-<span class="token punctuation">&#125;</span></span>
-<span class="token punctuation">```</span></span>
-
-<span class="token title important"><span class="token punctuation">###</span> 四、设计优势总结</span>
-<span class="token list punctuation">1.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">地址固定</span><span class="token punctuation">**</span></span>：所有进程的 TrapContext 虚拟地址统一，简化陷阱切换的汇编逻辑；
-<span class="token list punctuation">2.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">跨特权级访问</span><span class="token punctuation">**</span></span>：内核态用 <span class="token code-snippet code keyword">`ppn`</span> 访问物理页，用户态用固定虚拟地址，互不冲突；
-<span class="token list punctuation">3.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">内存安全</span><span class="token punctuation">**</span></span>：物理页由内核分配和管理，用户态只能访问自己的 TrapContext，无法越界；
-<span class="token list punctuation">4.</span> <span class="token bold"><span class="token punctuation">**</span><span class="token content">效率高</span><span class="token punctuation">**</span></span>：无需动态分配虚拟地址，陷阱切换时地址访问是固定偏移，开销极低。
-
-<span class="token title important"><span class="token punctuation">###</span> 核心要点回顾</span>
-<span class="token list punctuation">1.</span> TrapContext 放在应用地址高地址（Trampoline 旁）：避免地址冲突，适配跨特权级跳转；
-<span class="token list punctuation">2.</span> TCB 记录 <span class="token code-snippet code keyword">`trap_cx_ppn`</span>：内核态通过物理页号访问 TrapContext，突破页表隔离限制；
-<span class="token list punctuation">3.</span> 核心逻辑：用户态用固定虚拟地址访问，内核态用物理页号访问，实现“一套上下文，跨特权级共享”。
-
-简单说：<span class="token code-snippet code keyword">`trap_cx_ppn`</span> 是内核态“找到”用户态 TrapContext 的“物理地址凭证”，而固定高地址是用户态访问的“快捷方式”，两者结合让 TrapContext 成为跨特权级的“状态中转站”～<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <pre class="mermaid">flowchart LR
     subgraph init["初始化阶段：无用户任务"]
         direction LR
@@ -1204,9 +1055,785 @@ MapArea 的遍历复制中，因此无法通过 for 循环完成 VA→PA 映射�
     <span class="token function">add_task</span><span class="token punctuation">(</span>new_task<span class="token punctuation">)</span><span class="token punctuation">;</span>
     new_pid <span class="token keyword">as</span> <span class="token keyword">isize</span>
 <span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="exec-系统调用的实现">exec 系统调用的实现</h4>
+<blockquote>
+<p>这里注意，我们前面提到的：</p>
+<ol type="1">
+<li>如果出错的话（如找不到名字相符的可执行文件）则返回 -1</li>
+<li>否则不应该返回。</li>
+</ol>
+<p>这里在执行不出错的时候，<code>exec</code>
+函数会直接用新的应用的内存空间去覆盖老的应用的内存空间。</p>
+</blockquote>
+<p><code>exec</code> 方法的实现会比 <code>fork</code>
+要简单很多，我们需要如下操作：</p>
+<ol type="1">
+<li><p>从 <code>elf</code> 中读取新的 <code>memory_set</code>；</p></li>
+<li><p><strong>修改 <code>PCB</code>
+中加载前和加载后发生变化的变量</strong>，参考下面的模型图很容易得出：</p>
+<ol type="1">
+<li>发生了变化的包括：
+<ol type="1">
+<li><code>memory_set</code> 发生了变化；</li>
+<li>由于新应用中的 <code>.text/.rodata/.data/.bss</code>
+和原应用的长度变化，所以 <code>user_stack_top</code> 发生了变化；</li>
+<li><code>base_size</code>，<code>heap_bottom</code>，<code>program_brk</code>
+这几个值初始和 <code>user_stack_top</code> 一直，所以也需要变化；</li>
+<li><code>trap_cx_ppn</code> 重新分配了物理页；</li>
+<li><code>task_ctx</code></li>
+</ol></li>
+<li>未发生变化的：
+<ol type="1">
+<li><code>parent</code></li>
+<li><code>children</code></li>
+</ol></li>
+</ol>
+<p>可以明显看到，和 <code>fork</code>
+的最大区别就是，fork完全继承了父进程的memory_set。</p></li>
+</ol>
+<pre class="mermaid">block-beta
+    columns 3
+        block
+            columns 1
+            space:6
+            user_stack_top("user_stack_top")
+            base_size("base_size")
+            heap_bottom("heap_bottom")
+            program_brk("program_brk")
+            space:5
+        end
+        block
+            columns 1
+            space:8
+            eUserStack("User Stack End")
+            mUserStack("...")
+            sUserStack("User Stack Start")
+            sGuardPage("Guard Page")
+            sbss(".bss")
+            sdata(".data")
+            srodata(".rodata")
+            stext(".text")
+        end
+
+    block:group4:1
+        columns 1
+        trampoline("Trampoline")
+        TrapContext("TrapContext")
+        space:14
+    end
+
+    user_stack_top --> eUserStack
+    base_size --> eUserStack
+    heap_bottom --> eUserStack
+    program_brk --> eUserStack
+    
+    style user_stack_top fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style base_size fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style heap_bottom fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style program_brk fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+
+    style eUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+    style mUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+    style sUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+
+    style sbss fill:linear-gradient(to bottom, #f0fff4, #f5fffa),stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style sdata fill:linear-gradient(to bottom, #fffbe6, #fffdf2),stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style srodata fill:linear-gradient(to bottom, #f9f0ff, #fcf1ff),stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style stext fill:linear-gradient(to bottom, #f5f5f5, #fafafa),stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+
+    style sGuardPage fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
+
+
+    style trampoline fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
+    style TrapContext fill:#e8e8e8,stroke:#555555,stroke-width:2px,stroke-dasharray:5,5,color:#222222,padding:8px,font-weight:bold</pre>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">impl</span> <span class="token class-name">TaskControlBlock</span>
+    <span class="token comment">/// Load a new elf to replace the original application address space and start execution</span>
+    <span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">exec</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">self</span><span class="token punctuation">,</span> elf_data<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token comment">// memory_set with elf program headers/trampoline/trap context/user stack</span>
+        <span class="token keyword">let</span> <span class="token punctuation">(</span>memory_set<span class="token punctuation">,</span> user_sp<span class="token punctuation">,</span> entry_point<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token class-name">MemorySet</span><span class="token punctuation">::</span><span class="token function">from_elf</span><span class="token punctuation">(</span>elf_data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> trap_cx_ppn <span class="token operator">=</span> memory_set
+            <span class="token punctuation">.</span><span class="token function">translate</span><span class="token punctuation">(</span><span class="token class-name">VirtAddr</span><span class="token punctuation">::</span><span class="token function">from</span><span class="token punctuation">(</span><span class="token constant">TRAP_CONTEXT_BASE</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">ppn</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// **** access current TCB exclusively</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> inner <span class="token operator">=</span> <span class="token keyword">self</span><span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// substitute memory_set</span>
+        inner<span class="token punctuation">.</span>memory_set <span class="token operator">=</span> memory_set<span class="token punctuation">;</span>
+        <span class="token comment">// update trap_cx ppn</span>
+        inner<span class="token punctuation">.</span>trap_cx_ppn <span class="token operator">=</span> trap_cx_ppn<span class="token punctuation">;</span>
+        <span class="token comment">// initialize base_size</span>
+        inner<span class="token punctuation">.</span>base_size <span class="token operator">=</span> user_sp<span class="token punctuation">;</span>
+        <span class="token comment">// initialize trap_cx</span>
+        <span class="token keyword">let</span> trap_cx <span class="token operator">=</span> inner<span class="token punctuation">.</span><span class="token function">get_trap_cx</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token operator">*</span>trap_cx <span class="token operator">=</span> <span class="token class-name">TrapContext</span><span class="token punctuation">::</span><span class="token function">app_init_context</span><span class="token punctuation">(</span>
+            entry_point<span class="token punctuation">,</span>
+            user_sp<span class="token punctuation">,</span>
+            <span class="token constant">KERNEL_SPACE</span><span class="token punctuation">.</span><span class="token function">exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">token</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            <span class="token keyword">self</span><span class="token punctuation">.</span>kernel_stack<span class="token punctuation">.</span><span class="token function">get_top</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            trap_handler <span class="token keyword">as</span> <span class="token keyword">usize</span><span class="token punctuation">,</span>
+        <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// **** release inner automatically</span>
+    <span class="token punctuation">&#125;</span>
+end<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="系统调用后重新获取-trap-上下文">系统调用后重新获取 Trap
+上下文</h4>
+<pre class="line-numbers language-rust" data-language="rust"><div class="caption"><span>&#123;16&#125;</span></div><code class="language-rust"><span class="token comment">// os/src/trap/mod.rs</span>
+
+<span class="token attribute attr-name">#[no_mangle]</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">trap_handler</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token operator">!</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">set_kernel_trap_entry</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> scause <span class="token operator">=</span> <span class="token namespace">scause<span class="token punctuation">::</span></span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> stval <span class="token operator">=</span> <span class="token namespace">stval<span class="token punctuation">::</span></span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">match</span> scause<span class="token punctuation">.</span><span class="token function">cause</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token class-name">Trap</span><span class="token punctuation">::</span><span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token class-name">Exception</span><span class="token punctuation">::</span><span class="token class-name">UserEnvCall</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">&#123;</span>
+            <span class="token comment">// jump to next instruction anyway</span>
+            <span class="token keyword">let</span> <span class="token keyword">mut</span> cx <span class="token operator">=</span> <span class="token function">current_trap_cx</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            cx<span class="token punctuation">.</span>sepc <span class="token operator">+=</span> <span class="token number">4</span><span class="token punctuation">;</span>
+            <span class="token comment">// get system call return value</span>
+            <span class="token keyword">let</span> result <span class="token operator">=</span> <span class="token function">syscall</span><span class="token punctuation">(</span>cx<span class="token punctuation">.</span>x<span class="token punctuation">[</span><span class="token number">17</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span>cx<span class="token punctuation">.</span>x<span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">]</span><span class="token punctuation">,</span> cx<span class="token punctuation">.</span>x<span class="token punctuation">[</span><span class="token number">11</span><span class="token punctuation">]</span><span class="token punctuation">,</span> cx<span class="token punctuation">.</span>x<span class="token punctuation">[</span><span class="token number">12</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// cx is changed during sys_exec, so we have to call it again</span>
+            cx <span class="token operator">=</span> <span class="token function">current_trap_cx</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            cx<span class="token punctuation">.</span>x<span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">]</span> <span class="token operator">=</span> result <span class="token keyword">as</span> <span class="token keyword">usize</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+        <span class="token punctuation">...</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token function">trap_return</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>在执行 <code>exec</code> 之后，<code>trap_cx</code>
+已经失效了，所以执行完之后需要重新获取 <code>trap_cx</code>。
+<pre class="line-numbers language-diff" data-language="diff"><code class="language-diff"><span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">            let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);
+</span></span><span class="token inserted-sign inserted"><span class="token prefix inserted">+</span><span class="token line">            // cx is changed during sys_exec, so we have to call it again
+</span><span class="token prefix inserted">+</span><span class="token line">            cx = current_trap_cx();</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre></p>
+<h2 id="进程资源回收机制">进程资源回收机制</h2>
+<h4 id="进程的退出">进程的退出</h4>
+<p>进程的退出通过 <code>exit_current_and_run_next</code>
+函数来执行：</p>
+<ol type="1">
+<li><code>take_current_task()</code> 获取当前 Processor 中 current
+对象的所有权，以便于 <code>PCB</code>
+能被正常的回收；这里需要注意的是：<code>current</code> 是一个
+<code>Option&lt;Arc&lt;TaskControlBlock&gt;&gt;</code>
+对象，它可能会被其他的 <code>PCB</code> 引用。例如，他的父线程的
+<code>child</code> 和他子线程的 <code>parent</code>
+都会有对他的引用；</li>
+<li>修改 <code>PCB</code> 的状态 <strong>task_status</strong> 为
+<code>TaskStatus::Zombie</code>，设置
+<code>exit_code</code>；这里设置状态为 <code>zombie</code>
+的目的是，为了让父进程在执行 <code>wait</code>
+的时候能够返回对应的信息。</li>
+<li>在退出之前，将它内部所有的 <code>child</code> 的父进程修改为
+<code>INITPROC</code>，避免资源泄露；</li>
+<li>清空 <code>children</code> 和
+<code>map_area</code>，其实理论上来说，这里不清空理论上也是可以的。但是存在其他引用一直引用到
+<code>self</code>
+导致自身不能被正确回收，从而导致这些引用也无法被回收的风险；</li>
+</ol>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">/// Exit the current 'Running' task and run the next task in task list.</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">exit_current_and_run_next</span><span class="token punctuation">(</span>exit_code<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token comment">// take from Processor</span>
+    <span class="token keyword">let</span> task <span class="token operator">=</span> <span class="token function">take_current_task</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// **** access current TCB exclusively</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> inner <span class="token operator">=</span> task<span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// Change status to Zombie</span>
+    inner<span class="token punctuation">.</span>task_status <span class="token operator">=</span> <span class="token class-name">TaskStatus</span><span class="token punctuation">::</span><span class="token class-name">Zombie</span><span class="token punctuation">;</span>
+    <span class="token comment">// Record exit code</span>
+    inner<span class="token punctuation">.</span>exit_code <span class="token operator">=</span> exit_code<span class="token punctuation">;</span>
+    <span class="token comment">// do not move to its parent but under initproc</span>
+
+    <span class="token comment">// ++++++ access initproc TCB exclusively</span>
+    <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> initproc_inner <span class="token operator">=</span> <span class="token constant">INITPROC</span><span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> child <span class="token keyword">in</span> inner<span class="token punctuation">.</span>children<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            child<span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>parent <span class="token operator">=</span> <span class="token class-name">Some</span><span class="token punctuation">(</span><span class="token class-name">Arc</span><span class="token punctuation">::</span><span class="token function">downgrade</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token constant">INITPROC</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            initproc_inner<span class="token punctuation">.</span>children<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>child<span class="token punctuation">.</span><span class="token function">clone</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token comment">// ++++++ release parent PCB</span>
+
+    inner<span class="token punctuation">.</span>children<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// deallocate user space</span>
+    inner<span class="token punctuation">.</span>memory_set<span class="token punctuation">.</span><span class="token function">recycle_data_pages</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">drop</span><span class="token punctuation">(</span>inner<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// **** release current PCB</span>
+    <span class="token comment">// drop task manually to maintain rc correctly</span>
+    <span class="token function">drop</span><span class="token punctuation">(</span>task<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// we do not have to save task context</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> _unused <span class="token operator">=</span> <span class="token class-name">TaskContext</span><span class="token punctuation">::</span><span class="token function">zero_init</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">schedule</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> _unused <span class="token keyword">as</span> <span class="token operator">*</span><span class="token keyword">mut</span> _<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="父进程回收子进程资源">父进程回收子进程资源</h4>
+<p>父进程对子进程的资源回收，是通过 <code>sys_waitpid</code>
+来实现的：</p>
+<ol type="1">
+<li>查找是否存在目标进程：目标进程与输入参数 <code>pid</code>
+有关，如果不存在任何目标进程返回 <code>-1</code>：
+<ol type="1">
+<li><code>pid == -1</code> 匹配任意一个进程；</li>
+<li><code>pid != -1</code> 匹配与 <code>pid</code> 一致的进程；</li>
+</ol></li>
+<li>查找是否存在<strong>已经结束（task_status ==
+TaskStatus::Zombie）</strong>的目标进程，如果不存在则返回
+<code>-2</code>：
+<ol type="1">
+<li><code>pid == -1</code> 匹配任意一个进程；</li>
+<li><code>pid != -1</code> 匹配与 <code>pid</code> 一致的进程；</li>
+</ol></li>
+<li>找到目标进程，我们开始回收子进程资源：
+<ol type="1">
+<li>从 <code>children</code> 中移除当前子进程；</li>
+<li>保证当前 <code>child</code>
+只有一个强引用，这个位置的设计很有意思可以参考 <a
+href="#children和parent">children和parent</a>；</li>
+<li>设置 <code>exit_code</code> 并写入 <code>exit_code_ptr</code>
+指针指向的位置，这个是在系统调用时给用户态应用返回的；</li>
+<li>函数返回 <code>pid</code>，这个是内核态自己函数调用的返回值。</li>
+</ol></li>
+</ol>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">/// If there is not a child process whose pid is same as given, return -1.</span>
+<span class="token comment">/// Else if there is a child process but it is still running, return -2.</span>
+<span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">sys_waitpid</span><span class="token punctuation">(</span>pid<span class="token punctuation">:</span> <span class="token keyword">isize</span><span class="token punctuation">,</span> exit_code_ptr<span class="token punctuation">:</span> <span class="token operator">*</span><span class="token keyword">mut</span> <span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">isize</span> <span class="token punctuation">&#123;</span>
+    <span class="token macro property">trace!</span><span class="token punctuation">(</span><span class="token string">"kernel::pid[&#123;&#125;] sys_waitpid [&#123;&#125;]"</span><span class="token punctuation">,</span> <span class="token function">current_task</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>pid<span class="token number">.0</span><span class="token punctuation">,</span> pid<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> task <span class="token operator">=</span> <span class="token function">current_task</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// find a child process</span>
+
+    <span class="token comment">// ---- access current PCB exclusively</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> inner <span class="token operator">=</span> task<span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token operator">!</span>inner
+        <span class="token punctuation">.</span>children
+        <span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token function">any</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>p<span class="token closure-punctuation punctuation">|</span></span> pid <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span> <span class="token operator">||</span> pid <span class="token keyword">as</span> <span class="token keyword">usize</span> <span class="token operator">==</span> p<span class="token punctuation">.</span><span class="token function">getpid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token comment">// ---- release current PCB</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token keyword">let</span> pair <span class="token operator">=</span> inner<span class="token punctuation">.</span>children<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">enumerate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token punctuation">(</span>_<span class="token punctuation">,</span> p<span class="token punctuation">)</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">&#123;</span>
+        <span class="token comment">// ++++ temporarily access child PCB exclusively</span>
+        p<span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">is_zombie</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>pid <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span> <span class="token operator">||</span> pid <span class="token keyword">as</span> <span class="token keyword">usize</span> <span class="token operator">==</span> p<span class="token punctuation">.</span><span class="token function">getpid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token comment">// ++++ release child PCB</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token keyword">let</span> <span class="token class-name">Some</span><span class="token punctuation">(</span><span class="token punctuation">(</span>idx<span class="token punctuation">,</span> _<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=</span> pair <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> child <span class="token operator">=</span> inner<span class="token punctuation">.</span>children<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>idx<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// confirm that child will be deallocated after being removed from children list</span>
+        <span class="token macro property">assert_eq!</span><span class="token punctuation">(</span><span class="token class-name">Arc</span><span class="token punctuation">::</span><span class="token function">strong_count</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>child<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> found_pid <span class="token operator">=</span> child<span class="token punctuation">.</span><span class="token function">getpid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// ++++ temporarily access child PCB exclusively</span>
+        <span class="token keyword">let</span> exit_code <span class="token operator">=</span> child<span class="token punctuation">.</span><span class="token function">inner_exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>exit_code<span class="token punctuation">;</span>
+        <span class="token comment">// ++++ release child PCB</span>
+        <span class="token operator">*</span><span class="token function">translated_refmut</span><span class="token punctuation">(</span>inner<span class="token punctuation">.</span>memory_set<span class="token punctuation">.</span><span class="token function">token</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> exit_code_ptr<span class="token punctuation">)</span> <span class="token operator">=</span> exit_code<span class="token punctuation">;</span>
+        found_pid <span class="token keyword">as</span> <span class="token keyword">isize</span>
+    <span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
+        <span class="token operator">-</span><span class="token number">2</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token comment">// ---- release current PCB automatically</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h2 id="qa">QA</h2>
+<h3 id="user_stack和kernel_stack">user_stack和kernel_stack</h3>
+<p><code>user_stack</code> 和 <code>kernel_stack</code>
+都是与进程绑定的栈，每一个进程都会有唯一的 <code>user_stack</code> 和
+<code>kernel_stack</code>，分别负责他们在用户态和内核态的函数执行时的栈操作，区别在于：</p>
+<ol type="1">
+<li><code>user_stack</code> 映射在用户内存空间，而
+<code>kernel_stack</code> 映射在内核内存空间；</li>
+<li>用户程序可以操作 <code>user_stack</code> 的指针，但是不能操作
+<code>kernel_stack</code> 的指针；</li>
+<li>当用户通过 <code>trap</code> 或 <code>exception</code>
+切换到内核态时，由 <code>__alltraps</code> 负责将 <code>sp</code>
+切换到指向 <code>kernel_stack</code>；当从内核态切换回用户态时，由
+<code>__restore</code> 负责将 <code>sp</code> 切换到指向
+<code>user_stack</code>。</li>
+</ol>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 43%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr>
+<th>特性</th>
+<th>user_stack（用户栈）</th>
+<th>kernel_stack（内核栈）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>内存空间</td>
+<td>用户虚拟地址空间（如 0x0~0x7FFFFFFF）</td>
+<td>内核虚拟地址空间（如 0x80000000~0xFFFFFFFF）</td>
+</tr>
+<tr>
+<td>访问权限</td>
+<td>进程可读写（用户态直接操作 <code>sp</code>）</td>
+<td>进程不可访问（仅内核态可操作）</td>
+</tr>
+<tr>
+<td>作用</td>
+<td>支撑用户态函数调用（如
+<code>main</code>/<code>clear_bss</code>）</td>
+<td>支撑内核态逻辑（如 <code>sys_exit</code>/ 异常处理）</td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td>随进程创建而分配，进程退出而释放</td>
+<td>同进程生命周期（和用户栈绑定）</td>
+</tr>
+<tr>
+<td>栈指针控制权</td>
+<td>用户程序可修改 <code>sp</code>（如
+<code>addi sp,sp,-16</code>）</td>
+<td>用户程序无法修改，仅内核通过汇编切换</td>
+</tr>
+</tbody>
+</table>
+<h3 id="进程的退出-1">进程的退出</h3>
+<blockquote>
+<p>仔细观察我们的 <code>sys_exit</code>
+函数，我们很多的程序并没有显示的调用该系统调用，那他们会正常的退出吗？</p>
+</blockquote>
+<p>答案是肯定！每个进程都会退出，但是他们是怎么退出的？先说结论：进程的退出，可能是多种情况。例如：显示的调用
+<code>eixt</code>，预见未捕获的异常（例如除零异常），发起
+<code>SIGKILL</code>
+信号。但是如果我们以上操作都没有发生进程会怎么退出呢？答案是：</p>
+<ol type="1">
+<li>在 <code>_start</code> 函数的结尾，我们通过
+<code>exit(main(argc, v.as_slice()))</code> 来获取 <code>main</code>
+函数的返回值并作为进程的退出码；</li>
+<li>但是，如果我们在 <code>main</code> 中显示的调用
+<code>exit()</code>，那么程序将直接结束而不会进入到
+<code>exit(main(argc, v.as_slice()))</code> 这里；</li>
+</ol>
+<p>但是这是如何实现的呢？</p>
+<h4 id="config.toml">config.toml</h4>
+<p>在 <code>config.tml</code> 中，我们定义了编译参数为
+<strong>-Clink-args=-Tsrc/linker.ld</strong></p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token punctuation">[</span>build<span class="token punctuation">]</span>
+target <span class="token operator">=</span> <span class="token string">"riscv64gc-unknown-none-elf"</span>
+
+<span class="token punctuation">[</span>target<span class="token punctuation">.</span>riscv64gc<span class="token operator">-</span>unknown<span class="token operator">-</span>none<span class="token operator">-</span>elf<span class="token punctuation">]</span>
+rustflags <span class="token operator">=</span> <span class="token punctuation">[</span>
+    <span class="token string">"-Clink-args=-Tsrc/linker.ld"</span><span class="token punctuation">,</span>
+<span class="token punctuation">]</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="makefile">Makefile</h4>
+<p>在 <code>Makefile</code>
+编译文件的过程中，将会使用前面提到的参数来指定链接文件。</p>
+<pre class="line-numbers language-makefile" data-language="makefile"><code class="language-makefile"><span class="token target symbol">binary</span><span class="token punctuation">:</span>
+	<span class="token operator">@</span>echo <span class="token variable">$</span><span class="token punctuation">(</span>ELFS<span class="token punctuation">)</span>
+	<span class="token operator">@</span>if [ <span class="token variable">$</span><span class="token punctuation">&#123;</span>CHAPTER<span class="token punctuation">&#125;</span> -gt 3 ]<span class="token punctuation">;</span> then \
+		cargo build <span class="token variable">$</span><span class="token punctuation">(</span>MODE_ARG<span class="token punctuation">)</span> <span class="token punctuation">;</span>\
+	<span class="token keyword">else</span> \
+		CHAPTER<span class="token operator">=</span><span class="token variable">$</span><span class="token punctuation">(</span>CHAPTER<span class="token punctuation">)</span> python3 build.py <span class="token punctuation">;</span>\
+	fi
+	<span class="token operator">@</span><span class="token variable">$</span><span class="token punctuation">(</span><span class="token function">foreach</span> elf, <span class="token variable">$</span><span class="token punctuation">(</span>ELFS<span class="token punctuation">)</span>, \
+		<span class="token variable">$</span><span class="token punctuation">(</span>OBJCOPY<span class="token punctuation">)</span> <span class="token variable">$</span><span class="token punctuation">(</span>elf<span class="token punctuation">)</span> -O binary <span class="token variable">$</span><span class="token punctuation">(</span><span class="token function">patsubst</span> <span class="token variable">$</span><span class="token punctuation">(</span>TARGET_DIR<span class="token punctuation">)</span>/%, <span class="token variable">$</span><span class="token punctuation">(</span>TARGET_DIR<span class="token punctuation">)</span>/%.bin, <span class="token variable">$</span><span class="token punctuation">(</span>elf<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span> \
+		cp <span class="token variable">$</span><span class="token punctuation">(</span>elf<span class="token punctuation">)</span> <span class="token variable">$</span><span class="token punctuation">(</span><span class="token function">patsubst</span> <span class="token variable">$</span><span class="token punctuation">(</span>TARGET_DIR<span class="token punctuation">)</span>/%, <span class="token variable">$</span><span class="token punctuation">(</span>TARGET_DIR<span class="token punctuation">)</span>/%.elf, <span class="token variable">$</span><span class="token punctuation">(</span>elf<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="linker.ld">linker.ld</h4>
+<p>在 <code>linker.ld</code> 中，我们指定的入口函数为
+<code>_start</code>。注意，这里我们将 <code>*(.text.entry)</code>
+加入到了 <code>.text</code>，否则我们的程序将无法正常执行。</p>
+<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">OUTPUT_ARCH(riscv)
+ENTRY(_start)
+
+BASE_ADDRESS &#x3D; 0x0;
+
+SECTIONS
+&#123;
+    . &#x3D; BASE_ADDRESS;
+    .text : &#123;
+        *(.text.entry)
+        *(.text .text.*)
+    &#125;
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="start">_start</h4>
+<p>最后，我们在 <code>lib.rs</code> 下定义了 <code>_start</code>：</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token attribute attr-name">#[no_mangle]</span>
+<span class="token attribute attr-name">#[link_section = <span class="token string">".text.entry"</span>]</span>
+<span class="token keyword">pub</span> <span class="token keyword">extern</span> <span class="token string">"C"</span> <span class="token keyword">fn</span> <span class="token function-definition function">_start</span><span class="token punctuation">(</span>argc<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">,</span> argv<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token operator">!</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">clear_bss</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">unsafe</span> <span class="token punctuation">&#123;</span>
+        <span class="token constant">HEAP</span><span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">init</span><span class="token punctuation">(</span><span class="token constant">HEAP_SPACE</span><span class="token punctuation">.</span><span class="token function">as_ptr</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token keyword">usize</span><span class="token punctuation">,</span> <span class="token constant">USER_HEAP_SIZE</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> v<span class="token punctuation">:</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token operator">&amp;</span><span class="token lifetime-annotation symbol">'static</span> <span class="token keyword">str</span><span class="token operator">></span> <span class="token operator">=</span> <span class="token class-name">Vec</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token number">0</span><span class="token punctuation">..</span>argc <span class="token punctuation">&#123;</span>
+		<span class="token comment">// process args</span>
+    <span class="token punctuation">&#125;</span>
+    <span class="token function">exit</span><span class="token punctuation">(</span><span class="token function">main</span><span class="token punctuation">(</span>argc<span class="token punctuation">,</span> v<span class="token punctuation">.</span><span class="token function">as_slice</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这样，我们就将用户态程序的入口通过 <code>_start</code> 引导到了
+<code>main</code> 函数，并且在 <code>main</code> 函数不调用
+<code>exit()</code> 的情况下，保证程序可以正常的退出。</p>
+<h4 id="汇编代码">汇编代码</h4>
+<p>我们先需要删除 <code>Makefile</code> 中的 <code>--strip-all</code>
+来保留 <code>elf</code> 文件中的符号表：</p>
+<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">binary:
+	@echo $(ELFS)
+	@if [ $&#123;CHAPTER&#125; -gt 3 ]; then \
+		cargo build $(MODE_ARG) ;\
+	else \
+		CHAPTER&#x3D;$(CHAPTER) python3 build.py ;\
+	fi
+	@$(foreach elf, $(ELFS), \
+		$(OBJCOPY) $(elf) -O binary $(patsubst $(TARGET_DIR)&#x2F;%, $(TARGET_DIR)&#x2F;%.bin, $(elf)); \
+		cp $(elf) $(patsubst $(TARGET_DIR)&#x2F;%, $(TARGET_DIR)&#x2F;%.elf, $(elf));)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>随后，使用 <code>riscv64-unknown-elf-objdump</code> 和
+<code>rustfilt</code> 对elf文件进行反汇编：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">riscv64-unknown-elf-objdump <span class="token parameter variable">-d</span> <span class="token punctuation">..</span>/user/build/elf/ch5b_getpid.elf <span class="token parameter variable">--disassemble</span><span class="token operator">=</span>_start <span class="token operator">|</span> rustfilt<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>我们可以得到实际的 <code>_start</code> 函数如下：</p>
+<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">..&#x2F;user&#x2F;build&#x2F;elf&#x2F;ch5b_getpid.elf:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000000000000 &lt;_start&gt;:
+       0:	7165                	addi	sp,sp,-400
+       # ...
+       c:	00002097          	auipc	ra,0x2
+      10:	b7e080e7          	jalr	-1154(ra) # 1b8a &lt;user_lib::clear_bss&gt;
+      
+000000000000009a &lt;.Lpcrel_hi6&gt;:
+	   #: ...
+     112:	ae8080e7          	jalr	-1304(ra) # 1bf6 &lt;user_lib::exit&gt;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们可以看到，<code>exit()</code> 的兜底调用是在这里实现的。</p>
+<h3 id="进程状态机">进程状态机</h3>
+<pre class="mermaid">flowchart LR
+
+Ready("Ready"):::green
+Running("Running"):::purple
+Zombie("Zombie"):::error
+
+
+Running -->|suspend_current_and_run_next| Ready
+Running -->|fork| Ready
+
+Ready -->|run_tasks| Running
+
+Running -->|exit_current_and_run_next| Zombie
+
+
+
+    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;
+    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+<h3 id="kernelstack">KernelStack</h3>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">/// Kernel stack for a process(task)</span>
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">KernelStack</span><span class="token punctuation">(</span><span class="token keyword">pub</span> <span class="token keyword">usize</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><code>KernelStack</code> 是进程管理中，用于在<strong>Kernel Adress
+Space(High)</strong>分配用户的应用内核栈的数据结构。</p>
+<p>简单来说就是，在一个os中，每个函数的调用都必须有自己的函数栈，不论是在
+<code>S</code> 模式还是在 <code>U</code> 模式，而
+<code>KernelStack</code> 就是在 <code>S</code> 模式下的函数栈指针。</p>
+<p>该指针的生命周期如下描述：</p>
+<ol type="1">
+<li>进程在初始化时会映射虚拟地址 <code>TRAP_CONTEXT_BASE</code> 用于存储
+<code>TrapContext</code>；</li>
+<li>随后初始化 <code>KernelStack</code>，可能有以下三种情况：
+<ol type="1">
+<li><code>INITPROC</code> 在初始化时通过
+<code>TaskControlBlock::new()</code> 初始化，并通过
+<code>TaskManager::add()</code> 加入等待调度；</li>
+<li>在系统调用 <code>TaskControlBlock::exec()</code> 中通过
+<code>TrapContext::app_init_context()</code> 初始化；</li>
+<li>在系统调用 <code>TaskControlBlock::fork()</code> 中复制父进程的
+<code>TrapContext</code> 并修改初始化；</li>
+</ol></li>
+<li>三种情况在初始化完成之后的调度略微有一些区别：
+<ol type="1">
+<li><code>INITPORC</code> 的是直接将自身加入
+<code>TASK_MANAGER</code>，等待内核调度；</li>
+<li><code>exec()</code> 本身是系统调度，在初始化完成之后通过
+<code>__restore</code> 来返回用户态；</li>
+<li><code>fork()</code> 父进程的状态不变，子进程在 <code>fork()</code>
+完得到子进程的地址空间后通过 <code>TaskManager::add()</code> 加入
+<code>TASK_MANAGER</code> 等待调度。</li>
+</ol></li>
+<li>不管是任何情况，当发生 <code>trap</code> 时，内核通过
+<code>__alltraps</code> 加载 <code>TrapContext</code> -- 而
+<code>KernelStack</code> 也是 其中的一部分，随后内核态的所有函数调用的
+<code>sp</code> 都是用 <code>KernelStack</code>
+作为指针来操作自己的函数栈。</li>
+</ol>
+<pre class="mermaid">graph TD
+    %% 样式定义：按流程阶段区分，突出逻辑层级
+    classDef init fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600;
+    classDef branch fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-weight:600;
+    classDef runtime fill:#e8f5e8, stroke:#2e7d32, rounded:8px, font-weight:600;
+    classDef exit fill:#fef2f8, stroke:#f43f5e, rounded:8px, font-weight:600;
+    classDef arrow stroke:#64748b, stroke-width:1.2px;
+
+    %% 节点定义：特殊字符用双引号包裹，[]改为()
+    A("进程初始化"):::init
+    B{"初始化场景"}:::branch
+    B1("INITPROC new()"):::branch
+    B2("exec() 系统调用"):::branch
+    B3("fork() 系统调用"):::branch
+    C("分配内核栈，初始化 TrapContext（记录内核栈指针）"):::init
+    D{"进程运行"}:::runtime
+    D1("Trap 发生：__alltraps 切换到内核栈执行"):::runtime
+    D2("进程调度：保存内核栈 sp 到 TrapContext，切换到其他进程"):::runtime
+    E("进程退出（exit()）"):::exit
+    F("释放内核栈占用的物理页，回收 TrapContext 映射"):::exit
+
+    %% 逻辑连接：添加样式，保持原有流程
+    A --> B:::arrow
+    B --> B1:::arrow
+    B --> B2:::arrow
+    B --> B3:::arrow
+    B1 & B2 & B3 --> C:::arrow
+    C --> D:::arrow
+    D --> D1:::arrow
+    D --> D2:::arrow
+    D1 & D2 --> E:::arrow
+    E --> F:::arrow</pre>
+<h3 id="kstack_allocator">KSTACK_ALLOCATOR</h3>
+<p><code>KSTACK_ALLOCATOR</code> 是负责 <a
+href="#KernelStack">KernelStack</a>
+的分配和回收的模块：这里非常值得注意的是，每一个
+<code>KernelStack</code>
+会分配固定大小的物理地址空间，而这个空间需要在进程退出的时候销毁，我们通过
+RAII 实现：</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">impl</span> <span class="token class-name">Drop</span> <span class="token keyword">for</span> <span class="token class-name">KernelStack</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">fn</span> <span class="token function-definition function">drop</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token keyword">self</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> <span class="token punctuation">(</span>kernel_stack_bottom<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">kernel_stack_position</span><span class="token punctuation">(</span><span class="token keyword">self</span><span class="token punctuation">.</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> kernel_stack_bottom_va<span class="token punctuation">:</span> <span class="token class-name">VirtAddr</span> <span class="token operator">=</span> kernel_stack_bottom<span class="token punctuation">.</span><span class="token function">into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token constant">KERNEL_SPACE</span>
+            <span class="token punctuation">.</span><span class="token function">exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">remove_area_with_start_vpn</span><span class="token punctuation">(</span>kernel_stack_bottom_va<span class="token punctuation">.</span><span class="token function">into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token constant">KSTACK_ALLOCATOR</span><span class="token punctuation">.</span><span class="token function">exclusive_access</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">dealloc</span><span class="token punctuation">(</span><span class="token keyword">self</span><span class="token punctuation">.</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="内存对齐">内存对齐</h3>
+<blockquote>
+<p>内存对齐的本质是<strong>适配 CPU
+硬件的访存规则，平衡内存访问效率、硬件兼容性和内存空间利用率</strong>，核心作用有三：</p>
+</blockquote>
+<h4 id="内存对齐的根本作用">内存对齐的根本作用</h4>
+<ol type="1">
+<li>避免 CPU 访问内存时的硬件异常（比如 RISC-V 的对齐故障）；</li>
+<li>最大化内存访问效率（CPU 按 “对齐块” 批量读写，而非拆分操作）；</li>
+<li>保证硬件 / 编译器的兼容性（比如 DMA、结构体布局跨平台一致）。</li>
+</ol>
+<h4 id="为什么-cpu-要求内存对齐">为什么 CPU 要求内存对齐</h4>
+<p>现代 CPU 的内存访问不是 “字节级” 的，而是按<strong>数据总线宽度 /
+缓存行大小</strong>（比如 64 位 CPU 总线宽度 8 字节，缓存行 64
+字节）批量读取，对齐的核心是适配这种 “批量访存” 规则：</p>
+<ul>
+<li>CPU 访存时，会把内存划分为固定大小的 “对齐块”（比如 8 字节、16
+字节）；</li>
+<li>若数据起始地址是对齐块大小的整数倍（比如 8 字节对齐→地址是 8
+的倍数），CPU 只需 1 次访存就能读取完整数据；</li>
+<li>若未对齐，CPU 需要 2
+次访存，再拼接数据（甚至直接触发硬件异常）。</li>
+</ul>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 17%" />
+<col style="width: 7%" />
+<col style="width: 57%" />
+<col style="width: 3%" />
+</colgroup>
+<thead>
+<tr>
+<th>场景</th>
+<th>地址</th>
+<th>对齐状态</th>
+<th>CPU 操作</th>
+<th>效率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>对齐（8 字节）</td>
+<td>0x1000（8 的倍数）</td>
+<td>是</td>
+<td>1 次访存：读取 0x1000~0x1007，直接拿到完整的 8 字节数据</td>
+<td>高</td>
+</tr>
+<tr>
+<td>未对齐</td>
+<td>0x1001</td>
+<td>否</td>
+<td>2 次访存：先读 0x1000~0x1007（取后 7 字节），再读
+0x1008~0x100F（取前 1 字节），拼接后得到 8 字节</td>
+<td>低</td>
+</tr>
+</tbody>
+</table>
+<h4 id="内核场景的对齐策略">内核场景的对齐策略</h4>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 16%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr>
+<th>数据类型</th>
+<th>对齐值</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基础类型（u8/u16/u32/u64）</td>
+<td>自身大小</td>
+<td>适配 CPU 访存宽度</td>
+</tr>
+<tr>
+<td>指针（*mut T）</td>
+<td>8 字节（64 位）</td>
+<td>64 位 CPU 的地址总线宽度是 8 字节</td>
+</tr>
+<tr>
+<td>普通结构体（FileDescriptor）</td>
+<td>最大成员对齐值</td>
+<td>平衡效率与空间（比如包含 u64 的结构体 8 字节对齐）</td>
+</tr>
+<tr>
+<td>核心结构体（TCB / 页表）</td>
+<td>4KB（页对齐）</td>
+<td>适配物理页分配，简化内存管理，避免跨页访问</td>
+</tr>
+<tr>
+<td>DMA 缓冲区</td>
+<td>64/128 字节</td>
+<td>适配外设的批量传输规则</td>
+</tr>
+</tbody>
+</table>
+<p>举个例子，假设存在如下结构体，那么它的对齐逻辑应该是：</p>
+<ol type="1">
+<li><code>data</code> 自身是一个数组，他的内部按照二字节对齐；同时
+<code>data</code> 的大小是 <code>14</code> 字节，会被填充 <code>2</code>
+字节后扩充到 <code>16</code> 字节；</li>
+<li><code>big_number</code> 按照 <code>8</code> 字节对齐；</li>
+<li><code>small_number</code> 自身按照 <code>4</code>
+字节对齐，但因结构体整体对齐值为 <code>8</code> 字节，最终会填充
+<code>4</code> 字节让总大小满足 8 的倍数</li>
+<li>整个结构体的大小为 <code>32</code> 字节。</li>
+</ol>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">struct</span> <span class="token type-definition class-name">AlignedStruct</span> <span class="token punctuation">&#123;</span>
+    d<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token keyword">u16</span><span class="token punctuation">;</span> <span class="token number">7</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    big_number<span class="token punctuation">:</span> <span class="token keyword">u64</span><span class="token punctuation">,</span>
+    small_number<span class="token punctuation">:</span> <span class="token keyword">u32</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3
+id="对象在物理地址和虚拟地址中的转换">对象在物理地址和虚拟地址中的转换</h3>
+<p>转换的核心其实在于：</p>
+<p>当从Vec&lt;&amp;'static mut [u8]&gt;读取数据到对象时：</p>
+<ol type="1">
+<li>通过vec中包含的数据长度和对象的实际长度对比，判断vec中数据的合法性；</li>
+<li>通过VA得到 mut 指针，在这一步，CPU的MMU会帮我们做VA到PA的转换；</li>
+<li>判断内存是否对齐。</li>
+</ol>
+<p>当反过来从对象写入到Vec&lt;&amp;'static mut
+[u8]&gt;时，我们才需要分段式的处理它。</p>
+<p>总结就是，由物理内存到虚拟内存不需要分段处理，因为我们使用的虚拟内存是连续的，CPU的MMU会帮我们做这个VA到PA的转换。而虚拟内存到物理内存需要分段处理，因为我们此时要写的物理内存是不连续的。</p>
+<blockquote>
+<p><code>(tcb_ptr as usize) % align_of::&lt;Self&gt;() == 0</code>
+这行代码是<strong>强制校验 TCB
+结构体的起始虚拟地址是否满足「内存对齐要求」</strong>，是避免 CPU
+访问错误、内存布局错乱的 “保命检查”。</p>
+<ul>
+<li>每个数据类型（尤其是结构体）都有「最小对齐值」（<code>align_of::&lt;T&gt;()</code>
+返回的值），比如：
+<ul>
+<li><code>u8</code>：对齐值 1（任意地址都可）；</li>
+<li><code>u64</code>/<code>usize</code>（64 位）：对齐值 8（地址必须是 8
+的倍数）；</li>
+<li>你的 <code>TCB</code>
+结构体（<code>#[repr(C, align(4096))]</code>）：对齐值 4096（地址必须是
+4KB 页大小的倍数）；</li>
+</ul></li>
+<li>CPU 访问内存时，要求数据的起始地址必须是其对齐值的整数倍 ——
+这是硬件设计决定的（为了提升访存效率，或避免部分架构直接报错）。</li>
+</ul>
+</blockquote>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">impl</span> <span class="token class-name">TaskControlBlock</span> <span class="token punctuation">&#123;</span>
+    <span class="token comment">/// 从分散的物理内存切片（Vec&lt;&amp;'static mut [u8]>）转换为TCB引用</span>
+    <span class="token comment">/// 前提：切片拼接后能覆盖整个TCB的内存，且虚拟地址连续</span>
+    <span class="token keyword">pub</span> <span class="token keyword">unsafe</span> <span class="token keyword">fn</span> <span class="token function-definition function">from_phys_slices</span><span class="token punctuation">(</span>slices<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token operator">&amp;</span><span class="token lifetime-annotation symbol">'static</span> <span class="token keyword">mut</span> <span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">]</span><span class="token operator">></span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token operator">&amp;</span><span class="token lifetime-annotation symbol">'static</span> <span class="token keyword">mut</span> <span class="token keyword">Self</span> <span class="token punctuation">&#123;</span>
+        <span class="token comment">// 步骤1：校验长度和对齐</span>
+        <span class="token keyword">let</span> tcb_size <span class="token operator">=</span> <span class="token function">size_of</span><span class="token punctuation">::</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> total_len<span class="token punctuation">:</span> <span class="token keyword">usize</span> <span class="token operator">=</span> slices<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>s<span class="token closure-punctuation punctuation">|</span></span> s<span class="token punctuation">.</span><span class="token function">len</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">sum</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">assert!</span><span class="token punctuation">(</span>total_len <span class="token operator">>=</span> tcb_size<span class="token punctuation">,</span> <span class="token string">"物理内存切片长度不足"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">assert!</span><span class="token punctuation">(</span><span class="token function">align_of</span><span class="token punctuation">::</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;=</span> <span class="token constant">PAGE_SIZE</span><span class="token punctuation">,</span> <span class="token string">"TCB对齐要求超过页大小"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 步骤2：获取第一个切片的起始虚拟地址（作为TCB的基地址）</span>
+        <span class="token comment">// 内核中：所有物理页已映射为连续的内核虚拟地址</span>
+        <span class="token keyword">let</span> first_slice_ptr <span class="token operator">=</span> slices<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">as_mut_ptr</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">assert!</span><span class="token punctuation">(</span><span class="token operator">!</span>first_slice_ptr<span class="token punctuation">.</span><span class="token function">is_null</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"空指针"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 步骤3：强转为TCB引用（关键：unsafe，需保证内存布局匹配）</span>
+        <span class="token keyword">let</span> tcb_ptr <span class="token operator">=</span> first_slice_ptr <span class="token keyword">as</span> <span class="token operator">*</span><span class="token keyword">mut</span> <span class="token keyword">Self</span><span class="token punctuation">;</span>
+        <span class="token comment">// 校验地址对齐（必做！否则会触发未定义行为）</span>
+        <span class="token macro property">assert!</span><span class="token punctuation">(</span>
+            <span class="token punctuation">(</span>tcb_ptr <span class="token keyword">as</span> <span class="token keyword">usize</span><span class="token punctuation">)</span> <span class="token operator">%</span> <span class="token function">align_of</span><span class="token punctuation">::</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">,</span>
+            <span class="token string">"TCB地址未对齐"</span>
+        <span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token operator">*</span>tcb_ptr
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token comment">/// 把TCB转换为分散的物理内存切片（Vec&lt;&amp;'static mut [u8]>）</span>
+    <span class="token keyword">pub</span> <span class="token keyword">unsafe</span> <span class="token keyword">fn</span> <span class="token function-definition function">to_phys_slices</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token keyword">self</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token operator">&amp;</span><span class="token lifetime-annotation symbol">'static</span> <span class="token keyword">mut</span> <span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">]</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> slices <span class="token operator">=</span> <span class="token class-name">Vec</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> tcb_ptr <span class="token operator">=</span> <span class="token keyword">self</span> <span class="token keyword">as</span> <span class="token operator">*</span><span class="token keyword">mut</span> <span class="token keyword">Self</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> tcb_size <span class="token operator">=</span> <span class="token function">size_of</span><span class="token punctuation">::</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> tcb_base <span class="token operator">=</span> tcb_ptr <span class="token keyword">as</span> <span class="token keyword">usize</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 步骤1：遍历TCB占用的所有物理页</span>
+        <span class="token keyword">for</span> offset <span class="token keyword">in</span> <span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">..</span>tcb_size<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">step_by</span><span class="token punctuation">(</span><span class="token constant">PAGE_SIZE</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">let</span> current_va <span class="token operator">=</span> tcb_base <span class="token operator">+</span> offset<span class="token punctuation">;</span>
+            <span class="token comment">// 步骤2：虚拟地址 → 物理页号（内核页表查询）</span>
+            <span class="token keyword">let</span> ppn <span class="token operator">=</span> <span class="token function">va_to_ppn</span><span class="token punctuation">(</span>current_va<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 需实现：虚拟地址转物理页号</span>
+            <span class="token comment">// 步骤3：物理页号 → 字节切片</span>
+            <span class="token keyword">let</span> slice <span class="token operator">=</span> <span class="token function">phys_page_to_slice</span><span class="token punctuation">(</span>ppn<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            slices<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>slice<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+
+        slices
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h3
 id="memory_set中的trampoline和trap_cx">memory_set中的trampoline和trap_cx</h3>
+<h3 id="children和parent">children和parent</h3>
+<p>在 <code>PCB</code> 中，我们的 <code>children</code> 和
+<code>parent</code> 的定义如下：</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">impl</span> <span class="token class-name">TaskControlBlockInner</span> <span class="token punctuation">&#123;</span>
+    <span class="token comment">/// Parent process of the current process.</span>
+    <span class="token comment">/// Weak will not affect the reference count of the parent</span>
+    <span class="token keyword">pub</span> parent<span class="token punctuation">:</span> <span class="token class-name">Option</span><span class="token operator">&lt;</span><span class="token class-name">Weak</span><span class="token operator">&lt;</span><span class="token class-name">TaskControlBlock</span><span class="token operator">>></span><span class="token punctuation">,</span>
+
+    <span class="token comment">/// A vector containing TCBs of all child processes of the current process</span>
+    <span class="token keyword">pub</span> children<span class="token punctuation">:</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token class-name">Arc</span><span class="token operator">&lt;</span><span class="token class-name">TaskControlBlock</span><span class="token operator">>></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>可以看到，我们的 <code>parent</code> 和 <code>children</code>
+被分别定义为 <code>Arc</code> 和
+<code>Weak</code>。首先，我们需要知道为什么需要这么设计：</p>
+<ul>
+<li>父进程的 <code>children</code> 字段需要引用子进程的
+TCB（保证子进程运行时不被销毁）；</li>
+<li>子进程的 <code>parent</code> 字段需要引用父进程的
+TCB（方便子进程查询父进程信息）。</li>
+</ul>
+<p>所以，他们之间形成了一个引用依赖的关系，如果双方都用 <code>Arc</code>
+来进行引用，那么会发生如下情况：</p>
+<ol type="1">
+<li>父进程退出，但是由于子进程仍然持有他的引用。在这种情况下，只有等待子进程退出之后才能回收父进程的资源；</li>
+<li>子进程退出，但是由于父进程仍然持有他的引用。在这种情况下，只有等待父进程退出之后才能回收子进程的资源；</li>
+</ol>
+<p>引入弱引用就是为了打破这个循环依赖关系，那问题在于，弱引用是如何在保证PCB的生命周期的呢？</p>
+<ol type="1">
+<li>一个进程，他对他父进程的引用是<strong>弱引用</strong>，而对他的子进程是
+<strong>强引用</strong>；</li>
+<li>当子进程先于父进程退出的时候，父进程正常的回收子进程的资源，这个逻辑很简单；</li>
+<li><strong>当父进程先于子进程退出的时候，父进程会将自身所有的子进程的父进程设置为
+<code>INITPROC</code>，并且将他们添加到<code>INITPROC</code>的子进程列表。这保证了在任意时刻，一个进程不会因为缺少强引用而被错误的回收</strong>。</li>
+</ol>
 <h3 id="elf解析">elf解析</h3>
 <ol type="1">
 <li>解析 ELF；</li>
@@ -1446,7 +2073,34 @@ user_stack_bottom + USER_STACK_SIZE 是用户进程的
 <p>关于内核堆的分配可以参考之前的解析：<a
 href="https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/#%E5%A0%86%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96">堆的初始化</a></p>
 </blockquote>
+<h3 id="link_app.s">link_app.S</h3>
+<ol type="1">
+<li><code>link_app.S</code> 由 <code>build.rs</code> 生成；</li>
+<li>在 <code>main.rs</code> 中由
+<code>global_asm!(include_str!("link_app.S"));</code>
+引入后被加载到内核空间中的 <code>.text</code> 段；</li>
+<li><code>MemorySet#new_kernel</code> 中，将 <code>.text</code> 段通过
+<code>MapType::Identical</code>
+加载到内核内存空间，此后我们可以使用虚拟地址来访问这个地址了 --
+只不过因为是恒等映射，所以 VA = PA。</li>
+</ol>
 <h3 id="exec">exec</h3>
+<h4 id="寻址逻辑">寻址逻辑</h4>
+<blockquote>
+<p>具体 <code>app_name</code> 的生成请参考 <a
+href="#基于应用名的应用链接/加载器">基于应用名的应用链接/加载器</a>。</p>
+</blockquote>
+<ol type="1">
+<li><code>load.rs</code> 下的 <code>APP_NAMES</code> 会加载
+<code>link_app.S</code> 中的全部 <code>_app_names</code></li>
+<li>通过 <code>APP_NAMES</code> 可以查找到对应的
+<code>index</code>；</li>
+<li>通过 <code>index</code> 可以在 <code>_num_app</code> 下找到代码段的
+<code>start</code> 和 <code>end</code>；</li>
+<li>通过 <code>start</code> 和 <code>end</code> 直接从
+<code>.text</code> 段读取到数据。</li>
+</ol>
+<h4 id="执行逻辑">执行逻辑</h4>
 <p><code>exec</code> 指令的调用如下：</p>
 <pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token function">exec</span><span class="token punctuation">(</span><span class="token string">"ch5b_user_shell\0"</span><span class="token punctuation">,</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token number">0</span> <span class="token keyword">as</span> <span class="token operator">*</span><span class="token keyword">const</span> <span class="token keyword">u8</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>输入必须以 <code>'\0'</code> 结尾，这是因为 <code>exec</code>
@@ -1554,7 +2208,7 @@ init 进程统一回收；</li>
 <code>wait</code>（主动回收）或父进程退出（子进程变孤儿，由 init
 回收）。</li>
 </ol>
-<h3 id="代码统计">代码统计</h3>
+<h2 id="代码统计">代码统计</h2>
 <pre class="line-numbers language-reStructuredText" data-language="reStructuredText"><code class="language-reStructuredText">➜  2025a-rcore-0x822a5b87 git:(ch5) ✗ cloc os
      264 text files.
      137 unique files.
@@ -1574,7 +2228,7 @@ TOML                             2              3              1             18
 -------------------------------------------------------------------------------
 SUM:                           137            394            527           3379
 -------------------------------------------------------------------------------<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="代码树">代码树</h3>
+<h2 id="代码树">代码树</h2>
 <p>本章中主要新增的几个模块为：</p>
 <ol type="1">
 <li><code>fs.rs</code> 新增了 <code>sys_read</code>；</li>
