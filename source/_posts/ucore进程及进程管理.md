@@ -12,138 +12,6 @@ tags:
 >
 >为此，我们要对任务建立新的抽象： **进程** ，并实现若干基于 **进程** 的强大系统调用。
 
-## `等待解决的问题`
-
-> 系统调用
-
-1. `fork` 和 `exec` 这几个系统调用的使用场景，以及我们程序的调度实现逻辑是怎么样的？
-2. 在 `exec(path:&str)` 方法中，这个寻址路径是怎么寻址的？
-3. 为什么 `shell` 的最后一位一定要是 `\0`？
-
-> 进程标识符和内核栈
-
-1. `KernelStack` 的作用是什么？他和 `ch4` 中有什么区别？
-2. `KSTACK_ALLOCATOR` 的作用是什么？
-3. 在 `ch4` 中，应用的标识符是 `app_id: usize`，但是这个值只是在构造 TCB 的时候计算了一下内核栈的虚拟地址；
-
-```rust
-/// Return (bottom, top) of a kernel stack in kernel space.
-pub fn kernel_stack_position(app_id: usize) -> (usize, usize) {
-    let top = TRAMPOLINE - app_id * (KERNEL_STACK_SIZE + PAGE_SIZE);
-    let bottom = top - KERNEL_STACK_SIZE;
-    (bottom, top)
-}
-```
-
-4. 进程的内存结构图。
-5. `TaskControlBlockInner` 在哪里会产生并发访问呢？
-6. 画一个Process的状态转换图；
-7. `exit_current_and_run_next` 很多用户态应用并没有显示的调用改指令，如何判断这个指令有被调用呢？从ELF文件里如何确认这个指令有被调用？
-8. 为什么在 `TaskControlBlockInner` 中需要 `trap_cx_ppn` 和 `task_cx` 两个值？
-9. `run_tasks()` 中在第一次调度时，PROCESSOR 中应该会取到一个空的 context 后 `swithc()` 如何避免这个switch再次切回到这个空的 context 呢？
-10. `get_app_data_by_name` 是怎么查询并定位elf文件的？
-11. 确认 [进程的内存模型](#进程的内存模型) 中的 `KERNEL_STACK`, `USER_STACK`, `KSTACK_ALLOCATOR` 分别是什么？
-12. 为什么在 `fork()` 的时候，只需要单独复制trampoline？`memory_set.map_trampoline()`：这是因为我们解析 ELF 创建地址空间的时候，并没有将跳板页作为一个单独的逻辑段插入到地址空间的逻辑段向量 `areas` 中，所以这里需要单独映射上
-13. `TaskControlBlockInner#parent` 为什么使用 `Weak<TaskControlBlock>`？构造的时候 `Some(Arc::downgrade(self))` 是什么意思？
-14. 为什么 `TrapContext` 要放在用户地址空间的 `trampolin` 下？为什么 `trampoline` 在用户态和内核态都会在页表中映射同一个虚拟地址到同一个物理地址？
-15. 重新简述一下 `trampoline` 和 `.text.trampoline` 和 `TrapContext` 之间的关系。
-    1. `set_kernel_trap_entry`
-    2. `set_user_trap_entry`
-    3. .text.trampoline
-
-````markdown
-你的理解完全精准！这是 rCore 中 TrapContext（陷阱上下文）设计的核心巧思——既要让内核态和用户态都能访问，又要适配虚拟地址空间的布局规则，最终通过 `trap_cx_ppn`（物理页号）实现了安全且高效的访问。我们一步步拆解这个设计的底层逻辑和实现细节：
-
-### 一、先明确：为什么 TrapContext 要放在“应用地址最高位（除 Trampoline）”？
-rCore 的应用虚拟地址空间布局（以 RV64 为例）是分层的，核心规则：
-```
-0x0000_0000_0000_0000 ~ 0xFFFF_FFFF_7FFF_FFFF：用户态可访问的普通地址（代码/数据/堆/栈）
-0xFFFF_FFFF_8000_0000 ~ 0xFFFF_FFFF_FFFF_FFFF：高地址区域（Trampoline + TrapContext）
-  - Trampoline：固定在 0xFFFF_FFFF_FFFF_0000（一页，内核/用户态都可执行）
-  - TrapContext：紧邻 Trampoline 下方（比如 0xFFFF_FFFF_FFFE_0000），是高地址的最高位可用区域
-```
-把 TrapContext 放在这个位置的核心原因：
-1. **避免地址冲突**：用户态的普通代码/堆/栈不会用到这么高的虚拟地址，不会和用户数据重叠；
-2. **跨特权级访问**：Trampoline 是内核和用户态共享的“跳板页”，TrapContext 紧邻它，在陷阱切换（用户→内核/内核→用户）时，CPU 能以极低的开销访问到上下文；
-3. **地址固定**：所有进程的 TrapContext 虚拟地址都固定在这个高地址，内核无需为每个进程动态分配虚拟地址，简化逻辑。
-
-### 二、为什么要在 TCB 中记录 `trap_cx_ppn`（物理页号）？
-TrapContext 需要**内核态和用户态都能访问**，但内核态和用户态的页表是隔离的——直接用虚拟地址会有问题：
-- 用户态页表：只映射用户地址空间（包括高地址的 TrapContext/Trampoline），但无法访问内核地址；
-- 内核态页表：映射内核地址空间，默认不映射用户的 TrapContext 虚拟地址。
-
-因此，TrapContext 的虚拟地址只在用户态页表中有效，内核态要访问时，必须通过**物理地址**（页号）来操作——这就是 `trap_cx_ppn` 的核心作用：
-1. `trap_cx_ppn`：是 TrapContext 所在物理页的页号（`usize` 类型），存储在进程的 TCB 中，内核态可随时访问；
-2. 内核态访问 TrapContext：通过 `trap_cx_ppn` 计算物理地址（`ppn << PAGE_SHIFT`），再映射到内核的临时虚拟地址，即可读写；
-3. 用户态访问 TrapContext：直接用固定的高地址虚拟地址（如 0xFFFF_FFFF_FFFE_0000），用户态页表已映射到该物理页。
-
-### 三、核心实现流程（帮你关联代码）
-#### 1. 创建进程时：分配 TrapContext 物理页，记录 ppn
-```rust
-impl TaskControlBlock {
-    pub fn new(elf_data: &[u8]) -> Self {
-        // 1. 分配 TrapContext 物理页
-        let trap_cx_page = FrameAllocator::alloc().unwrap();
-        let trap_cx_ppn = trap_cx_page.ppn();
-        // 2. 初始化 TrapContext（物理地址）
-        let trap_cx = unsafe {
-            &mut *(trap_cx_ppn << PAGE_SHIFT as *mut TrapContext)
-        };
-        *trap_cx = TrapContext::new(/* 初始化参数：用户入口、栈指针等 */);
-        
-        // 3. 构建用户页表：将 TrapContext 物理页映射到固定高地址
-        let mut memory_set = MemorySet::new();
-        memory_set.map(
-            TrapContext::VADDR, // 固定高地址
-            trap_cx_ppn,
-            1,
-            MapPermission::R | MapPermission::W, // 读写权限
-        );
-        // 4. TCB 中记录 trap_cx_ppn
-        TaskControlBlock {
-            trap_cx_ppn,
-            memory_set,
-            // ... 其他字段
-        }
-    }
-}
-```
-
-#### 2. 陷阱处理时：跨特权级访问 TrapContext
-- **用户态→内核态（陷阱触发）**：
-  CPU 跳转到 Trampoline 页的汇编代码，直接通过固定高地址访问 TrapContext，保存用户态寄存器；
-- **内核态→用户态（陷阱返回）**：
-  内核先通过 TCB 的 `trap_cx_ppn` 修改 TrapContext（更新返回地址、栈指针等），再跳回 Trampoline，通过虚拟地址加载 TrapContext 到寄存器，切换回用户态。
-
-#### 3. 内核态读写 TrapContext（比如修改返回值）
-```rust
-// 内核态修改 TrapContext 的 a0 寄存器（syscall 返回值）
-pub fn set_syscall_ret(&self, ret: isize) {
-    let trap_cx_ppn = self.trap_cx_ppn;
-    // 物理地址 → 内核临时虚拟地址映射（简化版）
-    let trap_cx = unsafe {
-        &mut *(trap_cx_ppn << PAGE_SHIFT as *mut TrapContext)
-    };
-    trap_cx.x[10] = ret; // a0 寄存器对应 x[10]
-}
-```
-
-### 四、设计优势总结
-1. **地址固定**：所有进程的 TrapContext 虚拟地址统一，简化陷阱切换的汇编逻辑；
-2. **跨特权级访问**：内核态用 `ppn` 访问物理页，用户态用固定虚拟地址，互不冲突；
-3. **内存安全**：物理页由内核分配和管理，用户态只能访问自己的 TrapContext，无法越界；
-4. **效率高**：无需动态分配虚拟地址，陷阱切换时地址访问是固定偏移，开销极低。
-
-### 核心要点回顾
-1. TrapContext 放在应用地址高地址（Trampoline 旁）：避免地址冲突，适配跨特权级跳转；
-2. TCB 记录 `trap_cx_ppn`：内核态通过物理页号访问 TrapContext，突破页表隔离限制；
-3. 核心逻辑：用户态用固定虚拟地址访问，内核态用物理页号访问，实现“一套上下文，跨特权级共享”。
-
-简单说：`trap_cx_ppn` 是内核态“找到”用户态 TrapContext 的“物理地址凭证”，而固定高地址是用户态访问的“快捷方式”，两者结合让 TrapContext 成为跨特权级的“状态中转站”～
-````
-
-
-
 ```mermaid
 flowchart LR
     subgraph init["初始化阶段：无用户任务"]
@@ -508,8 +376,6 @@ PidHandler --> Process
 #### 内核栈
 
 ![kernel-as-high](/images/20251121/kernel-as-high.png)
-
-
 
 ### 进程控制块
 
@@ -941,11 +807,665 @@ pub fn sys_fork() -> isize {
 }
 ```
 
+#### exec 系统调用的实现
 
+> 这里注意，我们前面提到的：
+>
+> 1. 如果出错的话（如找不到名字相符的可执行文件）则返回 -1
+> 2. 否则不应该返回。
+>
+> 这里在执行不出错的时候，`exec` 函数会直接用新的应用的内存空间去覆盖老的应用的内存空间。
+
+`exec` 方法的实现会比 `fork` 要简单很多，我们需要如下操作：
+
+1. 从 `elf` 中读取新的 `memory_set`；
+
+2. **修改 `PCB` 中加载前和加载后发生变化的变量**，参考下面的模型图很容易得出：
+
+   1. 发生了变化的包括：
+      1. `memory_set` 发生了变化；
+      2. 由于新应用中的 `.text/.rodata/.data/.bss` 和原应用的长度变化，所以 `user_stack_top` 发生了变化；
+      3. `base_size`，`heap_bottom`，`program_brk` 这几个值初始和 `user_stack_top` 一直，所以也需要变化；
+      4. `trap_cx_ppn` 重新分配了物理页；
+      5. `task_ctx`
+   2. 未发生变化的：
+      1. `parent`
+      2. `children`
+
+   可以明显看到，和 `fork` 的最大区别就是，fork完全继承了父进程的memory_set。
+
+```mermaid
+block-beta
+    columns 3
+        block
+            columns 1
+            space:6
+            user_stack_top("user_stack_top")
+            base_size("base_size")
+            heap_bottom("heap_bottom")
+            program_brk("program_brk")
+            space:5
+        end
+        block
+            columns 1
+            space:8
+            eUserStack("User Stack End")
+            mUserStack("...")
+            sUserStack("User Stack Start")
+            sGuardPage("Guard Page")
+            sbss(".bss")
+            sdata(".data")
+            srodata(".rodata")
+            stext(".text")
+        end
+
+    block:group4:1
+        columns 1
+        trampoline("Trampoline")
+        TrapContext("TrapContext")
+        space:14
+    end
+
+    user_stack_top --> eUserStack
+    base_size --> eUserStack
+    heap_bottom --> eUserStack
+    program_brk --> eUserStack
+    
+    style user_stack_top fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style base_size fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style heap_bottom fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style program_brk fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+
+    style eUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+    style mUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+    style sUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+
+    style sbss fill:linear-gradient(to bottom, #f0fff4, #f5fffa),stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style sdata fill:linear-gradient(to bottom, #fffbe6, #fffdf2),stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style srodata fill:linear-gradient(to bottom, #f9f0ff, #fcf1ff),stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style stext fill:linear-gradient(to bottom, #f5f5f5, #fafafa),stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+
+    style sGuardPage fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
+
+
+    style trampoline fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
+    style TrapContext fill:#e8e8e8,stroke:#555555,stroke-width:2px,stroke-dasharray:5,5,color:#222222,padding:8px,font-weight:bold
+```
+
+```rust
+impl TaskControlBlock
+    /// Load a new elf to replace the original application address space and start execution
+    pub fn exec(&self, elf_data: &[u8]) {
+        // memory_set with elf program headers/trampoline/trap context/user stack
+        let (memory_set, user_sp, entry_point) = MemorySet::from_elf(elf_data);
+        let trap_cx_ppn = memory_set
+            .translate(VirtAddr::from(TRAP_CONTEXT_BASE).into())
+            .unwrap()
+            .ppn();
+
+        // **** access current TCB exclusively
+        let mut inner = self.inner_exclusive_access();
+        // substitute memory_set
+        inner.memory_set = memory_set;
+        // update trap_cx ppn
+        inner.trap_cx_ppn = trap_cx_ppn;
+        // initialize base_size
+        inner.base_size = user_sp;
+        // initialize trap_cx
+        let trap_cx = inner.get_trap_cx();
+        *trap_cx = TrapContext::app_init_context(
+            entry_point,
+            user_sp,
+            KERNEL_SPACE.exclusive_access().token(),
+            self.kernel_stack.get_top(),
+            trap_handler as usize,
+        );
+        // **** release inner automatically
+    }
+end
+```
+
+#### 系统调用后重新获取 Trap 上下文
+
+```rust {16}
+// os/src/trap/mod.rs
+
+#[no_mangle]
+pub fn trap_handler() -> ! {
+    set_kernel_trap_entry();
+    let scause = scause::read();
+    let stval = stval::read();
+    match scause.cause() {
+        Trap::Exception(Exception::UserEnvCall) => {
+            // jump to next instruction anyway
+            let mut cx = current_trap_cx();
+            cx.sepc += 4;
+            // get system call return value
+            let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);
+            // cx is changed during sys_exec, so we have to call it again
+            cx = current_trap_cx();
+            cx.x[10] = result as usize;
+        }
+        ...
+    }
+    trap_return();
+}
+```
+
+在执行 `exec` 之后，`trap_cx` 已经失效了，所以执行完之后需要重新获取 `trap_cx`。
+```diff
+             let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);
++            // cx is changed during sys_exec, so we have to call it again
++            cx = current_trap_cx();
+```
+
+## 进程资源回收机制
+
+#### 进程的退出
+
+进程的退出通过 `exit_current_and_run_next` 函数来执行：
+
+1. `take_current_task()` 获取当前 Processor 中 current 对象的所有权，以便于 `PCB` 能被正常的回收；这里需要注意的是：`current` 是一个 `Option<Arc<TaskControlBlock>>` 对象，它可能会被其他的 `PCB` 引用。例如，他的父线程的 `child` 和他子线程的 `parent` 都会有对他的引用；
+2. 修改 `PCB` 的状态 **task_status** 为 `TaskStatus::Zombie`，设置 `exit_code`；这里设置状态为 `zombie` 的目的是，为了让父进程在执行 `wait` 的时候能够返回对应的信息。
+3. 在退出之前，将它内部所有的 `child` 的父进程修改为 `INITPROC`，避免资源泄露；
+4. 清空 `children` 和 `map_area`，其实理论上来说，这里不清空理论上也是可以的。但是存在其他引用一直引用到 `self` 导致自身不能被正确回收，从而导致这些引用也无法被回收的风险；
+
+```rust
+/// Exit the current 'Running' task and run the next task in task list.
+pub fn exit_current_and_run_next(exit_code: i32) {
+    // take from Processor
+    let task = take_current_task().unwrap();
+    // **** access current TCB exclusively
+    let mut inner = task.inner_exclusive_access();
+    // Change status to Zombie
+    inner.task_status = TaskStatus::Zombie;
+    // Record exit code
+    inner.exit_code = exit_code;
+    // do not move to its parent but under initproc
+
+    // ++++++ access initproc TCB exclusively
+    {
+        let mut initproc_inner = INITPROC.inner_exclusive_access();
+        for child in inner.children.iter() {
+            child.inner_exclusive_access().parent = Some(Arc::downgrade(&INITPROC));
+            initproc_inner.children.push(child.clone());
+        }
+    }
+    // ++++++ release parent PCB
+
+    inner.children.clear();
+    // deallocate user space
+    inner.memory_set.recycle_data_pages();
+    drop(inner);
+    // **** release current PCB
+    // drop task manually to maintain rc correctly
+    drop(task);
+    // we do not have to save task context
+    let mut _unused = TaskContext::zero_init();
+    schedule(&mut _unused as *mut _);
+}
+```
+
+#### 父进程回收子进程资源
+
+父进程对子进程的资源回收，是通过 `sys_waitpid` 来实现的：
+
+1. 查找是否存在目标进程：目标进程与输入参数 `pid` 有关，如果不存在任何目标进程返回 `-1`：
+   1. `pid == -1` 匹配任意一个进程；
+   2. `pid != -1` 匹配与 `pid` 一致的进程；
+2. 查找是否存在**已经结束（task_status == TaskStatus::Zombie）**的目标进程，如果不存在则返回 `-2`：
+   1. `pid == -1` 匹配任意一个进程；
+   2. `pid != -1` 匹配与 `pid` 一致的进程；
+3. 找到目标进程，我们开始回收子进程资源：
+   1. 从 `children` 中移除当前子进程；
+   2. 保证当前 `child` 只有一个强引用，这个位置的设计很有意思可以参考 [children和parent](#children和parent)；
+   3. 设置 `exit_code` 并写入 `exit_code_ptr`  指针指向的位置，这个是在系统调用时给用户态应用返回的；
+   4. 函数返回 `pid`，这个是内核态自己函数调用的返回值。
+
+```rust
+/// If there is not a child process whose pid is same as given, return -1.
+/// Else if there is a child process but it is still running, return -2.
+pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
+    trace!("kernel::pid[{}] sys_waitpid [{}]", current_task().unwrap().pid.0, pid);
+    let task = current_task().unwrap();
+    // find a child process
+
+    // ---- access current PCB exclusively
+    let mut inner = task.inner_exclusive_access();
+    if !inner
+        .children
+        .iter()
+        .any(|p| pid == -1 || pid as usize == p.getpid())
+    {
+        return -1;
+        // ---- release current PCB
+    }
+    let pair = inner.children.iter().enumerate().find(|(_, p)| {
+        // ++++ temporarily access child PCB exclusively
+        p.inner_exclusive_access().is_zombie() && (pid == -1 || pid as usize == p.getpid())
+        // ++++ release child PCB
+    });
+    if let Some((idx, _)) = pair {
+        let child = inner.children.remove(idx);
+        // confirm that child will be deallocated after being removed from children list
+        assert_eq!(Arc::strong_count(&child), 1);
+        let found_pid = child.getpid();
+        // ++++ temporarily access child PCB exclusively
+        let exit_code = child.inner_exclusive_access().exit_code;
+        // ++++ release child PCB
+        *translated_refmut(inner.memory_set.token(), exit_code_ptr) = exit_code;
+        found_pid as isize
+    } else {
+        -2
+    }
+    // ---- release current PCB automatically
+}
+```
 
 ## QA
 
+### user_stack和kernel_stack
+
+`user_stack`  和 `kernel_stack` 都是与进程绑定的栈，每一个进程都会有唯一的 `user_stack` 和 `kernel_stack`，分别负责他们在用户态和内核态的函数执行时的栈操作，区别在于：
+
+1. `user_stack` 映射在用户内存空间，而 `kernel_stack` 映射在内核内存空间；
+2. 用户程序可以操作 `user_stack` 的指针，但是不能操作 `kernel_stack` 的指针；
+3. 当用户通过 `trap` 或 `exception` 切换到内核态时，由 `__alltraps` 负责将 `sp` 切换到指向 `kernel_stack`；当从内核态切换回用户态时，由 `__restore` 负责将 `sp` 切换到指向 `user_stack`。
+
+| 特性         | user_stack（用户栈）                        | kernel_stack（内核栈）                       |
+| ------------ | ------------------------------------------- | -------------------------------------------- |
+| 内存空间     | 用户虚拟地址空间（如 0x0~0x7FFFFFFF）       | 内核虚拟地址空间（如 0x80000000~0xFFFFFFFF） |
+| 访问权限     | 进程可读写（用户态直接操作 `sp`）           | 进程不可访问（仅内核态可操作）               |
+| 作用         | 支撑用户态函数调用（如 `main`/`clear_bss`） | 支撑内核态逻辑（如 `sys_exit`/ 异常处理）    |
+| 生命周期     | 随进程创建而分配，进程退出而释放            | 同进程生命周期（和用户栈绑定）               |
+| 栈指针控制权 | 用户程序可修改 `sp`（如 `addi sp,sp,-16`）  | 用户程序无法修改，仅内核通过汇编切换         |
+
+### 进程的退出
+
+> 仔细观察我们的 `sys_exit` 函数，我们很多的程序并没有显示的调用该系统调用，那他们会正常的退出吗？
+
+答案是肯定！每个进程都会退出，但是他们是怎么退出的？先说结论：进程的退出，可能是多种情况。例如：显示的调用 `eixt`，预见未捕获的异常（例如除零异常），发起 `SIGKILL` 信号。但是如果我们以上操作都没有发生进程会怎么退出呢？答案是：
+
+1. 在 `_start` 函数的结尾，我们通过 `exit(main(argc, v.as_slice()))` 来获取 `main` 函数的返回值并作为进程的退出码；
+2. 但是，如果我们在 `main` 中显示的调用 `exit()`，那么程序将直接结束而不会进入到 `exit(main(argc, v.as_slice()))` 这里；
+
+但是这是如何实现的呢？
+
+#### config.toml
+
+在 `config.tml` 中，我们定义了编译参数为 **-Clink-args=-Tsrc/linker.ld**
+
+```rust
+[build]
+target = "riscv64gc-unknown-none-elf"
+
+[target.riscv64gc-unknown-none-elf]
+rustflags = [
+    "-Clink-args=-Tsrc/linker.ld",
+]
+```
+
+#### Makefile
+
+在 `Makefile` 编译文件的过程中，将会使用前面提到的参数来指定链接文件。
+
+```makefile
+binary:
+	@echo $(ELFS)
+	@if [ ${CHAPTER} -gt 3 ]; then \
+		cargo build $(MODE_ARG) ;\
+	else \
+		CHAPTER=$(CHAPTER) python3 build.py ;\
+	fi
+	@$(foreach elf, $(ELFS), \
+		$(OBJCOPY) $(elf) -O binary $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.bin, $(elf)); \
+		cp $(elf) $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.elf, $(elf));)
+```
+
+#### linker.ld
+
+在 `linker.ld` 中，我们指定的入口函数为 `_start`。注意，这里我们将 `*(.text.entry)` 加入到了 `.text`，否则我们的程序将无法正常执行。
+
+```assembly
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+
+BASE_ADDRESS = 0x0;
+
+SECTIONS
+{
+    . = BASE_ADDRESS;
+    .text : {
+        *(.text.entry)
+        *(.text .text.*)
+    }
+}
+```
+
+#### _start
+
+最后，我们在 `lib.rs` 下定义了 `_start`：
+
+```rust
+#[no_mangle]
+#[link_section = ".text.entry"]
+pub extern "C" fn _start(argc: usize, argv: usize) -> ! {
+    clear_bss();
+    unsafe {
+        HEAP.lock()
+            .init(HEAP_SPACE.as_ptr() as usize, USER_HEAP_SIZE);
+    }
+    let mut v: Vec<&'static str> = Vec::new();
+    for i in 0..argc {
+		// process args
+    }
+    exit(main(argc, v.as_slice()));
+}
+```
+
+这样，我们就将用户态程序的入口通过 `_start` 引导到了 `main` 函数，并且在 `main` 函数不调用 `exit()` 的情况下，保证程序可以正常的退出。
+
+#### 汇编代码
+
+我们先需要删除 `Makefile` 中的 `--strip-all` 来保留 `elf` 文件中的符号表：
+
+```assembly
+binary:
+	@echo $(ELFS)
+	@if [ ${CHAPTER} -gt 3 ]; then \
+		cargo build $(MODE_ARG) ;\
+	else \
+		CHAPTER=$(CHAPTER) python3 build.py ;\
+	fi
+	@$(foreach elf, $(ELFS), \
+		$(OBJCOPY) $(elf) -O binary $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.bin, $(elf)); \
+		cp $(elf) $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.elf, $(elf));)
+```
+
+随后，使用 `riscv64-unknown-elf-objdump` 和 `rustfilt` 对elf文件进行反汇编：
+
+```bash
+riscv64-unknown-elf-objdump -d ../user/build/elf/ch5b_getpid.elf --disassemble=_start | rustfilt
+```
+
+我们可以得到实际的 `_start` 函数如下：
+
+```assembly
+../user/build/elf/ch5b_getpid.elf:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000000000000 <_start>:
+       0:	7165                	addi	sp,sp,-400
+       # ...
+       c:	00002097          	auipc	ra,0x2
+      10:	b7e080e7          	jalr	-1154(ra) # 1b8a <user_lib::clear_bss>
+      
+000000000000009a <.Lpcrel_hi6>:
+	   #: ...
+     112:	ae8080e7          	jalr	-1304(ra) # 1bf6 <user_lib::exit>
+```
+
+我们可以看到，`exit()` 的兜底调用是在这里实现的。
+
+### 进程状态机
+
+```mermaid
+flowchart LR
+
+Ready("Ready"):::green
+Running("Running"):::purple
+Zombie("Zombie"):::error
+
+
+Running -->|suspend_current_and_run_next| Ready
+Running -->|fork| Ready
+
+Ready -->|run_tasks| Running
+
+Running -->|exit_current_and_run_next| Zombie
+
+
+
+    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;
+    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+```
+
+
+
+### KernelStack
+
+```rust
+/// Kernel stack for a process(task)
+pub struct KernelStack(pub usize);
+```
+
+`KernelStack` 是进程管理中，用于在**Kernel Adress Space(High)**分配用户的应用内核栈的数据结构。
+
+简单来说就是，在一个os中，每个函数的调用都必须有自己的函数栈，不论是在 `S` 模式还是在 `U` 模式，而 `KernelStack` 就是在 `S` 模式下的函数栈指针。
+
+该指针的生命周期如下描述：
+
+1. 进程在初始化时会映射虚拟地址 `TRAP_CONTEXT_BASE` 用于存储 `TrapContext`；
+2. 随后初始化 `KernelStack`，可能有以下三种情况：
+   1.  `INITPROC` 在初始化时通过 `TaskControlBlock::new()` 初始化，并通过 `TaskManager::add()` 加入等待调度；
+   2. 在系统调用 `TaskControlBlock::exec()` 中通过 `TrapContext::app_init_context()` 初始化；
+   3. 在系统调用 `TaskControlBlock::fork()` 中复制父进程的 `TrapContext` 并修改初始化；
+3. 三种情况在初始化完成之后的调度略微有一些区别：
+   1. `INITPORC` 的是直接将自身加入 `TASK_MANAGER`，等待内核调度；
+   2. `exec()` 本身是系统调度，在初始化完成之后通过 `__restore` 来返回用户态；
+   3. `fork()` 父进程的状态不变，子进程在 `fork()` 完得到子进程的地址空间后通过 `TaskManager::add()` 加入 `TASK_MANAGER` 等待调度。
+4. 不管是任何情况，当发生 `trap` 时，内核通过 `__alltraps` 加载 `TrapContext` -- 而 `KernelStack` 也是 其中的一部分，随后内核态的所有函数调用的 `sp` 都是用 `KernelStack` 作为指针来操作自己的函数栈。
+
+```mermaid
+graph TD
+    %% 样式定义：按流程阶段区分，突出逻辑层级
+    classDef init fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600;
+    classDef branch fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-weight:600;
+    classDef runtime fill:#e8f5e8, stroke:#2e7d32, rounded:8px, font-weight:600;
+    classDef exit fill:#fef2f8, stroke:#f43f5e, rounded:8px, font-weight:600;
+    classDef arrow stroke:#64748b, stroke-width:1.2px;
+
+    %% 节点定义：特殊字符用双引号包裹，[]改为()
+    A("进程初始化"):::init
+    B{"初始化场景"}:::branch
+    B1("INITPROC new()"):::branch
+    B2("exec() 系统调用"):::branch
+    B3("fork() 系统调用"):::branch
+    C("分配内核栈，初始化 TrapContext（记录内核栈指针）"):::init
+    D{"进程运行"}:::runtime
+    D1("Trap 发生：__alltraps 切换到内核栈执行"):::runtime
+    D2("进程调度：保存内核栈 sp 到 TrapContext，切换到其他进程"):::runtime
+    E("进程退出（exit()）"):::exit
+    F("释放内核栈占用的物理页，回收 TrapContext 映射"):::exit
+
+    %% 逻辑连接：添加样式，保持原有流程
+    A --> B:::arrow
+    B --> B1:::arrow
+    B --> B2:::arrow
+    B --> B3:::arrow
+    B1 & B2 & B3 --> C:::arrow
+    C --> D:::arrow
+    D --> D1:::arrow
+    D --> D2:::arrow
+    D1 & D2 --> E:::arrow
+    E --> F:::arrow
+```
+
+
+
+### KSTACK_ALLOCATOR
+
+`KSTACK_ALLOCATOR` 是负责 [KernelStack](#KernelStack) 的分配和回收的模块：这里非常值得注意的是，每一个 `KernelStack` 会分配固定大小的物理地址空间，而这个空间需要在进程退出的时候销毁，我们通过 RAII 实现：
+
+```rust
+impl Drop for KernelStack {
+    fn drop(&mut self) {
+        let (kernel_stack_bottom, _) = kernel_stack_position(self.0);
+        let kernel_stack_bottom_va: VirtAddr = kernel_stack_bottom.into();
+        KERNEL_SPACE
+            .exclusive_access()
+            .remove_area_with_start_vpn(kernel_stack_bottom_va.into());
+        KSTACK_ALLOCATOR.exclusive_access().dealloc(self.0);
+    }
+}
+```
+
+### 内存对齐
+
+> 内存对齐的本质是**适配 CPU 硬件的访存规则，平衡内存访问效率、硬件兼容性和内存空间利用率**，核心作用有三：
+
+#### 内存对齐的根本作用
+
+1. 避免 CPU 访问内存时的硬件异常（比如 RISC-V 的对齐故障）；
+2. 最大化内存访问效率（CPU 按 “对齐块” 批量读写，而非拆分操作）；
+3. 保证硬件 / 编译器的兼容性（比如 DMA、结构体布局跨平台一致）。
+
+#### 为什么 CPU 要求内存对齐
+
+现代 CPU 的内存访问不是 “字节级” 的，而是按**数据总线宽度 / 缓存行大小**（比如 64 位 CPU 总线宽度 8 字节，缓存行 64 字节）批量读取，对齐的核心是适配这种 “批量访存” 规则：
+
+- CPU 访存时，会把内存划分为固定大小的 “对齐块”（比如 8 字节、16 字节）；
+- 若数据起始地址是对齐块大小的整数倍（比如 8 字节对齐→地址是 8 的倍数），CPU 只需 1 次访存就能读取完整数据；
+- 若未对齐，CPU 需要 2 次访存，再拼接数据（甚至直接触发硬件异常）。
+
+| 场景           | 地址               | 对齐状态 | CPU 操作                                                     | 效率 |
+| -------------- | ------------------ | -------- | ------------------------------------------------------------ | ---- |
+| 对齐（8 字节） | 0x1000（8 的倍数） | 是       | 1 次访存：读取 0x1000~0x1007，直接拿到完整的 8 字节数据      | 高   |
+| 未对齐         | 0x1001             | 否       | 2 次访存：先读 0x1000~0x1007（取后 7 字节），再读 0x1008~0x100F（取前 1 字节），拼接后得到 8 字节 | 低   |
+
+#### 内核场景的对齐策略
+
+| 数据类型                     | 对齐值          | 原因                                               |
+| ---------------------------- | --------------- | -------------------------------------------------- |
+| 基础类型（u8/u16/u32/u64）   | 自身大小        | 适配 CPU 访存宽度                                  |
+| 指针（*mut T）               | 8 字节（64 位） | 64 位 CPU 的地址总线宽度是 8 字节                  |
+| 普通结构体（FileDescriptor） | 最大成员对齐值  | 平衡效率与空间（比如包含 u64 的结构体 8 字节对齐） |
+| 核心结构体（TCB / 页表）     | 4KB（页对齐）   | 适配物理页分配，简化内存管理，避免跨页访问         |
+| DMA 缓冲区                   | 64/128 字节     | 适配外设的批量传输规则                             |
+
+举个例子，假设存在如下结构体，那么它的对齐逻辑应该是：
+
+1. `data` 自身是一个数组，他的内部按照二字节对齐；同时 `data` 的大小是 `14` 字节，会被填充 `2` 字节后扩充到 `16` 字节；
+2. `big_number` 按照 `8` 字节对齐；
+3. `small_number` 自身按照 `4` 字节对齐，但因结构体整体对齐值为 `8` 字节，最终会填充 `4` 字节让总大小满足 8 的倍数
+4. 整个结构体的大小为 `32` 字节。
+
+```rust
+struct AlignedStruct {
+    d: [u16; 7],
+    big_number: u64,
+    small_number: u32
+}
+```
+
+### 对象在物理地址和虚拟地址中的转换
+
+转换的核心其实在于：
+
+当从Vec<&'static mut [u8]>读取数据到对象时：
+
+1. 通过vec中包含的数据长度和对象的实际长度对比，判断vec中数据的合法性；
+2. 通过VA得到 mut 指针，在这一步，CPU的MMU会帮我们做VA到PA的转换；
+3. 判断内存是否对齐。
+
+当反过来从对象写入到Vec<&'static mut [u8]>时，我们才需要分段式的处理它。
+
+总结就是，由物理内存到虚拟内存不需要分段处理，因为我们使用的虚拟内存是连续的，CPU的MMU会帮我们做这个VA到PA的转换。而虚拟内存到物理内存需要分段处理，因为我们此时要写的物理内存是不连续的。
+
+> `(tcb_ptr as usize) % align_of::<Self>() == 0` 这行代码是**强制校验 TCB 结构体的起始虚拟地址是否满足「内存对齐要求」**，是避免 CPU 访问错误、内存布局错乱的 “保命检查”。
+>
+> - 每个数据类型（尤其是结构体）都有「最小对齐值」（`align_of::<T>()` 返回的值），比如：
+>   - `u8`：对齐值 1（任意地址都可）；
+>   - `u64`/`usize`（64 位）：对齐值 8（地址必须是 8 的倍数）；
+>   - 你的 `TCB` 结构体（`#[repr(C, align(4096))]`）：对齐值 4096（地址必须是 4KB 页大小的倍数）；
+> - CPU 访问内存时，要求数据的起始地址必须是其对齐值的整数倍 —— 这是硬件设计决定的（为了提升访存效率，或避免部分架构直接报错）。
+
+```rust
+impl TaskControlBlock {
+    /// 从分散的物理内存切片（Vec<&'static mut [u8]>）转换为TCB引用
+    /// 前提：切片拼接后能覆盖整个TCB的内存，且虚拟地址连续
+    pub unsafe fn from_phys_slices(slices: &mut Vec<&'static mut [u8]>) -> &'static mut Self {
+        // 步骤1：校验长度和对齐
+        let tcb_size = size_of::<Self>();
+        let total_len: usize = slices.iter().map(|s| s.len()).sum();
+        assert!(total_len >= tcb_size, "物理内存切片长度不足");
+        assert!(align_of::<Self>() <= PAGE_SIZE, "TCB对齐要求超过页大小");
+
+        // 步骤2：获取第一个切片的起始虚拟地址（作为TCB的基地址）
+        // 内核中：所有物理页已映射为连续的内核虚拟地址
+        let first_slice_ptr = slices[0].as_mut_ptr();
+        assert!(!first_slice_ptr.is_null(), "空指针");
+
+        // 步骤3：强转为TCB引用（关键：unsafe，需保证内存布局匹配）
+        let tcb_ptr = first_slice_ptr as *mut Self;
+        // 校验地址对齐（必做！否则会触发未定义行为）
+        assert!(
+            (tcb_ptr as usize) % align_of::<Self>() == 0,
+            "TCB地址未对齐"
+        );
+
+        &mut *tcb_ptr
+    }
+
+    /// 把TCB转换为分散的物理内存切片（Vec<&'static mut [u8]>）
+    pub unsafe fn to_phys_slices(&mut self) -> Vec<&'static mut [u8]> {
+        let mut slices = Vec::new();
+        let tcb_ptr = self as *mut Self;
+        let tcb_size = size_of::<Self>();
+        let tcb_base = tcb_ptr as usize;
+
+        // 步骤1：遍历TCB占用的所有物理页
+        for offset in (0..tcb_size).step_by(PAGE_SIZE) {
+            let current_va = tcb_base + offset;
+            // 步骤2：虚拟地址 → 物理页号（内核页表查询）
+            let ppn = va_to_ppn(current_va); // 需实现：虚拟地址转物理页号
+            // 步骤3：物理页号 → 字节切片
+            let slice = phys_page_to_slice(ppn);
+            slices.push(slice);
+        }
+
+        slices
+    }
+}
+```
+
 ### memory_set中的trampoline和trap_cx
+
+### children和parent
+
+在 `PCB` 中，我们的 `children` 和 `parent` 的定义如下：
+
+```rust
+pub impl TaskControlBlockInner {
+    /// Parent process of the current process.
+    /// Weak will not affect the reference count of the parent
+    pub parent: Option<Weak<TaskControlBlock>>,
+
+    /// A vector containing TCBs of all child processes of the current process
+    pub children: Vec<Arc<TaskControlBlock>>,
+}
+```
+
+可以看到，我们的 `parent` 和 `children` 被分别定义为 `Arc` 和 `Weak`。首先，我们需要知道为什么需要这么设计：
+
+- 父进程的 `children` 字段需要引用子进程的 TCB（保证子进程运行时不被销毁）；
+- 子进程的 `parent` 字段需要引用父进程的 TCB（方便子进程查询父进程信息）。
+
+所以，他们之间形成了一个引用依赖的关系，如果双方都用 `Arc` 来进行引用，那么会发生如下情况：
+
+1. 父进程退出，但是由于子进程仍然持有他的引用。在这种情况下，只有等待子进程退出之后才能回收父进程的资源；
+2. 子进程退出，但是由于父进程仍然持有他的引用。在这种情况下，只有等待父进程退出之后才能回收子进程的资源；
+
+引入弱引用就是为了打破这个循环依赖关系，那问题在于，弱引用是如何在保证PCB的生命周期的呢？
+
+1. 一个进程，他对他父进程的引用是**弱引用**，而对他的子进程是 **强引用**；
+2. 当子进程先于父进程退出的时候，父进程正常的回收子进程的资源，这个逻辑很简单；
+3. **当父进程先于子进程退出的时候，父进程会将自身所有的子进程的父进程设置为 `INITPROC`，并且将他们添加到`INITPROC`的子进程列表。这保证了在任意时刻，一个进程不会因为缺少强引用而被错误的回收**。
 
 ### elf解析
 
@@ -1171,7 +1691,24 @@ block-beta
 
 > 关于内核堆的分配可以参考之前的解析：[堆的初始化](https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/#%E5%A0%86%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96)
 
+### link_app.S
+
+1. `link_app.S` 由 `build.rs` 生成；
+2. 在 `main.rs` 中由 `global_asm!(include_str!("link_app.S"));` 引入后被加载到内核空间中的 `.text` 段；
+3. `MemorySet#new_kernel`  中，将 `.text` 段通过 `MapType::Identical` 加载到内核内存空间，此后我们可以使用虚拟地址来访问这个地址了 -- 只不过因为是恒等映射，所以 VA = PA。
+
 ### exec
+
+#### 寻址逻辑
+
+> 具体 `app_name` 的生成请参考 [基于应用名的应用链接/加载器](#基于应用名的应用链接/加载器)。
+
+1. `load.rs` 下的 `APP_NAMES` 会加载 `link_app.S` 中的全部 `_app_names`
+2. 通过 `APP_NAMES` 可以查找到对应的 `index`；
+3. 通过 `index` 可以在 `_num_app` 下找到代码段的 `start` 和 `end`；
+4. 通过 `start` 和 `end` 直接从 `.text` 段读取到数据。
+
+#### 执行逻辑
 
 `exec` 指令的调用如下：
 
@@ -1263,7 +1800,7 @@ int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options);
 2. 在子进程退出前，父进程未调用 `wait` 就提前退出（因为异常或代码 BUG），此时子进程的状态变为 `Orphan（孤儿进程）`，内核维护的 `initproc` 进程（PID=1）会负责收养这些孤儿进程，待其终止后回收相关资源 —— 因为父进程已退出，内核明确知道子进程的状态信息无需再交给父进程，可由 init 进程统一回收；
 3. 在子进程退出后，父进程未调用 `wait`，此时子进程的状态变为 `Zombie（僵尸进程）`。内核仅保留 `TCB` 中的关键字段（如 PID、退出码），不会回收这些信息 —— 因为内核无法判断父进程是 “代码中未调用 `wait`” 还是 “已调用但未执行到 `wait` 指令”，只能一直保留，直到父进程调用 `wait`（主动回收）或父进程退出（子进程变孤儿，由 init 回收）。
 
-### 代码统计
+## 代码统计
 
 ```reStructuredText
 ➜  2025a-rcore-0x822a5b87 git:(ch5) ✗ cloc os
@@ -1287,7 +1824,7 @@ SUM:                           137            394            527           3379
 -------------------------------------------------------------------------------
 ```
 
-### 代码树
+## 代码树
 
 本章中主要新增的几个模块为：
 
