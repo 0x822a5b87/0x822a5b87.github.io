@@ -8,10 +8,6 @@ tags:
 
 # 进程间通信
 
-## `问题`
-
-1. 在 `PipeRingBuffer` 中，`read_byte` 和 `write_byte` 都没有判断 `PipeRingBuffer` 的状态，也就是当读数据的时候，管道可能为空，这个是怎么保证不出异常的？
-
 ## 基于文件的管道
 
 ```rust
