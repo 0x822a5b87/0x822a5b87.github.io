@@ -1564,7 +1564,8 @@ pub fn sys_exec(path: *const u8) -> isize {
 7. 分析 `increase_size` 和 `clear_size` 的实现；
 8. 分析 `read_at` 和 `write_at` 的实现；
 9. `DirEntry` 和 `File/Directory` 是如何关联起来的？
-10. 实现文件索引支持DIRECTORY的递归
+10. 实现文件索引支持DIRECTORY的递归；
+11. 搞清楚磁盘的块的定义已经操作。
 
 ### 代码树
 
@@ -1645,6 +1646,32 @@ TOML                             3              8              2             33
 SUM:                           164            485            732           4707
 -------------------------------------------------------------------------------
 ```
+
+### 磁盘的块
+
+我们在实现文件系统的逻辑的时候，通常会将文件系统划分为block。
+
+假设存在如下场景，一个block上存储了一个 DiskInode
+
+```rust
+#[repr(C)]
+pub struct DiskInode {
+    pub ref_count: u32,
+    pub size: u32,
+    pub direct: [u32; INODE_DIRECT_COUNT],
+    pub indirect1: u32,
+    pub indirect2: u32,
+    inode_type: DiskInodeType,
+}
+```
+
+那么此时，如果我们要更新 ref_count，那么我们有以下两种方式：
+
+1. 计算ref_count所在的位置并更新；
+2. 修改 DiskInode 结构体，并更新DiskInode所在的块。
+
+
+这两个速度是不是理论上差不多？因为磁盘的最小操作是block。
 
 ### 文件系统的完整模型
 
