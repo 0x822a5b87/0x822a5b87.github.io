@@ -8,35 +8,6 @@ tags:
 
 # 多道程序与分时多任务
 
-## 前言
-
-本章节主要介绍多道程序设计与分时多任务的基本概念，并实现一个简单的任务调度器，可以分为以下几个部分：
-
-1. 增加了时钟中断 -- 为了对我们同时执行的多个程序进行调度；
-2. 增加了基于伙伴分配算法（Buddy System Allocator）的堆分配管理器；
-3. 将 `batch.rs` 拆分为 `loader.rs` 和 `task.rs` 用于支持多任务调度；
-4. 增加了新的 `syscall` : `sys_yield` 用来主动触发任务切换；
-
-```
-➜  ~/code/2025a-rcore-0x822a5b87 git:(ch3) cloc --include-ext=rs,s,S,asm os 
-     143 text files.
-     117 unique files.                              
-     122 files ignored.
-
-1 error:
-Unable to read:  os/.gdb_history
-
-github.com/AlDanial/cloc v 1.82  T=0.01 s (2066.4 files/s, 107071.4 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            23            138            239            851
-Assembly                         4             12             29            130
--------------------------------------------------------------------------------
-SUM:                            27            150            268            981
--------------------------------------------------------------------------------
-```
-
 ## 内存调度模型
 
 ```mermaid
@@ -121,6 +92,8 @@ flowchart LR
     style tasks fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
     style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
 ```
+
+
 
 ## 实现
 
@@ -852,3 +825,34 @@ unsafe {
     let s2 = core::ptr::read(data_ptr);
 }
 ```
+
+### 代码
+
+本章节主要介绍多道程序设计与分时多任务的基本概念，并实现一个简单的任务调度器，可以分为以下几个部分：
+
+1. 增加了时钟中断 -- 为了对我们同时执行的多个程序进行调度；
+2. 增加了基于伙伴分配算法（Buddy System Allocator）的堆分配管理器；
+3. 将 `batch.rs` 拆分为 `loader.rs` 和 `task.rs` 用于支持多任务调度；
+4. 增加了新的 `syscall` : `sys_yield` 用来主动触发任务切换；
+
+```
+➜  ~/code/2025a-rcore-0x822a5b87 git:(ch3) cloc --include-ext=rs,s,S,asm os 
+     143 text files.
+     117 unique files.                              
+     122 files ignored.
+
+1 error:
+Unable to read:  os/.gdb_history
+
+github.com/AlDanial/cloc v 1.82  T=0.01 s (2066.4 files/s, 107071.4 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Rust                            23            138            239            851
+Assembly                         4             12             29            130
+-------------------------------------------------------------------------------
+SUM:                            27            150            268            981
+-------------------------------------------------------------------------------
+```
+
+## 

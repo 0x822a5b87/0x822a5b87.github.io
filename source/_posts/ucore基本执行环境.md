@@ -5,90 +5,7 @@ tags:
   - os
 ---
 
-# 前言
-
-`uCore` 是由清华大学推出的一个基于 `rust` 和 `riscv` 实现的操作系统，实现难度适中，核心代码量约为 `5000` 行，这里使用本文记录在学习过程中的一些思考和疑问，在完成这个项目之后，我们可以：
-
-1. 阅读简单的 Makefile 文件；
-2. 阅读简单的 RISC-V 汇编代码；
-3. git 的基本功能，解决 git merge 冲突的办法；
-4. Rust 基本语法和一些进阶语法，包括 Cargo 项目结构、Trait、函数式编程、Unsafe Rust、错误处理等；
-5. 粗浅的了解操作系统的实现逻辑。
-
-项目的全部代码在这里：[ardi](https://github.com/0x822a5b87/Ardi)
-
-```terminaloutput
-➜  ~/code/2025a-rcore-0x822a5b87 git:(ch8) cloc --include-ext=rs,s,S,asm .
-     262 text files.
-     216 unique files.                                          
-     232 files ignored.
-
-github.com/AlDanial/cloc v 1.82  T=0.02 s (2738.4 files/s, 303633.3 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            55            391            967           4941
-Assembly                         3              6             29             97
--------------------------------------------------------------------------------
-SUM:                            58            397            996           5038
--------------------------------------------------------------------------------
-```
-
-# 引用
-
-- [rustlings - rust的示例](https://github.com/LearningOS/rustling-classroom-2025a-rustling-rustling-25A-template)
-- [os-rcore-classroom-2025a-rcore-rCore-Tutorial-Code](https://github.com/LearningOS/os-rcore-classroom-2025a-rcore-rCore-Tutorial-Code)
-- [rCore-Tutorial-Guide](https://learningos.cn/rCore-Tutorial-Guide/index.html)
-- [rCore-Tutorial-Book-v3 3.6.0-alpha.1 文档](https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter0/1what-is-os.html)
-- [qemu](https://www.qemu.org/)
-
-# 项目结构
-
-整体项目结构如下所示：
-
-```terminaloutput
-.
-├── target
-│   └── riscv64gc-unknown-none-elf/release/os
-│   └── riscv64gc-unknown-none-elf/release/os.bin
-├── bootloader
-│   └── rustsbi-qemu.bin
-├── os
-│   ├── src
-│   │   ├── boards
-│   │   │   └── qemu.rs
-│   │   ├── console.rs
-│   │   ├── entry.asm
-│   │   ├── lang_items.rs
-│   │   ├── linker.ld
-│   │   ├── logging.rs
-│   │   ├── main.rs
-│   │   └── sbi.rs
-│   ├── Cargo.toml
-│   └── Makefile
-└── Makefile
-```
-
-下面我们来拆解项目他们的功能，流程以及他们是如何被组织成为一个可执行文件，也就是我们的 `os` 和 `os.bin`。
-
-这里，`os` 是我们从rust源码编译得到的 **elf格式** 的二进制文件，而 `os.bin` 是一个裸机可执行的二进制文件。我们通过 `rust-objcopy` 来实现这个这个转换；
-
-```mermaid
-flowchart LR
-
-os("os"):::green
-os_bin("os.bin"):::purple
-
-os --> os_bin
-
-
-classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
-classDef green fill: #695,color: #fff,font-weight: bold;
-classDef purple fill:#968,stroke:#333, font-weight: bold;
-classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
-classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
-```
+> 项目的全部代码在这里：[ardi](https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch8)
 
 ## 整体逻辑图解
 
@@ -500,3 +417,86 @@ fn sbi_call(which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
    - SBI 规范规定用a7（x17）传递功能号、a6（x16）传递扩展号，确保内核与 SBI 固件的交互一致。
      别名让这种规范更直观，降低跨组件协作的出错概率。
 3. **抽象硬件细节**：对于开发者而言，无需关心 “`x10`是第 11 个寄存器” 这种硬件细节，只需关注`a0`的 “参数 / 返回值” 语义。
+
+## 项目结构
+
+整体项目结构如下所示：
+
+```terminaloutput
+.
+├── target
+│   └── riscv64gc-unknown-none-elf/release/os
+│   └── riscv64gc-unknown-none-elf/release/os.bin
+├── bootloader
+│   └── rustsbi-qemu.bin
+├── os
+│   ├── src
+│   │   ├── boards
+│   │   │   └── qemu.rs
+│   │   ├── console.rs
+│   │   ├── entry.asm
+│   │   ├── lang_items.rs
+│   │   ├── linker.ld
+│   │   ├── logging.rs
+│   │   ├── main.rs
+│   │   └── sbi.rs
+│   ├── Cargo.toml
+│   └── Makefile
+└── Makefile
+```
+
+下面我们来拆解项目他们的功能，流程以及他们是如何被组织成为一个可执行文件，也就是我们的 `os` 和 `os.bin`。
+
+这里，`os` 是我们从rust源码编译得到的 **elf格式** 的二进制文件，而 `os.bin` 是一个裸机可执行的二进制文件。我们通过 `rust-objcopy` 来实现这个这个转换；
+
+```mermaid
+flowchart LR
+
+os("os"):::green
+os_bin("os.bin"):::purple
+
+os --> os_bin
+
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+```
+
+## 总结
+
+`uCore` 是由清华大学推出的一个基于 `rust` 和 `riscv` 实现的操作系统，实现难度适中，核心代码量约为 `5000` 行，这里使用本文记录在学习过程中的一些思考和疑问，在完成这个项目之后，我们可以：
+
+1. 阅读简单的 Makefile 文件；
+2. 阅读简单的 RISC-V 汇编代码；
+3. git 的基本功能，解决 git merge 冲突的办法；
+4. Rust 基本语法和一些进阶语法，包括 Cargo 项目结构、Trait、函数式编程、Unsafe Rust、错误处理等；
+5. 粗浅的了解操作系统的实现逻辑。
+
+```terminaloutput
+➜  ~/code/2025a-rcore-0x822a5b87 git:(ch8) cloc --include-ext=rs,s,S,asm .
+     262 text files.
+     216 unique files.                                          
+     232 files ignored.
+
+github.com/AlDanial/cloc v 1.82  T=0.02 s (2738.4 files/s, 303633.3 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Rust                            55            391            967           4941
+Assembly                         3              6             29             97
+-------------------------------------------------------------------------------
+SUM:                            58            397            996           5038
+-------------------------------------------------------------------------------
+```
+
+# 引用
+
+- [rustlings - rust的示例](https://github.com/LearningOS/rustling-classroom-2025a-rustling-rustling-25A-template)
+- [os-rcore-classroom-2025a-rcore-rCore-Tutorial-Code](https://github.com/LearningOS/os-rcore-classroom-2025a-rcore-rCore-Tutorial-Code)
+- [rCore-Tutorial-Guide](https://learningos.cn/rCore-Tutorial-Guide/index.html)
+- [rCore-Tutorial-Book-v3 3.6.0-alpha.1 文档](https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter0/1what-is-os.html)
+- [qemu](https://www.qemu.org/)

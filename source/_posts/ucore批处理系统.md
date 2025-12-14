@@ -8,32 +8,6 @@ tags:
 
 # 批处理系统
 
->本文描述了第一个简单的批处理系统的实现。代码量约 `600` 行。
->全部的源代码位于
->
->- [rCore kernel - ch2](https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch2)
->- [rCore test](https://github.com/0x822a5b87/rCore-Tutorial-Test)
-
-```
-➜  ~/code/2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext=rs,s,S,asm os        
-     191 text files.
-     150 unique files.                                          
-     184 files ignored.
-
-1 error:
-Unable to read:  os/.gdb_history
-
-github.com/AlDanial/cloc v 1.82  T=0.02 s (1154.8 files/s, 54212.4 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            15             77            114            515
-Assembly                         3             10             16            113
--------------------------------------------------------------------------------
-SUM:                            18             87            130            628
--------------------------------------------------------------------------------
-```
-
 ## 综述
 
 在本章节中，我们实现一个简单的**批处理系统**，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：
@@ -41,6 +15,54 @@ SUM:                            18             87            130            628
 1. 通过加载器在启动时动态的加载代码到并执行；
 2. 实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如 `privilege`。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于任何程序的。
 3. 操作系统通过trap机制来处理 `interruption` 和 `exception` 事件。
+
+```mermaid
+---
+title: Compiling rCore-test
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    build_system("构建系统"):::purple
+    dir("文件夹"):::green
+    products("源文件/构建产物"):::animate
+end
+
+
+subgraph 构建过程
+    direction LR
+    makefile("Makefile"):::purple
+    build("build.py"):::purple
+
+    target("target/riscv64gc-unknown-none-elf/release"):::green
+    build_dir("build"):::green
+
+    source_code("*.rs"):::animate
+    bin("*.bin"):::animate
+    elf("*.elf"):::animate
+    object("*.object"):::animate
+
+
+    source_code -->|输入| build -->|编译| object -.->|输出到文件夹| target
+    object -->|输入| makefile -->|rust-objcopy| bin -.->|输出到文件夹| target
+    object -->|输入| makefile -->|cp| elf -.->|输出到文件夹| target
+
+    bin -->|cp| build_dir
+    elf -->|cp| build_dir
+end
+
+desc --> 构建过程
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+```
+
+
 
 ### rCore和rCore-test如何组织代码？{#rcore-code-organization}
 
@@ -1236,3 +1258,26 @@ pub enum Exception {
 | 异常类型      | 类型   | 描述                                                   | 实例                                           |
 |-----------|------|------------------------------------------------------|----------------------------------------------|
 | `Unknown` | 未知异常 | `mcause`/`scause` 寄存器记录的异常代码未匹配任何标准异常（如扩展异常、寄存器值错误）。 | 遇到 RISC-V 新扩展定义的未适配异常；`mcause` 寄存器被错误修改为无效值。 |
+
+#### 代码
+
+```
+➜  ~/code/2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext=rs,s,S,asm os        
+     191 text files.
+     150 unique files.                                          
+     184 files ignored.
+
+1 error:
+Unable to read:  os/.gdb_history
+
+github.com/AlDanial/cloc v 1.82  T=0.02 s (1154.8 files/s, 54212.4 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Rust                            15             77            114            515
+Assembly                         3             10             16            113
+-------------------------------------------------------------------------------
+SUM:                            18             87            130            628
+-------------------------------------------------------------------------------
+```
+
