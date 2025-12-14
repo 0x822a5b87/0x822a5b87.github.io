@@ -122,7 +122,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">37</span>
+          <span class="site-state-item-count">38</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -144,6 +144,98 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/" class="post-title-link" itemprop="url">uCore并发</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-13 16:00:35" itemprop="dateCreated datePublished" datetime="2025-12-13T16:00:35+08:00">2025-12-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-12-14 21:52:38" itemprop="dateModified" datetime="2025-12-14T21:52:38+08:00">2025-12-14</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="ucore并发">uCore并发</h1>
+<h2 id="引言">引言</h2>
+<h3 id="线程定义">线程定义</h3>
+<p>简单地说，线程是进程的组成部分，进程可包含1 –
+n个线程，属于同一个进程的线程共享进程的资源， 比如
+<code>地址空间</code>、打开的文件等。基本的线程由线程ID、执行状态、当前指令指针
+(PC)、寄存器集合和栈组成。
+线程是可以被操作系统或用户态调度器独立调度（Scheduling）和分派（Dispatch）的基本单位。<strong>进程是线程的资源容器，
+线程成为了程序的基本执行实体。</strong></p>
+<h3 id="同步互斥">同步互斥</h3>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -181,9 +273,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2025-12-13 09:07:14 / 修改时间：15:57:51" itemprop="dateCreated datePublished" datetime="2025-12-13T09:07:14+08:00">2025-12-13</time>
+      <time title="创建时间：2025-12-13 09:07:14" itemprop="dateCreated datePublished" datetime="2025-12-13T09:07:14+08:00">2025-12-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-12-14 21:49:02" itemprop="dateModified" datetime="2025-12-14T21:49:02+08:00">2025-12-14</time>
     </span>
 
   
@@ -197,12 +295,6 @@
     
     <div class="post-body" itemprop="articleBody">
           <h1 id="进程间通信">进程间通信</h1>
-<h2 id="问题"><code>问题</code></h2>
-<ol type="1">
-<li>在 <code>PipeRingBuffer</code> 中，<code>read_byte</code> 和
-<code>write_byte</code> 都没有判断 <code>PipeRingBuffer</code>
-的状态，也就是当读数据的时候，管道可能为空，这个是怎么保证不出异常的？</li>
-</ol>
 <h2 id="基于文件的管道">基于文件的管道</h2>
 <pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// os/src/fs/pipe.rs</span>
 
@@ -211,6 +303,27 @@
     writable<span class="token punctuation">:</span> <span class="token keyword">bool</span><span class="token punctuation">,</span>
     buffer<span class="token punctuation">:</span> <span class="token class-name">Arc</span><span class="token operator">&lt;</span><span class="token class-name">Mutex</span><span class="token operator">&lt;</span><span class="token class-name">PipeRingBuffer</span><span class="token operator">>></span><span class="token punctuation">,</span>
 <span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>通过 <code>buffer</code>
+字段还可以找到该管道端所在的管道自身。后续我们将为它实现
+<code>File</code> Trait ，之后它便可以通过文件描述符来访问。</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// os/src/fs/pipe.rs</span>
+
+<span class="token keyword">const</span> <span class="token constant">RING_BUFFER_SIZE</span><span class="token punctuation">:</span> <span class="token keyword">usize</span> <span class="token operator">=</span> <span class="token number">32</span><span class="token punctuation">;</span>
+
+<span class="token attribute attr-name">#[derive(Copy, Clone, PartialEq)]</span>
+<span class="token keyword">enum</span> <span class="token type-definition class-name">RingBufferStatus</span> <span class="token punctuation">&#123;</span>
+    <span class="token constant">FULL</span><span class="token punctuation">,</span>
+    <span class="token constant">EMPTY</span><span class="token punctuation">,</span>
+    <span class="token constant">NORMAL</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">PipeRingBuffer</span> <span class="token punctuation">&#123;</span>
+    arr<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">;</span> <span class="token constant">RING_BUFFER_SIZE</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    head<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">,</span>
+    tail<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">,</span>
+    status<span class="token punctuation">:</span> <span class="token class-name">RingBufferStatus</span><span class="token punctuation">,</span>
+    write_end<span class="token punctuation">:</span> <span class="token class-name">Option</span><span class="token operator">&lt;</span><span class="token class-name">Weak</span><span class="token operator">&lt;</span><span class="token class-name">Pipe</span><span class="token operator">>></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/#more" rel="contents">
@@ -280,7 +393,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-12 11:11:03" itemprop="dateModified" datetime="2025-12-12T11:11:03+08:00">2025-12-12</time>
+      <time title="修改时间：2025-12-14 21:48:40" itemprop="dateModified" datetime="2025-12-14T21:48:40+08:00">2025-12-14</time>
     </span>
 
   
@@ -446,7 +559,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-11 18:54:10" itemprop="dateModified" datetime="2025-12-11T18:54:10+08:00">2025-12-11</time>
+      <time title="修改时间：2025-12-14 21:48:31" itemprop="dateModified" datetime="2025-12-14T21:48:31+08:00">2025-12-14</time>
     </span>
 
   
@@ -590,7 +703,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-11 18:54:10" itemprop="dateModified" datetime="2025-12-11T18:54:10+08:00">2025-12-11</time>
+      <time title="修改时间：2025-12-14 21:48:19" itemprop="dateModified" datetime="2025-12-14T21:48:19+08:00">2025-12-14</time>
     </span>
 
   
@@ -606,20 +719,6 @@
           <blockquote>
 <p>在这个章节，我们会实现虚拟内存机制。</p>
 </blockquote>
-<pre class="line-numbers language-terminaloutput" data-language="terminaloutput"><code class="language-terminaloutput">➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch4) cloc --include-ext&#x3D;rs,s,S,asm os
-     152 text files.
-     121 unique files.                              
-     126 files ignored.
-
-github.com&#x2F;AlDanial&#x2F;cloc v 1.82  T&#x3D;0.01 s (2328.7 files&#x2F;s, 184956.7 lines&#x2F;s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            29            193            386           1866
-Assembly                         4             10             26            140
--------------------------------------------------------------------------------
-SUM:                            33            203            412           2006
--------------------------------------------------------------------------------<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h2 id="物理空间和虚拟空间">物理空间和虚拟空间</h2>
 <blockquote>
 <p>虚拟空间连续，物理空间不一定连续！</p>
@@ -682,6 +781,7 @@ SUM:                            33            203            412           2006
     %% 核心结论标注（突出问题）
     conclusion["⚠️  核心问题：<br>结构体VA连续（跨页边界），但映射的PA离散<br>内核需拆为2段写入：<br>1. PPN0的0x8FF8~0x8FFF（6字节？不，8字节刚好）<br>2. PPN1的0x4000~0x4007"]:::structStyle
     PA -.->|体现| conclusion:::connStyle</pre>
+<h2 id="管理sv39多级页表">管理SV39多级页表</h2>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/#more" rel="contents">
@@ -751,7 +851,7 @@ SUM:                            33            203            412           2006
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-11 18:54:10" itemprop="dateModified" datetime="2025-12-11T18:54:10+08:00">2025-12-11</time>
+      <time title="修改时间：2025-12-14 21:48:04" itemprop="dateModified" datetime="2025-12-14T21:48:04+08:00">2025-12-14</time>
     </span>
 
   
@@ -765,34 +865,89 @@ SUM:                            33            203            412           2006
     
     <div class="post-body" itemprop="articleBody">
           <h1 id="多道程序与分时多任务">多道程序与分时多任务</h1>
-<h2 id="前言">前言</h2>
-<p>本章节主要介绍多道程序设计与分时多任务的基本概念，并实现一个简单的任务调度器，可以分为以下几个部分：</p>
-<ol type="1">
-<li>增加了时钟中断 -- 为了对我们同时执行的多个程序进行调度；</li>
-<li>增加了基于伙伴分配算法（Buddy System
-Allocator）的堆分配管理器；</li>
-<li>将 <code>batch.rs</code> 拆分为 <code>loader.rs</code> 和
-<code>task.rs</code> 用于支持多任务调度；</li>
-<li>增加了新的 <code>syscall</code> : <code>sys_yield</code>
-用来主动触发任务切换；</li>
-</ol>
-<pre class="line-numbers language-none"><code class="language-none">➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch3) cloc --include-ext&#x3D;rs,s,S,asm os 
-     143 text files.
-     117 unique files.                              
-     122 files ignored.
+<h2 id="内存调度模型">内存调度模型</h2>
+<pre class="mermaid">flowchart LR
+    %% 按类型定义专属样式（遵循通俗约定：函数=蓝、结构体=绿、寄存器=紫、栈=浅红、内存=黄、管理组件=深蓝）
+    classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px, font-size:14px;
+    classDef struct fill:#4ade80, stroke:#16a34a, stroke-width:2px, color:#1e293b, font-weight:bold, rounded:8px, font-size:14px;
+    classDef reg fill:#a855f7, stroke:#7e22ce, stroke-width:2px, color:#fff, font-weight:bold, rounded:6px, font-size:13px;
+    classDef stack fill:#fecaca, stroke:#dc2626, stroke-width:2px, color:#7f1d1d, font-weight:600, rounded:8px, font-size:13px;
+    classDef memory fill:#fde047, stroke:#ca8a04, stroke-width:2px, color:#78350f, font-weight:600, rounded:8px, font-size:13px;
+    classDef manager fill:#1e40af, stroke:#1e3a8a, stroke-width:2px, color:#fff, font-weight:bold, rounded:10px, font-size:14px;
+    classDef transition stroke:#64748b, stroke-width:1.5px, stroke-linecap:round, font-size:12px, font-family:Arial;
+    classDef subgraphTitle fill:#1e293b, font-weight:bold, font-size:14px, font-family:Arial;
 
-1 error:
-Unable to read:  os&#x2F;.gdb_history
+    %% 栈（USER_STACK/KERNEL_STACK）
+    subgraph USER_STACK["USER_STACK"]
+        direction LR
+        US1("..."):::stack
+        US0("UserStack 0"):::stack
+    end
+    subgraph KERNEL_STACK["KERNEL_STACK"]
+        direction LR
+        KS1("..."):::stack
+        KS0("KernelStack 0"):::stack
+    end
 
-github.com&#x2F;AlDanial&#x2F;cloc v 1.82  T&#x3D;0.01 s (2066.4 files&#x2F;s, 107071.4 lines&#x2F;s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            23            138            239            851
-Assembly                         4             12             29            130
--------------------------------------------------------------------------------
-SUM:                            27            150            268            981
--------------------------------------------------------------------------------<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+    %% 内存/二进制代码
+    subgraph Memory["Memory"]
+       direction LR
+        M1("..."):::memory
+        M0("Task 0 Code"):::memory
+    end
+
+    %% 任务相关（结构体：TaskControlBlock/TaskStatus/TaskContext/TrapContext）
+    subgraph tasks["tasks"]
+       subgraph TaskControlBlock1["TaskControlBlock1"]
+        TaskContext1("..."):::struct
+        TaskStatus1("..."):::struct
+       end
+       subgraph TaskControlBlock0["TaskControlBlock0"]
+        subgraph TaskContext0["TaskContext0"]
+            ra0("ra"):::reg 
+            sp0("sp"):::reg
+            s0("s0 ~ s11"):::reg
+        end
+        TaskStatus0("TaskStatus 0"):::struct
+       end
+    end
+    subgraph TrapContextList["TrapContextList"]
+        OtherTrapContext("..."):::struct
+        subgraph TrapContext["TrapContext"]
+            x0("x0~x31"):::reg
+            ssstatus0("sstatus"):::reg
+            sepc0("sepc"):::reg
+        end
+    end
+
+    %% 管理组件（TaskManager/TASK_MANAGER）
+    TaskManager("TaskManager"):::manager
+    TASK_MANAGER("TASK_MANAGER"):::manager
+
+    %% 函数（main/__restore）
+    main("main"):::func
+    __restore("__restore"):::func
+
+    %% 原有连接关系（保持不变，统一应用transition样式）
+    TaskManager -->|延迟加载全局唯一实例| TASK_MANAGER:::transition
+    main -->|1. load_apps 加载应用代码| Memory:::transition
+    main -->|2. run_first_task触发初始化| TASK_MANAGER:::transition
+    TASK_MANAGER -.->|初始化| tasks:::transition
+    sp0 -.->|__restore使用sp作为参数恢复上下文| __restore:::transition
+    sepc0 -.-> M0:::transition
+    x0 -.->|sp| US0:::transition
+    KS0 -.->|存储了TrapContext| TrapContext:::transition
+    ra0 --> __restore:::transition
+    sp0 --> KS0:::transition
+
+    %% 优化子图标题样式（统一居中、加粗）
+    style USER_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
+    style KERNEL_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
+    style Memory fill:#fffbeb, stroke:#fde047, stroke-width:1px, padding:10px;
+    style tasks fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
+    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</pre>
+<h2 id="实现">实现</h2>
+<h3 id="应用加载">应用加载</h3>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/#more" rel="contents">
@@ -862,7 +1017,7 @@ SUM:                            27            150            268            981
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-11 18:54:10" itemprop="dateModified" datetime="2025-12-11T18:54:10+08:00">2025-12-11</time>
+      <time title="修改时间：2025-12-14 21:51:23" itemprop="dateModified" datetime="2025-12-14T21:51:23+08:00">2025-12-14</time>
     </span>
 
   
@@ -876,35 +1031,58 @@ SUM:                            27            150            268            981
     
     <div class="post-body" itemprop="articleBody">
           <h1 id="批处理系统">批处理系统</h1>
-<blockquote>
-<p>本文描述了第一个简单的批处理系统的实现。代码量约 <code>600</code>
-行。 全部的源代码位于</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch2">rCore
-kernel - ch2</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test">rCore
-test</a></li>
-</ul>
-</blockquote>
-<pre class="line-numbers language-none"><code class="language-none">➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext&#x3D;rs,s,S,asm os        
-     191 text files.
-     150 unique files.                                          
-     184 files ignored.
-
-1 error:
-Unable to read:  os&#x2F;.gdb_history
-
-github.com&#x2F;AlDanial&#x2F;cloc v 1.82  T&#x3D;0.02 s (1154.8 files&#x2F;s, 54212.4 lines&#x2F;s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            15             77            114            515
-Assembly                         3             10             16            113
--------------------------------------------------------------------------------
-SUM:                            18             87            130            628
--------------------------------------------------------------------------------<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h2 id="综述">综述</h2>
 <p>在本章节中，我们实现一个简单的<strong>批处理系统</strong>，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：</p>
+<ol type="1">
+<li>通过加载器在启动时动态的加载代码到并执行；</li>
+<li>实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如
+<code>privilege</code>。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于任何程序的。</li>
+<li>操作系统通过trap机制来处理 <code>interruption</code> 和
+<code>exception</code> 事件。</li>
+</ol>
+<pre class="mermaid">---
+title: Compiling rCore-test
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    build_system("构建系统"):::purple
+    dir("文件夹"):::green
+    products("源文件/构建产物"):::animate
+end
+
+
+subgraph 构建过程
+    direction LR
+    makefile("Makefile"):::purple
+    build("build.py"):::purple
+
+    target("target/riscv64gc-unknown-none-elf/release"):::green
+    build_dir("build"):::green
+
+    source_code("*.rs"):::animate
+    bin("*.bin"):::animate
+    elf("*.elf"):::animate
+    object("*.object"):::animate
+
+
+    source_code -->|输入| build -->|编译| object -.->|输出到文件夹| target
+    object -->|输入| makefile -->|rust-objcopy| bin -.->|输出到文件夹| target
+    object -->|输入| makefile -->|cp| elf -.->|输出到文件夹| target
+
+    bin -->|cp| build_dir
+    elf -->|cp| build_dir
+end
+
+desc --> 构建过程
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/#more" rel="contents">
@@ -974,7 +1152,7 @@ SUM:                            18             87            130            628
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-11 18:54:10" itemprop="dateModified" datetime="2025-12-11T18:54:10+08:00">2025-12-11</time>
+      <time title="修改时间：2025-12-14 21:50:34" itemprop="dateModified" datetime="2025-12-14T21:50:34+08:00">2025-12-14</time>
     </span>
 
   
@@ -987,34 +1165,59 @@ SUM:                            18             87            130            628
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="前言">前言</h1>
-<p><code>uCore</code> 是由清华大学推出的一个基于 <code>rust</code> 和
-<code>riscv</code> 实现的操作系统，实现难度适中，核心代码量约为
-<code>5000</code>
-行，这里使用本文记录在学习过程中的一些思考和疑问，在完成这个项目之后，我们可以：</p>
+          <blockquote>
+<p>项目的全部代码在这里：<a target="_blank" rel="noopener" href="https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch8">ardi</a></p>
+</blockquote>
+<h2 id="整体逻辑图解">整体逻辑图解</h2>
+<p>我们的项目包含以下文件，各模块功能如下：</p>
 <ol type="1">
-<li>阅读简单的 Makefile 文件；</li>
-<li>阅读简单的 RISC-V 汇编代码；</li>
-<li>git 的基本功能，解决 git merge 冲突的办法；</li>
-<li>Rust 基本语法和一些进阶语法，包括 Cargo
-项目结构、Trait、函数式编程、Unsafe Rust、错误处理等；</li>
-<li>粗浅的了解操作系统的实现逻辑。</li>
+<li><code>*.rs</code> 文件：Rust
+源代码文件，定义了程序的核心执行逻辑；</li>
+<li><code>linker.ld</code>：链接脚本（Linker
+Script），用于告知链接器如何合并目标文件、编排内存布局，最终生成符合要求的二进制文件；</li>
+<li><code>entry.asm</code>：启动引导文件（汇编编写），负责初始化基础执行环境，引导
+CPU 定位并跳转到 Rust 程序的入口地址；</li>
+<li><code>rustsbi-qemu.bin</code> ：SBI（Supervisor Binary
+Interface）固件文件，作为内核与硬件的隔离层 /
+抽象层，为内核提供硬件相关的基础服务（详见 <a href="#什么是sbi">什么是
+SBI</a>）；</li>
+<li><code>Makefile</code> :
+构建脚本，通过声明编译目标（target）、依赖关系及执行命令，简化程序的编译、运行、加载等流程管理。</li>
 </ol>
-<p>项目的全部代码在这里：<a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/Ardi">ardi</a></p>
-<pre class="line-numbers language-terminaloutput" data-language="terminaloutput"><code class="language-terminaloutput">➜  ~&#x2F;code&#x2F;2025a-rcore-0x822a5b87 git:(ch8) cloc --include-ext&#x3D;rs,s,S,asm .
-     262 text files.
-     216 unique files.                                          
-     232 files ignored.
+<pre class="mermaid">flowchart LR
 
-github.com&#x2F;AlDanial&#x2F;cloc v 1.82  T&#x3D;0.02 s (2738.4 files&#x2F;s, 303633.3 lines&#x2F;s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Rust                            55            391            967           4941
-Assembly                         3              6             29             97
--------------------------------------------------------------------------------
-SUM:                            58            397            996           5038
--------------------------------------------------------------------------------<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+rustsbi(rustsbi-qemu.bin):::coral
+linker("linker.ld"):::green
+entry("entry.asm"):::green
+rust("*.rs"):::green
+qemu("qemu"):::error
+
+cargo("cargo"):::error
+
+linker --> cargo
+entry --> cargo
+rust --> cargo
+
+cargo --> elf -->|rust-objcopy| binary
+
+subgraph elf
+    direction TB
+    os_comment("elf格式的二进制文件") -.-> os("os"):::pink
+end
+
+subgraph binary
+    direction TB
+    os_bin_comment("二进制文件") -.-> os_bin("os.bin"):::pink
+end
+
+binary --> rustsbi --> qemu
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/#more" rel="contents">
@@ -1214,135 +1417,6 @@ target="_blank" rel="noopener" href="https://github.com/longld/peda">peda</a>。
 <p>回想这两天痛苦的查文档，翻github的issue却从来没有想过时代在变化，大学期间的明星项目peda已经断更五年多了。</p>
 </blockquote>
 
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">如何实现一个最简单的包管理系统</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-08-07 16:57:29" itemprop="dateCreated datePublished" datetime="2025-08-07T16:57:29+08:00">2025-08-07</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-11 18:54:10" itemprop="dateModified" datetime="2025-12-11T18:54:10+08:00">2025-12-11</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="综述">综述</h2>
-<p>本文是在学习python的过程中的一个简单的练手小项目，用于熟悉python内部的一些机制，全部的代码位于
-<a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-package-manager">tiny
-package manager</a>。</p>
-<p>整体的逻辑是，当我们在编译一个 yarn 项目的过程中，我们会存在一个
-<code>package.json</code>
-文件，在文件中我们会声明项目的所有依赖。我们通过该依赖文件来进行一个包依赖分析，判断是否项目是否存在版本冲突，如果可以编译，则给出选择对应的版本。</p>
-<p>例如：</p>
-<pre class="mermaid">---
-title: dependencies
----
-flowchart LR
-
-jest("jest"):::pink
-
-jest2("0.0.61"):::green
-jest1("0.0.71"):::green
-
-express-resource("express-resource-*"):::purple
-underscore("underscore-*"):::purple
-sji("sji-*"):::purple
-
-
-express("express-*"):::purple
-api-easy("api-easy-*"):::purple
-mongoose("mongoose-*"):::purple
-
-indirect01("indirect dependency ..."):::animate
-
-jest --> jest1
-jest --> jest2
-
-jest1 --> express-resource --> indirect01
-jest1 --> underscore --> indirect01
-jest1 --> sji --> indirect01
-
-jest2 --> express --> indirect01
-jest2 --> api-easy --> indirect01
-jest2 --> mongoose --> indirect01
-jest2 --> express-resource
-
-classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
-classDef green fill: #696,color: #fff,font-weight: bold;
-classDef purple fill:#969,stroke:#333, font-weight: bold;
-classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
-classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
       
     </div>
 
