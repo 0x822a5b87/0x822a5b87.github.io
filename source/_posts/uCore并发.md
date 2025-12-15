@@ -644,6 +644,399 @@ pub fn wakeup_task(task: Arc<TaskControlBlock>) {
 }
 ```
 
+## 信号量机制
+
+### 信号量的起源和基本思路
+
+信号量是对互斥锁的一种巧妙的扩展。上一节中的互斥锁的初始值一般设置为 1 的整型变量， 表示临界区还没有被某个线程占用。互斥锁用 0 表示临界区已经被占用了，用 1 表示临界区为空，再通过 `lock/unlock` 操作来协调多个线程轮流独占临界区执行。**而信号量的初始值可设置为 N 的整数变量, 如果 N 大于 0， 表示最多可以有 N 个线程进入临界区执行，如果 N 小于等于 0 ，表示不能有线程进入临界区了**， 必须在后续操作中让信号量的值加 1 ，才能唤醒某个等待的线程。
+
+如果信号量是一个任意的整数，通常被称为计数信号量（Counting Semaphore），或一般信号量（General Semaphore）；如果信号量只有0或1的取值，则称为二值信号量（Binary Semaphore）。可以看出， 互斥锁是信号量的一种特例 — 二值信号量，信号量很好地解决了最多允许 N 个线程访问临界资源的情况。
+
+信号量可以分为两个操作，**注意，`P`  和 `V` 都是原子操作**：
+
+1. `P（Proberen（荷兰语），尝试`：
+   1. `P` 检查信号量是否大于0；
+   2. 如果大于0，则将信号量减一并进入临界区；
+   3. 如果小于等于0，则进入休眠
+2. `V（Verhogen（荷兰语），增加）`：
+   1. `V` 将信号量加一；
+      1. 如果还有其他的线程在等待信号量，则唤醒该线程；
+      2. 如果没有则直接返回。
+
+> 信号量的另一种用途是用于实现同步（synchronization）。
+
+1. 我们初始化一个初始化值为0的信号量；
+2. 此时线程 `A` 会执行  `P`，而线程 `B` 会执行 `V`；
+3. 不管线程的执行顺序如何，我们都可以保证，`A` 线程在执行 `P` 之后的代码时，`B` 线程已经把 `V` 之前的代码执行完成。
+
+例如，假设有如下代码
+
+```rust
+fn thread_a() {
+	pre_p();
+    p();
+    after_p();
+}
+
+fn thread_b() {
+    pre_v();
+    v();
+    after_v();
+}
+```
+
+**那么它的实际执行顺序保证：当 `after_p()` 执行的时候 `pre_v()` 一定已经执行完成。**
+
+### 实现信号量
+
+#### 实现 semaphore 系统调用
+
+`semaphore_list` 一个 `Semaphore` 的向量；
+
+```rust
+/// Inner of Process Control Block
+pub struct ProcessControlBlockInner {
+    /// semaphore list
+    pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
+}
+```
+
+`Semaphore`  的结构和 `MutexBlocking` 类似，唯一的区别是 `locked: bool` 被修改唯 `count: isize`；
+
+```rust
+/// semaphore structure
+pub struct Semaphore {
+    /// semaphore inner
+    pub inner: UPSafeCell<SemaphoreInner>,
+}
+
+pub struct SemaphoreInner {
+    pub count: isize,
+    pub wait_queue: VecDeque<Arc<TaskControlBlock>>,
+}
+```
+
+所以，`Semaphore` 的实现逻辑也相当简单，这里唯一需要注意的是：**`count` 的语义不是剩余资源量的直接映射。**
+
+1. `count >= 0` 表示有 `count` 个空闲资源，无线程阻塞；
+2. `count < 0` 表示无空闲资源，有 `|count|` 个线程阻塞；
+
+所以，当我们在调用 `up()` 时，我们应该立即将 `count` 加一，并且立即从阻塞的线程中取出一个加入到线程调度。**这里关键在于，在调用 `down()` 的时候，即使线程被阻塞，仍然会将 `count` 减一**。  
+
+```rust
+impl Semaphore {
+    /// Create a new semaphore
+    pub fn new(res_count: usize) -> Self {
+        trace!("kernel: Semaphore::new");
+        Self {
+            inner: unsafe {
+                UPSafeCell::new(SemaphoreInner {
+                    count: res_count as isize,
+                    wait_queue: VecDeque::new(),
+                })
+            },
+        }
+    }
+
+    /// up operation of semaphore
+    pub fn up(&self) {
+        trace!("kernel: Semaphore::up");
+        let mut inner = self.inner.exclusive_access();
+        inner.count += 1;
+        if inner.count <= 0 {
+            if let Some(task) = inner.wait_queue.pop_front() {
+                wakeup_task(task);
+            }
+        }
+    }
+
+    /// down operation of semaphore
+    pub fn down(&self) {
+        trace!("kernel: Semaphore::down");
+        let mut inner = self.inner.exclusive_access();
+        inner.count -= 1;
+        if inner.count < 0 {
+            inner.wait_queue.push_back(current_task().unwrap());
+            drop(inner);
+            block_current_and_run_next();
+        }
+    }
+}
+
+```
+
+这里，我们可以使用 `count` 表示当前可用资源数作为语义，那么我们可以得到如下代码：
+
+```rust
+impl Semaphore {
+    /// Create a new semaphore
+    pub fn new(res_count: usize) -> Self {
+        trace!("kernel: Semaphore::new");
+        assert!(res_count >= 1, "res count need larger than zero");
+        Self {
+            inner: unsafe {
+                UPSafeCell::new(SemaphoreInner {
+                    count: res_count as isize,
+                    wait_queue: VecDeque::new(),
+                })
+            },
+        }
+    }
+
+    /// up operation of semaphore
+    pub fn up(&self) {
+        trace!("kernel: Semaphore::up");
+        let mut inner = self.inner.exclusive_access();
+        inner.count += 1;
+        if inner.count <= 0 {
+            if let Some(task) = inner.wait_queue.pop_front() {
+                wakeup_task(task);
+            }
+        }
+    }
+
+    /// down operation of semaphore
+    pub fn down(&self) {
+        trace!("kernel: Semaphore::down");
+        let mut inner = self.inner.exclusive_access();
+        inner.count -= 1;
+        if inner.count < 0 {
+            inner.wait_queue.push_back(current_task().unwrap());
+            drop(inner);
+            block_current_and_run_next();
+        }
+    }
+}
+```
+
+## 条件变量机制
+
+### 条件变量的基本思路
+
+管程有一个很重要的特性，即任一时刻只能有一个活跃线程调用管程中的过程， 这一特性使线程在调用执行管程中过程时能保证互斥，这样线程就可以放心地访问共享变量。 管程是编程语言的组成部分，编译器知道其特殊性，因此可以采用与其他过程调用不同的方法来处理对管程的调用. 因为是由编译器而非程序员来生成互斥相关的代码，所以出错的可能性要小。
+
+管程虽然借助编译器提供了一种实现互斥的简便途径，但这还不够，还需要一种线程间的沟通机制。 
+
+- 首先是等待机制：由于线程在调用管程中某个过程时，发现某个条件不满足，那就在无法继续运行而被阻塞。 
+- 其次是唤醒机制：另外一个线程可以在调用管程的过程中，把某个条件设置为真，并且还需要有一种机制， 及时唤醒等待条件为真的阻塞线程。
+
+为了避免管程中同时有两个活跃线程， 我们需要一定的规则来约定线程发出唤醒操作的行为。目前有三种典型的规则方案：
+
+- Hoare 语义：线程发出唤醒操作后，马上阻塞自己，让新被唤醒的线程运行。注：此时唤醒线程的执行位置还在管程中。
+- Hansen 语义：是执行唤醒操作的线程必须立即退出管程，即唤醒操作只可能作为一个管程过程的最后一条语句。 注：此时唤醒线程的执行位置离开了管程。
+- Mesa 语义：唤醒线程在发出行唤醒操作后继续运行，并且只有它退出管程之后，才允许等待的线程开始运行。 注：此时唤醒线程的执行位置还在管程中。
+
+简单来说就是，我们可以通过如下方式来等待条件变量：
+
+```rust
+static mut A: usize = 0;
+unsafe fn first() -> ! {
+    mutex.lock();
+    A=1;
+    mutex.unlock();
+    // ...
+}
+
+unsafe fn second() -> ! {
+    mutex.lock();
+    while A==0 {
+        mutex.unlock();
+        // give other thread a chance to lock
+        mutex.lock();
+    };
+    mutex.unlock();
+    // 继续执行相关事务
+}
+```
+
+但是这个显然是一个忙等待，于是我们做出了一些优化，但是在这个例子中，我们面临一个问题就是 `wait()` 并没有管理好我们的锁：
+
+如果 `second` 获取锁后调用 `wait()` 线程将直接进入死锁，**所以，我们需要 `condvar` 提供一种机制来为我们管理锁**。
+
+```rust
+static mut A: usize = 0;
+unsafe fn first() -> ! {
+    mutex.lock();
+    A=1;
+    wakup(second);
+    mutex.unlock();
+    ...
+}
+
+unsafe fn second() -> ! {
+    mutex.lock();
+    while A==0 {
+       wait();
+    };
+    mutex.unlock();
+    //继续执行相关事务
+}
+```
+
+最后，我们的代码如下，但是这里我们显然需要在 `wakeup` 和 `wait` 中管理我们的锁，
+
+```rust
+static mut A: usize = 0;
+unsafe fn first() -> ! {
+    mutex.lock();
+    A=1;
+    condvar.wakup();
+    mutex.unlock();
+    ...
+}
+
+unsafe fn second() -> ! {
+    mutex.lock();
+    while A==0 {
+       condvar.wait(mutex); //在睡眠等待之前，需要释放mutex
+    };
+    mutex.unlock();
+    //继续执行相关事务
+}
+```
+
+#### 实现条件变量
+
+有了上面的逻辑，我们的实现就比较简单了：
+
+- `wait`  在wait中，我们先 `unlock()`，再等待，被唤醒后再次 `lock()`；
+- `signal` `signal`无需其他处理，只需要找到等待中的线程并调度即可。
+
+```rust
+impl Condvar {
+    /// Create a new condition variable
+    pub fn new() -> Self {
+        trace!("kernel: Condvar::new");
+        Self {
+            inner: unsafe {
+                UPSafeCell::new(CondvarInner {
+                    wait_queue: VecDeque::new(),
+                })
+            },
+        }
+    }
+
+    /// Signal a task waiting on the condition variable
+    pub fn signal(&self) {
+        let mut inner = self.inner.exclusive_access();
+        if let Some(task) = inner.wait_queue.pop_front() {
+            wakeup_task(task);
+        }
+    }
+
+    /// blocking current task, let it wait on the condition variable
+    pub fn wait(&self, mutex: Arc<dyn Mutex>) {
+        trace!("kernel: Condvar::wait_with_mutex");
+        mutex.unlock();
+        let mut inner = self.inner.exclusive_access();
+        inner.wait_queue.push_back(current_task().unwrap());
+        drop(inner);
+        block_current_and_run_next();
+        mutex.lock();
+    }
+}
+```
+
+我们的使用代码如下：我们的执行流程可能如下：
+
+1. `first` 先获取 `mutex_lock`，此时 `first` 进入临界区会被阻塞直到 `mutex_unlock`；`second` 开始执行并且顺利的执行到结束；
+2. `second` 先获取 `mutex_lock`：
+   1. `while A == 0` 判断失败，在 `condvar_wait` 中 `unlock()` ，将线程加入等待队列，`block_current_and_run_next`；
+   2. `first()` 获取锁 `lock()`，修改 A，并且执行 `signal` 唤醒 `second`，此时可能有两种情况：
+      1. `first()` 继续执行，直到释放锁；
+      2. `second()` 被调度执行，尝试去 `lock()`，但是此时 `first()` 仍然持有锁，所以 `second` 会被挂起；
+   3. 基于 `<2>` 的描述， `first()` 会先执行完 `unlock()`，随后才 `second()` 才会获取到锁并执行后续逻辑；
+   4. `second()` 退出之后 `unlock()`。
+
+```rust
+unsafe fn first() -> ! {
+    sleep_blocking(10);
+    println!("First work, Change A --> 1 and wakeup Second");
+    mutex_lock(MUTEX_ID);
+    A = 1;
+    condvar_signal(CONDVAR_ID);
+    mutex_unlock(MUTEX_ID);
+    exit(0)
+}
+
+unsafe fn second() -> ! {
+    println!("Second want to continue,but need to wait A=1");
+    mutex_lock(MUTEX_ID);
+    while A == 0 {
+        println!("Second: A is {}", A);
+        condvar_wait(CONDVAR_ID, MUTEX_ID);
+    }
+    mutex_unlock(MUTEX_ID);
+    println!("A is {}, Second can work now", A);
+    exit(0)
+}
+
+#[no_mangle]
+pub fn main() -> i32 {
+    // create condvar & mutex
+    assert_eq!(condvar_create() as usize, CONDVAR_ID);
+    assert_eq!(mutex_blocking_create() as usize, MUTEX_ID);
+    // create threads
+    let threads = vec![
+        thread_create(first as usize, 0),
+        thread_create(second as usize, 0),
+    ];
+    // wait for all threads to complete
+    for thread in threads.iter() {
+        waittid(*thread as usize);
+    }
+    println!("test_condvar passed!");
+    0
+}
+```
+
+整体执行逻辑如图所示：
+
+```mermaid
+sequenceDiagram
+    participant second线程
+    participant first线程
+    participant 内核调度器
+    participant 互斥锁(MUTEX)
+    participant 条件变量(CONDVAR)
+    note over second线程,first线程: 前提：A初始值=0，MUTEX/CONDVAR已初始化
+
+    %% ========== second线程先执行 ==========
+    second线程->>second线程: 打印 "Second want to continue,but need to wait A=1"
+    second线程->>互斥锁(MUTEX): mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)-->>second线程: 成功获取锁，进入临界区
+    second线程->>second线程: 检查 while A==0（A=0，条件成立）
+    second线程->>second线程: 打印 "Second: A is 0"
+    second线程->>条件变量(CONDVAR): condvar_wait(CONDVAR_ID, MUTEX_ID)
+    note over second线程: condvar_wait内部逻辑
+    second线程->>互斥锁(MUTEX): unlock() 释放锁
+    second线程->>条件变量(CONDVAR): 加入等待队列
+    second线程->>内核调度器: block_current_and_run_next() 阻塞
+    内核调度器->>first线程: 调度first线程执行
+
+    %% ========== first线程执行 ==========
+    first线程->>first线程: sleep_blocking(10) 休眠结束
+    first线程->>first线程: 打印 "First work, Change A --> 1 and wakeup Second"
+    first线程->>互斥锁(MUTEX): mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)-->>first线程: 成功获取锁（second已释放）
+    first线程->>first线程: 修改 A = 1
+    first线程->>条件变量(CONDVAR): condvar_signal(CONDVAR_ID) 唤醒second
+    条件变量(CONDVAR)->>内核调度器: 将second从阻塞态→就绪态（加入调度队列）
+    note over first线程: 仍持有锁，second就绪但无法执行
+    first线程->>互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
+    first线程->>first线程: exit(0) 线程退出
+
+    %% ========== second线程被唤醒后执行 ==========
+    内核调度器->>second线程: 调度就绪的second线程执行
+    second线程->>条件变量(CONDVAR): 退出等待队列
+    second线程->>互斥锁(MUTEX): condvar_wait内部执行mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)-->>second线程: 成功获取锁（first已释放）
+    second线程->>second线程: 重新检查 while A==0（A=1，条件不成立）
+    second线程->>互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
+    second线程->>second线程: 打印 "A is 1, Second can work now"
+    second线程->>second线程: exit(0) 线程退出
+```
+
 
 
 ## QA
@@ -808,7 +1201,7 @@ pub fn exit_current_and_run_next(exit_code: i32) {
 1. `task_inner.res = None;` **当前执行 sys_exit 的线程**（可能是主线程 / 非主线程）
 2. `遍历process_inner.tasks取 res` **进程内所有其他线程**（包括未主动退出的子线程、阻塞 / 就绪态线程）。
 
-这同样也是，为什么 task_inner.res = None; 可以直接回收，而循环中回收却必须先使用 Vec 收集起来，在回收之前必须 drop(process_inner) 的原因。 最开始的回收，只是针对于线程的操作，此时还没有获取 process 的锁。
+这同样也是，为什么 task_inner.res = None; 可以直接回收，而循环中回收却必须先使用 Vec 收集起来，在回收之前必须 drop(process_inner) 的原因。 最开始的回收，只是针对于线程的操作，此时还没有获取 process 的锁，而 `dealloc_tid()` 和 `dealloc_user_res` 中都会使用到 `process` 的锁。
 
 ### TrapContext和TaskContext
 
@@ -836,40 +1229,8 @@ pub fn exit_current_and_run_next(exit_code: i32) {
 
 `kstack` 和 `ustack_base` 虽然都 “基本不变”，但前者是 “内核态核心资源”，后者是 “用户态资源的元信息”，职责边界完全不同，因此必须拆分。
 
-```rust
-二、核心原因拆解（按优先级排序）
-1. 生命周期分层：内核态资源 vs 用户态资源
-kstack（内核栈）：属于线程级内核态核心资源，生命周期与 TCB 强绑定：
-分配时机：线程创建时由内核直接分配（物理内存 + 内核页表映射），且从创建到 TCB 被彻底销毁前，始终存在（即使线程退出，也需 waittid 回收）；
-核心属性：是内核态执行的 “生命线”，必须作为 TCB 的 “immutable（不可变）” 顶层字段 —— 确保内核任何时候访问 TCB 都能直接拿到 kstack，无需依赖其他子结构；
-为什么不能放 TaskUserRes：TaskUserRes 是 “用户态资源集合”，而 kstack 是内核态资源，属于 “内核私有”，不能混入用户态资源结构体。
-ustack_base（用户栈基址）：属于线程级用户态资源元信息，生命周期依赖 TaskUserRes：
-分配时机：线程创建时由进程的地址空间分配（用户页表映射），但可随用户态资源的销毁提前释放（比如线程 exit 时，TaskUserRes 会被回收，ustack_base 随之失效）；
-核心属性：是用户态资源的 “元数据”，仅在访问用户栈、处理用户态 Trap 时需要，属于 “用户态资源范畴”，因此归到 TaskUserRes（用户态资源集合）中；
-为什么不能放 TCB 顶层：TaskUserRes 被设计为 Option（res: Option<TaskUserRes>）—— 线程退出时可通过 res.take() 快速释放所有用户态资源，若 ustack_base 放在 TCB 顶层，无法随用户态资源批量回收。
-2. 访问权限隔离：内核态直接访问 vs 需校验访问
-kstack 是内核态专属资源，TCB 顶层字段是 pub 且 immutable —— 内核代码（如调度器、Trap 处理）可直接、无校验地访问 kstack（因为内核态操作本身可信）；
-ustack_base 是用户态资源地址，放在 TaskUserRes 中且依赖 inner: UPSafeCell 保护 —— 内核访问 ustack_base 时，必须先通过 UPSafeCell 加锁，且需校验用户栈地址的合法性（防止用户态伪造地址），这种 “需校验的用户态资源” 必须与 “内核直接访问的资源” 隔离。
-3. 数据结构职责分层：顶层核心 vs 子层细分
-TCB 结构体的设计遵循 “顶层存核心不变资源，子层存可变 / 分类资源” 的原则：
-TCB 顶层字段（process/kstack）：是线程最核心、最基础的属性，必须 “一眼可见”，内核任何时候访问 TCB 都能直接拿到，无需解引用子结构；
-inner: UPSafeCell<TaskControlBlockInner>：是 TCB 的 “可变状态集合”，包含：
-res: Option<TaskUserRes>：用户态资源的 “统一入口”—— 把所有用户态相关的元信息（tid/ustack_base/process）归到一起，方便批量管理（创建 / 销毁）；
-trap_cx_ppn/task_cx/task_status：线程执行状态相关的可变属性，与用户态资源解耦；
-若把 ustack_base 放到 TCB 顶层，会导致 TCB 字段杂乱（既有内核态资源，又有用户态元信息），破坏 “职责分层” 的设计逻辑。
-4. 扩展性：用户态资源批量管理
-TaskUserRes 是 “用户态资源的容器”—— 除了 ustack_base，还包含 tid、process 等用户态相关属性，未来若新增用户态资源（如线程局部存储 TLS 基址），只需加到 TaskUserRes 中，无需修改 TCB 顶层结构；而 kstack 是内核态单一资源，无扩展需求，因此单独作为顶层字段即可。
-三、总结：拆分的核心逻辑（对应你的疑问）
-维度	kstack（TCB 顶层）	ustack_base（TaskUserRes）
-资源类型	内核态核心资源	用户态资源元信息
-生命周期	与 TCB 强绑定（直到 waittid）	与用户态资源绑定（exit 回收）
-访问方式	内核直接访问（无校验）	需加锁 + 地址校验
-管理职责	内核态执行的 “生命线”	用户态资源的 “元数据集合”
-你的直觉（分配后不变）是对的，但内核数据结构设计的核心不是 “是否可变”，而是 “资源类型、生命周期、访问权限” 的分层隔离。这种拆分让 TCB 结构清晰：
-顶层：内核态核心、不变、直接访问的资源；
-内层：用户态资源集合 + 可变执行状态；
-既保证了内核态操作的高效性，又实现了用户态资源的安全隔离和批量管理。
-```
+- `kstack` 是线程的内核态资源，在线程退出时不能立即清理，需要等到 `exit` 函数执行完之后，由主线程的 `waitpid` 来进行清理；
+- `ustack_base` 是用户态的资源，当他退出时可以立即清理。
 
 ### kernel_stack
 
@@ -893,18 +1254,57 @@ TaskUserRes 是 “用户态资源的容器”—— 除了 ustack_base，还包
 
 可以注意到，在整个过程中，有一部分内核态才会用到的，例如 `satp`，`trap_handler`，`kernel_sp` 在 `TrapContext` 中是一直不变的。他们只是用作从用户态切换到内核态的跳板。
 
-## `问题`
+### trampoline是线程共享的吗？
 
-1. `trampoline` 是线程共享的吗？
+`trampoline` 是内核态和用户态转换的跳板，他是一个固定的代码块，在链接的时候被链接到代码的 `.text` 段。
 
- 如果我们把一个进程内的多个可并行执行任务通过一种更细粒度的方式让操作系统进行调度， 那么就可以通过处理器时间片切换实现这种细粒度的并发执行。这种细粒度的调度对象就是线程。
+随后，所有的进程/线程/内核都映射一个固定的虚拟地址到 `trampoline`，所以答案是肯定的，所有线程共享 trampoline。
 
-2. 线程结束时也会调用 `exit` 吗？它的 `exit` 是怎么被调用的？和进程的 `exit` 有什么区别？
-3. 主线程是什么？他和普通的线程有区别吗？
-4. TaskControlBlock, ProcessControlBlock, ProcessControlBlockInner, TaskControlBlockInner, TaskUserRes 这些信息分别是什么？他们是如何组织的？
-5. [为什么kstack和ustack要分开存储](#为什么kstack和ustack要分开存储)
-6. 在创建线程的过程中，`ustack_base` 是一直不变的，他们之间不会冲突吗？
-7. 在 `sys_thread_create` 中提前的 `add_task` 会不会导致调度异常？
-8. 为什么我们使用 `trap_ppn` 来存储 TrapContext。
-9. `exit` 的时候，怎么区分主线程和非主线程的？如果主线程在非线程之前调用 `exit` 怎么办？
-10. 如果 `waitpid` 没有被调用怎么办？
+### 主线程是什么？他和普通的线程有区别吗？
+
+主线程是在进程执行 `fork()` 时创建的线程，由进程的 `task_res_allocator` 分配：
+
+```rust
+impl RecycleAllocator {
+    pub fn alloc(&mut self) -> usize {
+        if let Some(id) = self.recycled.pop() {
+            id
+        } else {
+            self.current += 1;
+            self.current - 1
+        }
+    }
+}
+```
+
+所以，主线程的 `tid` 始终为 `1`。
+
+主线程是一个比较特殊的线程，虽然他在调度时候和其他的线程是完全一样的优先级。但是主线程相比于其他的线程有如下特性：
+
+1. 主线程需要负责进程内其他线程的兜底数据管理策略。通常来说，线程退出时需要通过 `waittid()` 来回收线程的内核态资源；但是假设线程没有正常退出（例如没有调用 `waittid`，没有被调度执行就退出等），那么主线程在退出的时候需要负责回收所有的当前进程里所有其他线程的内核态资源；
+2. 主线程退出的时候，所有的线程都会被退出并清理；
+3. 主线程需要负责进程的退出逻辑 -- 例如进程的页表，memory_set等资源的清理；
+
+### 线程的exit
+
+关于进程的退出，我们可以参考我们之前的分析 [进程的退出](https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1)。
+
+我们通过将进程代码的入口链接到 `_start` 中，而 `_start` 中通过 `exit(main(argc, v.as_slice()))` 来实现了对进程 `exit()` 方法的自动调用；
+
+而线程不一样，在我们的实现中，`ucore`  在 `thread_create()` 时将程序的 `PC` 指向了我们的入口函数，这意味着我们必须手动的去调用 `exit()`，观察我们线上的代码确实也符合我们的预想。
+
+```rust
+// ch8_threads.rs
+pub fn thread_c() -> ! {
+    let mut t = 2i32;
+    for _ in 0..1000 {
+        print!("c");
+        for __ in 0..5000 {
+            t = t * t % 10007;
+        }
+    }
+    println!("{}", t);
+    exit(3)
+}
+```
+
