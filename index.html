@@ -189,7 +189,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-12-14 21:52:38" itemprop="dateModified" datetime="2025-12-14T21:52:38+08:00">2025-12-14</time>
+      <time title="修改时间：2025-12-16 16:56:23" itemprop="dateModified" datetime="2025-12-16T16:56:23+08:00">2025-12-16</time>
     </span>
 
   
@@ -203,6 +203,41 @@
     
     <div class="post-body" itemprop="articleBody">
           <h1 id="ucore并发">uCore并发</h1>
+<pre class="mermaid">sequenceDiagram
+    title 银行家算法 - 安全场景（sequenceDiagram）
+    银行家算法 ->> 数据结构存储: 初始化请求（读取Available/Allocation/Need）
+    数据结构存储-->>银行家算法: 返回初始数据（Available={}, Work={}, Finish=[F,F]）
+    
+    %% 第一次循环:找满足条件的线程
+    银行家算法 ->> 银行家算法: 遍历线程，检查条件（Need[i][j] ≤ Work[j] 且 Finish[i]=F）
+    银行家算法 ->> 数据结构存储: 查询线程1的Need/Finish
+    数据结构存储-->>银行家算法: 线程1:Need={200:1}，Finish=F
+    银行家算法 ->> 银行家算法: 线程1:Need > Work → 不满足
+    银行家算法 ->> 数据结构存储: 查询线程2的Need/Finish
+    数据结构存储-->>银行家算法: 线程2:Need={}，Finish=F
+    银行家算法 ->> 银行家算法: 线程2:Need ≤ Work → 满足
+    
+    %% 模拟线程2释放资源
+    银行家算法 ->> 数据结构存储: 模拟线程2执行完毕，请求更新Work（Work += 线程2的Allocation{200:1}）
+    数据结构存储-->>银行家算法: Work更新成功（Work={200:1}）
+    银行家算法 ->> 数据结构存储: 请求标记线程2的Finish=true
+    数据结构存储-->>银行家算法: Finish更新成功（Finish=[F,T]）
+    
+    %% 第二次循环:找满足条件的线程
+    银行家算法 ->> 银行家算法: 重新遍历线程（仅线程1未完成）
+    银行家算法 ->> 数据结构存储: 查询线程1的Need/Work
+    数据结构存储-->>银行家算法: 线程1:Need={200:1}，Work={200:1}
+    银行家算法 ->> 银行家算法: 线程1:Need ≤ Work → 满足
+    
+    %% 模拟线程1释放资源
+    银行家算法 ->> 数据结构存储: 模拟线程1执行完毕，请求更新Work（Work += 线程1的Allocation{100:1}）
+    数据结构存储-->>银行家算法: Work更新成功（Work={100:1,200:1}）
+    银行家算法 ->> 数据结构存储: 请求标记线程1的Finish=true
+    数据结构存储-->>银行家算法: Finish更新成功（Finish=[T,T]）
+    
+    %% 判定结果
+    银行家算法 ->> 银行家算法: 检查所有Finish是否为true
+    银行家算法-->>外部: 输出判定结果 → 系统安全（无死锁风险）</pre>
 <h2 id="引言">引言</h2>
 <h3 id="线程定义">线程定义</h3>
 <p>简单地说，线程是进程的组成部分，进程可包含1 –
@@ -211,7 +246,6 @@ n个线程，属于同一个进程的线程共享进程的资源， 比如
 (PC)、寄存器集合和栈组成。
 线程是可以被操作系统或用户态调度器独立调度（Scheduling）和分派（Dispatch）的基本单位。<strong>进程是线程的资源容器，
 线程成为了程序的基本执行实体。</strong></p>
-<h3 id="同步互斥">同步互斥</h3>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/#more" rel="contents">
