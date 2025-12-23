@@ -17,22 +17,24 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="发现问题 最近在尝试实现一个简单的 docker，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口 subsystem，但是对于不同的类型的文件他的结构完全不一样：  对于 cgroup.procs，他的文件中存储的是一个以 \n 分割的 pid 数组； 对于 cpu.max，他的文件中存储的是以空格分隔的两个数字；  cat &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;system">
+    <meta name="description" content="发现问题 最近在尝试实现一个简单的 docker，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口 subsystem，但是对于不同的类型的文件他的结构完全不一样：  对于 cgroup.procs，他的文件中存储的是一个以 \n 分割的 pid 数组； 对于 cpu.max，他的文件中存储的是以空格分隔的两个数字；  12345cat &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;s">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Go&#x2F;Rust&#x2F;CPP的Covariance&#x2F;Contravariance&#x2F;Invariance">
 <meta property="og:url" content="https://0x822a5b87.github.io/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="发现问题 最近在尝试实现一个简单的 docker，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口 subsystem，但是对于不同的类型的文件他的结构完全不一样：  对于 cgroup.procs，他的文件中存储的是一个以 \n 分割的 pid 数组； 对于 cpu.max，他的文件中存储的是以空格分隔的两个数字；  cat &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;system">
+<meta property="og:description" content="发现问题 最近在尝试实现一个简单的 docker，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口 subsystem，但是对于不同的类型的文件他的结构完全不一样：  对于 cgroup.procs，他的文件中存储的是一个以 \n 分割的 pid 数组； 对于 cpu.max，他的文件中存储的是以空格分隔的两个数字；  12345cat &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;s">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251223/01.png">
 <meta property="article:published_time" content="2025-12-23T02:40:04.000Z">
-<meta property="article:modified_time" content="2025-12-23T04:29:12.349Z">
+<meta property="article:modified_time" content="2025-12-23T04:50:30.460Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="c++">
 <meta property="article:tag" content="go">
 <meta property="article:tag" content="rust">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251223/01.png">
 
 
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/">
@@ -190,7 +192,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2025-12-23 10:40:04 / 修改时间：12:29:12" itemprop="dateCreated datePublished" datetime="2025-12-23T10:40:04+08:00">2025-12-23</time>
+      <time title="创建时间：2025-12-23 10:40:04 / 修改时间：12:50:30" itemprop="dateCreated datePublished" datetime="2025-12-23T10:40:04+08:00">2025-12-23</time>
     </span>
 
   
@@ -212,11 +214,7 @@ target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-docker/t
 <li>对于
 <code>cpu.max</code>，他的文件中存储的是以空格分隔的两个数字；</li>
 </ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">cat</span> /sys/fs/cgroup/system.slice/docker-0a7f5c9459f832ac7bb539e6e61dac51a4a4f66c5dbc1bbb963d0ec3f01d31ae.scope/cgroup.procs
-<span class="token comment">#1435205</span>
-
-<span class="token function">cat</span> /sys/fs/cgroup/system.slice/docker-0a7f5c9459f832ac7bb539e6e61dac51a4a4f66c5dbc1bbb963d0ec3f01d31ae.scope/cpu.max
-<span class="token comment"># max 100000</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cat /sys/fs/cgroup/system.slice/docker-0a7f5c9459f832ac7bb539e6e61dac51a4a4f66c5dbc1bbb963d0ec3f01d31ae.scope/cgroup.procs</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">1435205</span></span><br><span class="line"></span><br><span class="line">cat /sys/fs/cgroup/system.slice/docker-0a7f5c9459f832ac7bb539e6e61dac51a4a4f66c5dbc1bbb963d0ec3f01d31ae.scope/cpu.max</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">max 100000</span></span><br></pre></td></tr></table></figure>
 <p>所以，我尝试直接将他做出如下抽象：</p>
 <ul>
 <li>文件内容的实际数据为 <code>string</code>，但是对外暴露为
@@ -228,99 +226,14 @@ target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-docker/t
 <code>Item</code> 以及 <code>Value</code> 交互。</li>
 </ul>
 <p>在这种情况下，我们上层的业务逻辑可以完全的隔离对文件的操作逻辑，那么整体的代码可以被抽象为：</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">type</span> Item any
-
-<span class="token keyword">type</span> Value <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
-	<span class="token function">From</span><span class="token punctuation">(</span><span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token builtin">error</span>
-	<span class="token function">Into</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">string</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">type</span> BaseSubsystem <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
-	<span class="token function">Name</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">string</span>
-	<span class="token function">Empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">bool</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">type</span> Subsystem<span class="token punctuation">[</span>I Item<span class="token punctuation">,</span> V Value<span class="token punctuation">]</span> <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
-	BaseSubsystem
-	<span class="token function">Get</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>V<span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span>
-	<span class="token function">Set</span><span class="token punctuation">(</span>I<span class="token punctuation">)</span> <span class="token builtin">error</span>
-	<span class="token function">Del</span><span class="token punctuation">(</span>I<span class="token punctuation">)</span> <span class="token builtin">error</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">type</span> AnySubsystem Subsystem<span class="token punctuation">[</span>Item<span class="token punctuation">,</span> Value<span class="token punctuation">]</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<pre class="mermaid">classDiagram
-    %% 基础类型定义
-    class Item:::typeAlias {
-        <<type alias>>
-        any
-    }
-
-    class Value:::interface {
-        <<interface>>
-        +From(s string) error
-        +Into() string
-    }
-
-    class BaseSubsystem:::interface {
-        <<interface>>
-        +Name() string
-        +Empty() bool
-    }
-
-    %% 泛型接口（核心）
-    class Subsystem:::genericInterface {
-        <<generic interface>>
-        <<I: Item, V: Value>>
-        +Get() (V, error)
-        +Set(I) error
-        +Del(I) error
-    }
-
-    %% 类型别名
-    class AnySubsystem:::typeAlias {
-        <<type alias>>
-        Subsystem[Item, Value]
-    }
-
-    %% 关系定义
-    BaseSubsystem <|-- Subsystem : 继承（接口嵌入）
-    Item <-- Subsystem : 泛型约束 I ∈ Item
-    Value <-- Subsystem : 泛型约束 V ∈ Value
-    Subsystem <-- AnySubsystem : 类型别名（特化）
-
-    %% 样式优化（区分类型/接口/泛型）
-    classDef typeAlias fill:#f0f8ff,stroke:#2196f3,stroke-width:1px,rounded:8px,font-style:italic;
-    classDef interface fill:#fef7fb,stroke:#9c27b0,stroke-width:1.5px,rounded:8px,font-weight:600;
-    classDef genericInterface fill:#e8f5e8,stroke:#4caf50,stroke-width:1.5px,rounded:8px,font-weight:600;</pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Item any</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Value <span class="keyword">interface</span> &#123;</span><br><span class="line">	From(<span class="type">string</span>) <span class="type">error</span></span><br><span class="line">	Into() <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> BaseSubsystem <span class="keyword">interface</span> &#123;</span><br><span class="line">	Name() <span class="type">string</span></span><br><span class="line">	Empty() <span class="type">bool</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Subsystem[I Item, V Value] <span class="keyword">interface</span> &#123;</span><br><span class="line">	BaseSubsystem</span><br><span class="line">	Get() (V, <span class="type">error</span>)</span><br><span class="line">	Set(I) <span class="type">error</span></span><br><span class="line">	Del(I) <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> AnySubsystem Subsystem[Item, Value]</span><br></pre></td></tr></table></figure>
+<figure>
+<img src="/images/20251223/01.png" alt="01" />
+<figcaption aria-hidden="true">01</figcaption>
+</figure>
 <p>这个逻辑本来看上去相当的合理，然而在实现时发现：**go语言的泛型并不支持<a
 href="#Covariance">Covariance</a>。于是，我们的如下代码将直接抛出异常。</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// 这一段代码的编译是通过的</span>
-<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>CgroupFileSystem<span class="token punctuation">)</span> <span class="token function">Write</span><span class="token punctuation">(</span>ss subsystem<span class="token punctuation">.</span>AnySubsystem<span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
-	cgroupPath<span class="token punctuation">,</span> err <span class="token operator">:=</span> subsystem<span class="token punctuation">.</span><span class="token function">GetCgroupPath</span><span class="token punctuation">(</span>ss<span class="token punctuation">,</span> f<span class="token punctuation">.</span>Path<span class="token punctuation">,</span> f<span class="token punctuation">.</span>AutoCreate<span class="token punctuation">)</span>
-	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">return</span> err
-	<span class="token punctuation">&#125;</span>
-
-	value<span class="token punctuation">,</span> err <span class="token operator">:=</span> ss<span class="token punctuation">.</span><span class="token function">Get</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">return</span> err
-	<span class="token punctuation">&#125;</span>
-
-	<span class="token keyword">if</span> err <span class="token operator">:=</span> os<span class="token punctuation">.</span><span class="token function">WriteFile</span><span class="token punctuation">(</span>cgroupPath<span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token function">byte</span><span class="token punctuation">(</span>value<span class="token punctuation">.</span><span class="token function">Into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0644</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">return</span> err
-	<span class="token punctuation">&#125;</span>
-
-	<span class="token keyword">return</span> <span class="token boolean">nil</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>CgroupFileSystem<span class="token punctuation">)</span> <span class="token function">Sync</span><span class="token punctuation">(</span>pid <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
-	<span class="token comment">// ...</span>
-	procsSubsystem <span class="token operator">:=</span> cgroup<span class="token punctuation">.</span><span class="token function">NewProcsValueSubsystem</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span>
-	<span class="token comment">// Cannot use procsSubsystem as the tye Subsystem</span>
-	f<span class="token punctuation">.</span><span class="token function">Write</span><span class="token punctuation">(</span>procsSubsystem<span class="token punctuation">)</span>
-
-	<span class="token keyword">return</span> <span class="token boolean">nil</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这一段代码的编译是通过的</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *CgroupFileSystem)</span></span> Write(ss subsystem.AnySubsystem) <span class="type">error</span> &#123;</span><br><span class="line">	cgroupPath, err := subsystem.GetCgroupPath(ss, f.Path, f.AutoCreate)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	value, err := ss.Get()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := os.WriteFile(cgroupPath, []<span class="type">byte</span>(value.Into()), <span class="number">0644</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *CgroupFileSystem)</span></span> Sync(pid <span class="type">int</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	procsSubsystem := cgroup.NewProcsValueSubsystem(value)</span><br><span class="line">	<span class="comment">// Cannot use procsSubsystem as the tye Subsystem</span></span><br><span class="line">	f.Write(procsSubsystem)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h1 id="解决问题">解决问题</h1>
 <h2 id="covariance">Covariance</h2>
 <p>要解决这个问题，我们就必须先了解什么叫
@@ -336,29 +249,7 @@ href="#Covariance">Covariance</a>。于是，我们的如下代码将直接抛�
 <li><strong>而Covariance指的是，一个装苹果的篮子是否可以匹配一个装水果的篮子？</strong></li>
 </ul>
 <p>这里给出一个最简单的例子：</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> main
-
-<span class="token keyword">type</span> Base <span class="token keyword">interface</span> <span class="token punctuation">&#123;</span>
-	<span class="token function">BaseMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">type</span> BaseImpl <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span>
-	
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token punctuation">(</span>b BaseImpl<span class="token punctuation">)</span> <span class="token function">BaseMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span><span class="token punctuation">&#125;</span>
-
-<span class="token keyword">type</span> Container<span class="token punctuation">[</span>T Base<span class="token punctuation">]</span> <span class="token keyword">struct</span> <span class="token punctuation">&#123;</span><span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token function">BaseAsParams</span><span class="token punctuation">(</span>container Container<span class="token punctuation">[</span>Base<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span><span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	<span class="token keyword">var</span> baseContainer Container<span class="token punctuation">[</span>Base<span class="token punctuation">]</span>
-	<span class="token function">BaseAsParams</span><span class="token punctuation">(</span>baseContainer<span class="token punctuation">)</span>
-	<span class="token keyword">var</span> baseImplContainer Container<span class="token punctuation">[</span>BaseImpl<span class="token punctuation">]</span>
-	<span class="token function">BaseAsParams</span><span class="token punctuation">(</span>baseImplContainer<span class="token punctuation">)</span>
-    <span class="token comment">// Cannot use 'baseImplContainer' (type Container[BaseImpl]) as the type Container[Base]</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Base <span class="keyword">interface</span> &#123;</span><br><span class="line">	BaseMethod()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> BaseImpl <span class="keyword">struct</span> &#123;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b BaseImpl)</span></span> BaseMethod() &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Container[T Base] <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BaseAsParams</span><span class="params">(container Container[Base])</span></span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> baseContainer Container[Base]</span><br><span class="line">	BaseAsParams(baseContainer)</span><br><span class="line">	<span class="keyword">var</span> baseImplContainer Container[BaseImpl]</span><br><span class="line">	BaseAsParams(baseImplContainer)</span><br><span class="line">    <span class="comment">// Cannot use &#x27;baseImplContainer&#x27; (type Container[BaseImpl]) as the type Container[Base]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <table>
 <colgroup>
 <col style="width: 36%" />
@@ -409,33 +300,7 @@ href="#Covariance">Covariance</a>。于是，我们的如下代码将直接抛�
 <p>那么很自然的，我们可以将前面的一个<strong>接受泛型参数的函数</strong>修改为<strong>一个接受泛型参数的泛型函数</strong>
 --
 让编译器去为我们特化<strong>篮子</strong>和<strong>水果</strong>，也就得到了这个函数：</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> Write<span class="token punctuation">[</span>I subsystem<span class="token punctuation">.</span>Item<span class="token punctuation">,</span> V subsystem<span class="token punctuation">.</span>Value<span class="token punctuation">]</span><span class="token punctuation">(</span>f <span class="token operator">*</span>CgroupFileSystem<span class="token punctuation">,</span> ss subsystem<span class="token punctuation">.</span>Subsystem<span class="token punctuation">[</span>I<span class="token punctuation">,</span> V<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
-	cgroupPath<span class="token punctuation">,</span> err <span class="token operator">:=</span> subsystem<span class="token punctuation">.</span><span class="token function">GetCgroupPath</span><span class="token punctuation">(</span>ss<span class="token punctuation">,</span> f<span class="token punctuation">.</span>Path<span class="token punctuation">,</span> f<span class="token punctuation">.</span>AutoCreate<span class="token punctuation">)</span>
-	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">return</span> err
-	<span class="token punctuation">&#125;</span>
-
-	value<span class="token punctuation">,</span> err <span class="token operator">:=</span> ss<span class="token punctuation">.</span><span class="token function">Get</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">return</span> err
-	<span class="token punctuation">&#125;</span>
-
-	<span class="token keyword">if</span> err <span class="token operator">:=</span> os<span class="token punctuation">.</span><span class="token function">WriteFile</span><span class="token punctuation">(</span>cgroupPath<span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token function">byte</span><span class="token punctuation">(</span>value<span class="token punctuation">.</span><span class="token function">Into</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0644</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">return</span> err
-	<span class="token punctuation">&#125;</span>
-
-	<span class="token keyword">return</span> <span class="token boolean">nil</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>CgroupFileSystem<span class="token punctuation">)</span> <span class="token function">Sync</span><span class="token punctuation">(</span>pid <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
-	<span class="token comment">// ...</span>
-	procsSubsystem <span class="token operator">:=</span> cgroup<span class="token punctuation">.</span><span class="token function">NewProcsValueSubsystem</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span>
-	
-    <span class="token comment">// ...</span>
-	err <span class="token operator">=</span> <span class="token function">Write</span><span class="token punctuation">(</span>f<span class="token punctuation">,</span> procsSubsystem<span class="token punctuation">)</span>
-
-	<span class="token keyword">return</span> <span class="token boolean">nil</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Write</span>[<span class="title">I</span> <span class="title">subsystem</span>.<span class="title">Item</span>, <span class="title">V</span> <span class="title">subsystem</span>.<span class="title">Value</span>]<span class="params">(f *CgroupFileSystem, ss subsystem.Subsystem[I, V])</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	cgroupPath, err := subsystem.GetCgroupPath(ss, f.Path, f.AutoCreate)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	value, err := ss.Get()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := os.WriteFile(cgroupPath, []<span class="type">byte</span>(value.Into()), <span class="number">0644</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *CgroupFileSystem)</span></span> Sync(pid <span class="type">int</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	procsSubsystem := cgroup.NewProcsValueSubsystem(value)</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">	err = Write(f, procsSubsystem)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个 <code>Write</code>
 泛型函数能编译运行，本质就是<strong>编译器为每个不同的泛型参数组合生成专属的
 “特化版本”</strong>，彻底绕开了协变的限制。</p>
@@ -529,14 +394,7 @@ Rust 虽支持协变，但仅在有限场景（如
 “容器可能有写入行为”：下面的代码中，<code>AppleImpl</code> 和
 <code>BananaImpl</code> 都会被当做
 <code>Base</code>，从而导致类型异常</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// 假设 Go 支持协变</span>
-<span class="token keyword">func</span> <span class="token function">addBanana</span><span class="token punctuation">(</span>c Container<span class="token punctuation">[</span>Base<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-    <span class="token comment">// c 实际是 Container[BaseImpl]，但被当成 Container[Base]</span>
-    c<span class="token punctuation">.</span><span class="token function">Set</span><span class="token punctuation">(</span>BananaImpl<span class="token punctuation">&#123;</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span> <span class="token comment">// 编译通过，运行时崩溃（往苹果篮子里塞香蕉）</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">var</span> appleBasket Container<span class="token punctuation">[</span>BaseImpl<span class="token punctuation">]</span>
-<span class="token function">addBanana</span><span class="token punctuation">(</span>appleBasket<span class="token punctuation">)</span> <span class="token comment">// 协变允许此调用，导致类型安全问题</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 假设 Go 支持协变</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">addBanana</span><span class="params">(c Container[Base])</span></span> &#123;</span><br><span class="line">    <span class="comment">// c 实际是 Container[BaseImpl]，但被当成 Container[Base]</span></span><br><span class="line">    c.Set(BananaImpl&#123;&#125;) <span class="comment">// 编译通过，运行时崩溃（往苹果篮子里塞香蕉）</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> appleBasket Container[BaseImpl]</span><br><span class="line">addBanana(appleBasket) <span class="comment">// 协变允许此调用，导致类型安全问题</span></span><br></pre></td></tr></table></figure>
 <p>最后，我们总结一下各个语言对Covariance的支持：</p>
 <ul>
 <li>Go 直接 “一刀切禁止协变”，用不变规则杜绝风险；</li>
