@@ -228,93 +228,23 @@ Example</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href
 <blockquote>
 <p>使用默认的handler</p>
 </blockquote>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> main
-
-<span class="token keyword">import</span> <span class="token punctuation">(</span>
-	<span class="token string">"net/http"</span>
-	<span class="token boolean">_</span> <span class="token string">"net/http/pprof"</span>
-<span class="token punctuation">)</span>
-
-<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	<span class="token boolean">_</span> <span class="token operator">=</span> http<span class="token punctuation">.</span><span class="token function">ListenAndServe</span><span class="token punctuation">(</span><span class="token string">"0.0.0.0:6060"</span><span class="token punctuation">,</span> <span class="token boolean">nil</span><span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;net/http&quot;</span></span><br><span class="line">	_ <span class="string">&quot;net/http/pprof&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	_ = http.ListenAndServe(<span class="string">&quot;0.0.0.0:6060&quot;</span>, <span class="literal">nil</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>监听指定的端口</p>
 </blockquote>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> main
-
-<span class="token keyword">import</span> <span class="token punctuation">(</span>
-	<span class="token string">"fmt"</span>
-	<span class="token string">"log"</span>
-	<span class="token string">"net/http"</span>
-<span class="token punctuation">)</span>
-
-<span class="token keyword">const</span> PprofPort <span class="token operator">=</span> <span class="token number">19090</span>
-
-<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	address <span class="token operator">:=</span> fmt<span class="token punctuation">.</span><span class="token function">Sprintf</span><span class="token punctuation">(</span><span class="token string">"0.0.0.0:%d"</span><span class="token punctuation">,</span> PprofPort<span class="token punctuation">)</span>
-
-	pprofServer <span class="token operator">:=</span> <span class="token operator">&amp;</span>http<span class="token punctuation">.</span>Server<span class="token punctuation">&#123;</span>
-		Addr<span class="token punctuation">:</span>    address<span class="token punctuation">,</span>
-		Handler<span class="token punctuation">:</span> http<span class="token punctuation">.</span>DefaultServeMux<span class="token punctuation">,</span>
-	<span class="token punctuation">&#125;</span>
-	err <span class="token operator">:=</span> pprofServer<span class="token punctuation">.</span><span class="token function">ListenAndServe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
-		log<span class="token punctuation">.</span><span class="token function">Fatalf</span><span class="token punctuation">(</span><span class="token string">"error start pprof server : %s\n"</span><span class="token punctuation">,</span> err<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-	<span class="token punctuation">&#125;</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;net/http&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> PprofPort = <span class="number">19090</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	address := fmt.Sprintf(<span class="string">&quot;0.0.0.0:%d&quot;</span>, PprofPort)</span><br><span class="line"></span><br><span class="line">	pprofServer := &amp;http.Server&#123;</span><br><span class="line">		Addr:    address,</span><br><span class="line">		Handler: http.DefaultServeMux,</span><br><span class="line">	&#125;</span><br><span class="line">	err := pprofServer.ListenAndServe()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="string">&quot;error start pprof server : %s\n&quot;</span>, err.Error())</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>可以看到，最简单的方式只需要引入 <code>net/http/pprof</code>
 包之后，再监听http端口即可，因为在pprof包的初始化的过程中存在如下 init()
 代码</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	http<span class="token punctuation">.</span><span class="token function">HandleFunc</span><span class="token punctuation">(</span><span class="token string">"/debug/pprof/"</span><span class="token punctuation">,</span> Index<span class="token punctuation">)</span>
-	http<span class="token punctuation">.</span><span class="token function">HandleFunc</span><span class="token punctuation">(</span><span class="token string">"/debug/pprof/cmdline"</span><span class="token punctuation">,</span> Cmdline<span class="token punctuation">)</span>
-	http<span class="token punctuation">.</span><span class="token function">HandleFunc</span><span class="token punctuation">(</span><span class="token string">"/debug/pprof/profile"</span><span class="token punctuation">,</span> Profile<span class="token punctuation">)</span>
-	http<span class="token punctuation">.</span><span class="token function">HandleFunc</span><span class="token punctuation">(</span><span class="token string">"/debug/pprof/symbol"</span><span class="token punctuation">,</span> Symbol<span class="token punctuation">)</span>
-	http<span class="token punctuation">.</span><span class="token function">HandleFunc</span><span class="token punctuation">(</span><span class="token string">"/debug/pprof/trace"</span><span class="token punctuation">,</span> Trace<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">init</span><span class="params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/&quot;</span>, Index)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/cmdline&quot;</span>, Cmdline)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/profile&quot;</span>, Profile)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/symbol&quot;</span>, Symbol)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/trace&quot;</span>, Trace)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>而这里将默认的handler绑定到了
 <code>DefaultServeMux</code>，这个是http服务默认的handler</p>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">HandleFunc</span><span class="token punctuation">(</span>pattern <span class="token builtin">string</span><span class="token punctuation">,</span> handler <span class="token keyword">func</span><span class="token punctuation">(</span>ResponseWriter<span class="token punctuation">,</span> <span class="token operator">*</span>Request<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	DefaultServeMux<span class="token punctuation">.</span><span class="token function">HandleFunc</span><span class="token punctuation">(</span>pattern<span class="token punctuation">,</span> handler<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">HandleFunc</span><span class="params">(pattern <span class="type">string</span>, handler <span class="keyword">func</span>(ResponseWriter, *Request)</span></span>) &#123;</span><br><span class="line">	DefaultServeMux.HandleFunc(pattern, handler)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="example">example</h3>
 <blockquote>
 <p>以下是我们调试用的示例代码。</p>
 </blockquote>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> main
-
-<span class="token keyword">import</span> <span class="token punctuation">(</span>
-	<span class="token string">"log"</span>
-	<span class="token string">"net/http"</span>
-	<span class="token boolean">_</span> <span class="token string">"net/http/pprof"</span>
-	<span class="token string">"time"</span>
-<span class="token punctuation">)</span>
-
-<span class="token keyword">var</span> dataList <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span>
-
-<span class="token keyword">func</span> <span class="token function">Add</span><span class="token punctuation">(</span>str <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token builtin">int</span> <span class="token punctuation">&#123;</span>
-	<span class="token comment">// This code is to ensure that it takes up more CPU to ensure better debugging</span>
-	<span class="token keyword">for</span> i <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">10000000000</span><span class="token punctuation">;</span> i<span class="token operator">++</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">if</span> i<span class="token operator">%</span><span class="token number">100000000</span> <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">&#123;</span>
-			log<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"add\n"</span><span class="token punctuation">)</span>
-		<span class="token punctuation">&#125;</span>
-	<span class="token punctuation">&#125;</span>
-	data <span class="token operator">:=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token function">byte</span><span class="token punctuation">(</span>str<span class="token punctuation">)</span>
-	dataList <span class="token operator">=</span> <span class="token function">append</span><span class="token punctuation">(</span>dataList<span class="token punctuation">,</span> <span class="token function">string</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span>
-	<span class="token keyword">return</span> <span class="token function">len</span><span class="token punctuation">(</span>dataList<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	<span class="token keyword">go</span> <span class="token keyword">func</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">for</span> <span class="token punctuation">&#123;</span>
-			log<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"len: %d"</span><span class="token punctuation">,</span> <span class="token function">Add</span><span class="token punctuation">(</span><span class="token string">"go-programming-tour-book"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-			time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span>time<span class="token punctuation">.</span>Millisecond <span class="token operator">*</span> <span class="token number">10</span><span class="token punctuation">)</span>
-		<span class="token punctuation">&#125;</span>
-	<span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-
-	<span class="token boolean">_</span> <span class="token operator">=</span> http<span class="token punctuation">.</span><span class="token function">ListenAndServe</span><span class="token punctuation">(</span><span class="token string">"0.0.0.0:6060"</span><span class="token punctuation">,</span> <span class="token boolean">nil</span><span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;net/http&quot;</span></span><br><span class="line">	_ <span class="string">&quot;net/http/pprof&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> dataList []<span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Add</span><span class="params">(str <span class="type">string</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">	<span class="comment">// This code is to ensure that it takes up more CPU to ensure better debugging</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10000000000</span>; i++ &#123;</span><br><span class="line">		<span class="keyword">if</span> i%<span class="number">100000000</span> == <span class="number">0</span> &#123;</span><br><span class="line">			log.Printf(<span class="string">&quot;add\n&quot;</span>)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	data := []<span class="type">byte</span>(str)</span><br><span class="line">	dataList = <span class="built_in">append</span>(dataList, <span class="type">string</span>(data))</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">len</span>(dataList)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> &#123;</span><br><span class="line">			log.Printf(<span class="string">&quot;len: %d&quot;</span>, Add(<span class="string">&quot;go-programming-tour-book&quot;</span>))</span><br><span class="line">			time.Sleep(time.Millisecond * <span class="number">10</span>)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	_ = http.ListenAndServe(<span class="string">&quot;0.0.0.0:6060&quot;</span>, <span class="literal">nil</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="usage">usage</h3>
 <h4 id="http服务">http服务</h4>
 <blockquote>
@@ -352,7 +282,7 @@ use the go tool trace command to investigate the trace.</li>
 <h4 id="interactive-terminal">interactive terminal</h4>
 <h5 id="cpu-profiling">CPU profiling</h5>
 <p>在命令行执行</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">go tool pprof http://localhost:6060/debug/pprof/profile?seconds<span class="token operator">=</span><span class="token number">60</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go tool pprof http://localhost:6060/debug/pprof/profile?seconds=60</span><br></pre></td></tr></table></figure>
 <p>该命令会在进行60秒的profile之后，进入一个交互终端：</p>
 <figure>
 <img src="../images/002/profile.png" alt="profile" />
@@ -362,58 +292,25 @@ use the go tool trace command to investigate the trace.</li>
 <blockquote>
 <p>查看占用CPU前10的函数</p>
 </blockquote>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">top</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top</span><br></pre></td></tr></table></figure>
 <p>得到结果</p>
-<pre class="line-numbers language-none"><code class="language-none">Showing nodes accounting for 45.33s, 99.80% of 45.42s total
-Dropped 14 nodes (cum &lt;&#x3D; 0.23s)
-Showing top 10 nodes out of 18
-      flat  flat%   sum%        cum   cum%
-    39.61s 87.21% 87.21%     44.93s 98.92%  main.Add
-     3.47s  7.64% 94.85%      3.47s  7.64%  runtime.asyncPreempt
-     1.87s  4.12% 98.97%      1.87s  4.12%  syscall.syscall
-     0.38s  0.84% 99.80%      0.38s  0.84%  runtime.kevent
-         0     0% 99.80%      1.87s  4.12%  internal&#x2F;poll.(*FD).Write
-         0     0% 99.80%      1.87s  4.12%  internal&#x2F;poll.ignoringEINTRIO (inline)
-         0     0% 99.80%      1.87s  4.12%  log.(*Logger).Output
-         0     0% 99.80%      1.88s  4.14%  log.Printf
-         0     0% 99.80%     44.96s 98.99%  main.main.func1
-         0     0% 99.80%      1.87s  4.12%  os.(*File).Write<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Showing</span> nodes accounting for <span class="number">45</span>.<span class="number">33</span>s, <span class="number">99</span>.<span class="number">80</span>% of <span class="number">45</span>.<span class="number">42</span>s total</span><br><span class="line"><span class="attribute">Dropped</span> <span class="number">14</span> nodes (cum &lt;= <span class="number">0</span>.<span class="number">23</span>s)</span><br><span class="line"><span class="attribute">Showing</span> top <span class="number">10</span> nodes out of <span class="number">18</span></span><br><span class="line">      <span class="attribute">flat</span>  flat%   sum%        cum   cum%</span><br><span class="line">    <span class="attribute">39</span>.<span class="number">61</span>s <span class="number">87</span>.<span class="number">21</span>% <span class="number">87</span>.<span class="number">21</span>%     <span class="number">44</span>.<span class="number">93</span>s <span class="number">98</span>.<span class="number">92</span>%  main.Add</span><br><span class="line">     <span class="attribute">3</span>.<span class="number">47</span>s  <span class="number">7</span>.<span class="number">64</span>% <span class="number">94</span>.<span class="number">85</span>%      <span class="number">3</span>.<span class="number">47</span>s  <span class="number">7</span>.<span class="number">64</span>%  runtime.asyncPreempt</span><br><span class="line">     <span class="attribute">1</span>.<span class="number">87</span>s  <span class="number">4</span>.<span class="number">12</span>% <span class="number">98</span>.<span class="number">97</span>%      <span class="number">1</span>.<span class="number">87</span>s  <span class="number">4</span>.<span class="number">12</span>%  syscall.syscall</span><br><span class="line">     <span class="attribute">0</span>.<span class="number">38</span>s  <span class="number">0</span>.<span class="number">84</span>% <span class="number">99</span>.<span class="number">80</span>%      <span class="number">0</span>.<span class="number">38</span>s  <span class="number">0</span>.<span class="number">84</span>%  runtime.kevent</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>% <span class="number">99</span>.<span class="number">80</span>%      <span class="number">1</span>.<span class="number">87</span>s  <span class="number">4</span>.<span class="number">12</span>%  internal/poll.(*FD).Write</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>% <span class="number">99</span>.<span class="number">80</span>%      <span class="number">1</span>.<span class="number">87</span>s  <span class="number">4</span>.<span class="number">12</span>%  internal/poll.ignoringEINTRIO (inline)</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>% <span class="number">99</span>.<span class="number">80</span>%      <span class="number">1</span>.<span class="number">87</span>s  <span class="number">4</span>.<span class="number">12</span>%  log.(*Logger).Output</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>% <span class="number">99</span>.<span class="number">80</span>%      <span class="number">1</span>.<span class="number">88</span>s  <span class="number">4</span>.<span class="number">14</span>%  log.Printf</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>% <span class="number">99</span>.<span class="number">80</span>%     <span class="number">44</span>.<span class="number">96</span>s <span class="number">98</span>.<span class="number">99</span>%  main.main.func1</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>% <span class="number">99</span>.<span class="number">80</span>%      <span class="number">1</span>.<span class="number">87</span>s  <span class="number">4</span>.<span class="number">12</span>%  os.(*File).Write</span><br></pre></td></tr></table></figure>
 <p>可以看到，我们的 <code>main.Add</code> 函数占用了最多的CPU时间。</p>
 <h5 id="heap">heap</h5>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">go tool pprof http://localhost:6060/debug/pprof/heap<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go tool pprof http://localhost:6060/debug/pprof/heap</span><br></pre></td></tr></table></figure>
 <p>这里会立即进入而不需要等待采样时间，因为堆上的数据和CPU数据不一样，是在程序执行期间一直存在的。</p>
 <blockquote>
 <p>也可以查看堆内存使用前10</p>
 </blockquote>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">top</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<pre class="line-numbers language-none"><code class="language-none">Showing nodes accounting for 3587.42kB, 100% of 3587.42kB total
-Showing top 10 nodes out of 26
-      flat  flat%   sum%        cum   cum%
- 2562.81kB 71.44% 71.44%  2562.81kB 71.44%  runtime.allocm
-  512.56kB 14.29% 85.73%   512.56kB 14.29%  syscall.runtime_envs
-  512.05kB 14.27%   100%   512.05kB 14.27%  runtime.acquireSudog
-         0     0%   100%   512.56kB 14.29%  runtime.doInit
-         0     0%   100%   512.05kB 14.27%  runtime.gcBgMarkWorker
-         0     0%   100%   512.05kB 14.27%  runtime.gcMarkDone
-         0     0%   100%   512.56kB 14.29%  runtime.gopreempt_m
-         0     0%   100%   512.56kB 14.29%  runtime.goschedImpl
-         0     0%   100%   512.56kB 14.29%  runtime.handoffp
-         0     0%   100%   512.56kB 14.29%  runtime.main<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top</span><br></pre></td></tr></table></figure>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Showing</span> nodes accounting for <span class="number">3587</span>.<span class="number">42</span>kB, <span class="number">100</span>% of <span class="number">3587</span>.<span class="number">42</span>kB total</span><br><span class="line"><span class="attribute">Showing</span> top <span class="number">10</span> nodes out of <span class="number">26</span></span><br><span class="line">      <span class="attribute">flat</span>  flat%   sum%        cum   cum%</span><br><span class="line"> <span class="attribute">2562</span>.<span class="number">81</span>kB <span class="number">71</span>.<span class="number">44</span>% <span class="number">71</span>.<span class="number">44</span>%  <span class="number">2562</span>.<span class="number">81</span>kB <span class="number">71</span>.<span class="number">44</span>%  runtime.allocm</span><br><span class="line">  <span class="attribute">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>% <span class="number">85</span>.<span class="number">73</span>%   <span class="number">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>%  syscall.runtime_envs</span><br><span class="line">  <span class="attribute">512</span>.<span class="number">05</span>kB <span class="number">14</span>.<span class="number">27</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">05</span>kB <span class="number">14</span>.<span class="number">27</span>%  runtime.acquireSudog</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>%  runtime.doInit</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">05</span>kB <span class="number">14</span>.<span class="number">27</span>%  runtime.gcBgMarkWorker</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">05</span>kB <span class="number">14</span>.<span class="number">27</span>%  runtime.gcMarkDone</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>%  runtime.gopreempt_m</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>%  runtime.goschedImpl</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>%  runtime.handoffp</span><br><span class="line">         <span class="attribute">0</span>     <span class="number">0</span>%   <span class="number">100</span>%   <span class="number">512</span>.<span class="number">56</span>kB <span class="number">14</span>.<span class="number">29</span>%  runtime.main</span><br></pre></td></tr></table></figure>
 <p>除此之外，还可以对 <code>mutex</code>, <code>goroutine</code>
 等进行分析。</p>
 <h4 id="go-tool-pprof">go tool pprof</h4>
 <p>以上的分析方式其实更适用于线上的简单情况分析，而在生产环境的应用场景下，我更倾向于直接使用
 <code>go tool pprof</code>
 来进行分析，因为大部分情况下操作更简单和直观。<strong>以下的例子是对CPU使用的一个分析示例</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 首先我们通过 wget 下载数据。</span>
-<span class="token comment"># 需要等待30s采样时间</span>
-<span class="token function">wget</span> http://127.0.0.1:6060/debug/pprof/profile <span class="token parameter variable">-O</span> cpu.profile
-
-<span class="token comment"># 如果我们要对heap进行分析，修改下载的文件即可</span>
-<span class="token function">wget</span> http://127.0.0.1:6060/debug/pprof/heap <span class="token parameter variable">-O</span> heap.profile
-
-<span class="token comment"># 在浏览器中打开文件</span>
-go tool pprof <span class="token parameter variable">-http</span><span class="token operator">=</span>:6001 cpu.profile<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 首先我们通过 wget 下载数据。</span></span><br><span class="line"><span class="comment"># 需要等待30s采样时间</span></span><br><span class="line">wget http://127.0.0.1:6060/debug/pprof/profile -O cpu.profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果我们要对heap进行分析，修改下载的文件即可</span></span><br><span class="line">wget http://127.0.0.1:6060/debug/pprof/heap -O heap.profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在浏览器中打开文件</span></span><br><span class="line">go tool pprof -http=:6001 cpu.profile</span><br></pre></td></tr></table></figure>
 <figure>
 <img src="../images/002/profile001.png" alt="profile-image" />
 <figcaption aria-hidden="true">profile-image</figcaption>
@@ -447,44 +344,16 @@ go tool pprof <span class="token parameter variable">-http</span><span class="to
 <blockquote>
 <p>add.go</p>
 </blockquote>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> add
-
-<span class="token keyword">import</span> <span class="token string">"log"</span>
-
-<span class="token keyword">var</span> dataList <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span>
-
-<span class="token keyword">func</span> <span class="token function">Add</span><span class="token punctuation">(</span>str <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token builtin">int</span> <span class="token punctuation">&#123;</span>
-	<span class="token comment">// This code is to ensure that it takes up more CPU to ensure better debugging</span>
-	<span class="token keyword">for</span> i <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">10000000000</span><span class="token punctuation">;</span> i<span class="token operator">++</span> <span class="token punctuation">&#123;</span>
-		<span class="token keyword">if</span> i<span class="token operator">%</span><span class="token number">100000000</span> <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">&#123;</span>
-			log<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"add\n"</span><span class="token punctuation">)</span>
-		<span class="token punctuation">&#125;</span>
-	<span class="token punctuation">&#125;</span>
-	data <span class="token operator">:=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token function">byte</span><span class="token punctuation">(</span>str<span class="token punctuation">)</span>
-	dataList <span class="token operator">=</span> <span class="token function">append</span><span class="token punctuation">(</span>dataList<span class="token punctuation">,</span> <span class="token function">string</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span>
-	<span class="token keyword">return</span> <span class="token function">len</span><span class="token punctuation">(</span>dataList<span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> add</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;log&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> dataList []<span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Add</span><span class="params">(str <span class="type">string</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">	<span class="comment">// This code is to ensure that it takes up more CPU to ensure better debugging</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10000000000</span>; i++ &#123;</span><br><span class="line">		<span class="keyword">if</span> i%<span class="number">100000000</span> == <span class="number">0</span> &#123;</span><br><span class="line">			log.Printf(<span class="string">&quot;add\n&quot;</span>)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	data := []<span class="type">byte</span>(str)</span><br><span class="line">	dataList = <span class="built_in">append</span>(dataList, <span class="type">string</span>(data))</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">len</span>(dataList)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>add_test.go</p>
 </blockquote>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> add
-
-<span class="token keyword">import</span> <span class="token string">"testing"</span>
-
-<span class="token keyword">func</span> <span class="token function">BenchmarkAdd</span><span class="token punctuation">(</span>b <span class="token operator">*</span>testing<span class="token punctuation">.</span>B<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	<span class="token keyword">for</span> i <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> b<span class="token punctuation">.</span>N<span class="token punctuation">;</span> i<span class="token operator">++</span> <span class="token punctuation">&#123;</span>
-		<span class="token function">Add</span><span class="token punctuation">(</span><span class="token string">"go-programming-tour-book"</span><span class="token punctuation">)</span>
-	<span class="token punctuation">&#125;</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> add</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;testing&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkAdd</span><span class="params">(b *testing.B)</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">		Add(<span class="string">&quot;go-programming-tour-book&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>参考 <a target="_blank" rel="noopener" href="https://pkg.go.dev/cmd/go#hdr-Testing_flags">go test
 flags</a></p>
 </blockquote>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># cpu profile</span>
-go <span class="token builtin class-name">test</span> <span class="token parameter variable">-bench</span><span class="token operator">=</span>. <span class="token parameter variable">-cpuprofile</span><span class="token operator">=</span>cpu.profile
-
-<span class="token comment"># memory profile</span>
-go <span class="token builtin class-name">test</span> <span class="token parameter variable">-bench</span><span class="token operator">=</span>. <span class="token parameter variable">-memprofile</span><span class="token operator">=</span>mem.profile<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cpu profile</span></span><br><span class="line">go <span class="built_in">test</span> -bench=. -cpuprofile=cpu.profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># memory profile</span></span><br><span class="line">go <span class="built_in">test</span> -bench=. -memprofile=mem.profile</span><br></pre></td></tr></table></figure>
 <h2 id="delve">delve</h2>
 <blockquote>
 <p>Delve aims to be a very simple and powerful tool, but can be
@@ -497,50 +366,15 @@ Example</h3>
 <blockquote>
 <p>path = 'prof/fib/fib.go'</p>
 </blockquote>
-<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> main
-
-<span class="token keyword">import</span> <span class="token string">"fmt"</span>
-
-<span class="token keyword">var</span> m <span class="token operator">=</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">map</span><span class="token punctuation">[</span><span class="token builtin">int</span><span class="token punctuation">]</span><span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
-
-<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-    <span class="token keyword">for</span> <span class="token boolean">_</span><span class="token punctuation">,</span> n <span class="token operator">:=</span> <span class="token keyword">range</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">int</span><span class="token punctuation">&#123;</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">98</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">&#125;</span> <span class="token punctuation">&#123;</span>
-        x <span class="token operator">:=</span> <span class="token function">fib</span><span class="token punctuation">(</span>n<span class="token punctuation">)</span>
-        fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span>n<span class="token punctuation">,</span> <span class="token string">"fib"</span><span class="token punctuation">,</span> x<span class="token punctuation">)</span>
-    <span class="token punctuation">&#125;</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">func</span> <span class="token function">fib</span><span class="token punctuation">(</span>n <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token builtin">int</span> <span class="token punctuation">&#123;</span>
-    <span class="token keyword">if</span> n <span class="token operator">&lt;</span> <span class="token number">2</span> <span class="token punctuation">&#123;</span>
-        <span class="token keyword">return</span> n
-    <span class="token punctuation">&#125;</span>
-
-    <span class="token keyword">var</span> f <span class="token builtin">int</span>
-    <span class="token keyword">if</span> v<span class="token punctuation">,</span> ok <span class="token operator">:=</span> m<span class="token punctuation">[</span>n<span class="token punctuation">]</span><span class="token punctuation">;</span> ok <span class="token punctuation">&#123;</span>
-        f <span class="token operator">=</span> v
-    <span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
-        f <span class="token operator">=</span> <span class="token function">fib</span><span class="token punctuation">(</span>n<span class="token operator">-</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token function">fib</span><span class="token punctuation">(</span>n<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
-        m<span class="token punctuation">[</span>n<span class="token punctuation">]</span> <span class="token operator">=</span> f
-    <span class="token punctuation">&#125;</span>
-
-    <span class="token keyword">return</span> f
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 执行delve</span>
-dlv debug prof/fib/fib.go<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> m = <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="type">int</span>]<span class="type">int</span>, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> _, n := <span class="keyword">range</span> []<span class="type">int</span>&#123;<span class="number">5</span>, <span class="number">1</span>, <span class="number">9</span>, <span class="number">98</span>, <span class="number">6</span>&#125; &#123;</span><br><span class="line">        x := fib(n)</span><br><span class="line">        fmt.Println(n, <span class="string">&quot;fib&quot;</span>, x)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">fib</span><span class="params">(n <span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> n &lt; <span class="number">2</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> n</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> f <span class="type">int</span></span><br><span class="line">    <span class="keyword">if</span> v, ok := m[n]; ok &#123;</span><br><span class="line">        f = v</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        f = fib(n<span class="number">-2</span>) + fib(n<span class="number">-1</span>)</span><br><span class="line">        m[n] = f</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> f</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 执行delve</span></span><br><span class="line">dlv debug prof/fib/fib.go</span><br></pre></td></tr></table></figure>
 <p>命令基本不用多解释，和 <code>gdb</code> 基本完全一致。</p>
 <h3 id="stack">stack</h3>
 <blockquote>
 <p><code>stack</code> 命令输出当前的 stack trac，在 stack
 的输出中，会包含 <code>frame</code> 信息。</p>
 </blockquote>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># print stack trace</span>
-stack
-
-<span class="token comment">#0  0x00000000004666e0 in _rt0_amd64_linux</span>
-<span class="token comment">#   at /usr/local/go/src/runtime/rt0_linux_amd64.s:8</span>
-<span class="token comment">#1  0x0000000000000000 in ???</span>
-<span class="token comment">#   at :0</span>
-<span class="token comment">#   error: NULL address</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># print stack trace</span></span><br><span class="line">stack</span><br><span class="line"></span><br><span class="line"><span class="comment">#0  0x00000000004666e0 in _rt0_amd64_linux</span></span><br><span class="line"><span class="comment">#   at /usr/local/go/src/runtime/rt0_linux_amd64.s:8</span></span><br><span class="line"><span class="comment">#1  0x0000000000000000 in ???</span></span><br><span class="line"><span class="comment">#   at :0</span></span><br><span class="line"><span class="comment">#   error: NULL address</span></span><br></pre></td></tr></table></figure>
 <h3 id="goroutine和goroutines">goroutine和goroutines</h3>
 <blockquote>
 <p>goroutine相关的命令有两条：</p>
@@ -554,74 +388,13 @@ stack
 <p><code>frame</code> 可以设置当前frame，或者指定后续的
 <code>command</code> 在指定的 frame 上执行。</p>
 </blockquote>
-<pre class="line-numbers language-none"><code class="language-none">Set the current frame, or execute command on a different frame.
-
-        frame &lt;m&gt;
-        frame &lt;m&gt; &lt;command&gt;
-
-The first form sets frame used by subsequent commands such as &quot;print&quot; or &quot;set&quot;.
-The second form runs the command on the given frame.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Set the current frame, <span class="built_in">or</span> <span class="keyword">execute</span> <span class="keyword">command</span> <span class="keyword">on</span> <span class="keyword">a</span> different frame.</span><br><span class="line"></span><br><span class="line">        frame <span class="symbol">&lt;m&gt;</span></span><br><span class="line">        frame <span class="symbol">&lt;m&gt;</span> <span class="symbol">&lt;command&gt;</span></span><br><span class="line"></span><br><span class="line">The <span class="keyword">first</span> form sets frame used by subsequent commands such <span class="keyword">as</span> <span class="string">&quot;print&quot;</span> <span class="built_in">or</span> <span class="string">&quot;set&quot;</span>.</span><br><span class="line">The second form runs the <span class="keyword">command</span> <span class="keyword">on</span> the given frame.</span><br></pre></td></tr></table></figure>
 <h3 id="list">list</h3>
 <blockquote>
 <p><code>list</code> 显示源代码，并且可以指定 goroutine 和 frame</p>
 </blockquote>
-<pre class="line-numbers language-none"><code class="language-none">Show source code.
-
-        [goroutine &lt;n&gt;] [frame &lt;m&gt;] list [&lt;locspec&gt;]
-
-Show source around current point or provided locspec.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 使用 包.函数 增加一个断点</span>
-b main.main
-
-<span class="token comment"># 执行程序</span>
-r
-
-<span class="token comment"># 进入main函数</span>
-n
-
-<span class="token comment"># 查看当前执行代码</span>
-list
-<span class="token comment"># > main.main() ./fib.go:7 (hits goroutine(1):1 total:1) (PC: 0x49b18f)</span>
-<span class="token comment">#      2:</span>
-<span class="token comment">#      3: import "fmt"</span>
-<span class="token comment">#      4:</span>
-<span class="token comment">#      5: var m = make(map[int]int)</span>
-<span class="token comment">#      6:</span>
-<span class="token comment"># =>   7: func main() &#123;</span>
-<span class="token comment">#      8:         for _, n := range []int&#123;5, 1, 9, 98, 6&#125; &#123;</span>
-<span class="token comment">#      9:                 x := fib(n)</span>
-<span class="token comment">#     10:                 fmt.Println(n, "fib", x)</span>
-<span class="token comment">#     11:         &#125;</span>
-<span class="token comment">#     12: &#125;</span>
-
-<span class="token comment"># 为了方便调试，我们在以下行添加一个断点</span>
-<span class="token comment"># fmt.Println(n, "fib", x)</span>
-<span class="token comment"># 通过函数的相对行数打断点</span>
-b main.main:3
-<span class="token comment"># 也可以通过文件名加绝对行数打断点</span>
-<span class="token comment"># b ./fib.go:10</span>
-
-<span class="token comment"># 继续</span>
-c
-<span class="token comment"># > main.main() ./fib.go:10 (hits goroutine(1):1 total:1) (PC: 0x49b272)</span>
-<span class="token comment">#      5: var m = make(map[int]int)</span>
-<span class="token comment">#      6:</span>
-<span class="token comment">#      7: func main() &#123;</span>
-<span class="token comment">#      8:         for _, n := range []int&#123;5, 1, 9, 98, 6&#125; &#123;</span>
-<span class="token comment">#      9:                 x := fib(n)</span>
-<span class="token comment"># =>  10:                 fmt.Println(n, "fib", x)</span>
-<span class="token comment">#     11:         &#125;</span>
-<span class="token comment">#     12: &#125;</span>
-<span class="token comment">#     13:</span>
-<span class="token comment">#     14: func fib(n int) int &#123;</span>
-<span class="token comment">#     15:         if n &lt; 2 &#123;</span>
-
-<span class="token comment"># 查看x的值</span>
-<span class="token comment">#5</span>
-print x
-
-<span class="token comment"># 也可以通过 display 在每次执行后都输出x，我觉得这里用watch来表示更加直观</span>
-display <span class="token parameter variable">-a</span> x<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Show <span class="selector-tag">source</span> <span class="selector-tag">code</span>.</span><br><span class="line"></span><br><span class="line">        <span class="selector-attr">[goroutine &lt;n&gt;]</span> <span class="selector-attr">[frame &lt;m&gt;]</span> list <span class="selector-attr">[&lt;locspec&gt;]</span></span><br><span class="line"></span><br><span class="line">Show <span class="selector-tag">source</span> around current point or provided locspec.</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用 包.函数 增加一个断点</span></span><br><span class="line">b main.main</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行程序</span></span><br><span class="line">r</span><br><span class="line"></span><br><span class="line"><span class="comment"># 进入main函数</span></span><br><span class="line">n</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看当前执行代码</span></span><br><span class="line">list</span><br><span class="line"><span class="comment"># &gt; main.main() ./fib.go:7 (hits goroutine(1):1 total:1) (PC: 0x49b18f)</span></span><br><span class="line"><span class="comment">#      2:</span></span><br><span class="line"><span class="comment">#      3: import &quot;fmt&quot;</span></span><br><span class="line"><span class="comment">#      4:</span></span><br><span class="line"><span class="comment">#      5: var m = make(map[int]int)</span></span><br><span class="line"><span class="comment">#      6:</span></span><br><span class="line"><span class="comment"># =&gt;   7: func main() &#123;</span></span><br><span class="line"><span class="comment">#      8:         for _, n := range []int&#123;5, 1, 9, 98, 6&#125; &#123;</span></span><br><span class="line"><span class="comment">#      9:                 x := fib(n)</span></span><br><span class="line"><span class="comment">#     10:                 fmt.Println(n, &quot;fib&quot;, x)</span></span><br><span class="line"><span class="comment">#     11:         &#125;</span></span><br><span class="line"><span class="comment">#     12: &#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 为了方便调试，我们在以下行添加一个断点</span></span><br><span class="line"><span class="comment"># fmt.Println(n, &quot;fib&quot;, x)</span></span><br><span class="line"><span class="comment"># 通过函数的相对行数打断点</span></span><br><span class="line">b main.main:3</span><br><span class="line"><span class="comment"># 也可以通过文件名加绝对行数打断点</span></span><br><span class="line"><span class="comment"># b ./fib.go:10</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 继续</span></span><br><span class="line">c</span><br><span class="line"><span class="comment"># &gt; main.main() ./fib.go:10 (hits goroutine(1):1 total:1) (PC: 0x49b272)</span></span><br><span class="line"><span class="comment">#      5: var m = make(map[int]int)</span></span><br><span class="line"><span class="comment">#      6:</span></span><br><span class="line"><span class="comment">#      7: func main() &#123;</span></span><br><span class="line"><span class="comment">#      8:         for _, n := range []int&#123;5, 1, 9, 98, 6&#125; &#123;</span></span><br><span class="line"><span class="comment">#      9:                 x := fib(n)</span></span><br><span class="line"><span class="comment"># =&gt;  10:                 fmt.Println(n, &quot;fib&quot;, x)</span></span><br><span class="line"><span class="comment">#     11:         &#125;</span></span><br><span class="line"><span class="comment">#     12: &#125;</span></span><br><span class="line"><span class="comment">#     13:</span></span><br><span class="line"><span class="comment">#     14: func fib(n int) int &#123;</span></span><br><span class="line"><span class="comment">#     15:         if n &lt; 2 &#123;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看x的值</span></span><br><span class="line"><span class="comment">#5</span></span><br><span class="line"><span class="built_in">print</span> x</span><br><span class="line"></span><br><span class="line"><span class="comment"># 也可以通过 display 在每次执行后都输出x，我觉得这里用watch来表示更加直观</span></span><br><span class="line">display -a x</span><br></pre></td></tr></table></figure>
 <h2 id="引用">引用</h2>
 <p><a target="_blank" rel="noopener" href="https://golang2.eddycjy.com/posts/ch6/01-pprof-1/">6.1 Go
 大杀器之性能剖析 PProf（上）</a></p>

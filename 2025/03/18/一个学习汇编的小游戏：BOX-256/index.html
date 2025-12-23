@@ -277,43 +277,11 @@ Threads</a></p>
 <li>一个在 <code>THR A</code> 中的 <code>A</code> 指定的位置；</li>
 </ol>
 <p>例如，对于下面这段代码：</p>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">THR 010 000 000 ; 创建线程
-MOV FFF @20 000 ; #1
-000 000 000 000
-000 000 000 000
-MOV FFF @21 000 ; #2<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">THR 010 000 000 ; 创建线程</span><br><span class="line">MOV FFF @20 000 ; #1</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">MOV FFF @21 000 ; #2</span><br></pre></td></tr></table></figure>
 <p>在创建线程语句执行结束之后，会同时开始执行 <code>#1</code> 和
 <code>#2</code> 两个语句；</p>
 <p>利用这个特性，我们可以使用一些特殊的方式来创建线程，例如下面的例子：</p>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">; THR A 指令的作用是，在地址A启动一个线程并将被创建的线程的PC设置为A
-; 这里值得注意的是，文档中并没有写清楚，这里可能是有三种情况：
-; - THR 004 000 000
-; - THR @04 000 000
-; - THR *04 000 000
-; 其中 @04 和 *04 都是绝对地址，而 004 则是跳转到当前指令的相对地址，也就是往下移动一个指令
-; 所以下面的指令：
-; 000 - THR 004 000 000
-; 004 - MOV @00 @04 004
-; 的作用就是：
-; 1. 在 04 位置启动一个PC为A的线程；
-; 2. 移动当前线程的PC到004
-; 也就是，通过这个指令，我们创建了两个PC为004的线程
-
-; 在相对偏移量004的位置启动一个线程
-THR 004 000 000
-
-; 因为box256是定长指令集，每条指令的长度是四个字节，所以它的作用就是复制 @00 位置的指令到 @04
-; 这里利用了一个box256的一个特性，代码共享内存空间，所以当第一条指令执行后，后续的线程就变成了创建线程指令
-MOV @00 @04 004
-
-; 在相对偏移量004的位置启动一个线程
-THR 004 000 000
-
-; 在相对偏移量004的位置启动一个线程
-THR 004 000 000
-
-; 此时，我们总共拥有 (((1 * 2) * 2 - 1) * 2 * 2) * 2 - 1 &#x3D; 23 个线程
-MOV @00 @10 004<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">; THR A 指令的作用是，在地址A启动一个线程并将被创建的线程的PC设置为A</span><br><span class="line">; 这里值得注意的是，文档中并没有写清楚，这里可能是有三种情况：</span><br><span class="line">; - THR 004 000 000</span><br><span class="line">; - THR @04 000 000</span><br><span class="line">; - THR *04 000 000</span><br><span class="line">; 其中 @04 和 *04 都是绝对地址，而 004 则是跳转到当前指令的相对地址，也就是往下移动一个指令</span><br><span class="line">; 所以下面的指令：</span><br><span class="line">; 000 - THR 004 000 000</span><br><span class="line">; 004 - MOV @00 @04 004</span><br><span class="line">; 的作用就是：</span><br><span class="line">; 1. 在 04 位置启动一个PC为A的线程；</span><br><span class="line">; 2. 移动当前线程的PC到004</span><br><span class="line">; 也就是，通过这个指令，我们创建了两个PC为004的线程</span><br><span class="line"></span><br><span class="line">; 在相对偏移量004的位置启动一个线程</span><br><span class="line">THR 004 000 000</span><br><span class="line"></span><br><span class="line">; 因为box256是定长指令集，每条指令的长度是四个字节，所以它的作用就是复制 @00 位置的指令到 @04</span><br><span class="line">; 这里利用了一个box256的一个特性，代码共享内存空间，所以当第一条指令执行后，后续的线程就变成了创建线程指令</span><br><span class="line">MOV @00 @04 004</span><br><span class="line"></span><br><span class="line">; 在相对偏移量004的位置启动一个线程</span><br><span class="line">THR 004 000 000</span><br><span class="line"></span><br><span class="line">; 在相对偏移量004的位置启动一个线程</span><br><span class="line">THR 004 000 000</span><br><span class="line"></span><br><span class="line">; 此时，我们总共拥有 (((1 * 2) * 2 - 1) * 2 * 2) * 2 - 1 = 23 个线程</span><br><span class="line">MOV @00 @10 004</span><br></pre></td></tr></table></figure>
 <h4 id="sierpinski-triangle"><a id = "SIERPINSKI-TRIANGLE">SIERPINSKI
 TRIANGLE</a></h4>
 <blockquote>
@@ -375,32 +343,11 @@ class="math inline">\([28,
 <code>0xF</code> 个节点；</li>
 </ol>
 <p>并递归的计算最终的结果。</p>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">00 - THR 004 000 000 ;
-04 - MOV @00 @04 004 ; create 5 parallel threads
-08 - MOV @04 @08 004 ; 
-
-0C - MOV @10 @FB 005 ; copy an array of 5 addresses over the PCs
-
-10 - 024 020 01C 018
-14 - 00C 000 000 000 ; 1st thread jumps back to execute the MOV at 0x0Ch
-
-18 - PIX 000 @29 000 ; 2nd thread
-1C - MOV @29 @28 010 ; 3rd thread
-20 - ADD @29 @28 @38 ; 4th thread
-24 - ADD 001 @19 @19 ; 5th thread
-
-28 - 000 008 000 000 ; seed data for Siérpinski triangle<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">00 - THR 004 000 000 ;</span><br><span class="line">04 - MOV @00 @04 004 ; create 5 parallel threads</span><br><span class="line">08 - MOV @04 @08 004 ; </span><br><span class="line"></span><br><span class="line">0C - MOV @10 @FB 005 ; copy an array of 5 addresses over the PCs</span><br><span class="line"></span><br><span class="line">10 - 024 020 01C 018</span><br><span class="line">14 - 00C 000 000 000 ; 1st thread jumps back to execute the MOV at 0x0Ch</span><br><span class="line"></span><br><span class="line">18 - PIX 000 @29 000 ; 2nd thread</span><br><span class="line">1C - MOV @29 @28 010 ; 3rd thread</span><br><span class="line">20 - ADD @29 @28 @38 ; 4th thread</span><br><span class="line">24 - ADD 001 @19 @19 ; 5th thread</span><br><span class="line"></span><br><span class="line">28 - 000 008 000 000 ; seed data for Siérpinski triangle</span><br></pre></td></tr></table></figure>
 <h3 id="memory-addressing"><strong>Memory Addressing</strong></h3>
-<pre class="line-numbers language-none"><code class="language-none">0 &#x3D; Constant value
-@ &#x3D; Address in memory
-* &#x3D; Address pointed by another address (a.k.a pointer)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span> = Constant value</span><br><span class="line">@ = <span class="keyword">Address </span>in memory</span><br><span class="line">* = <span class="keyword">Address </span>pointed <span class="keyword">by </span>another <span class="keyword">address </span>(a.k.a pointer)</span><br></pre></td></tr></table></figure>
 <p>Examples:</p>
-<pre class="line-numbers language-none"><code class="language-none">Address: 00 01 02 03 04 05 06 07 08 09 0A 0B ...
-Value:   00 1A 22 2A 5B 23 4A 28 00 03 BB CA ...
-
-009 evaluates to 09
-@09 evaluates to 03
-*09 evaluates to 2A<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Address:<span class="number"> 00 </span>01<span class="number"> 02 </span>03<span class="number"> 04 </span>05<span class="number"> 06 </span>07<span class="number"> 08 </span>09 0A 0B ...</span><br><span class="line">Value:  <span class="number"> 00 </span>1A<span class="number"> 22 </span>2A 5B<span class="number"> 23 </span>4A<span class="number"> 28 </span>00<span class="number"> 03 </span>BB CA ...</span><br><span class="line"></span><br><span class="line">009 evaluates to 09</span><br><span class="line">@09 evaluates to 03</span><br><span class="line">*09 evaluates to 2A</span><br></pre></td></tr></table></figure>
 <h3 id="instructions">Instructions</h3>
 <table>
 <colgroup>
@@ -490,7 +437,7 @@ the execution jumps to <code>C</code></td>
 </tbody>
 </table>
 <h4 id="instruction-examples">Instruction Examples</h4>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">FLP @10 @20 004 &#x2F;&#x2F; Flip four (4) values between memory spaces starting from @10 and @20<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FLP @10 @20 004 // Flip four (4) values between memory spaces starting from @10 and @20</span><br></pre></td></tr></table></figure>
 <ol type="1">
 <li>Takes 4 values from memory that starts from address
 <code>10</code>;</li>
@@ -505,7 +452,7 @@ address <code>21</code>;</li>
 <li>...</li>
 </ol></li>
 </ol>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">JGR 020 @30 -04 &#x2F;&#x2F; if value in @30 is smaller or equal to 20, jump forward 4 steps (16 bytes).<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JGR 020 @30 -04 // if value in @30 is smaller or equal to 20, jump forward 4 steps (16 bytes).</span><br></pre></td></tr></table></figure>
 <p>Note that you can prefix the C with minus '-' to get negative
 values.</p>
 <h3 id="opcodes">Opcodes</h3>
@@ -634,25 +581,7 @@ class="citation" data-cites="02">@02</span> *03</td>
 <li>-10 表示向上移动</li>
 </ul>
 </blockquote>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">MOV 022 @80 000        &#x2F;&#x2F; set the starting pixel index for the graph we are about to draw
-MOV 030 @C0 000        &#x2F;&#x2F; set a pointer with a constant value of 30, to which the offset&#39;s constant value in the loop.
-
-# Here is where the loop start
-PIX @80 001 000        &#x2F;&#x2F; draw a pixel with a fixed colour
-ADD @80 *C0 @80        &#x2F;&#x2F; move the horizontal pixel index
-ADD @81 001 @81        &#x2F;&#x2F; store the total movements count
-JGR 00B @81 -0C        &#x2F;&#x2F; jump back if it&#39;s not done
-MOV 000 @81 000        &#x2F;&#x2F; reset the movements count
-ADD @C0 001 @C0        &#x2F;&#x2F; move the offset value in the loop
-JMP @08 000 000        &#x2F;&#x2F; return to the begining of the loop
-
-# ...
-
-# Here is where the .data section begins
-001 010 -01 -10
-000 000 000 000
-000 000 000 000
-000 000 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000        // set the starting pixel index for the graph we are about to draw</span><br><span class="line">MOV 030 @C0 000        // set a pointer with a constant value of 30, to which the offset&#x27;s constant value in the loop.</span><br><span class="line"></span><br><span class="line"># Here is where the loop start</span><br><span class="line">PIX @80 001 000        // draw a pixel with a fixed colour</span><br><span class="line">ADD @80 *C0 @80        // move the horizontal pixel index</span><br><span class="line">ADD @81 001 @81        // store the total movements count</span><br><span class="line">JGR 00B @81 -0C        // jump back if it&#x27;s not done</span><br><span class="line">MOV 000 @81 000        // reset the movements count</span><br><span class="line">ADD @C0 001 @C0        // move the offset value in the loop</span><br><span class="line">JMP @08 000 000        // return to the begining of the loop</span><br><span class="line"></span><br><span class="line"># ...</span><br><span class="line"></span><br><span class="line"># Here is where the .data section begins</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="add-80-c0-80">ADD <span class="citation"
 data-cites="80">@80</span> *C0 <span class="citation"
 data-cites="80">@80</span></h4>
@@ -681,23 +610,7 @@ value</strong> <code>30</code>。</p>
 SQUARE</strong>的过程中，我们其实把他拆分为了绘制四条边，每条边包含了11个像素点。然后通过
 <code>*C0</code> 指向的一个constant
 value来控制我们像素点的移动。如果我们修改一下我们的源码，我们可以非常清楚的看到我们像素点的绘制流程：</p>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">MOV 022 @80 000
-MOV 038 @C0 000
-MOV 001 @82 000        &#x2F;&#x2F; 我们在这里，使用了一个变量来作为 PIX 的参数
-
-PIX @80 @82 000
-ADD @80 *C0 @80
-ADD @81 001 @81
-JGR 00B @81 -0C
-MOV 000 @81 000
-ADD @C0 001 @C0
-ADD @82 001 @82        &#x2F;&#x2F; 当我们画完一条边的时候，我们修改 PIX 参数的值，也就是像素点的颜色
-JMP @0C 000 000
-000 000 000 000
-000 000 000 000
-000 000 000 000
-001 010 -01 -10
-000 000 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000</span><br><span class="line">MOV 038 @C0 000</span><br><span class="line">MOV 001 @82 000        // 我们在这里，使用了一个变量来作为 PIX 的参数</span><br><span class="line"></span><br><span class="line">PIX @80 @82 000</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR 00B @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">ADD @82 001 @82        // 当我们画完一条边的时候，我们修改 PIX 参数的值，也就是像素点的颜色</span><br><span class="line">JMP @0C 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
 <p>这样我们最后得到的图像结果如下：</p>
 <figure>
 <img src="/images/20250319/BIG-SQUARE-NEW.png" alt="BIG SQUARE NEW" />
@@ -708,31 +621,7 @@ JMP @0C 000 000
 <p>第二题是画两个正方形，我们的思路是一样的：将一个正方形拆解为四条边，每次画一条边，并通过一个常量值来控制像素点的上下左右移动。区别在于，这次我们需要一个个额外的变量：<strong>the
 total count of pixels per
 line</strong>，这个变量用于控制我们循环输出时每条边包含的像素点数量；具体的代码实现如下：</p>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly"># .text
-MOV 011 @80 000
-MOV 03C @C0 000
-MOV 00D @82 000        &#x2F;&#x2F; 初始化每条边的长度，这里其实可以省略，因为我通过对点的重复着色，可以避免去进行长度调整
-PIX @80 002 000
-ADD @80 *C0 @80
-ADD @81 001 @81
-JGR @82 @81 -0C
-MOV 000 @81 000
-ADD @C0 001 @C0
-ADD @80 *C0 @80
-ADD @C0 001 @C0
-JMP @0C 000 000
-000 000 000 000
-000 000 000 000
-000 000 000 000
-
-# .data
-# 保存了变量，其中 001, 010, -01, -10 基本是用于控制光标上下左右移动
-# 其余的变量是在画完一条边之后，将pixel移动到我们要绘制的直线的起点
-001 000 010 000
--01 000 -10 011
-001 -02 010 -20
--01 002 -10 000
-000 000 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># .text</span><br><span class="line">MOV 011 @80 000</span><br><span class="line">MOV 03C @C0 000</span><br><span class="line">MOV 00D @82 000        // 初始化每条边的长度，这里其实可以省略，因为我通过对点的重复着色，可以避免去进行长度调整</span><br><span class="line">PIX @80 002 000</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR @82 @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">JMP @0C 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line"></span><br><span class="line"># .data</span><br><span class="line"># 保存了变量，其中 001, 010, -01, -10 基本是用于控制光标上下左右移动</span><br><span class="line"># 其余的变量是在画完一条边之后，将pixel移动到我们要绘制的直线的起点</span><br><span class="line">001 000 010 000</span><br><span class="line">-01 000 -10 011</span><br><span class="line">001 -02 010 -20</span><br><span class="line">-01 002 -10 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="outputs">Outputs</h4>
 <figure>
 <img src="/images/20250319/BIG-SQUARE-II.png" alt="BIG-SQUARE-II" />
@@ -743,24 +632,7 @@ JMP @0C 000 000
 <p>这个问题也不难，思路就是使用FLP指令翻转色彩，但是需要注意的是，我们需要记录移动的次数，因为在换行时我们需要额外翻转一次。</p>
 </blockquote>
 <h4 id="code-2">Code</h4>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly"># @80 &#x3D; first color
-# @81 &#x3D; second color
-# @82 &#x3D; pixel index
-# @83 &#x3D; loop count
-
-MOV 002 @80 000
-MOV 003 @81 000
-MOV 000 @82 000
-MOV 000 @83 000
-PIX @82 @80 000
-FLP @80 @81 000
-ADD @82 001 @82
-ADD @83 001 @83
-JGR @83 00F 008
-JMP -14 000 000
-FLP @80 @81 000
-MOV 000 @83 000
-JMP -20 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># @80 = first color</span><br><span class="line"># @81 = second color</span><br><span class="line"># @82 = pixel index</span><br><span class="line"># @83 = loop count</span><br><span class="line"></span><br><span class="line">MOV 002 @80 000</span><br><span class="line">MOV 003 @81 000</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">PIX @82 @80 000</span><br><span class="line">FLP @80 @81 000</span><br><span class="line">ADD @82 001 @82</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">JGR @83 00F 008</span><br><span class="line">JMP -14 000 000</span><br><span class="line">FLP @80 @81 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">JMP -20 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="result">Result</h4>
 <figure>
 <img src="/images/20250319/CHECKBOARD.png" alt="CHECKBOARD" />
@@ -798,29 +670,7 @@ JMP -20 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><
 的二维数组</p>
 </blockquote>
 <h4 id="code-3">Code</h4>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">MOV 001 @80 000 &#x2F;&#x2F; @80 &#x3D; current color
-MOV 00C @81 000 &#x2F;&#x2F; @81 &#x3D; next color
-MOV 000 @82 000 &#x2F;&#x2F; @82 &#x3D; loop count
-MOV 000 @83 000 &#x2F;&#x2F; @83 &#x3D; pixel index
-
-PIX @83 @80 000 &#x2F;&#x2F; 画该区域内的四个色块
-ADD @83 001 @83
-PIX @83 @80 000
-ADD @83 010 @83
-PIX @83 @80 000
-ADD @83 -01 @83
-PIX @83 @80 000
-ADD @83 -0E @83 &#x2F;&#x2F; 跳转到下一个色块
-ADD @82 001 @82    &#x2F;&#x2F; loop + 1
-
-JGR @82 007 00C &#x2F;&#x2F; 跳转#1
-
-FLP @80 @81 000
-JMP -2C 000 000
-
-MOD @82 008 @82 &#x2F;&#x2F; #1 重置loop count
-ADD @83 010 @83 &#x2F;&#x2F; 移动 pixel index
-JMP -38 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">MOV 001 @80 000 // @80 = current color</span><br><span class="line">MOV 00C @81 000 // @81 = next color</span><br><span class="line">MOV 000 @82 000 // @82 = loop count</span><br><span class="line">MOV 000 @83 000 // @83 = pixel index</span><br><span class="line"></span><br><span class="line">PIX @83 @80 000 // 画该区域内的四个色块</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 010 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 -01 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 -0E @83 // 跳转到下一个色块</span><br><span class="line">ADD @82 001 @82    // loop + 1</span><br><span class="line"></span><br><span class="line">JGR @82 007 00C // 跳转#1</span><br><span class="line"></span><br><span class="line">FLP @80 @81 000</span><br><span class="line">JMP -2C 000 000</span><br><span class="line"></span><br><span class="line">MOD @82 008 @82 // #1 重置loop count</span><br><span class="line">ADD @83 010 @83 // 移动 pixel index</span><br><span class="line">JMP -38 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="result-1">Result</h4>
 <figure>
 <img src="/images/20250319/CHECKBOARD-II.png" alt="CHECKBOARD-II" />
@@ -851,33 +701,7 @@ JMP -38 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><
 </ol>
 </blockquote>
 <h4 id="code-4">Code</h4>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">MOV 000 @80 000 &#x2F;&#x2F; @80 pixel index
-MOV 000 @81 000 &#x2F;&#x2F; @81 loop count of drawing verticals of square
-MOV 000 @82 000 &#x2F;&#x2F; @82 loop count of drawing dots of vertical
-MOV 008 @83 000 &#x2F;&#x2F; @83 current color
-MOV 085 @84 000 &#x2F;&#x2F; @84 direction index
-MOV 001 @85 000 &#x2F;&#x2F; @85 move cursor right
-MOV 010 @86 000 &#x2F;&#x2F; @86 move cursor down
-MOV -01 @87 000 &#x2F;&#x2F; @87 move cursor left
-MOV -10 @88 000 &#x2F;&#x2F; @88 move cursor up
-
-PIX @80 @83 000 &#x2F;&#x2F; pixel a point
-ADD @82 001 @82
-ADD @80 *84 @80
-JGR 003 @82 -0C &#x2F;&#x2F; jump if done drawing a vertical
-ADD @81 001 @81
-JGR @81 003 010 &#x2F;&#x2F; jump if done drawing a square
-ADD @84 001 @84
-MOV 000 @82 000
-JMP -20 000 000 &#x2F;&#x2F; jump to draw next vertical
-
-&#x2F;&#x2F; reset all propertries for drawing the next square
-ADD @80 044 @80
-MOV 000 @81 000
-MOV 000 @82 000
-ADD @83 001 @83
-MOV 085 @84 000
-JMP -48 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">MOV 000 @80 000 // @80 pixel index</span><br><span class="line">MOV 000 @81 000 // @81 loop count of drawing verticals of square</span><br><span class="line">MOV 000 @82 000 // @82 loop count of drawing dots of vertical</span><br><span class="line">MOV 008 @83 000 // @83 current color</span><br><span class="line">MOV 085 @84 000 // @84 direction index</span><br><span class="line">MOV 001 @85 000 // @85 move cursor right</span><br><span class="line">MOV 010 @86 000 // @86 move cursor down</span><br><span class="line">MOV -01 @87 000 // @87 move cursor left</span><br><span class="line">MOV -10 @88 000 // @88 move cursor up</span><br><span class="line"></span><br><span class="line">PIX @80 @83 000 // pixel a point</span><br><span class="line">ADD @82 001 @82</span><br><span class="line">ADD @80 *84 @80</span><br><span class="line">JGR 003 @82 -0C // jump if done drawing a vertical</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR @81 003 010 // jump if done drawing a square</span><br><span class="line">ADD @84 001 @84</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">JMP -20 000 000 // jump to draw next vertical</span><br><span class="line"></span><br><span class="line">// reset all propertries for drawing the next square</span><br><span class="line">ADD @80 044 @80</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">MOV 085 @84 000</span><br><span class="line">JMP -48 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="result-2">Result</h4>
 <figure>
 <img src="/images/20250319/FOURE-SQUARES.png" alt="FOUR-SQUARE" />
@@ -891,44 +715,7 @@ JMP -48 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><
 <code>1 * 1</code>，所以我们可以使用一个变量来存储像素点的数量。</p>
 </blockquote>
 <h4 id="code-5">Code</h4>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">MOV 000 @80 000 &#x2F;&#x2F; @80 pixel index
-MOV 008 @81 000 &#x2F;&#x2F; @81 current color
-MOV 008 @82 000 &#x2F;&#x2F; @82 loop count limiter
-MOV 000 @83 000 &#x2F;&#x2F; @83 dots count
-MOV 001 @84 000 &#x2F;&#x2F; @84 direction controller
-MOV -01 @85 000 &#x2F;&#x2F; @85 next direction controller
-MOV 000 @86 000 &#x2F;&#x2F; @86 line counter
-
-PIX @80 @81 000
-ADD @83 001 @83
-
-&#x2F;&#x2F; judge whether or not the current line is finished
-JEQ @83 @82 00C
-
-&#x2F;&#x2F; move pixel index and continue drawing current line
-ADD @80 @84 @80
-JMP -10 000 000
-
-&#x2F;&#x2F; finish drawing a line, reset all properties
-ADD @86 001 @86
-FLP @84 @85 000
-MOV 000 @83 000
-
-&#x2F;&#x2F; judge whether or not the current square is finished
-JEQ @86 @82 00C
-
-
-ADD @80 010 @80
-JMP -28 000 000
-
-&#x2F;&#x2F; finish drawing a square, reset all properties.
-ADD @80 @82 @80
-ADD @80 010 @80
-DIV @82 002 @82
-ADD @81 001 @81
-MOV 000 @83 000
-MOV 000 @86 000
-JMP -44 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">MOV 000 @80 000 // @80 pixel index</span><br><span class="line">MOV 008 @81 000 // @81 current color</span><br><span class="line">MOV 008 @82 000 // @82 loop count limiter</span><br><span class="line">MOV 000 @83 000 // @83 dots count</span><br><span class="line">MOV 001 @84 000 // @84 direction controller</span><br><span class="line">MOV -01 @85 000 // @85 next direction controller</span><br><span class="line">MOV 000 @86 000 // @86 line counter</span><br><span class="line"></span><br><span class="line">PIX @80 @81 000</span><br><span class="line">ADD @83 001 @83</span><br><span class="line"></span><br><span class="line">// judge whether or not the current line is finished</span><br><span class="line">JEQ @83 @82 00C</span><br><span class="line"></span><br><span class="line">// move pixel index and continue drawing current line</span><br><span class="line">ADD @80 @84 @80</span><br><span class="line">JMP -10 000 000</span><br><span class="line"></span><br><span class="line">// finish drawing a line, reset all properties</span><br><span class="line">ADD @86 001 @86</span><br><span class="line">FLP @84 @85 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line"></span><br><span class="line">// judge whether or not the current square is finished</span><br><span class="line">JEQ @86 @82 00C</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">ADD @80 010 @80</span><br><span class="line">JMP -28 000 000</span><br><span class="line"></span><br><span class="line">// finish drawing a square, reset all properties.</span><br><span class="line">ADD @80 @82 @80</span><br><span class="line">ADD @80 010 @80</span><br><span class="line">DIV @82 002 @82</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">MOV 000 @86 000</span><br><span class="line">JMP -44 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="result-3">Result</h4>
 <figure>
 <img src="/images/20250319/FOUR-SQUARES-II.png" alt="FOUR-SQUARES-II" />
@@ -995,26 +782,7 @@ class="math inline">\(transformer[i + 15]\)</span>；</li>
 </ol>
 </blockquote>
 <h4 id="code-6">Code</h4>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">&#x2F;&#x2F; @01 point to the first parameter of PIX
-&#x2F;&#x2F; @1A is the pointer pointing to current color
-&#x2F;&#x2F; @03 is the column number
-PIX 000 *1A 000 &#x2F;&#x2F; draw pixel
-ADD 001 @01 @01 &#x2F;&#x2F; move pixel index
-ADD 001 @1A @1A &#x2F;&#x2F; move pointer
-MOD @01 010 @03 &#x2F;&#x2F; get column number
-JNE @03 000 @00 &#x2F;&#x2F; if not first column, return to the beginning
-SUB @1A 00F @1A &#x2F;&#x2F; go to the proper position
-
-&#x2F;&#x2F; 01B is is the position of @1A
-JMP @00 01B 002
-001 003 004 001
-001 004 003 001
-004 001 001 004
-001 001 002 001
-001 004 001 003
-004 001 001 004
-003 001 004 001
-001 002 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// @01 point to the first parameter of PIX</span><br><span class="line">// @1A is the pointer pointing to current color</span><br><span class="line">// @03 is the column number</span><br><span class="line">PIX 000 *1A 000 // draw pixel</span><br><span class="line">ADD 001 @01 @01 // move pixel index</span><br><span class="line">ADD 001 @1A @1A // move pointer</span><br><span class="line">MOD @01 010 @03 // get column number</span><br><span class="line">JNE @03 000 @00 // if not first column, return to the beginning</span><br><span class="line">SUB @1A 00F @1A // go to the proper position</span><br><span class="line"></span><br><span class="line">// 01B is is the position of @1A</span><br><span class="line">JMP @00 01B 002</span><br><span class="line">001 003 004 001</span><br><span class="line">001 004 003 001</span><br><span class="line">004 001 001 004</span><br><span class="line">001 001 002 001</span><br><span class="line">001 004 001 003</span><br><span class="line">004 001 001 004</span><br><span class="line">003 001 004 001</span><br><span class="line">001 002 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="result-4">Result</h4>
 <figure>
 <img src="/images/20250319/CARPET.png" alt="CARPET" />
@@ -1049,20 +817,7 @@ JMP @00 01B 002
 </ol>
 </blockquote>
 <h4 id="code-7">Code</h4>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">PIX @2E @2F 000
-ADD @2E 001 @2E
-PIX @2E @30 000
-ADD @2E 001 @2E
-PIX @2E @30 000
-ADD @2E 001 @2E
-PIX @2E @30 000
-ADD @2E 001 @2E
-PIX @2E @2F 000
-ADD @2E 001 @2E
-
-FLP @2F @30 000
-JMP -2C 000 003
-00B<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">PIX @2E @2F 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @30 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @30 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @30 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @2F 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line"></span><br><span class="line">FLP @2F @30 000</span><br><span class="line">JMP -2C 000 003</span><br><span class="line">00B</span><br></pre></td></tr></table></figure>
 <h4 id="result-5">Result</h4>
 <figure>
 <img src="/images/20250319/CARPET-II.png" alt="CARPET II" />
@@ -1089,19 +844,7 @@ and then repeatedly cutting smaller triangles out of its center.</p>
 <p>为了实现更简便，我们可以在最开始时就定义两个点，这两个点重合作为起始点，随后分别作为竖边和斜边进行移动。</p>
 <p>这样，我们就得到了我们需要的竖边和斜边，随后我们将竖边的点开始向斜边的点开始移动，直到竖边的点和斜边的点重合。</p>
 </blockquote>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">PIX @28 008 000
-PIX @29 008 000
-ADD @28 010 @28
-ADD @29 011 @29
-ADD @30 001 @30
-JNE @30 00F -14
-PIX @28 008 000
-ADD @28 001 @28
-JNE @28 @29 -08
-PIX @28 008 000
-
-# .data
-000 000 000<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">PIX @28 008 000</span><br><span class="line">PIX @29 008 000</span><br><span class="line">ADD @28 010 @28</span><br><span class="line">ADD @29 011 @29</span><br><span class="line">ADD @30 001 @30</span><br><span class="line">JNE @30 00F -14</span><br><span class="line">PIX @28 008 000</span><br><span class="line">ADD @28 001 @28</span><br><span class="line">JNE @28 @29 -08</span><br><span class="line">PIX @28 008 000</span><br><span class="line"></span><br><span class="line"># .data</span><br><span class="line">000 000 000</span><br></pre></td></tr></table></figure>
 <h4 id="result-for-drawing-a-triangle">Result for drawing a
 triangle</h4>
 <figure>
@@ -1132,27 +875,7 @@ alt="SIERPINSKI TRIANGLE" />
 </ol>
 <p>现在三角形的边使用的颜色是 <code>001</code>，而内部填充的则是
 <code>00C</code>；</p>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">PIX 000 @27 000
-ADD @26 @27 @37        ; set color for the next 10th pixel
-
-JEQ @37 000 014        ; if (topLeft + top) &#x3D;&#x3D; 0, the value is correct, jump out.
-JNE @26 @27 00C        ; if (topLeft &#x3D;&#x3D; top) set color as 0xC
-MOV 00C @37 000
-JMP 008 000 000
-MOV 001 @37 000        ; else set color as 0x1
-
-ADD @01 001 @01        ; add pixel index
-MOV @27 @26 011
-JMP @00 000 001
-
-; if (topLeft &#x3D;&#x3D; 0 &amp;&amp; top &#x3D;&#x3D; 0) return 0;
-; if ((topLeft &#x3D;&#x3D; 1 &amp;&amp; top &#x3D;&#x3D; 1) || (topLeft &#x3D;&#x3D; C &amp;&amp; top &#x3D;&#x3D; C)) return C;
-; else return 1;
-;
-; 以上的逻辑可以优化为
-; if (topLeft &#x3D;&#x3D; 0 &amp;&amp; top &#x3D;&#x3D; 0) return 0;
-; if (topLeft &#x3D;&#x3D; top) return C;
-; else return 1;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">PIX 000 @27 000</span><br><span class="line">ADD @26 @27 @37        ; set color for the next 10th pixel</span><br><span class="line"></span><br><span class="line">JEQ @37 000 014        ; if (topLeft + top) == 0, the value is correct, jump out.</span><br><span class="line">JNE @26 @27 00C        ; if (topLeft == top) set color as 0xC</span><br><span class="line">MOV 00C @37 000</span><br><span class="line">JMP 008 000 000</span><br><span class="line">MOV 001 @37 000        ; else set color as 0x1</span><br><span class="line"></span><br><span class="line">ADD @01 001 @01        ; add pixel index</span><br><span class="line">MOV @27 @26 011</span><br><span class="line">JMP @00 000 001</span><br><span class="line"></span><br><span class="line">; if (topLeft == 0 &amp;&amp; top == 0) return 0;</span><br><span class="line">; if ((topLeft == 1 &amp;&amp; top == 1) || (topLeft == C &amp;&amp; top == C)) return C;</span><br><span class="line">; else return 1;</span><br><span class="line">;</span><br><span class="line">; 以上的逻辑可以优化为</span><br><span class="line">; if (topLeft == 0 &amp;&amp; top == 0) return 0;</span><br><span class="line">; if (topLeft == top) return C;</span><br><span class="line">; else return 1;</span><br></pre></td></tr></table></figure>
 <h4 id="result-7">Result</h4>
 <figure>
 <img src="/images/20250319/SIERPINSKI-TRIANGLE-II.png"
@@ -1177,29 +900,7 @@ alt="SIERPINSKI TRIANGLE" />
 </ol>
 <p>没有想到有什么好的方法来优化这个逻辑，可以尝试使用位图或者其他的方式。</p>
 </blockquote>
-<pre class="line-numbers language-nasm" data-language="nasm"><code class="language-nasm">MOV <span class="token operator">*</span>1C @1A <span class="token number">000</span>
-PIX @1A 00A <span class="token number">000</span>
-ADD @1A <span class="token number">001</span> @1A
-JNE @1A <span class="token operator">*</span><span class="token number">1D</span> <span class="token operator">-</span><span class="token number">08</span>
-
-ADD @1C <span class="token number">002</span> @1C
-ADD @<span class="token number">1D</span> <span class="token number">002</span> @<span class="token number">1D</span>
-JMP <span class="token operator">-</span><span class="token number">18</span> <span class="token number">000</span> <span class="token number">000</span>
-01E 01F <span class="token number">006</span> 00A
-
-<span class="token number">014</span> 01C <span class="token number">023</span> <span class="token number">02D</span>
-<span class="token number">032</span> <span class="token number">036</span> <span class="token number">037</span> <span class="token number">039</span>
-03A 03E <span class="token number">041</span> <span class="token number">046</span>
-<span class="token number">047</span> <span class="token number">049</span> 04A 04F
-<span class="token number">051</span> <span class="token number">056</span> <span class="token number">057</span> <span class="token number">059</span>
-05A 05F <span class="token number">060</span> <span class="token number">066</span>
-<span class="token number">067</span> <span class="token number">069</span> 06A 0A0
-0A1 0A3
-0A4 0AC 0AD 0AF
-<span class="token number">0B1</span> 0B4 0B5 0BB
-0BC 0BF 0C2 0C5
-0CB 0CE <span class="token number">0D3</span> 0DD
-<span class="token number">0E4</span> 0EC 0F6 0FA<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">MOV *1C @1A 000</span><br><span class="line">PIX @1A 00A 000</span><br><span class="line">ADD @1A 001 @1A</span><br><span class="line">JNE @1A *1D -08</span><br><span class="line"></span><br><span class="line">ADD @1C 002 @1C</span><br><span class="line">ADD @1D 002 @1D</span><br><span class="line">JMP -18 000 000</span><br><span class="line">01E 01F 006 00A</span><br><span class="line"></span><br><span class="line">014 01C 023 02D</span><br><span class="line">032 036 037 039</span><br><span class="line">03A 03E 041 046</span><br><span class="line">047 049 04A 04F</span><br><span class="line">051 056 057 059</span><br><span class="line">05A 05F 060 066</span><br><span class="line">067 069 06A 0A0</span><br><span class="line">0A1 0A3</span><br><span class="line">0A4 0AC 0AD 0AF</span><br><span class="line">0B1 0B4 0B5 0BB</span><br><span class="line">0BC 0BF 0C2 0C5</span><br><span class="line">0CB 0CE 0D3 0DD</span><br><span class="line">0E4 0EC 0F6 0FA</span><br></pre></td></tr></table></figure>
 <h4 id="result-8">Result</h4>
 <figure>
 <img src="/images/20250319/SMILEY-FACE.png" alt="SMILEY-FACE" />
@@ -1209,31 +910,7 @@ JMP <span class="token operator">-</span><span class="token number">18</span> <s
 <blockquote>
 <p>这个思路和上面的思路其实是一样的，就直接贴代码了</p>
 </blockquote>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">MOV @1A @06 001
-PIX 005 000 000
-SUB @06 010 @06
-ADD 001 @05 @05
-JGR @06 00F @04
-ADD 001 @01 @01
-JMP @00 058 0A0
-098 070 034 02F
-014 01F 080 014
-01F 014 03F 014
-03F 060 014 01F
-024 03F 014 03F
-060 014 04F 044
-080 06F 090 028
-01C 028 01C 028
-070 038 01C 028
-01C 038 050 048
-04C 048 040 02F
-018 01C 01A 02C
-01A 01C 018 02F
-040 03F 06C 03F
-040 02F 08C 02F
-060 03C 020 03C
-070 034 040 034
-050 044 040 044<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">MOV @1A @06 001</span><br><span class="line">PIX 005 000 000</span><br><span class="line">SUB @06 010 @06</span><br><span class="line">ADD 001 @05 @05</span><br><span class="line">JGR @06 00F @04</span><br><span class="line">ADD 001 @01 @01</span><br><span class="line">JMP @00 058 0A0</span><br><span class="line">098 070 034 02F</span><br><span class="line">014 01F 080 014</span><br><span class="line">01F 014 03F 014</span><br><span class="line">03F 060 014 01F</span><br><span class="line">024 03F 014 03F</span><br><span class="line">060 014 04F 044</span><br><span class="line">080 06F 090 028</span><br><span class="line">01C 028 01C 028</span><br><span class="line">070 038 01C 028</span><br><span class="line">01C 038 050 048</span><br><span class="line">04C 048 040 02F</span><br><span class="line">018 01C 01A 02C</span><br><span class="line">01A 01C 018 02F</span><br><span class="line">040 03F 06C 03F</span><br><span class="line">040 02F 08C 02F</span><br><span class="line">060 03C 020 03C</span><br><span class="line">070 034 040 034</span><br><span class="line">050 044 040 044</span><br></pre></td></tr></table></figure>
 <h4 id="result-9">Result</h4>
 <figure>
 <img src="/images/20250319/MARIO.png" alt="MARIO" />
@@ -1275,26 +952,11 @@ class="math inline">\(N+1\)</span></p>
 Triangle</strong>的绘制过程中，有用户给出了一个非常非常巧妙的方法，参考
 <a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/threads.htm">BOX-256 Threads - A
 practical example</a> 中提出的：</p>
-<pre class="line-numbers language-assembly" data-language="assembly"><code class="language-assembly">00 - THR 004         ;
-04 - MOV @00 @04 004 ; create 5 parallel threads
-08 - MOV @04 @08 004 ; 
-
-0C - MOV @10 @FB 005 ; copy an array of 5 addresses over the PCs
-
-10 - 024 020 01C 018
-14 - 00C 000 000 000 ; 1st thread jumps back to execute the MOV at 0x0Ch
-
-18 - PIX 000 @29 000 ; 2nd thread
-1C - MOV @29 @28 010 ; 3rd thread
-20 - ADD @29 @28 @38 ; 4th thread
-24 - ADD 001 @19 @19 ; 5th thread
-
-28 - 000 008 000 000 ; seed data for Siérpinski triangle<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">00 - THR 004         ;</span><br><span class="line">04 - MOV @00 @04 004 ; create 5 parallel threads</span><br><span class="line">08 - MOV @04 @08 004 ; </span><br><span class="line"></span><br><span class="line">0C - MOV @10 @FB 005 ; copy an array of 5 addresses over the PCs</span><br><span class="line"></span><br><span class="line">10 - 024 020 01C 018</span><br><span class="line">14 - 00C 000 000 000 ; 1st thread jumps back to execute the MOV at 0x0Ch</span><br><span class="line"></span><br><span class="line">18 - PIX 000 @29 000 ; 2nd thread</span><br><span class="line">1C - MOV @29 @28 010 ; 3rd thread</span><br><span class="line">20 - ADD @29 @28 @38 ; 4th thread</span><br><span class="line">24 - ADD 001 @19 @19 ; 5th thread</span><br><span class="line"></span><br><span class="line">28 - 000 008 000 000 ; seed data for Siérpinski triangle</span><br></pre></td></tr></table></figure>
 <p>这段代码的其他部分解读可以参考本文的 <a
 href="#SIERPINSKI-TRIANGLE">SIERPINSKI
 TRIANGLE</a>，但是这里还存在的一个问题是，下面的代码的工作原理只是根据代码以及图形倒推，并没有给出严禁的证明。</p>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">20 - ADD @29 @28 @38 ; 4th thread
-24 - ADD 001 @19 @19 ; 5th thread<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">20 - ADD @29 @28 @38 ; 4th thread</span><br><span class="line">24 - ADD 001 @19 @19 ; 5th thread</span><br></pre></td></tr></table></figure>
 <h3 id="其他">其他</h3>
 <p>暂时来说，我们目前大部分方法都是使用的比较简单原始的暴力破解，其实我们还可以使用很多手段来优化，不过这是一个处于学习目的的小练手项目，就不准备再继续投入更多的时间了。</p>
 

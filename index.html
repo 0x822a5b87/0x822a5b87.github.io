@@ -300,14 +300,7 @@ a separate guest OS like in traditional virtualization.</p>
 <blockquote>
 <p>本文基于 <code>OpenCloudOS</code> 操作系统以及 <code>x86_64</code>
 平台，<code>go1.24.11</code> 语言开发测试。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">uname</span> <span class="token parameter variable">-a</span>
-<span class="token comment"># Linux VM-0-10-opencloudos 6.6.117-45.1.oc9.x86_64 #1 SMP Tue Dec 16 11:49:47 CST 2025 x86_64 x86_64 x86_64 GNU/Linux</span>
-
-go version
-<span class="token comment"># go version go1.24.11 linux/amd64</span>
-
-<span class="token function">docker</span> <span class="token parameter variable">--version</span>
-<span class="token comment"># Docker version 29.1.3, build f52814d</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">uname -a</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">Linux VM-0-10-opencloudos 6.6.117-45.1.oc9.x86_64 <span class="comment">#1 SMP Tue Dec 16 11:49:47 CST 2025 x86_64 x86_64 x86_64 GNU/Linux</span></span></span><br><span class="line"></span><br><span class="line">go version</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">go version go1.24.11 linux/amd64</span></span><br><span class="line"></span><br><span class="line">docker --version</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">Docker version 29.1.3, build f52814d</span></span><br></pre></td></tr></table></figure>
 </blockquote>
 <p><a target="_blank" rel="noopener" href="https://www.docker.com/">Docker</a> 是基于 Linux Namespace
 和 Cgroup 实现的轻量级虚拟化平台。相较于传统虚拟机（如 <a target="_blank" rel="noopener" href="https://www.virtualbox.org/">Oracle VirtualBox</a>），Docker
@@ -524,34 +517,11 @@ n个线程，属于同一个进程的线程共享进程的资源， 比如
     <div class="post-body" itemprop="articleBody">
           <h1 id="进程间通信">进程间通信</h1>
 <h2 id="基于文件的管道">基于文件的管道</h2>
-<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// os/src/fs/pipe.rs</span>
-
-<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">Pipe</span> <span class="token punctuation">&#123;</span>
-    readable<span class="token punctuation">:</span> <span class="token keyword">bool</span><span class="token punctuation">,</span>
-    writable<span class="token punctuation">:</span> <span class="token keyword">bool</span><span class="token punctuation">,</span>
-    buffer<span class="token punctuation">:</span> <span class="token class-name">Arc</span><span class="token operator">&lt;</span><span class="token class-name">Mutex</span><span class="token operator">&lt;</span><span class="token class-name">PipeRingBuffer</span><span class="token operator">>></span><span class="token punctuation">,</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    readable: <span class="type">bool</span>,</span><br><span class="line">    writable: <span class="type">bool</span>,</span><br><span class="line">    buffer: Arc&lt;Mutex&lt;PipeRingBuffer&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>通过 <code>buffer</code>
 字段还可以找到该管道端所在的管道自身。后续我们将为它实现
 <code>File</code> Trait ，之后它便可以通过文件描述符来访问。</p>
-<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// os/src/fs/pipe.rs</span>
-
-<span class="token keyword">const</span> <span class="token constant">RING_BUFFER_SIZE</span><span class="token punctuation">:</span> <span class="token keyword">usize</span> <span class="token operator">=</span> <span class="token number">32</span><span class="token punctuation">;</span>
-
-<span class="token attribute attr-name">#[derive(Copy, Clone, PartialEq)]</span>
-<span class="token keyword">enum</span> <span class="token type-definition class-name">RingBufferStatus</span> <span class="token punctuation">&#123;</span>
-    <span class="token constant">FULL</span><span class="token punctuation">,</span>
-    <span class="token constant">EMPTY</span><span class="token punctuation">,</span>
-    <span class="token constant">NORMAL</span><span class="token punctuation">,</span>
-<span class="token punctuation">&#125;</span>
-
-<span class="token keyword">pub</span> <span class="token keyword">struct</span> <span class="token type-definition class-name">PipeRingBuffer</span> <span class="token punctuation">&#123;</span>
-    arr<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token keyword">u8</span><span class="token punctuation">;</span> <span class="token constant">RING_BUFFER_SIZE</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
-    head<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">,</span>
-    tail<span class="token punctuation">:</span> <span class="token keyword">usize</span><span class="token punctuation">,</span>
-    status<span class="token punctuation">:</span> <span class="token class-name">RingBufferStatus</span><span class="token punctuation">,</span>
-    write_end<span class="token punctuation">:</span> <span class="token class-name">Option</span><span class="token operator">&lt;</span><span class="token class-name">Weak</span><span class="token operator">&lt;</span><span class="token class-name">Pipe</span><span class="token operator">>></span><span class="token punctuation">,</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> RING_BUFFER_SIZE: <span class="type">usize</span> = <span class="number">32</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, PartialEq)]</span></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">RingBufferStatus</span> &#123;</span><br><span class="line">    FULL,</span><br><span class="line">    EMPTY,</span><br><span class="line">    NORMAL,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">PipeRingBuffer</span> &#123;</span><br><span class="line">    arr: [<span class="type">u8</span>; RING_BUFFER_SIZE],</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">    status: RingBufferStatus,</span><br><span class="line">    write_end: <span class="type">Option</span>&lt;Weak&lt;Pipe&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/#more" rel="contents">

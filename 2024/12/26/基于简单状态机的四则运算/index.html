@@ -248,22 +248,7 @@ classDef ptr fill: #696,color: #fff,font-weight: bold;</pre>
 <li>消除左递归；</li>
 <li>优先级控制；</li>
 </ol>
-<pre class="line-numbers language-antlr4" data-language="antlr4"><code class="language-antlr4"><span class="token keyword">grammar</span> Arithmetic<span class="token punctuation">;</span>
-
-<span class="token definition rule class-name">expression</span><span class="token punctuation">:</span> term 
-    <span class="token operator">|</span> expression <span class="token string">'+'</span> term
-    <span class="token operator">|</span> expression <span class="token string">'-'</span> term
-    <span class="token punctuation">;</span>
-
-<span class="token definition rule class-name">term</span><span class="token punctuation">:</span> factor 
-    <span class="token operator">|</span> term <span class="token string">'*'</span> factor
-    <span class="token operator">|</span> term <span class="token string">'/'</span> factor
-    <span class="token punctuation">;</span>
-
-<span class="token definition rule class-name">factor</span><span class="token punctuation">:</span> <span class="token constant">NUMBER</span> <span class="token operator">|</span> <span class="token string">'('</span> expression <span class="token string">')'</span><span class="token punctuation">;</span>
-
-<span class="token definition token constant">NUMBER</span><span class="token punctuation">:</span> <span class="token character-class regex"><span class="token punctuation">[</span>0<span class="token range punctuation">-</span>9<span class="token punctuation">]</span></span><span class="token operator">+</span><span class="token punctuation">;</span>
-<span class="token definition token constant">WS</span><span class="token punctuation">:</span> <span class="token character-class regex"><span class="token punctuation">[</span> <span class="token escape">\t</span><span class="token escape">\r</span><span class="token escape">\n</span><span class="token punctuation">]</span></span><span class="token operator">+</span> <span class="token operator">-></span> <span class="token command"><span class="token function">skip</span></span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">grammar Arithmetic;</span><br><span class="line"></span><br><span class="line">expression: term </span><br><span class="line">    | expression &#x27;+&#x27; term</span><br><span class="line">    | expression &#x27;-&#x27; term</span><br><span class="line">    ;</span><br><span class="line"></span><br><span class="line">term: factor </span><br><span class="line">    | term &#x27;*&#x27; factor</span><br><span class="line">    | term &#x27;/&#x27; factor</span><br><span class="line">    ;</span><br><span class="line"></span><br><span class="line">factor: NUMBER | &#x27;(&#x27; expression &#x27;)&#x27;;</span><br><span class="line"></span><br><span class="line">NUMBER: [0-9]+;</span><br><span class="line">WS: [ \t\r\n]+ -&gt; skip;</span><br></pre></td></tr></table></figure>
 <h3 id="消除左递归">消除左递归</h3>
 <p>消除左递归：在语法规则中，如果存在左递归，会导致无限循环的解析过程。为了消除左递归，可以通过将左递归的规则拆分成多个规则，并使用递归调用来实现。在四则运算的语法规则中。例如，通过将
 expression 定义为一个 term 或者一个 expression 加上一个
