@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="build my own docker from scratch  Docker is an OS‑level virtualization (or containerization) platform, which allows applications to share the host OS kernel instead of running a separate guest OS like">
+<meta property="og:type" content="article">
+<meta property="og:title" content="build my own docker from scratch">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/12/18/build-my-own-docker-from-scratch/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="build my own docker from scratch  Docker is an OS‑level virtualization (or containerization) platform, which allows applications to share the host OS kernel instead of running a separate guest OS like">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-18T15:24:46.000Z">
+<meta property="article:modified_time" content="2025-12-22T11:59:56.387Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="docker">
+<meta property="article:tag" content="go">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/12/18/build-my-own-docker-from-scratch/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/18/build-my-own-docker-from-scratch/","path":"2025/12/18/build-my-own-docker-from-scratch/","title":"build my own docker from scratch"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>build my own docker from scratch | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#build-my-own-docker-from-scratch"><span class="nav-number">1.</span> <span class="nav-text">build my own docker from
+scratch</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#docker%E4%BE%9D%E8%B5%96%E7%9A%84linux%E5%9F%BA%E7%A1%80%E7%89%B9%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">docker依赖的linux基础特性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#namespace"><span class="nav-number">3.1.</span> <span class="nav-text">namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#uts-namespace"><span class="nav-number">3.1.1.</span> <span class="nav-text">UTS namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#user-namespace"><span class="nav-number">3.1.2.</span> <span class="nav-text">User namespace</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroups"><span class="nav-number">3.2.</span> <span class="nav-text">cgroups</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.2.1.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#subsystem"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">Subsystem</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hierarchy"><span class="nav-number">3.2.1.2.</span> <span class="nav-text">Hierarchy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cgroup%E6%8E%A7%E5%88%B6%E7%BB%84"><span class="nav-number">3.2.1.3.</span> <span class="nav-text">cgroup（控制组）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E8%80%85%E7%9A%84%E6%A0%B8%E5%BF%83%E5%85%B3%E7%B3%BB"><span class="nav-number">3.2.1.4.</span> <span class="nav-text">三者的核心关系</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAhierarchy"><span class="nav-number">3.2.1.4.1.</span> <span class="nav-text">创建hierarchy</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-subsystem"><span class="nav-number">3.2.1.4.2.</span> <span class="nav-text">配置 Subsystem</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%88%91%E4%BB%AC%E7%9A%84cgroup"><span class="nav-number">3.2.1.4.3.</span> <span class="nav-text">测试我们的cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E5%9B%9E%E9%A1%BE"><span class="nav-number">3.2.2.</span> <span class="nav-text">整体回顾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8cgroup"><span class="nav-number">3.2.3.</span> <span class="nav-text">docker如何使用cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%AE%B9%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">构造容器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8Enamespace%E6%9E%84%E9%80%A0%E5%AE%B9%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">基于namespace构造容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E6%9E%84%E9%80%A0%E7%9A%84%E5%AE%B9%E5%99%A8%E5%A2%9E%E5%8A%A0cgroup%E9%99%90%E5%88%B6"><span class="nav-number">4.2.</span> <span class="nav-text">为构造的容器增加cgroup限制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cgroup%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">4.2.1.</span> <span class="nav-text">cgroup的分类</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#proc"><span class="nav-number">5.1.</span> <span class="nav-text">Proc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E6%80%A7"><span class="nav-number">5.1.1.</span> <span class="nav-text">核心特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.2.</span> <span class="nav-text">目录结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#namespace-1"><span class="nav-number">5.2.</span> <span class="nav-text">Namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">5.2.1.</span> <span class="nav-text">Namespace 是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-namespace-%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">5.2.2.</span> <span class="nav-text">Linux Namespace 的分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace-%E7%9A%84%E6%A0%B8%E5%BF%83%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">5.2.3.</span> <span class="nav-text">Namespace 的核心工作原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroup"><span class="nav-number">5.3.</span> <span class="nav-text">cgroup</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cgroup%E7%9A%84%E6%A0%B8%E5%BF%83%E6%96%87%E4%BB%B6"><span class="nav-number">5.3.1.</span> <span class="nav-text">cgroup的核心文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8cgroup%E9%99%90%E5%88%B6cpu-50-%E5%86%85%E5%AD%98-1gb"><span class="nav-number">5.3.2.</span> <span class="nav-text">使用cgroup限制CPU 50% + 内存
+1GB</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E5%90%AF%E7%94%A8%E5%AD%90%E7%B3%BB%E7%BB%9F%E4%BC%A0%E9%80%92%E6%9D%83%E9%99%90"><span class="nav-number">5.3.2.1.</span> <span class="nav-text">一、启用子系统传递权限</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E5%88%9B%E5%BB%BA%E8%87%AA%E5%AE%9A%E4%B9%89-cgroup-%E5%AD%90%E7%BB%84"><span class="nav-number">5.3.2.2.</span> <span class="nav-text">二、创建自定义 Cgroup 子组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E9%85%8D%E7%BD%AE%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6%E8%A7%84%E5%88%99"><span class="nav-number">5.3.2.3.</span> <span class="nav-text">三、配置资源限制规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E7%BB%91%E5%AE%9A%E8%BF%9B%E7%A8%8B%E5%88%B0-cgroup-%E5%AD%90%E7%BB%84"><span class="nav-number">5.3.2.4.</span> <span class="nav-text">四、绑定进程到 Cgroup 子组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E5%85%B6%E4%BB%96%E9%99%90%E5%88%B6"><span class="nav-number">5.3.2.5.</span> <span class="nav-text">五、其他限制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#uts"><span class="nav-number">5.4.</span> <span class="nav-text">UTS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hostname"><span class="nav-number">5.4.1.</span> <span class="nav-text">hostname</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#domainname"><span class="nav-number">5.4.2.</span> <span class="nav-text">domainname</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/18/build-my-own-docker-from-scratch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="build my own docker from scratch | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          build my own docker from scratch
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-18 23:24:46" itemprop="dateCreated datePublished" datetime="2025-12-18T23:24:46+08:00">2025-12-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-12-22 19:59:56" itemprop="dateModified" datetime="2025-12-22T19:59:56+08:00">2025-12-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="build-my-own-docker-from-scratch">build my own docker from
+scratch</h1>
+<blockquote>
+<p>Docker is an OS‑level virtualization (or containerization) platform,
+which allows applications to share the host OS kernel instead of running
+a separate guest OS like in traditional virtualization.</p>
+</blockquote>
+<h1 id="前言">前言</h1>
+<blockquote>
+<p>本文基于 <code>OpenCloudOS</code> 操作系统以及 <code>x86_64</code>
+平台，<code>go1.24.11</code> 语言开发测试。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">uname</span> <span class="token parameter variable">-a</span>
+<span class="token comment"># Linux VM-0-10-opencloudos 6.6.117-45.1.oc9.x86_64 #1 SMP Tue Dec 16 11:49:47 CST 2025 x86_64 x86_64 x86_64 GNU/Linux</span>
+
+go version
+<span class="token comment"># go version go1.24.11 linux/amd64</span>
+
+<span class="token function">docker</span> <span class="token parameter variable">--version</span>
+<span class="token comment"># Docker version 29.1.3, build f52814d</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</blockquote>
+<p><a target="_blank" rel="noopener" href="https://www.docker.com/">Docker</a> 是基于 Linux Namespace
+和 Cgroup 实现的轻量级虚拟化平台。相较于传统虚拟机（如 <a
+target="_blank" rel="noopener" href="https://www.virtualbox.org/">Oracle VirtualBox</a>），Docker
+无需模拟硬件和运行独立内核，仅通过内核级的资源隔离与限制实现
+“虚拟环境”，因此更轻量级（毫秒级启动）、资源占用更低 ——
+同一台宿主机上的所有容器<strong>共享宿主机内核</strong>，这是容器与虚拟机的核心区别。</p>
+<p><strong>容器的本质是：Linux 内核通过隔离 “进程、文件、网络、用户”
+等资源视图，并限制资源使用量，构建出的
+“类独立主机环境”</strong>。其核心实现可拆解为三大模块：</p>
+<ol type="1">
+<li>主机身份标识（UTS Namespace 隔离）</li>
+</ol>
+<ul>
+<li>核心对象：hostname（主机名）和 domainname（NIS
+域名，现代几乎废弃）；</li>
+<li>作用：让容器拥有独立的主机身份标识，模拟 “独立机器”
+的特征（如容器内修改 hostname 不会影响宿主机或其他容器）；</li>
+<li>本质：内核通过 struct utsname
+结构体为不同容器维护独立的身份副本，仅在各自 UTS Namespace 内生效。</li>
+</ul>
+<ol start="2" type="1">
+<li>资源视图隔离（各类 Namespace 核心能力）</li>
+</ol>
+<ul>
+<li>通过 Linux Namespace 为容器隔离核心资源的
+“可见范围”，让容器仅能感知到自己的资源：</li>
+<li>进程隔离（PID Namespace）：容器内进程 ID 从 1 开始，无法看到宿主机 /
+其他容器的进程；Linux 进程天然拥有独立的虚拟内存地址空间，同容器</li>
+<li>进程可通过消息队列、共享内存、管道等方式通信，跨容器进程需通过网络 /
+挂载卷间接通信。</li>
+<li>文件系统隔离（Mount Namespace）：容器拥有独立的根文件系统（/），挂载
+/ 卸载操作仅影响自身，不波及宿主机（如容器内删除 /bin/sh
+不会影响宿主机）。</li>
+<li>网络隔离（Network
+Namespace）：容器拥有独立的网卡、IP、端口和路由表，默认与宿主机 /
+其他容器网络隔离，需通过端口映射、网桥等方式对外通信。</li>
+<li>用户 / 组隔离（User Namespace）：容器内的 root（UID
+0）不等同于宿主机的 root，实现权限隔离（即使容器内以 root
+运行，宿主机层面仅拥有普通用户权限）。</li>
+<li>IPC 隔离（IPC Namespace）：容器内的消息队列、共享内存等 IPC
+资源仅对本容器可见，避免跨容器的 IPC 干扰。</li>
+</ul>
+<ol start="3" type="1">
+<li>资源限制工具（<a href="#cgroup">cgroup</a>）</li>
+</ol>
+<ul>
+<li>Cgroup（控制组）并非
+“隔离资源视图”，而是限制容器对宿主机资源的使用量，防止单个容器占用过多资源导致宿主机崩溃：</li>
+<li>核心管控维度：CPU 使用率、内存上限、磁盘 IO
+速率、进程数量、网络带宽等；</li>
+<li>作用：保证多容器在同一宿主机上公平调度（如限制容器最多使用 1 核
+CPU、2GB 内存）。</li>
+</ul>
+<p><strong>当以上三类能力（身份标识隔离 + 核心资源视图隔离 +
+资源用量限制）共同作用时，容器就成为了一个
+“对宿主机无感知、对外表现为独立主机” 的轻量级运行环境。</strong></p>
+<pre class="mermaid">flowchart BT
+
+subgraph hardware
+    cpu("cpu")
+    gpu("gpu")
+    disk("disk")
+    net_card("物理网卡")
+    memory("memory")
+end
+
+subgraph kernel[Linux Kernel 内核]
+    subgraph kernel_core[内核核心能力]
+        process("进程管理")
+        fs("文件系统")
+        net("网络协议栈")
+        user("用户/组管理")
+        ipc("进程间通信")
+    end
+
+    subgraph cgroup[资源限制 cgroup 子系统]
+        cgroup1("cpu 限制")
+        cgroup3("memory 限制")
+        cgroup4("blkio/disk 限制")
+        cgroup5("pid 数量限制")
+    end
+end
+
+subgraph view[Namespace 视图隔离]
+    PID("PID Namespace")
+    Mount("Mount Namespace")
+    Network("Network Namespace")
+    User("User Namespace")
+    IPC("IPC Namespace")
+end
+
+subgraph identity[主机身份标识]
+    UTS("UTS Namespace(hostname/domain)")
+end
+
+subgraph containers[容器集群]
+    mysql("mysql 容器")
+    redis("redis 容器")
+    nginx("nginx 容器")
+end
+
+hardware --> kernel
+kernel_core --> view
+kernel_core --> identity
+
+cgroup --> containers
+view --> containers
+identity --> containers</pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">docker</span> run <span class="token parameter variable">-it</span> <span class="token parameter variable">-d</span> <span class="token punctuation">\</span>
+			<span class="token parameter variable">--network</span> <span class="token function">host</span> <span class="token punctuation">\</span>
+			<span class="token parameter variable">--name</span> example-container <span class="token punctuation">\</span>
+			<span class="token parameter variable">-v</span> <span class="token variable">$&#123;CURDIR&#125;</span>:/mnt <span class="token punctuation">\</span>
+			<span class="token parameter variable">-w</span> /mnt <span class="token punctuation">\</span>
+			example-container<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h1 id="docker依赖的linux基础特性">docker依赖的linux基础特性</h1>
+<h2 id="namespace">namespace</h2>
+<h3 id="uts-namespace">UTS namespace</h3>
+<p>我们的第一个例子，我们使用 <code>CLONE_NEWUTS</code>
+指定我们要创建一个 <code>UTS Namespace</code>。</p>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// StartContainer start a container with UTS Namespace in linux</span>
+<span class="token keyword">func</span> <span class="token function">StartContainer</span><span class="token punctuation">(</span>cmd <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
+	command <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span>cmd<span class="token punctuation">)</span>
+	command<span class="token punctuation">.</span>Stdin <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdin
+	command<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
+	command<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
+
+	command<span class="token punctuation">.</span>SysProcAttr <span class="token operator">=</span> <span class="token operator">&amp;</span>unix<span class="token punctuation">.</span>SysProcAttr<span class="token punctuation">&#123;</span>
+		Cloneflags<span class="token punctuation">:</span> unix<span class="token punctuation">.</span>CLONE_NEWUTS<span class="token punctuation">,</span>
+	<span class="token punctuation">&#125;</span>
+
+	<span class="token keyword">return</span> command<span class="token punctuation">.</span><span class="token function">Run</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们可以验证我们的父进程和子进程是否在同一个
+<code>UTS namespace</code>。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">echo</span> <span class="token variable">$$</span>
+<span class="token comment"># 255394</span>
+
+pstree <span class="token parameter variable">-p</span>
+           ├─sshd<span class="token punctuation">(</span><span class="token number">938</span><span class="token punctuation">)</span>─┬─sshd<span class="token punctuation">(</span><span class="token number">229522</span><span class="token punctuation">)</span>───sshd<span class="token punctuation">(</span><span class="token number">229527</span><span class="token punctuation">)</span>
+           │           └─sshd<span class="token punctuation">(</span><span class="token number">229809</span><span class="token punctuation">)</span>───sshd<span class="token punctuation">(</span><span class="token number">229848</span><span class="token punctuation">)</span>───bash<span class="token punctuation">(</span><span class="token number">229849</span><span class="token punctuation">)</span>───uts<span class="token punctuation">(</span><span class="token number">255388</span><span class="token punctuation">)</span>─┬─sh<span class="token punctuation">(</span><span class="token number">255394</span><span class="token punctuation">)</span>───pstree<span class="token punctuation">(</span><span class="token number">255537</span><span class="token punctuation">)</span>
+           │                                                                      ├─<span class="token punctuation">&#123;</span>uts<span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token number">255389</span><span class="token punctuation">)</span>
+           │                                                                      ├─<span class="token punctuation">&#123;</span>uts<span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token number">255390</span><span class="token punctuation">)</span>
+           │                                                                      ├─<span class="token punctuation">&#123;</span>uts<span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token number">255391</span><span class="token punctuation">)</span>
+           │                                                                      └─<span class="token punctuation">&#123;</span>uts<span class="token punctuation">&#125;</span><span class="token punctuation">(</span><span class="token number">255392</span><span class="token punctuation">)</span>
+           
+
+readlink /proc/255394/ns/uts
+<span class="token comment"># uts:[4026532361]</span>
+
+readlink /proc/255388/ns/uts
+<span class="token comment"># uts:[4026531838]</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="user-namespace">User namespace</h3>
+<p>在我们使用 <code>User namespace</code> 时：</p>
+<ul>
+<li><code>Credential#HostID</code> 会被映射为
+<code>UidMappings#ContainerID</code>；</li>
+<li><code>Credential#Gid</code> 会被映射为
+<code>GidMappings#ContainerID</code>；</li>
+<li>并且映射的值必须完全一致，否则会抛出异常 invalid argument 。</li>
+</ul>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	cmd <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span><span class="token string">"sh"</span><span class="token punctuation">)</span>
+	cmd<span class="token punctuation">.</span>SysProcAttr <span class="token operator">=</span> <span class="token operator">&amp;</span>syscall<span class="token punctuation">.</span>SysProcAttr<span class="token punctuation">&#123;</span>
+		Cloneflags<span class="token punctuation">:</span> unix<span class="token punctuation">.</span>CLONE_NEWUTS <span class="token operator">|</span>
+			unix<span class="token punctuation">.</span>CLONE_NEWIPC <span class="token operator">|</span>
+			unix<span class="token punctuation">.</span>CLONE_NEWPID <span class="token operator">|</span>
+			unix<span class="token punctuation">.</span>CLONE_NEWNS <span class="token operator">|</span>
+			unix<span class="token punctuation">.</span>CLONE_NEWUSER<span class="token punctuation">,</span>
+		UidMappings<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>syscall<span class="token punctuation">.</span>SysProcIDMap<span class="token punctuation">&#123;</span>
+			<span class="token punctuation">&#123;</span>
+				ContainerID<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+				HostID<span class="token punctuation">:</span>      os<span class="token punctuation">.</span><span class="token function">Getuid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+				Size<span class="token punctuation">:</span>        <span class="token number">1</span><span class="token punctuation">,</span>
+			<span class="token punctuation">&#125;</span><span class="token punctuation">,</span>
+		<span class="token punctuation">&#125;</span><span class="token punctuation">,</span>
+		GidMappings<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>syscall<span class="token punctuation">.</span>SysProcIDMap<span class="token punctuation">&#123;</span>
+			<span class="token punctuation">&#123;</span>
+				ContainerID<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+				HostID<span class="token punctuation">:</span>      os<span class="token punctuation">.</span><span class="token function">Getgid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+				Size<span class="token punctuation">:</span>        <span class="token number">1</span><span class="token punctuation">,</span>
+			<span class="token punctuation">&#125;</span><span class="token punctuation">,</span>
+		<span class="token punctuation">&#125;</span><span class="token punctuation">,</span>
+	<span class="token punctuation">&#125;</span>
+	<span class="token comment">// Explicitly set the UID and GID to prevent tasks from running as root.</span>
+	cmd<span class="token punctuation">.</span>SysProcAttr<span class="token punctuation">.</span>Credential <span class="token operator">=</span> <span class="token operator">&amp;</span>syscall<span class="token punctuation">.</span>Credential<span class="token punctuation">&#123;</span>
+		Uid<span class="token punctuation">:</span>         <span class="token function">uint32</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		Gid<span class="token punctuation">:</span>         <span class="token function">uint32</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		NoSetGroups<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+	<span class="token punctuation">&#125;</span>
+	cmd<span class="token punctuation">.</span>Stdin <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdin
+	cmd<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
+	cmd<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
+	<span class="token keyword">if</span> err <span class="token operator">:=</span> cmd<span class="token punctuation">.</span><span class="token function">Run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		log<span class="token punctuation">.</span><span class="token function">Fatal</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="cgroups">cgroups</h2>
+<blockquote>
+<p>Cgroup 的使用可以参考 <a href="#cgroup">cgroup</a>。</p>
+</blockquote>
+<p><strong>Cgroup 是 Linux 内核提供的资源隔离 / 限制机制</strong>，而
+<code>hierarchy</code>（层级）、<code>subsystem</code>（子系统）是实现这一机制的核心组件，三者的关系可总结为：</p>
+<ul>
+<li><code>subsystem</code> 是 “资源控制能力”（如限制 CPU / 内存）</li>
+<li><code>hierarchy</code> 是 “组织容器 / 进程的树形结构”</li>
+<li><code>cgroup</code> 是
+“挂载在层级上、绑定了子系统的具体控制组（进程组）”。</li>
+</ul>
+<h3 id="核心概念">核心概念</h3>
+<h4 id="subsystem">Subsystem</h4>
+<p>Subsystem 是内核提供的 “资源管控插件”，每个插件只负责一种资源的限制 /
+统计，比如 “CPU 子系统” 只能管 CPU，“内存子系统”
+只能管内存。我们可以认为他们是一组内核钩子函数，通过挂载到 Cgroup
+层级上，对层级内的 cgroup 中的进程进行资源限制、计量或隔离。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">lssubsys <span class="token parameter variable">-a</span>
+
+<span class="token comment"># cpuset</span>
+<span class="token comment"># cpu</span>
+<span class="token comment"># cpuacct</span>
+<span class="token comment"># blkio</span>
+<span class="token comment"># memory</span>
+<span class="token comment"># devices</span>
+<span class="token comment"># freezer</span>
+<span class="token comment"># net_cls</span>
+<span class="token comment"># perf_event</span>
+<span class="token comment"># net_prio</span>
+<span class="token comment"># hugetlb</span>
+<span class="token comment"># pids</span>
+<span class="token comment"># rdma</span>
+<span class="token comment"># misc</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 40%" />
+<col style="width: 49%" />
+</colgroup>
+<thead>
+<tr>
+<th>子系统名</th>
+<th>核心作用（通俗版）</th>
+<th>典型使用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cpuset</code></td>
+<td>绑定进程到<strong>指定 CPU 核心 / NUMA 节点</strong>，独占核心</td>
+<td>高性能容器（数据库 / 计算密集型）独占 CPU 核</td>
+</tr>
+<tr>
+<td><code>cpu</code></td>
+<td>限制 CPU 使用率、调度优先级，控制 CPU 调度周期</td>
+<td>限制容器 CPU 使用率（如最多用 1 核）、多容器 CPU 权重分配</td>
+</tr>
+<tr>
+<td><code>cpuacct</code></td>
+<td>统计进程 / 容器的 CPU 占用（用户态 / 内核态）</td>
+<td>容器 CPU 使用率监控、计费统计</td>
+</tr>
+<tr>
+<td><code>blkio</code></td>
+<td>限制块设备（磁盘）IO 速率 / 优先级</td>
+<td>限制容器磁盘 IO（防止写满磁盘）、数据库 IO 优先级保障</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td>限制内存使用（物理内存 / 交换分区），统计内存</td>
+<td>容器内存上限（OOM 触发）、禁用 swap 避免性能下降</td>
+</tr>
+<tr>
+<td><code>devices</code></td>
+<td>控制进程对设备的访问权限（读 / 写 / 创建）</td>
+<td>容器隔离设备（如禁止访问宿主机 GPU / 串口）、仅允许访问网卡</td>
+</tr>
+<tr>
+<td><code>freezer</code></td>
+<td>暂停 / 恢复 cgroup 内的所有进程</td>
+<td>容器暂停（如备份时）、资源超限时临时冻结进程</td>
+</tr>
+<tr>
+<td><code>net_cls</code></td>
+<td>给进程的网络数据包打标记（classid）</td>
+<td>结合 TC（流量控制）限制容器网络带宽、区分不同容器的流量</td>
+</tr>
+<tr>
+<td><code>perf_event</code></td>
+<td>允许 perf 工具对 cgroup 内进程做性能分析</td>
+<td>容器性能剖析（如分析容器内进程 CPU 热点）</td>
+</tr>
+<tr>
+<td><code>net_prio</code></td>
+<td>控制进程网络数据包的发送优先级</td>
+<td>核心业务容器网络优先级高于普通容器</td>
+</tr>
+<tr>
+<td><code>hugetlb</code></td>
+<td>限制大页内存（HugeTLB）的使用</td>
+<td>数据库 / 虚拟化场景（用大页提升内存性能）的大页限制</td>
+</tr>
+<tr>
+<td><code>pids</code></td>
+<td>限制 cgroup 内允许创建的最大进程数</td>
+<td>防止容器 fork 炸弹（无限创建进程）、限制容器进程数</td>
+</tr>
+<tr>
+<td><code>rdma</code></td>
+<td>限制 RDMA（远程直接内存访问）资源使用</td>
+<td>高性能计算 / 存储场景（RDMA 网卡）的资源隔离</td>
+</tr>
+<tr>
+<td><code>misc</code></td>
+<td>杂项资源控制（内核新增，适配小众场景）</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="hierarchy">Hierarchy</h4>
+<p>Hierarchy 是一棵 “进程分组树”，树的每个节点是一个
+cgroup，进程可以被加入树的任意节点，且会继承父节点的资源限制。我们可以认为挂载在
+<code>/sys/fs/cgroup/</code>
+下的一个独立树形文件系统（Cgroupfs），一个层级可以绑定<strong>零个或多个
+subsystem</strong>，但一个 subsystem
+只能绑定到<strong>一个层级</strong>（核心约束）</p>
+<h4 id="cgroup控制组">cgroup（控制组）</h4>
+<p>Cgroup 是层级树上的一个 “节点”，本质是一组进程的集合，且绑定了
+subsystem 的资源规则（比如 “这个节点的进程最多用 1 核 CPU、2G
+内存”）。挂载的 Cgroup 层级下的一个目录（目录即
+cgroup），目录内的文件（如
+<code>cpu.cfs_quota_us</code>）是资源规则配置，<code>tasks</code>
+文件记录该 cgroup 包含的进程 PID：</p>
+<ul>
+<li>一个 cgroup 可以包含多个进程，一个进程可以属于多个层级的
+cgroup；</li>
+<li>空 cgroup（无进程）不占用资源，仅保存配置；</li>
+<li>删除 cgroup 只需删除对应的目录（内核会自动清理关联规则）。</li>
+</ul>
+<h4 id="三者的核心关系">三者的核心关系</h4>
+<p>假设我们要限制一个容器的 CPU 和内存，操作流程如下：</p>
+<h5 id="创建hierarchy">创建hierarchy</h5>
+<p>挂载一个 Cgroup 层级到 <code>/sys/fs/cgroup/my-hierarchy/</code></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">mkdir</span> /sys/fs/cgroup/my-hierarchy<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>执行后，内核会自动的为我们在 <code>/sys/fs/cgroup/my-hierarchy</code>
+下创建文件，每个文件都对应了 <code>subsystem</code>
+的一些功能，下面列出了一些典型的例子：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">ls</span> /sys/fs/cgroup/my-hierarchy
+<span class="token comment"># cgroup.freeze</span>
+<span class="token comment"># cpuset.cpus</span>
+<span class="token comment"># cpu.max</span>
+<span class="token comment"># ...</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h5 id="配置-subsystem">配置 Subsystem</h5>
+<p>这里，我们通过配置来对我们的CPU使用进行限制。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /sys/fs/cgroup/my-hierarchy
+<span class="token comment"># 限制 CPU 使用率为 50%（100ms 周期内最多用 50ms）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"50000 100000"</span> <span class="token operator">></span> cpu.max
+
+<span class="token comment"># 限制 CPU 使用率为 200%（允许使用 2 个核心，100ms 周期内最多用 200ms）</span>
+<span class="token comment">#echo "200000 100000" > cpu.max</span>
+
+<span class="token comment"># 取消限制（设为 max）</span>
+<span class="token comment">#echo "max 100000" > cpu.max</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h5 id="测试我们的cgroup">测试我们的cgroup</h5>
+<p>我们实现一个最简单的忙等待</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token keyword">while</span> <span class="token builtin class-name">:</span><span class="token punctuation">;</span> <span class="token keyword">do</span> <span class="token builtin class-name">:</span><span class="token punctuation">;</span> <span class="token keyword">done</span>
+
+<span class="token function">pkill</span> <span class="token parameter variable">-f</span> <span class="token string">"while :; do :; done"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>后台执行该脚本</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sh</span> busy.sh <span class="token operator">&amp;</span>
+<span class="token comment"># [1] 1116447</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>通过 <code>top</code> 查看我们的进程的CPU占用：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">    PID <span class="token environment constant">USER</span>      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+<span class="token number">1116447</span> root      <span class="token number">25</span>   <span class="token number">5</span>    <span class="token number">7108</span>   <span class="token number">3496</span>   <span class="token number">3212</span> R  <span class="token number">99.7</span>   <span class="token number">0.0</span>   <span class="token number">2</span>:11.49 <span class="token function">sh</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>随后我们将我们的进程加入到 <code>cgroup</code>：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">echo</span> <span class="token number">1116447</span> <span class="token operator">>></span> /sys/fs/cgroup/my-hierarchy/cgroup.procs<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>再次通过 <code>top</code> 观察</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">    PID <span class="token environment constant">USER</span>      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+<span class="token number">1116447</span> root      <span class="token number">25</span>   <span class="token number">5</span>    <span class="token number">7108</span>   <span class="token number">3496</span>   <span class="token number">3212</span> R  <span class="token number">49.8</span>   <span class="token number">0.0</span>   <span class="token number">4</span>:43.34 <span class="token function">sh</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h3 id="整体回顾">整体回顾</h3>
+<p>Linux 的 Cgroup（Control
+Group）是内核提供的进程资源管控系统，核心挂载路径为
+<code>/sys/fs/cgroup</code>，系统默认在此路径下为核心
+<code>subsystem</code>（如
+cpu/memory/blkio）创建好预挂载的层级（Hierarchy）。</p>
+<p>通常我们使用cgroup，我们会按照如下步骤实现：</p>
+<ol type="1">
+<li>在 <code>/sys/fs/cgroup</code> 下通过 <code>mkdir</code>
+新建一个文件夹，这个文件夹是一个虚拟文件系统目录，需要通过
+<code>rmdir</code> 而非 <code>rm</code> 来删除。这个文件夹也就是我们的
+cgroup 的
+<code>hierarchy</code>；在新建hierarchy之后，kernel会自动的添加
+<code>subsystem</code> 到hierarchy下；</li>
+<li>通过 <code>subsystem</code>
+中的参数，我们定制了一个可以对特定资源做限制的
+cgroup，而我们可以通过修改 <code>cgroup.procs</code> 来指定被该 cgroup
+约束的进程。</li>
+</ol>
+<h3 id="docker如何使用cgroup">docker如何使用cgroup</h3>
+<p><code>docker</code> 在启动的时候，会为每个 container 初始化一个对应的
+hierarchy 挂载在 <code>/sys/fs/cgroup/system.slice</code>
+下的特定文件。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">docker</span> run <span class="token parameter variable">-itd</span> <span class="token parameter variable">--rm</span> <span class="token parameter variable">--cpus</span><span class="token operator">=</span><span class="token number">1.0</span> <span class="token parameter variable">-m</span> 128m ubuntu
+<span class="token comment"># e77265ce43b8b9b95894a1fa07649c4438d22e4d7d3aa254edd0f5786ace1e29</span>
+
+<span class="token function">cat</span> /sys/fs/cgroup/system.slice/docker-e77265ce43b8b9b95894a1fa07649c4438d22e4d7d3aa254edd0f5786ace1e29.scope/memory.max
+<span class="token comment"># 134217728</span>
+
+<span class="token function">cat</span> /sys/fs/cgroup/system.slice/docker-e77265ce43b8b9b95894a1fa07649c4438d22e4d7d3aa254edd0f5786ace1e29.scope/cpu.max
+<span class="token comment"># 100000 100000</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们也可以用代码来模拟这个行为，这里我们需要注意的几个点是：</p>
+<ol type="1">
+<li>我们必须在创建进程之前，将进程绑定到我们的cgroup。这里听起来有一点矛盾，实际情况是，<code>stress</code>
+执行会有两个进程：<strong>调度进程</strong>和<strong>工作进程</strong>。如果我们等进程被拉起之后再将主进程添加到cgroup，那么我们工作进程将不会受到任何该cgroup的限制。我们很多途径可以处理这个问题：
+<ol type="1">
+<li>增加一个函数从 <code>/proc/$PID/</code> 去解析所有子进程并加入到
+cgroup；</li>
+<li>通过 <code>UseCgroupFD</code> 和 <code>CgroupFD</code>
+预先指定绑定的 cgroup；</li>
+</ol></li>
+<li>如果我们成功的绑定了
+cgroup，那程序执行时将会因为使用过量的资源被直接 kill。</li>
+</ol>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">const</span> cgroupMemoryHierarchyMount <span class="token operator">=</span> <span class="token string">"/sys/fs/cgroup"</span>
+<span class="token keyword">const</span> cgroupMemoryMax <span class="token operator">=</span> <span class="token string">"memory.max"</span>
+
+<span class="token comment">// 提前创建一个 cgroup 组，指定资源量</span>
+<span class="token keyword">func</span> <span class="token function">createCgroup</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token operator">*</span>os<span class="token punctuation">.</span>File<span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	hierarchy <span class="token operator">:=</span> path<span class="token punctuation">.</span><span class="token function">Join</span><span class="token punctuation">(</span>cgroupMemoryHierarchyMount<span class="token punctuation">,</span> <span class="token string">"test_memory_limit"</span><span class="token punctuation">)</span>
+	err <span class="token operator">:=</span> os<span class="token punctuation">.</span><span class="token function">Mkdir</span><span class="token punctuation">(</span>hierarchy<span class="token punctuation">,</span> <span class="token number">0755</span><span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		log<span class="token punctuation">.</span><span class="token function">Fatal</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+
+	memoryMax <span class="token operator">:=</span> path<span class="token punctuation">.</span><span class="token function">Join</span><span class="token punctuation">(</span>hierarchy<span class="token punctuation">,</span> cgroupMemoryMax<span class="token punctuation">)</span>
+	err <span class="token operator">=</span> os<span class="token punctuation">.</span><span class="token function">WriteFile</span><span class="token punctuation">(</span>memoryMax<span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token function">byte</span><span class="token punctuation">(</span><span class="token string">"100m"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0644</span><span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		log<span class="token punctuation">.</span><span class="token function">Fatal</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+
+	<span class="token keyword">return</span> os<span class="token punctuation">.</span><span class="token function">OpenFile</span><span class="token punctuation">(</span>hierarchy<span class="token punctuation">,</span> os<span class="token punctuation">.</span>O_RDONLY<span class="token punctuation">,</span> <span class="token number">0644</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 在子进程中执行 stress</span>
+<span class="token keyword">func</span> <span class="token function">runStress</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"current pid %d"</span><span class="token punctuation">,</span> syscall<span class="token punctuation">.</span><span class="token function">Getpid</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	cmd <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span><span class="token string">"sh"</span><span class="token punctuation">,</span> <span class="token string">"-c"</span><span class="token punctuation">,</span> <span class="token string">`stress --vm-bytes 2048m --vm-keep -m 1`</span><span class="token punctuation">)</span>
+	cmd<span class="token punctuation">.</span>SysProcAttr <span class="token operator">=</span> <span class="token operator">&amp;</span>unix<span class="token punctuation">.</span>SysProcAttr<span class="token punctuation">&#123;</span><span class="token punctuation">&#125;</span>
+	cmd<span class="token punctuation">.</span>Stdin <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdin
+	cmd<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
+	cmd<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
+	<span class="token keyword">if</span> err <span class="token operator">:=</span> cmd<span class="token punctuation">.</span><span class="token function">Run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		fmt<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"%v\n"</span><span class="token punctuation">,</span> err<span class="token punctuation">)</span>
+		os<span class="token punctuation">.</span><span class="token function">Exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	<span class="token comment">// Check if the program is relaunched via /proc/self/exe</span>
+	<span class="token keyword">if</span> os<span class="token punctuation">.</span>Args<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token string">"/proc/self/exe"</span> <span class="token punctuation">&#123;</span>
+		<span class="token function">runStress</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+		os<span class="token punctuation">.</span><span class="token function">Exit</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+
+	cgroup<span class="token punctuation">,</span> err <span class="token operator">:=</span> <span class="token function">createCgroup</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		<span class="token function">panic</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">defer</span> <span class="token keyword">func</span><span class="token punctuation">(</span>cgroup <span class="token operator">*</span>os<span class="token punctuation">.</span>File<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+		<span class="token boolean">_</span> <span class="token operator">=</span> cgroup<span class="token punctuation">.</span><span class="token function">Close</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span><span class="token punctuation">(</span>cgroup<span class="token punctuation">)</span>
+
+	cmd <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span><span class="token string">"/proc/self/exe"</span><span class="token punctuation">)</span>
+	cmd<span class="token punctuation">.</span>SysProcAttr <span class="token operator">=</span> <span class="token operator">&amp;</span>unix<span class="token punctuation">.</span>SysProcAttr<span class="token punctuation">&#123;</span>
+		Cloneflags<span class="token punctuation">:</span> syscall<span class="token punctuation">.</span>CLONE_NEWUTS <span class="token operator">|</span>
+			syscall<span class="token punctuation">.</span>CLONE_NEWPID <span class="token operator">|</span>
+			syscall<span class="token punctuation">.</span>CLONE_NEWNS<span class="token punctuation">,</span>
+			UseCgroupFD<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+			CgroupFD<span class="token punctuation">:</span> <span class="token function">int</span><span class="token punctuation">(</span>cgroup<span class="token punctuation">.</span><span class="token function">Fd</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	<span class="token punctuation">&#125;</span>
+
+	cmd<span class="token punctuation">.</span>Stdin <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdin
+	cmd<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
+	cmd<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
+
+	<span class="token keyword">if</span> err <span class="token operator">:=</span> cmd<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		log<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">"start command error : "</span><span class="token punctuation">,</span> err<span class="token punctuation">)</span>
+		os<span class="token punctuation">.</span><span class="token function">Exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h1 id="构造容器">构造容器</h1>
+<h2 id="基于namespace构造容器">基于namespace构造容器</h2>
+<p>在真正开始构造我们的容器之前，我们可以学习一下关于 <a
+href="#proc">/proc</a> 的知识。</p>
+<p>从linux的层面，想要启动一个容器，我们的设想方向应该是这样的：</p>
+<ol type="1">
+<li>通过 <code>fork()</code> + <code>namespace</code>
+来生成一个隔离空间；</li>
+<li>在 <code>fork()</code> 出来的隔离空间中，通过 <code>exec()</code>
+来执行用户代码程序。</li>
+</ol>
+<p>于是，我们的思路就可以这样设计：</p>
+<ol type="1">
+<li>声明 <code>run</code> 和 <code>init</code> 指令
+<ol type="1">
+<li><code>run</code> 指令负责通过 namespace 生成隔离空间；</li>
+<li><code>init</code> 指令负责在 <code>run</code>
+生成隔离空间后，在隔离空间内通过 <code>exec(command)</code>
+执行用户程序。</li>
+</ol></li>
+</ol>
+<pre class="mermaid">sequenceDiagram
+    宿主机 ->> docker: 1. docker run ubuntu
+    docker ->> runCommand: 2. 解析参数
+    runCommand ->> NewParentProcess: 3. 创建namespace隔离的容器进程
+    NewParentProcess -->> runCommand: 4. 返回配置好隔离参数的Command
+    runCommand -->> docker: 5. 启动容器进程
+    docker -->> docker: 6. 在隔离的容器进程中使用参数<br/>（init ${command}）调用自身（/proc/self/exe）
+    docker ->> RunContainerInitProcess: 7. mount proc 并通过 exec 执行用户代码
+    RunContainerInitProcess ->> 宿主机: 8.创建完成，容器开始运行</pre>
+<p>整体逻辑可以描述为：</p>
+<ol type="1">
+<li>宿主机：用户执行 <code>docker run -it sh</code>：
+<ol type="1">
+<li>程序解析 <code>run</code> 指令后，调用
+<code>NewParentProcess</code>；</li>
+<li>构造子进程执行参数：<code>["init", ${command}]</code>（如
+<code>["init", "sh"]</code>）；</li>
+<li>创建子进程对象：指定子进程执行
+<code>/proc/self/exe</code>（当前程序自身），并传入上述参数；</li>
+<li>为子进程配置 UTS/PID/Mount/Network/IPC 五种 Namespace 隔离，若指定
+TTY 则绑定宿主机终端；</li>
+<li>启动该子进程（此时子进程进入独立的 Namespace 隔离空间）。</li>
+</ol></li>
+<li>子进程（容器内）
+<ol type="1">
+<li>子进程在<strong>隔离空间</strong>内执行
+<code>/proc/self/exe init ${command}</code>，触发程序的 CLI
+框架逻辑：</li>
+<li>执行 <code>initCommand</code> 的 <code>Action</code> 函数，调用
+<code>RunContainerInitProcess</code>；</li>
+<li><code>RunContainerInitProcess</code> 先以安全标志挂载
+<code>/proc</code> 文件系统（适配 PID Namespace），再通过
+<code>syscall.Exec</code> 系统调用替换当前子进程镜像为用户指定的
+<code>${command}</code>（如 <code>sh</code>）；</li>
+<li><code>${command}</code> 成为容器内的 PID=1
+进程，容器正式运行（若绑定 TTY 则支持交互式操作）。</li>
+</ol></li>
+</ol>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token comment">// run.go</span>
+<span class="token keyword">func</span> <span class="token function">Run</span><span class="token punctuation">(</span>tty <span class="token builtin">bool</span><span class="token punctuation">,</span> command <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	parent <span class="token operator">:=</span> container<span class="token punctuation">.</span><span class="token function">NewParentProcess</span><span class="token punctuation">(</span>tty<span class="token punctuation">,</span> command<span class="token punctuation">)</span>
+	<span class="token keyword">if</span> err <span class="token operator">:=</span> parent<span class="token punctuation">.</span><span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		log<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+	parent<span class="token punctuation">.</span><span class="token function">Wait</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	os<span class="token punctuation">.</span><span class="token function">Exit</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span>
+
+
+<span class="token comment">// container_process.go</span>
+<span class="token keyword">func</span> <span class="token function">NewParentProcess</span><span class="token punctuation">(</span>tty <span class="token builtin">bool</span><span class="token punctuation">,</span> command <span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token operator">*</span>exec<span class="token punctuation">.</span>Cmd <span class="token punctuation">&#123;</span>
+	args <span class="token operator">:=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">&#123;</span><span class="token string">"init"</span><span class="token punctuation">,</span> command<span class="token punctuation">&#125;</span>
+	cmd <span class="token operator">:=</span> exec<span class="token punctuation">.</span><span class="token function">Command</span><span class="token punctuation">(</span><span class="token string">"/proc/self/exe"</span><span class="token punctuation">,</span> args<span class="token operator">...</span><span class="token punctuation">)</span>
+	cmd<span class="token punctuation">.</span>SysProcAttr <span class="token operator">=</span> <span class="token operator">&amp;</span>syscall<span class="token punctuation">.</span>SysProcAttr<span class="token punctuation">&#123;</span>
+		Cloneflags<span class="token punctuation">:</span> syscall<span class="token punctuation">.</span>CLONE_NEWUTS <span class="token operator">|</span>
+			syscall<span class="token punctuation">.</span>CLONE_NEWPID <span class="token operator">|</span>
+			syscall<span class="token punctuation">.</span>CLONE_NEWNS <span class="token operator">|</span>
+			syscall<span class="token punctuation">.</span>CLONE_NEWNET <span class="token operator">|</span>
+			syscall<span class="token punctuation">.</span>CLONE_NEWIPC<span class="token punctuation">,</span>
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">if</span> tty <span class="token punctuation">&#123;</span>
+		cmd<span class="token punctuation">.</span>Stdin <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdin
+		cmd<span class="token punctuation">.</span>Stdout <span class="token operator">=</span> os<span class="token punctuation">.</span>Stdout
+		cmd<span class="token punctuation">.</span>Stderr <span class="token operator">=</span> os<span class="token punctuation">.</span>Stderr
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">return</span> cmd
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// init.go</span>
+<span class="token keyword">func</span> <span class="token function">RunContainerInitProcess</span><span class="token punctuation">(</span>command <span class="token builtin">string</span><span class="token punctuation">,</span> args <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">&#123;</span>
+	logrus<span class="token punctuation">.</span><span class="token function">Infof</span><span class="token punctuation">(</span><span class="token string">"command %s"</span><span class="token punctuation">,</span> command<span class="token punctuation">)</span>
+	defaultMountFlags <span class="token operator">:=</span> syscall<span class="token punctuation">.</span>MS_NOEXEC <span class="token operator">|</span> syscall<span class="token punctuation">.</span>MS_NOSUID <span class="token operator">|</span> syscall<span class="token punctuation">.</span>MS_NODEV
+	syscall<span class="token punctuation">.</span><span class="token function">Mount</span><span class="token punctuation">(</span><span class="token string">"proc"</span><span class="token punctuation">,</span> <span class="token string">"/proc"</span><span class="token punctuation">,</span> <span class="token string">"proc"</span><span class="token punctuation">,</span> <span class="token function">uintptr</span><span class="token punctuation">(</span>defaultMountFlags<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">)</span>
+	argv <span class="token operator">:=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin">string</span><span class="token punctuation">&#123;</span>command<span class="token punctuation">&#125;</span>
+	<span class="token keyword">if</span> err <span class="token operator">:=</span> syscall<span class="token punctuation">.</span><span class="token function">Exec</span><span class="token punctuation">(</span>command<span class="token punctuation">,</span> argv<span class="token punctuation">,</span> os<span class="token punctuation">.</span><span class="token function">Environ</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span> err <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">&#123;</span>
+		logrus<span class="token punctuation">.</span><span class="token function">Errorf</span><span class="token punctuation">(</span>err<span class="token punctuation">.</span><span class="token function">Error</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+	<span class="token punctuation">&#125;</span>
+	<span class="token keyword">return</span> <span class="token boolean">nil</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="为构造的容器增加cgroup限制">为构造的容器增加cgroup限制</h2>
+<p>想要为我们的容器增加 <code>cgroup</code>
+限制，我们最简单的方式就是，构造一个cgroup字符串，</p>
+<blockquote>
+<p>docker 中为 container 增加限制的逻辑是：</p>
+<ol type="1">
+<li>在 docker run 的时候，为app生成一个唯一的container-id；</li>
+<li>在
+<code>/sys/fs/cgroup/system.slice/docker-$containner-id.scope/</code>
+内生成一个 hierarchy；</li>
+<li>在 <code>hierarchy</code>
+的文件下写入到对应的数据来限制container的资源使用；</li>
+<li>在 <code>hierarchy</code> 的文件 <code>cgroup.procs</code>
+添加该容器对应进程的 <code>pid</code>。</li>
+</ol>
+</blockquote>
+<h3 id="cgroup的分类">cgroup的分类</h3>
+<p><code>docker</code>
+中的配置文件，我们可以直接通过以下指令来查看：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ll /sys/fs/cgroup/system.slice/docker.service/
+
+<span class="token comment"># -r--r--r-- 1 root root 0 Dec 20 08:14 cgroup.procs</span>
+<span class="token comment"># -rw-r--r-- 1 root root 0 Dec 19 11:41 cgroup.subtree_control</span>
+<span class="token comment"># -rw-r--r-- 1 root root 0 Dec 19 11:41 cpu.max</span>
+<span class="token comment"># -rw-r--r-- 1 root root 0 Dec 19 11:41 memory.max</span>
+<span class="token comment"># -rw-r--r-- 1 root root 0 Dec 19 11:41 pids.max</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里，我们只保留了一些最具有代表性的指标：</p>
+<table>
+<thead>
+<tr>
+<th>一级分类</th>
+<th>二级文件</th>
+<th>作用简述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgroup</code></td>
+<td><code>cgroup.procs</code></td>
+<td>关联到该 cgroup 的进程 PID</td>
+</tr>
+<tr>
+<td><code>cgroup</code></td>
+<td><code>cgroup.subtree_control</code></td>
+<td>控制子 cgroup 可启用的控制器</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td><code>memory.max</code></td>
+<td>内存使用上限</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td><code>memory.current</code></td>
+<td>当前内存使用量</td>
+</tr>
+<tr>
+<td><code>pids</code></td>
+<td><code>pids.max</code></td>
+<td>进程数上限</td>
+</tr>
+</tbody>
+</table>
+<p>那么我们实际的分类可以划分如下（我们省略了大部分的实例）：</p>
+<pre class="mermaid">flowchart TB
+
+linux-cgroup("linux-cgroup"):::pink
+
+linux-cgroup --> cgroup("cgroup"):::purple
+linux-cgroup --> memory("memory"):::purple
+linux-cgroup --> cpu("cpu"):::purple
+linux-cgroup --> cpuset("cpuset"):::purple
+linux-cgroup --> io("io"):::purple
+linux-cgroup --> pids("pids"):::purple
+linux-cgroup --> others("..."):::purple
+
+cgroup --> procs("cgroup.procs"):::green
+cgroup --> subtree_control("cgroup.subtree_control"):::green
+
+memory --> memory.max("memory.max"):::green
+memory --> memory.swap.max("memory.swap.max"):::green
+
+cpu --> cpu.max("cpu.max"):::green
+
+
+cpuset --> cpuset.cpus("cpuset.cpus"):::green
+
+io --> io.max("io.max"):::green
+io --> io.latency("io.latency"):::green
+
+pids --> pids.max("pids.max"):::green
+pids --> pids.current("pids.current"):::green
+
+
+classDef pink   fill:#FFCCCC,stroke:#333,ont-weight: bold;
+classDef green  fill:#696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef dotted fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</pre>
+<p>所以，我们目前的思路是：将整个引擎分为多层：</p>
+<ol type="1">
+<li>将指标分为两个部分，<code>Value</code>
+表示指标本身，<code>Item</code> 表示指标内部的值，例如：
+<ul>
+<li><code>Value</code> 是一个接口，提供了 <code>From</code> 和
+<code>Into</code> 在 <code>Value</code> 和 <code>string</code>
+类型之间的转换；</li>
+<li><code>Item</code> 是一个 <code>any</code> 类型；</li>
+<li>对于 <code>cgroups.procs</code> 类型，<code>Value</code> 对应整个
+pid 数组， <code>Item</code> 对应数组内的每个 pid；</li>
+<li>对于 <code>cpu.max</code> 类型，<code>Value</code> 和
+<code>Item</code> 均对应同一个值，因为他们是一个整体；</li>
+</ul></li>
+<li>抽象了 <code>Subsystem[I Item, V Value]</code>
+接口，每个不同的类型都需要实现这个接口来实现修改/删除等功能：
+<ul>
+<li><code>Set(I)</code></li>
+<li><code>Del(I)</code></li>
+<li><code>Empty() bool</code></li>
+</ul></li>
+<li>最底层为
+<code>CgroupFileSystem</code>，这一层负责和操作系统交互。更明确来说，就是负责读/写
+<code>/sys/fs/cgroup/system.slice</code>
+文件夹下的配置文件，并向上提供读/写接口；</li>
+<li><code>CgroupFileSystem</code> 的上层为
+<code>CgroupManager</code>，他包含了：
+<ul>
+<li>对 <code>CgroupFileSystem</code> 的引用，用于读/写底层文件；</li>
+<li>对多个 <code>Subsystem</code> 的引用，用于操作指标值；</li>
+</ul></li>
+</ol>
+<h1 id="qa">QA</h1>
+<h2 id="proc">Proc</h2>
+<p><code>/proc</code> 是 Linux
+系统中<strong>核心的伪文件系统（pseudo-filesystem）</strong>，由内核实时生成和维护，并非存储在磁盘上的真实文件，而是内核暴露系统
+/ 进程状态、配置的 “接口”—— 通过读写 <code>/proc</code> 下的文件，可查看
+/ 调整内核、进程、硬件的运行参数，是运维和容器 /
+内核开发的核心工具。</p>
+<h3 id="核心特性">核心特性</h3>
+<ol type="1">
+<li><strong>无磁盘存储</strong>：所有文件 /
+目录由内核动态生成，占用磁盘空间为 0（<code>df -h</code> 查看
+<code>/proc</code> 挂载点会显示 0 大小）；</li>
+<li><strong>实时性</strong>：文件内容随系统 / 进程状态实时变化（如
+<code>/proc/1/status</code> 会实时反映 PID=1 进程的资源使用）；</li>
+<li><strong>权限管控</strong>：大部分文件仅 root
+可修改，普通用户仅能读取（部分进程文件仅属主可访问）；</li>
+<li><strong>挂载类型</strong>：默认以 <code>proc</code>
+类型挂载（<code>mount -t proc proc /proc</code>），每个 PID Namespace
+可挂载独立的 <code>/proc</code>（容器隔离的核心）。</li>
+</ol>
+<h3 id="目录结构">目录结构</h3>
+<blockquote>
+<p>第一类是进程专属目录：<code>/proc/$&lt;PID&gt;/</code>：每个运行的进程对应
+<code>/proc</code> 下一个以 PID 命名的目录（如 <code>/proc/1/</code>
+对应 PID=1 的 <code>systemd</code>
+进程），包含该进程的所有核心信息：</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 73%" />
+</colgroup>
+<thead>
+<tr>
+<th>关键文件 / 目录</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/proc/&lt;PID&gt;/status</code></td>
+<td>进程核心状态（PID、UID/GID、内存、CPU、信号、Namespace 等）</td>
+</tr>
+<tr>
+<td><code>/proc/&lt;PID&gt;/cmdline</code></td>
+<td>进程启动的完整命令行（以 <code>\0</code> 分隔参数）</td>
+</tr>
+<tr>
+<td><code>/proc/&lt;PID&gt;/cgroup</code></td>
+<td>进程所属的 Cgroup 组（v1/v2 路径）</td>
+</tr>
+<tr>
+<td><code>/proc/&lt;PID&gt;/ns/</code></td>
+<td>进程所属的所有 Namespace（符号链接）</td>
+</tr>
+<tr>
+<td><code>/proc/&lt;PID&gt;/fd/</code></td>
+<td>进程打开的文件描述符（符号链接到真实文件）</td>
+</tr>
+<tr>
+<td><code>/proc/&lt;PID&gt;/root</code></td>
+<td>进程的根目录（chroot / 容器的根文件系统）</td>
+</tr>
+<tr>
+<td><code>/proc/&lt;PID&gt;/mounts</code></td>
+<td>进程可见的挂载点（文件系统 Namespace 隔离关键）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>第二类是系统级信息目录 / 文件（全局状态）：这类文件 /
+目录反映整个系统的运行状态，是运维和开发的核心参考</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 69%" />
+</colgroup>
+<thead>
+<tr>
+<th>关键文件 / 目录</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/proc/cpuinfo</code></td>
+<td>CPU 硬件信息（核心数、架构、频率等）</td>
+</tr>
+<tr>
+<td><code>/proc/meminfo</code></td>
+<td>内存使用状态（总内存、空闲、缓存、交换分区等）</td>
+</tr>
+<tr>
+<td><code>/proc/mounts</code></td>
+<td>系统全局挂载点（等价于 <code>mount</code> 命令）</td>
+</tr>
+<tr>
+<td><code>/proc/sys/</code></td>
+<td>内核参数配置（可动态修改，无需重启）</td>
+</tr>
+<tr>
+<td><code>/proc/self/</code></td>
+<td>指向当前进程的 PID 目录（符号链接）</td>
+</tr>
+<tr>
+<td><code>/proc/thread-self/</code></td>
+<td>指向当前线程的 TID 目录</td>
+</tr>
+<tr>
+<td><code>/proc/uptime</code></td>
+<td>系统运行时间（秒）</td>
+</tr>
+<tr>
+<td><code>/proc/net/</code></td>
+<td>网络状态（TCP/UDP 连接、网卡、路由等）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>第三类是特殊文件（内核交互接口）：</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/proc/kmsg</code></td>
+<td>内核日志（等价于 <code>dmesg</code> 命令）</td>
+</tr>
+<tr>
+<td><code>/proc/loadavg</code></td>
+<td>系统负载均值（1/5/15 分钟）</td>
+</tr>
+<tr>
+<td><code>/proc/version</code></td>
+<td>内核版本 + 编译信息</td>
+</tr>
+<tr>
+<td><code>/proc/cgroups</code></td>
+<td>Cgroup 子系统状态（v1）</td>
+</tr>
+<tr>
+<td><code>/proc/cmdline</code></td>
+<td>系统启动时的内核参数</td>
+</tr>
+</tbody>
+</table>
+<h2 id="namespace-1">Namespace</h2>
+<h3 id="namespace-是什么">Namespace 是什么？</h3>
+<p>Namespace 本质是 Linux
+内核为进程创建的「<strong>资源隔离边界</strong>」—— 不同 Namespace
+内的进程，只能看到自己 Namespace 内的资源，无法感知其他 Namespace
+或宿主机的同名资源。</p>
+<p>例如：</p>
+<ul>
+<li>宿主机的 PID 1 是 <code>systemd</code>，但容器内的 PID 1 可以是
+<code>sh</code>（PID Namespace 隔离）；</li>
+<li>容器内修改主机名（<code>hostname</code>），宿主机完全不受影响（UTS
+Namespace 隔离）；</li>
+<li>容器内的 <code>eth0</code> 网卡，和宿主机的 <code>eth0</code>
+是两套独立网络栈（Network Namespace 隔离）。</li>
+</ul>
+<h3 id="linux-namespace-的分类">Linux Namespace 的分类</h3>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 24%" />
+<col style="width: 22%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th>Namespace 类型</th>
+<th>标识常量（Go 中 <code>unix.CLONE_XXX</code>）</th>
+<th>隔离资源</th>
+<th>核心作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UTS</td>
+<td><code>CLONE_NEWUTS</code></td>
+<td>主机名、NIS 域名</td>
+<td>让容器有独立的主机名（如 <code>docker run --hostname</code>）</td>
+</tr>
+<tr>
+<td>PID</td>
+<td><code>CLONE_NEWPID</code></td>
+<td>进程 ID 空间</td>
+<td>容器内 PID 从 1 开始，隔离进程树</td>
+</tr>
+<tr>
+<td>Mount</td>
+<td><code>CLONE_NEWNS</code></td>
+<td>文件系统挂载点</td>
+<td>容器有独立的根文件系统（<code>/</code>），挂载 /
+卸载不影响宿主机</td>
+</tr>
+<tr>
+<td>Network</td>
+<td><code>CLONE_NEWNET</code></td>
+<td>网络栈（网卡、端口、路由）</td>
+<td>容器有独立的网卡、IP、端口，实现网络隔离（如
+<code>docker run -p</code>）</td>
+</tr>
+<tr>
+<td>User</td>
+<td><code>CLONE_NEWUSER</code></td>
+<td>用户 / 组 ID 空间</td>
+<td>容器内的 root（UID 0）≠ 宿主机的 root，实现权限隔离</td>
+</tr>
+<tr>
+<td>IPC</td>
+<td><code>CLONE_NEWIPC</code></td>
+<td>进程间通信（消息队列、共享内存）</td>
+<td>容器内的 IPC 资源仅对本 Namespace 可见</td>
+</tr>
+<tr>
+<td>Cgroup</td>
+<td><code>CLONE_NEWCGROUP</code>（4.6+ 内核）</td>
+<td>Cgroup 根目录</td>
+<td>容器有独立的 Cgroup 视图，限制资源更精细</td>
+</tr>
+</tbody>
+</table>
+<h3 id="namespace-的核心工作原理">Namespace 的核心工作原理</h3>
+<p>创建新进程时，通过 <code>clone()</code> 系统调用指定
+<code>CLONE_NEWXXX</code> 标志，新进程会进入新的 Namespace：</p>
+<pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token class-name">pid_t</span> <span class="token function">clone</span><span class="token punctuation">(</span><span class="token keyword">int</span> <span class="token punctuation">(</span><span class="token operator">*</span>fn<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword">void</span> <span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>stack<span class="token punctuation">,</span> <span class="token keyword">int</span> flags<span class="token punctuation">,</span> <span class="token keyword">void</span> <span class="token operator">*</span>arg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token function">clone</span><span class="token punctuation">(</span>child_func<span class="token punctuation">,</span> stack<span class="token punctuation">,</span> CLONE_NEWUTS <span class="token operator">|</span> CLONE_NEWPID <span class="token operator">|</span> SIGCHLD<span class="token punctuation">,</span> arg<span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h2 id="cgroup">cgroup</h2>
+<blockquote>
+<p><code>cgroup</code> 分为 <code>v1</code> 和 <code>v2</code>
+两个版本，我们这里只简单介绍一些 <code>v2</code> 版本的实现逻辑。</p>
+</blockquote>
+<h3 id="cgroup的核心文件">cgroup的核心文件</h3>
+<p>Cgroup v2 的所有操作都基于 <code>/sys/fs/cgroup</code>（根 Cgroup
+组），根目录核心文件：</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr>
+<th>文件 / 目录</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgroup.controllers</code></td>
+<td>只读，列出内核支持的所有资源子系统（如
+cpu、memory、io、pids、hugetlb 等）</td>
+</tr>
+<tr>
+<td><code>cgroup.subtree_control</code></td>
+<td>可写，控制「哪些子系统权限能传递给子组」（子组需父组授权才能配置对应资源）</td>
+</tr>
+<tr>
+<td><code>cgroup.procs</code></td>
+<td>可写，该组内的进程 PID 列表（每行一个，写入 PID 即绑定进程）</td>
+</tr>
+<tr>
+<td><code>cgroup.threads</code></td>
+<td>只读，该组内的线程 TID 列表</td>
+</tr>
+<tr>
+<td><code>cgroup.max.descendants</code></td>
+<td>可写，该组允许创建的最大子组数量（默认无限制）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="使用cgroup限制cpu-50-内存-1gb">使用cgroup限制CPU 50% + 内存
+1GB</h3>
+<h4 id="一启用子系统传递权限">一、启用子系统传递权限</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /sys/fs/cgroup
+
+<span class="token comment"># 启用 cpu + memory 子系统（+ 表示启用，- 表示禁用）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"+cpu +memory"</span> <span class="token operator">></span> cgroup.subtree_control
+
+<span class="token function">cat</span> cgroup.subtree_control<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们可以看到输出为：</p>
+<pre class="line-numbers language-none"><code class="language-none">cpuset cpu io memory net_cls hugetlb pids rdma misc<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<table>
+<colgroup>
+<col style="width: 4%" />
+<col style="width: 9%" />
+<col style="width: 25%" />
+<col style="width: 29%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>子系统</th>
+<th>核心含义</th>
+<th>管控能力</th>
+<th>典型配置场景</th>
+<th>Cgroup v2 核心配置文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cpuset</code></td>
+<td>CPU 集合 / 节点绑定</td>
+<td>限制进程可使用的<strong>物理 CPU 核心</strong>、NUMA 节点</td>
+<td>多核服务器上，将进程固定到指定 CPU 核心（避免跨核调度开销）</td>
+<td><code>cpuset.cpus</code>（指定 CPU
+核心）、<code>cpuset.mems</code>（指定 NUMA 节点）</td>
+</tr>
+<tr>
+<td><code>cpu</code></td>
+<td>CPU 使用率 / 权重</td>
+<td>限制 CPU 时间片配额、资源竞争时的优先级</td>
+<td>限制进程 CPU 使用率 ≤50%，或给核心进程更高 CPU 权重</td>
+<td><code>cpu.max</code>（时间片配额）、<code>cpu.weight</code>（竞争权重）</td>
+</tr>
+<tr>
+<td><code>io</code></td>
+<td>磁盘 IO 管控</td>
+<td>限制块设备的读写速率、IOPS、优先级</td>
+<td>限制容器读写磁盘的速率（如 1MB/s），避免磁盘 IO 抢占</td>
+<td><code>io.max</code>（速率 / IOPS 限制）、<code>io.weight</code>（IO
+优先级）</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td>内存 / 交换分区管控</td>
+<td>限制内存使用上限、交换分区使用、OOM 行为</td>
+<td>限制容器内存 ≤1GB，禁止使用交换分区</td>
+<td><code>memory.max</code>（内存上限）、<code>memory.swap.max</code>（交换分区上限）</td>
+</tr>
+<tr>
+<td><code>net_cls</code></td>
+<td>网络类别标记</td>
+<td>为进程网络包打上分类标签（配合 tc/iptables 管控）</td>
+<td>区分不同进程的网络流量，实现带宽限制 / 优先级</td>
+<td><code>net_cls.classid</code>（打标签）</td>
+</tr>
+<tr>
+<td><code>hugetlb</code></td>
+<td>大页内存管控</td>
+<td>限制进程使用的<strong>大页内存（HugeTLB）</strong> 用量</td>
+<td>数据库 / 虚拟化场景，限制大页内存占用（避免大页耗尽）</td>
+<td><code>hugetlb.2MB.max</code>（2MB
+大页上限）、<code>hugetlb.1GB.max</code>（1GB 大页上限）</td>
+</tr>
+<tr>
+<td><code>pids</code></td>
+<td>进程数管控</td>
+<td>限制 Cgroup 组内可创建的最大进程 / 线程数</td>
+<td>防止进程无限 fork 导致系统进程耗尽（如挖矿程序、异常服务）</td>
+<td><code>pids.max</code>（最大进程数）</td>
+</tr>
+<tr>
+<td><code>rdma</code></td>
+<td>RDMA 资源管控</td>
+<td>限制进程使用的 RDMA（远程直接内存访问）资源</td>
+<td>高性能计算 / 存储场景，管控 RDMA 设备的资源占用</td>
+<td><code>rdma.max</code>（RDMA 资源上限）</td>
+</tr>
+<tr>
+<td><code>misc</code></td>
+<td>杂项资源管控</td>
+<td>管控不归属其他子系统的杂项资源（如 GPU、特殊设备）</td>
+<td>厂商扩展的资源管控（如 NVIDIA GPU 限制）</td>
+<td><code>misc.max</code>（杂项资源上限）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="二创建自定义-cgroup-子组">二、创建自定义 Cgroup 子组</h4>
+<p>Cgroup v2 中「创建目录 =
+新建子组」，内核会自动为新目录生成该组的规则文件：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 创建名为 "my-app" 的子组（管控我的应用进程）</span>
+<span class="token function">mkdir</span> /sys/fs/cgroup/my-app
+
+<span class="token comment"># 查看子组自动生成的文件（核心规则文件已出现）</span>
+<span class="token comment"># 关键文件：cpu.max、memory.max、cgroup.procs、cgroup.controllers 等</span>
+<span class="token function">ls</span> /sys/fs/cgroup/my-app<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="三配置资源限制规则">三、配置资源限制规则</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 配置CPU限额</span>
+
+<span class="token comment"># 规则文件：cpu.max（格式：[配额(微秒)] [周期(微秒)]）</span>
+<span class="token comment"># 配额：50000μs = 50ms，周期：100000μs = 100ms → 50% 使用率</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"50000 100000"</span> <span class="token operator">></span> /sys/fs/cgroup/my-app/cpu.max
+<span class="token comment"># 验证配置（应输出 50000 100000）</span>
+<span class="token function">cat</span> /sys/fs/cgroup/my-app/cpu.max
+
+<span class="token comment"># 配置内存限额</span>
+
+<span class="token comment"># 规则文件：memory.max（支持 K/M/G/T 单位，或直接写字节数）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"1G"</span> <span class="token operator">></span> /sys/fs/cgroup/my-app/memory.max
+
+<span class="token comment"># 验证配置（应输出 1073741824，即 1GB 的字节数）</span>
+<span class="token function">cat</span> /sys/fs/cgroup/my-app/memory.max<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="四绑定进程到-cgroup-子组">四、绑定进程到 Cgroup 子组</h4>
+<p>将需要管控的进程 PID 写入子组的 <code>cgroup.procs</code>
+文件，进程立即被该组的规则限制：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 1. 先启动一个测试进程（后台无限循环，高 CPU 占用，记录 PID）</span>
+<span class="token keyword">while</span> <span class="token builtin class-name">:</span><span class="token punctuation">;</span> <span class="token keyword">do</span> <span class="token builtin class-name">:</span><span class="token punctuation">;</span> <span class="token keyword">done</span> <span class="token operator">&amp;</span>
+<span class="token comment"># 输出示例：[1] 12345 （12345 是进程 PID）</span>
+
+<span class="token comment"># 2. 将该进程绑定到 my-app 组</span>
+<span class="token builtin class-name">echo</span> <span class="token number">12345</span> <span class="token operator">></span> /sys/fs/cgroup/my-app/cgroup.procs
+
+<span class="token comment"># 3. 验证绑定结果（应输出 12345）</span>
+<span class="token function">cat</span> /sys/fs/cgroup/my-app/cgroup.procs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="五其他限制">五、其他限制</h4>
+<p>除了CPU和内存，我们还有非常多的限制项目，例如：</p>
+<ol type="1">
+<li>磁盘 IO 限制</li>
+<li>进程数限制</li>
+<li>CPU 权重（资源竞争时的优先级）</li>
+<li>监控 Cgroup 组的资源使用（只读统计）</li>
+</ol>
+<h2 id="uts">UTS</h2>
+<blockquote>
+<p><code>UTS</code> 是<strong>Unix Time-Sharing System</strong>
+的缩写，本质是 Linux Namespace 的一种类型（标识常量
+<code>CLONE_NEWUTS</code>），专门用于<strong>隔离进程对「主机名（hostname）」和「NIS
+域名（domainname）」的视图</strong>。</p>
+<p>hostname 和 domainname 被归属到 <strong>UTS Namespace</strong>
+下，核心原因是：<strong>二者是 Unix
+系统中描述「主机身份」的核心属性，在早期 Unix Time-Sharing
+System（UTS）规范中被定义为全局系统参数，Linux
+内核延续了这一设计并将其纳入同一 Namespace 进行隔离</strong>。</p>
+</blockquote>
+<h3 id="hostname">hostname</h3>
+<p><code>hostname</code>
+是<strong>单台主机的本地标识</strong>，用于在<strong>局域网 /
+单机环境</strong>中区分不同设备，相当于给主机起的 “名字”，例如：</p>
+<ul>
+<li>本地进程间通信（如 <code>localhost</code> 对应
+<code>127.0.0.1</code>）；</li>
+<li>局域网内设备互访（如通过 <code>ubuntu-pc</code> 代替 IP
+地址）；</li>
+<li>容器隔离（每个容器的 <code>hostname</code> 独立，由 UTS Namespace
+保证）。</li>
+</ul>
+<h3 id="domainname">domainname</h3>
+<p><code>domainname</code> 本质是 <strong>NIS（Network Information
+Service）域名</strong>，是早期 Unix 系统用于<strong>分布式用户 /
+主机管理</strong>的标识，和我们现在常用的 <strong>DNS 域名（如
+<code>baidu.com</code>）不是一个概念</strong>。</p>
+<ul>
+<li><strong>作用范围</strong>：NIS
+服务集群内，用于统一管理多台主机的用户、密码、主机映射等信息。</li>
+<li><strong>使用场景</strong>：仅适用于老旧的 NIS 服务架构，<strong>现代
+Linux / 容器环境几乎不用</strong>，主要是为了兼容 UTS 标准而保留。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/docker/" rel="tag"># docker</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/" rel="prev" title="uCore并发">
+                  <i class="fa fa-angle-left"></i> uCore并发
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/" rel="next" title="Go/Rust/CPP的Covariance/Contravariance/Invariance">
+                  Go/Rust/CPP的Covariance/Contravariance/Invariance <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>
