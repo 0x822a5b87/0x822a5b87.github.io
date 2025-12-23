@@ -21,8 +21,8 @@ root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:
-  trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
-  trailing_html: true # Set to false to remove trailing '.html' from permalinks
+  trailing_index: true
+  trailing_html: true
 
 # Allow to cache content generation.
 cache:
@@ -371,22 +371,22 @@ body_scrollbar:
   # Present the scrollbar even if the content is not overflowing.
   stable: false
 
-codeblock:
-  theme:
-    light: default
-    dark: stackoverflow-dark
-  prism:
-    light: prism
-    dark: prism-dark
-  # Add copy button on codeblock
-  copy_button:
-    enable: false
-    # Available values: default | flat | mac
-    style:
-  # Fold code block
-  fold:
-    enable: false
-    height: 500
+#codeblock:
+#  theme:
+#    light: default
+#    dark: stackoverflow-dark
+#  prism:
+#    light: prism
+#    dark: prism-dark
+#  # Add copy button on codeblock
+#  copy_button:
+#    enable: false
+#    # Available values: default | flat | mac
+#    style:
+#  # Fold code block
+#  fold:
+#    enable: false
+#    height: 500
 
 back2top:
   enable: true
@@ -931,7 +931,7 @@ images: images
 theme: next
 
 excerpt:
-  depth: 5  
+  depth: 5
   excerpt_excludes: []
   more_excludes: []
   hideWholePostExcerpts: true
@@ -955,5 +955,11 @@ deploy:
 source_dir: source
 post_dir: _posts
 
+# _config.yml
 highlight:
-  enable: true
+  auto_detect: true
+  line_number: true
+  line_threshold: 0
+  tab_replace: ""
+  wrap: true
+  hljs: false

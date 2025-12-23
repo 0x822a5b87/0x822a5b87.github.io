@@ -373,23 +373,23 @@ body_scrollbar:
   # Present the scrollbar even if the content is not overflowing.
   stable: false
 
-codeblock:
-  enable: true
-  highlight:
-    enable: true
-  theme:
-    light: default
-    dark: stackoverflow-dark
-  prism:
-    light: prism
-    dark: prism-dark
-    line_number: true
-  copy_button:
-    enable: true
-    style:
-  fold:
-    enable: false
-    height: 500
+#codeblock:
+#  enable: true
+#  highlight:
+#    enable: true
+#  theme:
+#    light: default
+#    dark: stackoverflow-dark
+#  prism:
+#    light: prism
+#    dark: prism-dark
+#    line_number: true
+#  copy_button:
+#    enable: true
+#    style:
+#  fold:
+#    enable: false
+#    height: 500
 
 back2top:
   enable: true
@@ -936,7 +936,7 @@ images: images
 theme: next
 
 excerpt:
-  depth: 5  
+  depth: 5
   excerpt_excludes: []
   more_excludes: []
   hideWholePostExcerpts: true
@@ -961,18 +961,10 @@ source_dir: source
 post_dir: _posts
 
 # _config.yml
-syntax_highlighter: prismjs
 highlight:
-  auto_detect: false
+  auto_detect: true
   line_number: true
   line_threshold: 0
   tab_replace: ""
   wrap: true
   hljs: false
-prismjs:
-  preprocess: true
-  line_number: true
-  line_threshold: 0
-  tab_replace: ""
-  theme: "one-dark"
-  custom_languages: false
