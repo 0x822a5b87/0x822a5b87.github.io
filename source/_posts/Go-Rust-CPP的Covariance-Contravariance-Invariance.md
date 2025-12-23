@@ -52,52 +52,7 @@ type Subsystem[I Item, V Value] interface {
 type AnySubsystem Subsystem[Item, Value]
 ```
 
-```mermaid
-classDiagram
-    %% 基础类型定义
-    class Item:::typeAlias {
-        <<type alias>>
-        any
-    }
-
-    class Value:::interface {
-        <<interface>>
-        +From(s string) error
-        +Into() string
-    }
-
-    class BaseSubsystem:::interface {
-        <<interface>>
-        +Name() string
-        +Empty() bool
-    }
-
-    %% 泛型接口（核心）
-    class Subsystem:::genericInterface {
-        <<generic interface>>
-        <<I: Item, V: Value>>
-        +Get() (V, error)
-        +Set(I) error
-        +Del(I) error
-    }
-
-    %% 类型别名
-    class AnySubsystem:::typeAlias {
-        <<type alias>>
-        Subsystem[Item, Value]
-    }
-
-    %% 关系定义
-    BaseSubsystem <|-- Subsystem : 继承（接口嵌入）
-    Item <-- Subsystem : 泛型约束 I ∈ Item
-    Value <-- Subsystem : 泛型约束 V ∈ Value
-    Subsystem <-- AnySubsystem : 类型别名（特化）
-
-    %% 样式优化（区分类型/接口/泛型）
-    classDef typeAlias fill:#f0f8ff,stroke:#2196f3,stroke-width:1px,rounded:8px,font-style:italic;
-    classDef interface fill:#fef7fb,stroke:#9c27b0,stroke-width:1.5px,rounded:8px,font-weight:600;
-    classDef genericInterface fill:#e8f5e8,stroke:#4caf50,stroke-width:1.5px,rounded:8px,font-weight:600;
-```
+![01](/images/20251223/01.png)
 
 这个逻辑本来看上去相当的合理，然而在实现时发现：**go语言的泛型并不支持[Covariance](#Covariance)。于是，我们的如下代码将直接抛出异常。
 
