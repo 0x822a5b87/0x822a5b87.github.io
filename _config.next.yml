@@ -870,6 +870,7 @@ deploy:
 source_dir: source
 post_dir: _posts
 
+syntax_highlighter: highlightjs
 # _config.yml
 highlight:
   auto_detect: true
@@ -880,3 +881,17 @@ highlight:
   hljs: false
   exclude_languages:
     - mermaid
+
+mermaid:
+  enable: true
+  # Available themes: default | dark | forest | neutral
+  theme:
+    light: default
+    dark: dark
+
+codeblock:
+  # Code Highlight theme
+  # All available themes: https://theme-next.js.org/highlight/
+  theme:
+    light: tomorrow-night-bright
+    dark: tomorrow-night-bright
