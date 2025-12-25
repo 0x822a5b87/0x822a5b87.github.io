@@ -893,5 +893,9 @@ codeblock:
   # Code Highlight theme
   # All available themes: https://theme-next.js.org/highlight/
   theme:
-    light: tomorrow-night-bright
-    dark: tomorrow-night-bright
+    light: stackoverflow-light
+    dark: stackoverflow-light
+  copy_button:
+    enable: true
+    # Available values: default | flat | mac
+    style: flat
