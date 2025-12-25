@@ -371,23 +371,6 @@ body_scrollbar:
   # Present the scrollbar even if the content is not overflowing.
   stable: false
 
-#codeblock:
-#  theme:
-#    light: default
-#    dark: stackoverflow-dark
-#  prism:
-#    light: prism
-#    dark: prism-dark
-#  # Add copy button on codeblock
-#  copy_button:
-#    enable: false
-#    # Available values: default | flat | mac
-#    style:
-#  # Fold code block
-#  fold:
-#    enable: false
-#    height: 500
-
 back2top:
   enable: true
   # Back to top in sidebar.
@@ -536,31 +519,10 @@ pdf:
   # Default height
   height: 500px
 
-# Mermaid tag
-mermaid:
-  enable: true
-  version: "10.9.1"
-  # Available themes: default | dark | forest | neutral
-  theme: forest
-  options:
-
 
 # WaveDrom tag
 wavedrom:
   enable: false
-
-# ---------------------------------------------------------------
-# Third Party Plugins & Services Settings
-# See: https://theme-next.js.org/docs/third-party-services/
-# More plugins: https://github.com/next-theme/awesome-next
-# ---------------------------------------------------------------
-
-# ---------------------------------------------------------------
-# Math Formulas Render Support
-# See: https://theme-next.js.org/docs/third-party-services/math-equations
-# Warning: Please install / uninstall the relevant renderer according to the documentation.
-# Server-side plugin: https://github.com/next-theme/hexo-filter-mathjax
-# ---------------------------------------------------------------
 
 math:
   every_page: true
@@ -577,13 +539,7 @@ math:
     copy_tex: false
 
 
-# ---------------------------------------------------------------
-# External Libraries
-# See: https://theme-next.js.org/docs/third-party-services/external-libraries
-# ---------------------------------------------------------------
 
-# Easily enable fast Ajax navigation on your website.
-# For more information: https://github.com/next-theme/pjax
 pjax: false
 
 # FancyBox is a tool that offers a nice and elegant way to add zooming functionality for images.
@@ -599,9 +555,6 @@ mediumzoom: false
 # For more information: https://apoorv.pro/lozad.js/demo/
 lazyload: false
 
-# Automatically insert whitespace between CJK and half-width characters.
-# For more information: https://github.com/vinta/pangu.js
-# Server-side plugin: https://github.com/next-theme/hexo-pangu
 pangu: false
 
 # Prefetch links based on what is in the user's viewport.
@@ -633,7 +586,6 @@ motion:
   enable: true
   async: false
   transition:
-    # All available transition variants: https://theme-next.js.org/animate/
     menu_item: fadeInDown
     post_block: fadeIn
     post_header: fadeInDown
@@ -662,11 +614,6 @@ canvas_ribbon:
   alpha: 0.6 # The transparency of the ribbon
   zIndex: -1 # The display level of the ribbon
 
-
-# ---------------------------------------------------------------
-# Comments Settings
-# See: https://theme-next.js.org/docs/third-party-services/comments
-# ---------------------------------------------------------------
 
 # Multiple Comment System Support
 comments:
@@ -746,10 +693,6 @@ utterances:
 isso: # <data_isso>
 
 
-# ---------------------------------------------------------------
-# Post Widgets & Content Sharing Services
-# See: https://theme-next.js.org/docs/third-party-services/post-widgets
-# ---------------------------------------------------------------
 
 # AddToAny Share. See: https://www.addtoany.com
 addtoany:
@@ -759,10 +702,6 @@ addtoany:
     - twitter
 
 
-# ---------------------------------------------------------------
-# Statistics and Analytics
-# See: https://theme-next.js.org/docs/third-party-services/statistics-and-analytics
-# ---------------------------------------------------------------
 
 # Google Analytics
 # See: https://analytics.google.com
@@ -820,9 +759,6 @@ leancloud_visitors:
   app_key: # <your app key>
   # Required for apps from CN region
   server_url: # <your server url>
-  # Dependencies: https://github.com/theme-next/hexo-leancloud-counter-security
-  # If you don't care about security in leancloud counter and just want to use it directly
-  # (without hexo-leancloud-counter-security plugin), set `security` to `false`.
   security: true
 
 # Another tool to show number of visitors to each article.
@@ -845,12 +781,6 @@ busuanzi_count:
   post_views: true
   post_views_icon: far fa-eye
 
-
-# ---------------------------------------------------------------
-# Search Services
-# See: https://theme-next.js.org/docs/third-party-services/search-services
-# ---------------------------------------------------------------
-
 # Algolia Search
 # For more information: https://www.algolia.com
 algolia_search:
@@ -858,8 +788,6 @@ algolia_search:
   hits:
     per_page: 10
 
-# Local Search
-# Dependencies: https://github.com/next-theme/hexo-generator-searchdb
 local_search:
   enable: false
   # If auto, trigger search by changing input.
@@ -871,12 +799,6 @@ local_search:
   unescape: false
   # Preload the search data when the page loads.
   preload: false
-
-
-# ---------------------------------------------------------------
-# Chat Services
-# See: https://theme-next.js.org/docs/third-party-services/chat-services
-# ---------------------------------------------------------------
 
 # A button to open designated chat widget in sidebar.
 # Firstly, you need to enable and configure the chat service.
@@ -900,12 +822,6 @@ tidio:
   enable: false
   key: # Public Key, get it from dashboard. See: https://www.tidio.com/panel/settings/developer
 
-
-# ---------------------------------------------------------------
-# CDN Settings
-# See: https://theme-next.js.org/docs/advanced-settings/vendors
-# ---------------------------------------------------------------
-
 vendors:
   # The CDN provider of NexT internal scripts.
   # Available values: local | jsdelivr | unpkg | cdnjs | custom
@@ -913,7 +829,6 @@ vendors:
   internal: local
   # The default CDN provider of third-party plugins.
   # Available values: local | jsdelivr | unpkg | cdnjs | custom
-  # Dependencies for `plugins: local`: https://github.com/next-theme/plugins
   plugins: cdnjs
   # Custom CDN URL
   # For example:
@@ -963,3 +878,5 @@ highlight:
   tab_replace: ""
   wrap: true
   hljs: false
+  exclude_languages:
+    - mermaid
