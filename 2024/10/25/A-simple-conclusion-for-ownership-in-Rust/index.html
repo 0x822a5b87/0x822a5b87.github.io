@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="A Simple Conclusion for Ownership in Rust Warm Up What&#39;s my type? Before we divi into the ownership, there is a essential problem we have to figure out beforehead: What&#39;s the type of the variable we j">
 <meta property="og:type" content="article">
@@ -37,7 +37,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/","path":"2024/10/25/A-simple-conclusion-for-ownership-in-Rust/","title":"A simple conclusion for ownership in Rust"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -48,6 +47,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -438,17 +462,17 @@ code E0206</a></p>
 <h3 id="a-more-complicated-example">A more complicated example</h3>
 <p>Assuming that we are going to build an HTTP server, here is the
 procedure of how the server processes a HTTP request:</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: http server
 ---
 flowchart BT
 
-TcpListener -->|bind| Listener -->|incoming| TcpStream
+TcpListener --&gt;|bind| Listener --&gt;|incoming| TcpStream
 
 subgraph TcpStream
-    direction LR
-    BufReader -->|process request| TcpStream::write_all
-end</pre>
+	direction LR
+	BufReader --&gt;|process request| TcpStream::write_all
+end</code></pre>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="title function_ invoke__">connect</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">connect</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tcp_listener</span> = TcpListener::<span class="title function_ invoke__">bind</span>(<span class="string">&quot;127.0.0.1:7878&quot;</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">stream</span> <span class="keyword">in</span> tcp_listener.<span class="title function_ invoke__">incoming</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">stream</span> = stream.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="title function_ invoke__">handle_connection</span>(stream);</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Connection closed.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">handle_connection</span>(<span class="keyword">mut</span> stream: TcpStream) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">reader</span> = BufReader::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">mut</span> stream);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">http_request</span> = reader.<span class="title function_ invoke__">lines</span>()</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(<span class="type">Result</span>::unwrap)</span><br><span class="line">        .<span class="title function_ invoke__">take_while</span>(|line| !line.<span class="title function_ invoke__">is_empty</span>())</span><br><span class="line">        .collect::&lt;<span class="type">Vec</span>&lt;<span class="type">String</span>&gt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Request: &#123;http_request:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">match</span> stream.<span class="title function_ invoke__">write_all</span>(HTTP_200_RSP.<span class="title function_ invoke__">as_bytes</span>()) &#123;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(_) =&gt; <span class="built_in">println!</span>(<span class="string">&quot;response!&quot;</span>),</span><br><span class="line">        <span class="title function_ invoke__">Err</span>(err) =&gt; <span class="built_in">println!</span>(<span class="string">&quot;response error : &#123;err&#125;&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="ownership-with-trait">Ownership with trait</h2>
 <p>In Rust, regular values and reference values have significant
@@ -558,34 +582,8 @@ target="_blank" rel="noopener" href="https://stackoverflow.com/questions/3129880
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="批处理系统 综述 在本章节中，我们实现一个简单的批处理系统，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：  通过加载器在启动时动态的加载代码到并执行； 实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如 privilege。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于">
 <meta property="og:type" content="article">
@@ -39,7 +39,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/","path":"2025/11/13/ucore批处理系统/","title":"uCore批处理系统"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -50,6 +49,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -222,49 +246,49 @@ V 扩展时生效）</span></a></li><li class="nav-item nav-level-4"><a class="n
 <li>操作系统通过trap机制来处理 <code>interruption</code> 和
 <code>exception</code> 事件。</li>
 </ol>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Compiling rCore-test
 ---
 flowchart TB
 
 subgraph desc
     direction TB
-    build_system("构建系统"):::purple
-    dir("文件夹"):::green
-    products("源文件/构建产物"):::animate
+    build_system(&quot;构建系统&quot;):::purple
+    dir(&quot;文件夹&quot;):::green
+    products(&quot;源文件/构建产物&quot;):::animate
 end
 
 
 subgraph 构建过程
     direction LR
-    makefile("Makefile"):::purple
-    build("build.py"):::purple
+    makefile(&quot;Makefile&quot;):::purple
+    build(&quot;build.py&quot;):::purple
 
-    target("target/riscv64gc-unknown-none-elf/release"):::green
-    build_dir("build"):::green
+    target(&quot;target/riscv64gc-unknown-none-elf/release&quot;):::green
+    build_dir(&quot;build&quot;):::green
 
-    source_code("*.rs"):::animate
-    bin("*.bin"):::animate
-    elf("*.elf"):::animate
-    object("*.object"):::animate
+    source_code(&quot;*.rs&quot;):::animate
+    bin(&quot;*.bin&quot;):::animate
+    elf(&quot;*.elf&quot;):::animate
+    object(&quot;*.object&quot;):::animate
 
 
-    source_code -->|输入| build -->|编译| object -.->|输出到文件夹| target
-    object -->|输入| makefile -->|rust-objcopy| bin -.->|输出到文件夹| target
-    object -->|输入| makefile -->|cp| elf -.->|输出到文件夹| target
+    source_code --&gt;|输入| build --&gt;|编译| object -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|rust-objcopy| bin -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|cp| elf -.-&gt;|输出到文件夹| target
 
-    bin -->|cp| build_dir
-    elf -->|cp| build_dir
+    bin --&gt;|cp| build_dir
+    elf --&gt;|cp| build_dir
 end
 
-desc --> 构建过程
+desc --&gt; 构建过程
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h3 id="rcore-code-organization">rCore和rCore-test如何组织代码？</h3>
 <p>在 <a
 target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test">rCore-test</a>
@@ -344,49 +368,49 @@ target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutoria
 <li>build 将 <code>.bin</code> 和 <code>.elf</code> 复制到
 <code>build</code> 对应的目录下；</li>
 </ol>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Compiling rCore-test
 ---
 flowchart TB
 
 subgraph desc
     direction TB
-    build_system("构建系统"):::purple
-    dir("文件夹"):::green
-    products("源文件/构建产物"):::animate
+    build_system(&quot;构建系统&quot;):::purple
+    dir(&quot;文件夹&quot;):::green
+    products(&quot;源文件/构建产物&quot;):::animate
 end
 
 
 subgraph 构建过程
     direction LR
-    makefile("Makefile"):::purple
-    build("build.py"):::purple
+    makefile(&quot;Makefile&quot;):::purple
+    build(&quot;build.py&quot;):::purple
 
-    target("target/riscv64gc-unknown-none-elf/release"):::green
-    build_dir("build"):::green
+    target(&quot;target/riscv64gc-unknown-none-elf/release&quot;):::green
+    build_dir(&quot;build&quot;):::green
 
-    source_code("*.rs"):::animate
-    bin("*.bin"):::animate
-    elf("*.elf"):::animate
-    object("*.object"):::animate
+    source_code(&quot;*.rs&quot;):::animate
+    bin(&quot;*.bin&quot;):::animate
+    elf(&quot;*.elf&quot;):::animate
+    object(&quot;*.object&quot;):::animate
 
 
-    source_code -->|输入| build -->|编译| object -.->|输出到文件夹| target
-    object -->|输入| makefile -->|rust-objcopy| bin -.->|输出到文件夹| target
-    object -->|输入| makefile -->|cp| elf -.->|输出到文件夹| target
+    source_code --&gt;|输入| build --&gt;|编译| object -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|rust-objcopy| bin -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|cp| elf -.-&gt;|输出到文件夹| target
 
-    bin -->|cp| build_dir
-    elf -->|cp| build_dir
+    bin --&gt;|cp| build_dir
+    elf --&gt;|cp| build_dir
 end
 
-desc --> 构建过程
+desc --&gt; 构建过程
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h3 id="makefile">makefile</h3>
 <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># define variables</span></span><br><span class="line">TARGET := riscv64gc-unknown-none-elf</span><br><span class="line">MODE := release</span><br><span class="line">APP_DIR := src/bin</span><br><span class="line">TARGET_DIR := target/<span class="variable">$(TARGET)</span>/<span class="variable">$(MODE)</span></span><br><span class="line">BUILD_DIR := build</span><br><span class="line">OBJDUMP := rust-objdump --arch-name=riscv64</span><br><span class="line">OBJCOPY := rust-objcopy --binary-architecture=riscv64</span><br><span class="line">PY := python3</span><br><span class="line"></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(MODE)</span>, release)</span><br><span class="line">	MODE_ARG := --release</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line">BASE ?= 0</span><br><span class="line">CHAPTER ?= 0</span><br><span class="line">TEST ?= <span class="variable">$(CHAPTER)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Generate a list contains all target files.</span></span><br><span class="line"><span class="comment"># $(TEST) : indicate which tests should run, 0 stands for none, 1 stands for all,</span></span><br><span class="line"><span class="comment">#			and other values stand for tests based on BASE and TEST</span></span><br><span class="line"><span class="comment"># $(BASE) : Indicate which types of test should run, 0 stands for normal, 1 stands for basic,</span></span><br><span class="line"><span class="comment">#			and other values stand for basic and normal.</span></span><br><span class="line"><span class="comment"># $(CHAPTER) : set default values for TEST</span></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(TEST)</span>, 0) <span class="comment"># No test, deprecated, previously used in v3</span></span><br><span class="line">	APPS :=  <span class="variable">$(<span class="built_in">filter</span>-out $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch*.rs)</span>, <span class="variable">$(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/*.rs)</span>)</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">ifeq</span> (<span class="variable">$(TEST)</span>, 1) <span class="comment"># All test</span></span><br><span class="line">	APPS :=  <span class="variable">$(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch*.rs)</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">	<span class="comment"># generate a sequential number between BASE and TEST, with both BASE and TEST included.</span></span><br><span class="line">	TESTS := <span class="variable">$(<span class="built_in">shell</span> seq <span class="variable">$(BASE)</span> <span class="variable">$(TEST)</span>)</span></span><br><span class="line">	<span class="keyword">ifeq</span> (<span class="variable">$(BASE)</span>, 0) <span class="comment"># Normal tests only</span></span><br><span class="line">		APPS := <span class="variable">$(<span class="built_in">foreach</span> T, <span class="variable">$(TESTS)</span>, $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch<span class="variable">$(T)</span>_*.rs)</span>)</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">ifeq</span> (<span class="variable">$(BASE)</span>, 1) <span class="comment"># Basic tests only</span></span><br><span class="line">		APPS := <span class="variable">$(<span class="built_in">foreach</span> T, <span class="variable">$(TESTS)</span>, $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch<span class="variable">$(T)</span>b_*.rs)</span>)</span><br><span class="line">	<span class="keyword">else</span> <span class="comment"># Basic and normal</span></span><br><span class="line">		APPS := <span class="variable">$(<span class="built_in">foreach</span> T, <span class="variable">$(TESTS)</span>, $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch<span class="variable">$(T)</span>*.rs)</span>)</span><br><span class="line">	<span class="keyword">endif</span></span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Use pattern substitution to generate a target directory list by replacing APP_DIR with TARGET_DIR.</span></span><br><span class="line"><span class="comment"># For example : src/bin/hello_world.rs will become target/riscv64gc-unknown-none-elf/release/hello_world</span></span><br><span class="line">ELFS := <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(APP_DIR)</span>/%.rs, <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(APPS)</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Generate binary file according to $CHAPTER.</span></span><br><span class="line"><span class="comment"># 1. Generate elf file by cargo or build.py;</span></span><br><span class="line"><span class="comment"># 2. Transform elf file to binary file by rust-objcopy, and add .bin as suffix for elf file name as the name of binary file;</span></span><br><span class="line"><span class="comment"># 3. Copy elf file to $BUILD_DIR/elf.</span></span><br><span class="line"><span class="section">binary:</span></span><br><span class="line">	@echo <span class="variable">$(ELFS)</span></span><br><span class="line">	@if [ $&#123;CHAPTER&#125; -gt 3 ]; then \</span><br><span class="line">		cargo build <span class="variable">$(MODE_ARG)</span> ;\</span><br><span class="line">	<span class="keyword">else</span> \</span><br><span class="line">		CHAPTER=<span class="variable">$(CHAPTER)</span> python3 build.py ;\</span><br><span class="line">	fi</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> elf, <span class="variable">$(ELFS)</span>, \</span></span><br><span class="line"><span class="variable">		<span class="variable">$(OBJCOPY)</span> <span class="variable">$(elf)</span> --<span class="built_in">strip</span>-all -O binary $(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.bin, <span class="variable">$(elf)</span>)</span>; \</span><br><span class="line">		cp <span class="variable">$(elf)</span> <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.elf, <span class="variable">$(elf)</span>)</span>;)</span><br><span class="line"></span><br><span class="line"><span class="section">disasm:</span></span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> elf, <span class="variable">$(ELFS)</span>, \</span></span><br><span class="line"><span class="variable">		<span class="variable">$(OBJDUMP)</span> <span class="variable">$(elf)</span> -S &gt; $(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.asm, <span class="variable">$(elf)</span>)</span>;)</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(ELFS)</span>, cp <span class="variable">$(t)</span>.asm <span class="variable">$(BUILD_DIR)</span>/asm/;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># prepare context and copy all target files</span></span><br><span class="line"><span class="section">pre:</span></span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/bin/</span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/elf/</span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/app/</span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/asm/</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(APPS)</span>, cp <span class="variable">$(t)</span> <span class="variable">$(BUILD_DIR)</span>/app/;)</span></span><br><span class="line"></span><br><span class="line"><span class="section">build: clean pre binary</span></span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(ELFS)</span>, cp <span class="variable">$(t)</span>.bin <span class="variable">$(BUILD_DIR)</span>/bin/;)</span></span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(ELFS)</span>, cp <span class="variable">$(t)</span>.elf <span class="variable">$(BUILD_DIR)</span>/elf/;)</span></span><br></pre></td></tr></table></figure>
 <h3 id="build.py">build.py</h3>
@@ -415,59 +439,59 @@ classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25
 </blockquote>
 <p>从main函数入手，我们可以看到相对于第一章初始化完成之后，我们多了三个额外操作：</p>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// the rust entry-point of os</span></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">rust_main</span>()  &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    trap::<span class="title function_ invoke__">init</span>();</span><br><span class="line">    batch::<span class="title function_ invoke__">init</span>();</span><br><span class="line">    batch::<span class="title function_ invoke__">run_next_app</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: trap and batch
 ---
 flowchart LR
 
-os("OS"):::green --> trap
-os --> batch
+os(&quot;OS&quot;):::green --&gt; trap
+os --&gt; batch
 
-trap("trap.s") --> trap_desc("注册中断向量表（stvec），处理异常")
-batch("batch.s") --> batch_desc("加载test的app到内核空间并执行")
+trap(&quot;trap.s&quot;) --&gt; trap_desc(&quot;注册中断向量表（stvec），处理异常&quot;)
+batch(&quot;batch.s&quot;) --&gt; batch_desc(&quot;加载test的app到内核空间并执行&quot;)
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h3 id="trap">trap</h3>
 <p>我们可以再回顾一下，一个 trap 触发的流程：</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: 跳转
 ---
 
 flowchart TB
 
 
-    stvec("stvec"):::pink
-    scause("scause"):::pink
-    sstatus("sstatus"):::pink
-    stval("stval"):::pink
+    stvec(&quot;stvec&quot;):::pink
+    scause(&quot;scause&quot;):::pink
+    sstatus(&quot;sstatus&quot;):::pink
+    stval(&quot;stval&quot;):::pink
 
 
 
-    用户态触发trap("用户态触发trap"):::green
-    内核trap处理("内核trap处理"):::error
+    用户态触发trap(&quot;用户态触发trap&quot;):::green
+    内核trap处理(&quot;内核trap处理&quot;):::error
 
-    stvec -->|1. 读取stvec| 用户态触发trap --> TrapHandler("TrapHandler"):::error
+    stvec --&gt;|1. 读取stvec| 用户态触发trap --&gt; TrapHandler(&quot;TrapHandler&quot;):::error
 
-    scause -->|2. 读取trap原因-缺页？系统调用？| 内核trap处理
-    sstatus -->|3. 原特权等级-自陷？| 内核trap处理
+    scause --&gt;|2. 读取trap原因-缺页？系统调用？| 内核trap处理
+    sstatus --&gt;|3. 原特权等级-自陷？| 内核trap处理
 
-    stval -->|4. 根据scause解析stval并解析执行| 内核trap处理
+    stval --&gt;|4. 根据scause解析stval并解析执行| 内核trap处理
 
-    TrapHandler --> scause
-    TrapHandler --> sstatus
-    TrapHandler --> stval
+    TrapHandler --&gt; scause
+    TrapHandler --&gt; sstatus
+    TrapHandler --&gt; stval
 
 classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <p>一次trap的处理，我们需要三个重要寄存器合作：</p>
 <ol type="1">
 <li><code>stvec</code> 找到中断向量表；</li>
@@ -559,60 +583,60 @@ handler」，内核负责「权限检查、 trap 类型分发、业务逻辑处�
 <code>Exception::UserEnvCall</code> 时，<code>trap_handler</code> 会通过
 <code>syscall</code> 下面的包来调用系统调用函数。</li>
 </ul>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: 执行程序
 ---
 flowchart TB
 
 subgraph desc
     direction TB
-    registers("寄存器"):::pink
-    dir("文件夹"):::green
-    object("对象"):::purple
-    products("源文件/生成文件"):::animate
-    t("中断"):::error
-    p("用户程序"):::coral
+    registers(&quot;寄存器&quot;):::pink
+    dir(&quot;文件夹&quot;):::green
+    object(&quot;对象&quot;):::purple
+    products(&quot;源文件/生成文件&quot;):::animate
+    t(&quot;中断&quot;):::error
+    p(&quot;用户程序&quot;):::coral
 end
 
 subgraph run
     direction TB
 
-    exception_or_interruption("用户中断"):::error
+    exception_or_interruption(&quot;用户中断&quot;):::error
 
-    program("用户程序"):::coral
+    program(&quot;用户程序&quot;):::coral
 
-    build("build.rs"):::animate
-    link_app("link_app.S"):::animate
-    trap("trap.s"):::animate
-    trap_handler("trap_handler"):::animate
+    build(&quot;build.rs&quot;):::animate
+    link_app(&quot;link_app.S&quot;):::animate
+    trap(&quot;trap.s&quot;):::animate
+    trap_handler(&quot;trap_handler&quot;):::animate
 
-    source_bin("user/build/bin"):::green
-    APP_MANAGER("APP_MANAGER"):::purple
-    USER_STACK("USER_STACK"):::purple
-    KERNEL_STACK("KERNEL_STACK"):::purple
+    source_bin(&quot;user/build/bin&quot;):::green
+    APP_MANAGER(&quot;APP_MANAGER&quot;):::purple
+    USER_STACK(&quot;USER_STACK&quot;):::purple
+    KERNEL_STACK(&quot;KERNEL_STACK&quot;):::purple
 
     subgraph TrapContext
-        user_registers("User-Purpose Registers"):::pink
-        sstatus("sstatus"):::pink
-        sepc("sepc"):::pink
+        user_registers(&quot;User-Purpose Registers&quot;):::pink
+        sstatus(&quot;sstatus&quot;):::pink
+        sepc(&quot;sepc&quot;):::pink
     end
 
-    source_bin -->|二进制文件| build -->|生成文件| link_app
+    source_bin --&gt;|二进制文件| build --&gt;|生成文件| link_app
 
-    link_app -->|汇编文件| APP_MANAGER
+    link_app --&gt;|汇编文件| APP_MANAGER
 
     
-    APP_MANAGER -->|1. 加载用户程序到内存| program
-    APP_MANAGER -->|2. 初始化context，包含了一个sepc指向用户程序的地址| TrapContext
-    APP_MANAGER -->|3. 将context压入内核栈| KERNEL_STACK
-    APP_MANAGER -->|4. 调用__restore，会将context中的sepc写入到寄存器| trap
+    APP_MANAGER --&gt;|1. 加载用户程序到内存| program
+    APP_MANAGER --&gt;|2. 初始化context，包含了一个sepc指向用户程序的地址| TrapContext
+    APP_MANAGER --&gt;|3. 将context压入内核栈| KERNEL_STACK
+    APP_MANAGER --&gt;|4. 调用__restore，会将context中的sepc写入到寄存器| trap
 
-    KERNEL_STACK -->|从内核栈读取并设置寄存器| trap
+    KERNEL_STACK --&gt;|从内核栈读取并设置寄存器| trap
 
-    program -.->|执行时可能触发中断| trap --> exception_or_interruption -->|如果触发中断，则进行中断处理| trap_handler
+    program -.-&gt;|执行时可能触发中断| trap --&gt; exception_or_interruption --&gt;|如果触发中断，则进行中断处理| trap_handler
 end
 
-desc --> run
+desc --&gt; run
 
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
@@ -623,7 +647,7 @@ classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
 
 
-linkStyle 3,4,5,6,7 color:red;</pre>
+linkStyle 3,4,5,6,7 color:red;</code></pre>
 <h4 id="build.rs">build.rs</h4>
 <p><code>build.rs</code> 的逻辑非常简单，就是读取
 <code>user/build/bin</code>
@@ -729,24 +753,24 @@ build.rs 无法读取 ../user/build/bin/
 <p>这些事件都是不可预测的，而为了处理这些事件，我们需要有一个方式来通知计算机，也就是
 <code>trap</code>，而我们根据这些事件的类型，我们将他分为了两个大分类：<code>interruption</code>
 和 <code>exception</code>。</p>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
 subgraph program
-    instruction1("指令1"):::green --> instruction2("指令2"):::green --> instruction3("指令3"):::green -.-> instruction4("..."):::green
+    instruction1(&quot;指令1&quot;):::green --&gt; instruction2(&quot;指令2&quot;):::green --&gt; instruction3(&quot;指令3&quot;):::green -.-&gt; instruction4(&quot;...&quot;):::green
 end
 
 subgraph 处理
-    instruction3 --> handler("处理异常/中断"):::pink --> instruction4
+    instruction3 --&gt; handler(&quot;处理异常/中断&quot;):::pink --&gt; instruction4
 end
 
-exception("exception or interruption"):::error -.->|通知程序有新的事件需要处理| instruction3
+exception(&quot;exception or interruption&quot;):::error -.-&gt;|通知程序有新的事件需要处理| instruction3
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h4 id="异常处理相关的寄存器">异常处理相关的寄存器</h4>
 <ul>
 <li>Trap触发与入口配置
@@ -833,82 +857,82 @@ exception2？这样我们才能知道使用哪个异常处理函数；</li>
 <blockquote>
 <p>当我们把这整个过程扩展开来的时候，我们就可以清楚的了解到，这些寄存器就是连接用户态和内核态的桥梁。</p>
 </blockquote>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: 一次ecall引发的trap
 ---
 flowchart TB
 
     subgraph registers
-        stvec("stvec"):::pink
-        scause("scause"):::pink
-        sepc("sepc"):::pink
-        sstatus("sstatus"):::pink
-        stval("stval"):::pink
-        sscratch("sscratch"):::pink
-        a0("a0 ~ a7"):::pink
+        stvec(&quot;stvec&quot;):::pink
+        scause(&quot;scause&quot;):::pink
+        sepc(&quot;sepc&quot;):::pink
+        sstatus(&quot;sstatus&quot;):::pink
+        stval(&quot;stval&quot;):::pink
+        sscratch(&quot;sscratch&quot;):::pink
+        a0(&quot;a0 ~ a7&quot;):::pink
     end
 
-    用户态触发trap("用户态触发trap"):::green
-    内核trap处理("内核trap处理"):::error
-    返回用户态("返回用户态"):::green
+    用户态触发trap(&quot;用户态触发trap&quot;):::green
+    内核trap处理(&quot;内核trap处理&quot;):::error
+    返回用户态(&quot;返回用户态&quot;):::green
 
 
-    TrapContext("TrapContext"):::purple
+    TrapContext(&quot;TrapContext&quot;):::purple
 
-    用户态触发trap -->|保存当前特权级| sstatus
-    用户态触发trap -->|保存当前指令地址| sepc
-    用户态触发trap -->|设置trap原因| scause
-    用户态触发trap -->|设置系统调用参数| a0
+    用户态触发trap --&gt;|保存当前特权级| sstatus
+    用户态触发trap --&gt;|保存当前指令地址| sepc
+    用户态触发trap --&gt;|设置trap原因| scause
+    用户态触发trap --&gt;|设置系统调用参数| a0
 
-    scause -.->|确认trap原因| 内核trap处理
-    sepc -.->|记录返回地址| 内核trap处理 -->|记录sepc| TrapContext
-    a0 -.->|获取系统调用参数并执行| 内核trap处理
+    scause -.-&gt;|确认trap原因| 内核trap处理
+    sepc -.-&gt;|记录返回地址| 内核trap处理 --&gt;|记录sepc| TrapContext
+    a0 -.-&gt;|获取系统调用参数并执行| 内核trap处理
 
-    sepc -->|读取并写入TrapContext| 返回用户态 -->|sepc+4| TrapContext
-    sstatus -->|读取并写入TrapContext| 返回用户态 -->|sstatus| TrapContext
+    sepc --&gt;|读取并写入TrapContext| 返回用户态 --&gt;|sepc+4| TrapContext
+    sstatus --&gt;|读取并写入TrapContext| 返回用户态 --&gt;|sstatus| TrapContext
 
-    返回用户态 -->|从 sepc 恢复执行，回到用户态| 用户态("用户态")
+    返回用户态 --&gt;|从 sepc 恢复执行，回到用户态| 用户态(&quot;用户态&quot;)
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
-<pre class="mermaid">---
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<pre><code class="highlight mermaid">---
 title: 跳转
 ---
 
 flowchart TB
 
 
-    stvec("stvec"):::pink
-    scause("scause"):::pink
-    sstatus("sstatus"):::pink
-    stval("stval"):::pink
+    stvec(&quot;stvec&quot;):::pink
+    scause(&quot;scause&quot;):::pink
+    sstatus(&quot;sstatus&quot;):::pink
+    stval(&quot;stval&quot;):::pink
 
 
 
-    用户态触发trap("用户态触发trap"):::green
-    内核trap处理("内核trap处理"):::error
+    用户态触发trap(&quot;用户态触发trap&quot;):::green
+    内核trap处理(&quot;内核trap处理&quot;):::error
 
-    stvec -->|1. 读取stvec| 用户态触发trap --> TrapHandler("TrapHandler"):::error
+    stvec --&gt;|1. 读取stvec| 用户态触发trap --&gt; TrapHandler(&quot;TrapHandler&quot;):::error
 
-    scause -->|2. 读取trap原因-缺页？系统调用？| 内核trap处理
-    sstatus -->|3. 原特权等级-自陷？| 内核trap处理
+    scause --&gt;|2. 读取trap原因-缺页？系统调用？| 内核trap处理
+    sstatus --&gt;|3. 原特权等级-自陷？| 内核trap处理
 
-    stval -->|4. 根据scause解析stval并解析执行| 内核trap处理
+    stval --&gt;|4. 根据scause解析stval并解析执行| 内核trap处理
     
-    TrapHandler --> scause
-    TrapHandler --> sstatus
-    TrapHandler --> stval
+    TrapHandler --&gt; scause
+    TrapHandler --&gt; sstatus
+    TrapHandler --&gt; stval
 
 classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h3 id="rust是如何组织依赖的">rust是如何组织依赖的</h3>
 <blockquote>
 <p>rust中： 1. 每个项目被称之为crate，crate
@@ -1384,34 +1408,8 @@ V 扩展时生效）</h4>
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

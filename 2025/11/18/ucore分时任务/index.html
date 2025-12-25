@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="多道程序与分时多任务 内存调度模型 flowchart LR     %% 按类型定义专属样式（遵循通俗约定：函数&#x3D;蓝、结构体&#x3D;绿、寄存器&#x3D;紫、栈&#x3D;浅红、内存&#x3D;黄、管理组件&#x3D;深蓝）     classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px,">
 <meta property="og:type" content="article">
@@ -39,7 +39,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/","path":"2025/11/18/ucore分时任务/","title":"uCore分时任务"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -50,6 +49,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -214,7 +238,7 @@ s0~s11 寄存器？</span></a><ol class="nav-child"><li class="nav-item nav-leve
     
     <div class="post-body" itemprop="articleBody"><h1 id="多道程序与分时多任务">多道程序与分时多任务</h1>
 <h2 id="内存调度模型">内存调度模型</h2>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
     %% 按类型定义专属样式（遵循通俗约定：函数=蓝、结构体=绿、寄存器=紫、栈=浅红、内存=黄、管理组件=深蓝）
     classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px, font-size:14px;
     classDef struct fill:#4ade80, stroke:#16a34a, stroke-width:2px, color:#1e293b, font-weight:bold, rounded:8px, font-size:14px;
@@ -226,74 +250,74 @@ s0~s11 寄存器？</span></a><ol class="nav-child"><li class="nav-item nav-leve
     classDef subgraphTitle fill:#1e293b, font-weight:bold, font-size:14px, font-family:Arial;
 
     %% 栈（USER_STACK/KERNEL_STACK）
-    subgraph USER_STACK["USER_STACK"]
+    subgraph USER_STACK[&quot;USER_STACK&quot;]
         direction LR
-        US1("..."):::stack
-        US0("UserStack 0"):::stack
+        US1(&quot;...&quot;):::stack
+        US0(&quot;UserStack 0&quot;):::stack
     end
-    subgraph KERNEL_STACK["KERNEL_STACK"]
+    subgraph KERNEL_STACK[&quot;KERNEL_STACK&quot;]
         direction LR
-        KS1("..."):::stack
-        KS0("KernelStack 0"):::stack
+        KS1(&quot;...&quot;):::stack
+        KS0(&quot;KernelStack 0&quot;):::stack
     end
 
     %% 内存/二进制代码
-    subgraph Memory["Memory"]
+    subgraph Memory[&quot;Memory&quot;]
        direction LR
-        M1("..."):::memory
-        M0("Task 0 Code"):::memory
+        M1(&quot;...&quot;):::memory
+        M0(&quot;Task 0 Code&quot;):::memory
     end
 
     %% 任务相关（结构体：TaskControlBlock/TaskStatus/TaskContext/TrapContext）
-    subgraph tasks["tasks"]
-       subgraph TaskControlBlock1["TaskControlBlock1"]
-        TaskContext1("..."):::struct
-        TaskStatus1("..."):::struct
+    subgraph tasks[&quot;tasks&quot;]
+       subgraph TaskControlBlock1[&quot;TaskControlBlock1&quot;]
+        TaskContext1(&quot;...&quot;):::struct
+        TaskStatus1(&quot;...&quot;):::struct
        end
-       subgraph TaskControlBlock0["TaskControlBlock0"]
-        subgraph TaskContext0["TaskContext0"]
-            ra0("ra"):::reg 
-            sp0("sp"):::reg
-            s0("s0 ~ s11"):::reg
+       subgraph TaskControlBlock0[&quot;TaskControlBlock0&quot;]
+        subgraph TaskContext0[&quot;TaskContext0&quot;]
+            ra0(&quot;ra&quot;):::reg 
+            sp0(&quot;sp&quot;):::reg
+            s0(&quot;s0 ~ s11&quot;):::reg
         end
-        TaskStatus0("TaskStatus 0"):::struct
+        TaskStatus0(&quot;TaskStatus 0&quot;):::struct
        end
     end
-    subgraph TrapContextList["TrapContextList"]
-        OtherTrapContext("..."):::struct
-        subgraph TrapContext["TrapContext"]
-            x0("x0~x31"):::reg
-            ssstatus0("sstatus"):::reg
-            sepc0("sepc"):::reg
+    subgraph TrapContextList[&quot;TrapContextList&quot;]
+        OtherTrapContext(&quot;...&quot;):::struct
+        subgraph TrapContext[&quot;TrapContext&quot;]
+            x0(&quot;x0~x31&quot;):::reg
+            ssstatus0(&quot;sstatus&quot;):::reg
+            sepc0(&quot;sepc&quot;):::reg
         end
     end
 
     %% 管理组件（TaskManager/TASK_MANAGER）
-    TaskManager("TaskManager"):::manager
-    TASK_MANAGER("TASK_MANAGER"):::manager
+    TaskManager(&quot;TaskManager&quot;):::manager
+    TASK_MANAGER(&quot;TASK_MANAGER&quot;):::manager
 
     %% 函数（main/__restore）
-    main("main"):::func
-    __restore("__restore"):::func
+    main(&quot;main&quot;):::func
+    __restore(&quot;__restore&quot;):::func
 
     %% 原有连接关系（保持不变，统一应用transition样式）
-    TaskManager -->|延迟加载全局唯一实例| TASK_MANAGER:::transition
-    main -->|1. load_apps 加载应用代码| Memory:::transition
-    main -->|2. run_first_task触发初始化| TASK_MANAGER:::transition
-    TASK_MANAGER -.->|初始化| tasks:::transition
-    sp0 -.->|__restore使用sp作为参数恢复上下文| __restore:::transition
-    sepc0 -.-> M0:::transition
-    x0 -.->|sp| US0:::transition
-    KS0 -.->|存储了TrapContext| TrapContext:::transition
-    ra0 --> __restore:::transition
-    sp0 --> KS0:::transition
+    TaskManager --&gt;|延迟加载全局唯一实例| TASK_MANAGER:::transition
+    main --&gt;|1. load_apps 加载应用代码| Memory:::transition
+    main --&gt;|2. run_first_task触发初始化| TASK_MANAGER:::transition
+    TASK_MANAGER -.-&gt;|初始化| tasks:::transition
+    sp0 -.-&gt;|__restore使用sp作为参数恢复上下文| __restore:::transition
+    sepc0 -.-&gt; M0:::transition
+    x0 -.-&gt;|sp| US0:::transition
+    KS0 -.-&gt;|存储了TrapContext| TrapContext:::transition
+    ra0 --&gt; __restore:::transition
+    sp0 --&gt; KS0:::transition
 
     %% 优化子图标题样式（统一居中、加粗）
     style USER_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
     style KERNEL_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
     style Memory fill:#fffbeb, stroke:#fde047, stroke-width:1px, padding:10px;
     style tasks fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
-    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</pre>
+    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</code></pre>
 <h2 id="实现">实现</h2>
 <h3 id="应用加载">应用加载</h3>
 <p>在老的版本中 <a
@@ -332,7 +356,7 @@ href="#riscv时钟中断">RISCV的时钟中断</a></p>
 <li>开启时钟中断，并提供设置 <code>mtimecmp</code> 的接口；</li>
 </ol>
 <p>我们就可以开始执行我们的应用了，再回到我们前面的内存模型图：</p>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
     %% 按类型定义专属样式（遵循通俗约定：函数=蓝、结构体=绿、寄存器=紫、栈=浅红、内存=黄、管理组件=深蓝）
     classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px, font-size:14px;
     classDef struct fill:#4ade80, stroke:#16a34a, stroke-width:2px, color:#1e293b, font-weight:bold, rounded:8px, font-size:14px;
@@ -344,74 +368,74 @@ href="#riscv时钟中断">RISCV的时钟中断</a></p>
     classDef subgraphTitle fill:#1e293b, font-weight:bold, font-size:14px, font-family:Arial;
 
     %% 栈（USER_STACK/KERNEL_STACK）
-    subgraph USER_STACK["USER_STACK"]
+    subgraph USER_STACK[&quot;USER_STACK&quot;]
         direction LR
-        US1("..."):::stack
-        US0("UserStack 0"):::stack
+        US1(&quot;...&quot;):::stack
+        US0(&quot;UserStack 0&quot;):::stack
     end
-    subgraph KERNEL_STACK["KERNEL_STACK"]
+    subgraph KERNEL_STACK[&quot;KERNEL_STACK&quot;]
         direction LR
-        KS1("..."):::stack
-        KS0("KernelStack 0"):::stack
+        KS1(&quot;...&quot;):::stack
+        KS0(&quot;KernelStack 0&quot;):::stack
     end
 
     %% 内存/二进制代码
-    subgraph Memory["Memory"]
+    subgraph Memory[&quot;Memory&quot;]
        direction LR
-        M1("..."):::memory
-        M0("Task 0 Code"):::memory
+        M1(&quot;...&quot;):::memory
+        M0(&quot;Task 0 Code&quot;):::memory
     end
 
     %% 任务相关（结构体：TaskControlBlock/TaskStatus/TaskContext/TrapContext）
-    subgraph tasks["tasks"]
-       subgraph TaskControlBlock1["TaskControlBlock1"]
-        TaskContext1("..."):::struct
-        TaskStatus1("..."):::struct
+    subgraph tasks[&quot;tasks&quot;]
+       subgraph TaskControlBlock1[&quot;TaskControlBlock1&quot;]
+        TaskContext1(&quot;...&quot;):::struct
+        TaskStatus1(&quot;...&quot;):::struct
        end
-       subgraph TaskControlBlock0["TaskControlBlock0"]
-        subgraph TaskContext0["TaskContext0"]
-            ra0("ra"):::reg 
-            sp0("sp"):::reg
-            s0("s0 ~ s11"):::reg
+       subgraph TaskControlBlock0[&quot;TaskControlBlock0&quot;]
+        subgraph TaskContext0[&quot;TaskContext0&quot;]
+            ra0(&quot;ra&quot;):::reg 
+            sp0(&quot;sp&quot;):::reg
+            s0(&quot;s0 ~ s11&quot;):::reg
         end
-        TaskStatus0("TaskStatus 0"):::struct
+        TaskStatus0(&quot;TaskStatus 0&quot;):::struct
        end
     end
-    subgraph TrapContextList["TrapContextList"]
-        OtherTrapContext("..."):::struct
-        subgraph TrapContext["TrapContext"]
-            x0("x0~x31"):::reg
-            ssstatus0("sstatus"):::reg
-            sepc0("sepc"):::reg
+    subgraph TrapContextList[&quot;TrapContextList&quot;]
+        OtherTrapContext(&quot;...&quot;):::struct
+        subgraph TrapContext[&quot;TrapContext&quot;]
+            x0(&quot;x0~x31&quot;):::reg
+            ssstatus0(&quot;sstatus&quot;):::reg
+            sepc0(&quot;sepc&quot;):::reg
         end
     end
 
     %% 管理组件（TaskManager/TASK_MANAGER）
-    TaskManager("TaskManager"):::manager
-    TASK_MANAGER("TASK_MANAGER"):::manager
+    TaskManager(&quot;TaskManager&quot;):::manager
+    TASK_MANAGER(&quot;TASK_MANAGER&quot;):::manager
 
     %% 函数（main/__restore）
-    main("main"):::func
-    __restore("__restore"):::func
+    main(&quot;main&quot;):::func
+    __restore(&quot;__restore&quot;):::func
 
     %% 原有连接关系（保持不变，统一应用transition样式）
-    TaskManager -->|延迟加载全局唯一实例| TASK_MANAGER:::transition
-    main -->|1. load_apps 加载应用代码| Memory:::transition
-    main -->|2. run_first_task触发初始化| TASK_MANAGER:::transition
-    TASK_MANAGER -.->|初始化| tasks:::transition
-    sp0 -.->|__restore使用sp作为参数恢复上下文| __restore:::transition
-    sepc0 -.-> M0:::transition
-    x0 -.->|sp| US0:::transition
-    KS0 -.->|存储了TrapContext| TrapContext:::transition
-    ra0 --> __restore:::transition
-    sp0 --> KS0:::transition
+    TaskManager --&gt;|延迟加载全局唯一实例| TASK_MANAGER:::transition
+    main --&gt;|1. load_apps 加载应用代码| Memory:::transition
+    main --&gt;|2. run_first_task触发初始化| TASK_MANAGER:::transition
+    TASK_MANAGER -.-&gt;|初始化| tasks:::transition
+    sp0 -.-&gt;|__restore使用sp作为参数恢复上下文| __restore:::transition
+    sepc0 -.-&gt; M0:::transition
+    x0 -.-&gt;|sp| US0:::transition
+    KS0 -.-&gt;|存储了TrapContext| TrapContext:::transition
+    ra0 --&gt; __restore:::transition
+    sp0 --&gt; KS0:::transition
 
     %% 优化子图标题样式（统一居中、加粗）
     style USER_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
     style KERNEL_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
     style Memory fill:#fffbeb, stroke:#fde047, stroke-width:1px, padding:10px;
     style tasks fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
-    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</pre>
+    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</code></pre>
 <p>程序的执行逻辑有如下两种情况：</p>
 <blockquote>
 <p>执行第一个task，之所以把它独立出来，是因为第一次执行时，没有任何可用的TaskContext。</p>
@@ -459,7 +483,7 @@ __alltraps
 </ol>
 <h4 id="应用状态">应用状态</h4>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// The status of a task</span></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, PartialEq)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">TaskStatus</span> &#123;</span><br><span class="line">    <span class="comment">/// uninitialized</span></span><br><span class="line">    UnInit,</span><br><span class="line">    <span class="comment">/// ready to run</span></span><br><span class="line">    Ready,</span><br><span class="line">    <span class="comment">/// running</span></span><br><span class="line">    Running,</span><br><span class="line">    <span class="comment">/// exited</span></span><br><span class="line">    Exited,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
     classDef pink fill:#FFCCCC, stroke:#333, stroke-width:2px, color:#333, font-weight:bold, rounded:12px, font-size:14px;
     classDef green fill:#5a9, stroke:#364, stroke-width:2px, color:#fff, font-weight:bold, rounded:12px, font-size:14px;
     classDef purple fill:#968, stroke:#534, stroke-width:2px, color:#fff, font-weight:bold, rounded:12px, font-size:14px;
@@ -468,20 +492,20 @@ __alltraps
     classDef animate stroke-dasharray:6 4, stroke-dashoffset:80, animation: dash 18s linear infinite;
     classDef transition stroke:#666, stroke-width:1.5px, stroke-linecap:round, font-size:12px, font-family:Arial;
 
-    UnInit("UnInit"):::coral
-    Ready("Ready"):::green
-    Running("Running"):::purple 
-    Exited("Exited"):::error
+    UnInit(&quot;UnInit&quot;):::coral
+    Ready(&quot;Ready&quot;):::green
+    Running(&quot;Running&quot;):::purple 
+    Exited(&quot;Exited&quot;):::error
 
-    UnInit -->|init| Ready:::transition
-    Ready -->|run_first_task<br/>or run_next_task| Running:::transition
-    Running -->|mark_current_exited| Exited:::transition
-    Running -->|主动调用sys_yield<br/>或者SupervisorTimer| Ready:::transition</pre>
+    UnInit --&gt;|init| Ready:::transition
+    Ready --&gt;|run_first_task&lt;br/&gt;or run_next_task| Running:::transition
+    Running --&gt;|mark_current_exited| Exited:::transition
+    Running --&gt;|主动调用sys_yield&lt;br/&gt;或者SupervisorTimer| Ready:::transition</code></pre>
 <p>随后的调度就没有什么复杂的地方，唯一需要注意的是，我们在这里使用的是
 <code>round_robin()</code>
 算法实现的查找，具体的实现还是比较有意思的：</p>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Find next task to run and return task id.</span></span><br><span class="line"><span class="comment">///</span></span><br><span class="line"><span class="comment">/// In this case, we only return the first `Ready` task in task list.</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">find_next_task</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">usize</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">current</span> = inner.current_task;</span><br><span class="line">    <span class="comment">// This is a simple round-robin scheduler, and I think it&#x27;s quite ingenious.</span></span><br><span class="line">    <span class="comment">// Our goal is to search for a qualified task starting from the task right after the current task to the end of the task list.</span></span><br><span class="line">    <span class="comment">// If no qualified task is found in this range, we continue searching from the beginning of the task list up to the current task.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Think of the task list as a ring; the search range will be as follows:</span></span><br><span class="line">    <span class="comment">// ```text</span></span><br><span class="line">    <span class="comment">// [</span></span><br><span class="line">    <span class="comment">//     current + 1,</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     num_app - 1,</span></span><br><span class="line">    <span class="comment">//     0,</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     current</span></span><br><span class="line">    <span class="comment">// ]</span></span><br><span class="line">    <span class="comment">// ```</span></span><br><span class="line">    <span class="comment">// The current task is included because it is the last resort.</span></span><br><span class="line">    <span class="comment">// Additionally, this search range is exactly equivalent to:</span></span><br><span class="line">    <span class="comment">// ```text</span></span><br><span class="line">    <span class="comment">// [</span></span><br><span class="line">    <span class="comment">//     (current + 1) % num_app,</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     (current + (num_app - current - 1)) % num_app,</span></span><br><span class="line">    <span class="comment">//     ((current + 1) + (num_app - (current + 1) - 1)) % num_app, /// Equals 0</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     current</span></span><br><span class="line">    <span class="comment">// ]</span></span><br><span class="line">    <span class="comment">// ```</span></span><br><span class="line">    (current + <span class="number">1</span>..current + <span class="keyword">self</span>.num_app + <span class="number">1</span>)</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|id| id % <span class="keyword">self</span>.num_app)</span><br><span class="line">        .<span class="title function_ invoke__">find</span>(|id| inner.tasks[*id].task_status == TaskStatus::Ready)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 %% 样式定义（简洁清爽，突出映射关系）
     classDef candidate fill:#f0f8fb, stroke:#2563eb, rounded:8px, font-size:12px;
     classDef mod fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-size:12px;
@@ -489,38 +513,38 @@ __alltraps
     classDef arrow stroke:#64748b, stroke-width:1.5px, font-size:11px;
 
 %% 调整子图命名，明确“输入”和“输出”
-    subgraph "输入"
-        c1("current"):::candidate
-        c2("..."):::candidate
-        c3("num_app - 2"):::candidate
-        c4("num_app - 1"):::candidate
-        c5("..."):::candidate
-        c6("num_app + current - 1"):::candidate
+    subgraph &quot;输入&quot;
+        c1(&quot;current&quot;):::candidate
+        c2(&quot;...&quot;):::candidate
+        c3(&quot;num_app - 2&quot;):::candidate
+        c4(&quot;num_app - 1&quot;):::candidate
+        c5(&quot;...&quot;):::candidate
+        c6(&quot;num_app + current - 1&quot;):::candidate
     end
-    Mod["取模：id % num_app"]:::mod
-    subgraph "输出"
-        b1("current + 1"):::index
-        b2("..."):::index
-        b3("num_app - 1"):::index
-        b4("0"):::index
-        b5("..."):::index
-        b6("current"):::index
+    Mod[&quot;取模：id % num_app&quot;]:::mod
+    subgraph &quot;输出&quot;
+        b1(&quot;current + 1&quot;):::index
+        b2(&quot;...&quot;):::index
+        b3(&quot;num_app - 1&quot;):::index
+        b4(&quot;0&quot;):::index
+        b5(&quot;...&quot;):::index
+        b6(&quot;current&quot;):::index
     end
 
 %% 映射关系：原始ID → 取模 → 循环索引（箭头更顺，避免交叉）
-    c1 -->|原始ID| Mod
-    c3 -->|原始ID| Mod
-    c4 -->|原始ID| Mod
-    c6 -->|原始ID| Mod
+    c1 --&gt;|原始ID| Mod
+    c3 --&gt;|原始ID| Mod
+    c4 --&gt;|原始ID| Mod
+    c6 --&gt;|原始ID| Mod
 
-    Mod -->|映射后| b1
-    Mod -->|映射后| b3
-    Mod -->|映射后| b4
-    Mod -->|映射后| b6
+    Mod --&gt;|映射后| b1
+    Mod --&gt;|映射后| b3
+    Mod --&gt;|映射后| b4
+    Mod --&gt;|映射后| b6
 
 %% 示例标注（位置调整，不遮挡流程）
-    Note["迭代范围是 [current + 1, current + 1 + num_app)"]:::candidate
-    style Note fill:#f5fafe, stroke:#94a3b8, rounded:6px;</pre>
+    Note[&quot;迭代范围是 [current + 1, current + 1 + num_app)&quot;]:::candidate
+    style Note fill:#f5fafe, stroke:#94a3b8, rounded:6px;</code></pre>
 <h2 id="qa">QA</h2>
 <h3 id="rust下开启riscv时钟中断">rust下开启RISCV时钟中断</h3>
 <p>在rust下开启RISCV时钟中断是基于一个叫做 <code>sie</code> 的 crate
@@ -966,34 +990,8 @@ Allocator）的堆分配管理器；</li>
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

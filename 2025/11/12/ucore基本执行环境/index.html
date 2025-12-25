@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="项目的全部代码在这里：ardi  整体逻辑图解 我们的项目包含以下文件，各模块功能如下：  *.rs 文件：Rust 源代码文件，定义了程序的核心执行逻辑； linker.ld：链接脚本（Linker Script），用于告知链接器如何合并目标文件、编排内存布局，最终生成符合要求的二进制文件； entry.asm：启动引导文件（汇编编写），负责初始化基础执行环境，引导 CPU 定位并跳转到 Ru">
 <meta property="og:type" content="article">
@@ -36,7 +36,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/","path":"2025/11/12/ucore基本执行环境/","title":"uCore基本执行环境"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -47,6 +46,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -113,7 +137,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E9%80%BB%E8%BE%91%E5%9B%BE%E8%A7%A3"><span class="nav-number">1.</span> <span class="nav-text">整体逻辑图解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#makefile"><span class="nav-number">2.</span> <span class="nav-text">Makefile</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E9%87%8F%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">变量定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E7%BC%96%E8%AF%91"><span class="nav-number">2.2.</span> <span class="nav-text">依赖初始化和编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%89%A7%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="nav-number">2.3.</span> <span class="nav-text">加载，执行，调试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#link-and-bootloader"><span class="nav-number">3.</span> <span class="nav-text">link and bootloader</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">3.1.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#entry.asm"><span class="nav-number">3.2.</span> <span class="nav-text">entry.asm</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#code"><span class="nav-number">4.</span> <span class="nav-text">code</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sbi.rs"><span class="nav-number">4.1.</span> <span class="nav-text">sbi.rs</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number"></span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFrust%E7%9A%84%E7%9B%AE%E6%A0%87%E4%B8%89%E5%85%83%E7%BB%84"><span class="nav-number">1.</span> <span class="nav-text">什么是rust的目标三元组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFsbiuefibios"><span class="nav-number">2.</span> <span class="nav-text">什么是SBI&#x2F;UEFI&#x2F;BIOS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFabi"><span class="nav-number">3.</span> <span class="nav-text">什么是ABI</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#os.elf-%E5%92%8C-os.bin-%E5%88%86%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">4.</span> <span class="nav-text">os.elf 和 os.bin 分别是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sbi%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83"><span class="nav-number">5.</span> <span class="nav-text">SBI调用规范</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E5%88%AB%E5%90%8D"><span class="nav-number">6.</span> <span class="nav-text">寄存器别名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84"><span class="nav-number">7.</span> <span class="nav-text">项目结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number"></span> <span class="nav-text">引用</span></a></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E9%80%BB%E8%BE%91%E5%9B%BE%E8%A7%A3"><span class="nav-number">1.</span> <span class="nav-text">整体逻辑图解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#makefile"><span class="nav-number">2.</span> <span class="nav-text">Makefile</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E9%87%8F%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">变量定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E7%BC%96%E8%AF%91"><span class="nav-number">2.2.</span> <span class="nav-text">依赖初始化和编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%89%A7%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="nav-number">2.3.</span> <span class="nav-text">加载，执行，调试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#link-and-bootloader"><span class="nav-number">3.</span> <span class="nav-text">link and bootloader</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">3.1.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#entry.asm"><span class="nav-number">3.2.</span> <span class="nav-text">entry.asm</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#code"><span class="nav-number">4.</span> <span class="nav-text">code</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sbi.rs"><span class="nav-number">4.1.</span> <span class="nav-text">sbi.rs</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFrust%E7%9A%84%E7%9B%AE%E6%A0%87%E4%B8%89%E5%85%83%E7%BB%84"><span class="nav-number">5.1.</span> <span class="nav-text">什么是rust的目标三元组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFsbiuefibios"><span class="nav-number">5.2.</span> <span class="nav-text">什么是SBI&#x2F;UEFI&#x2F;BIOS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFabi"><span class="nav-number">5.3.</span> <span class="nav-text">什么是ABI</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#os.elf-%E5%92%8C-os.bin-%E5%88%86%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">5.4.</span> <span class="nav-text">os.elf 和 os.bin 分别是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sbi%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83"><span class="nav-number">5.5.</span> <span class="nav-text">SBI调用规范</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E5%88%AB%E5%90%8D"><span class="nav-number">5.6.</span> <span class="nav-text">寄存器别名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.7.</span> <span class="nav-text">项目结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.8.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">引用</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -226,40 +250,40 @@ SBI</a>）；</li>
 <li><code>Makefile</code> :
 构建脚本，通过声明编译目标（target）、依赖关系及执行命令，简化程序的编译、运行、加载等流程管理。</li>
 </ol>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
 rustsbi(rustsbi-qemu.bin):::coral
-linker("linker.ld"):::green
-entry("entry.asm"):::green
-rust("*.rs"):::green
-qemu("qemu"):::error
+linker(&quot;linker.ld&quot;):::green
+entry(&quot;entry.asm&quot;):::green
+rust(&quot;*.rs&quot;):::green
+qemu(&quot;qemu&quot;):::error
 
-cargo("cargo"):::error
+cargo(&quot;cargo&quot;):::error
 
-linker --> cargo
-entry --> cargo
-rust --> cargo
+linker --&gt; cargo
+entry --&gt; cargo
+rust --&gt; cargo
 
-cargo --> elf -->|rust-objcopy| binary
+cargo --&gt; elf --&gt;|rust-objcopy| binary
 
 subgraph elf
     direction TB
-    os_comment("elf格式的二进制文件") -.-> os("os"):::pink
+    os_comment(&quot;elf格式的二进制文件&quot;) -.-&gt; os(&quot;os&quot;):::pink
 end
 
 subgraph binary
     direction TB
-    os_bin_comment("二进制文件") -.-> os_bin("os.bin"):::pink
+    os_bin_comment(&quot;二进制文件&quot;) -.-&gt; os_bin(&quot;os.bin&quot;):::pink
 end
 
-binary --> rustsbi --> qemu
+binary --&gt; rustsbi --&gt; qemu
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h2 id="makefile">Makefile</h2>
 <h3 id="变量定义">变量定义</h3>
 <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 指定目标平台，模式</span></span><br><span class="line">TARGET := riscv64gc-unknown-none-elf</span><br><span class="line">MODE := release</span><br><span class="line"></span><br><span class="line"><span class="comment"># 声明target的elf，bin，汇编的输出目录</span></span><br><span class="line">KERNEL_ELF := target/<span class="variable">$(TARGET)</span>/<span class="variable">$(MODE)</span>/os</span><br><span class="line">KERNEL_BIN := <span class="variable">$(KERNEL_ELF)</span>.bin</span><br><span class="line">DISASM_TMP := target/<span class="variable">$(TARGET)</span>/<span class="variable">$(MODE)</span>/asm</span><br><span class="line"></span><br><span class="line"><span class="comment"># Building mode argument</span></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(MODE)</span>, release)</span><br><span class="line">	MODE_ARG := --release</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># BOARD</span></span><br><span class="line">BOARD := qemu</span><br><span class="line">SBI ?= rustsbi</span><br><span class="line">BOOTLOADER := ../bootloader/<span class="variable">$(SBI)</span>-<span class="variable">$(BOARD)</span>.bin</span><br><span class="line"></span><br><span class="line"><span class="comment"># 内核的物理入口地址（PA = Physical Address），必须与链接脚本（linker.ld）中定义的代码段（.text）起始地址完全一致</span></span><br><span class="line"><span class="comment"># 裸机环境中，CPU 上电后从指定物理地址开始执行，QEMU 通过该地址加载内核二进制并跳转到入口</span></span><br><span class="line"><span class="comment"># 若地址不匹配，会导致内核执行错乱（如跳转到无效指令）</span></span><br><span class="line">KERNEL_ENTRY_PA := 0x80200000</span><br><span class="line"></span><br><span class="line"><span class="comment"># Binutils</span></span><br><span class="line">OBJDUMP := rust-objdump --arch-name=riscv64</span><br><span class="line">OBJCOPY := rust-objcopy --binary-architecture=riscv64</span><br><span class="line"></span><br><span class="line"><span class="comment"># Disassembly</span></span><br><span class="line">DISASM ?= -x</span><br></pre></td></tr></table></figure>
@@ -477,28 +501,28 @@ SBI</td>
 <li>c编译器编译c代码得到c的目标文件；</li>
 <li>按照ABI的约定，通过链接器进行链接来实现rust调用c语言。</li>
 </ol>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-rust("main.rs"):::green
-c("hello.c"):::purple
+rust(&quot;main.rs&quot;):::green
+c(&quot;hello.c&quot;):::purple
 
-rust_obj("rust目标文件"):::green
-c_obj("c目标文件"):::purple
+rust_obj(&quot;rust目标文件&quot;):::green
+c_obj(&quot;c目标文件&quot;):::purple
 
-rust -->|rust编译器| rust_obj
-c -->|c编译器| c_obj
+rust --&gt;|rust编译器| rust_obj
+c --&gt;|c编译器| c_obj
 
-linker("链接器"):::pink
+linker(&quot;链接器&quot;):::pink
         
-rust_obj -->|遵循ABI调用规范| linker
-c_obj -->|遵循ABI调用规范| linker
+rust_obj --&gt;|遵循ABI调用规范| linker
+c_obj --&gt;|遵循ABI调用规范| linker
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h2 id="os.elf-和-os.bin-分别是什么">os.elf 和 os.bin 分别是什么？</h2>
 <ul>
 <li><code>os.elf</code> 是 rust 编译后得到的 elf 文件，linux
@@ -595,12 +619,12 @@ SBI 固件的交互一致。
 <strong>elf格式</strong> 的二进制文件，而 <code>os.bin</code>
 是一个裸机可执行的二进制文件。我们通过 <code>rust-objcopy</code>
 来实现这个这个转换；</p>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-os("os"):::green
-os_bin("os.bin"):::purple
+os(&quot;os&quot;):::green
+os_bin(&quot;os.bin&quot;):::purple
 
-os --> os_bin
+os --&gt; os_bin
 
 
 classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
@@ -608,7 +632,7 @@ classDef green fill: #695,color: #fff,font-weight: bold;
 classDef purple fill:#968,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h2 id="总结">总结</h2>
 <p><code>uCore</code> 是由清华大学推出的一个基于 <code>rust</code> 和
 <code>riscv</code> 实现的操作系统，实现难度适中，核心代码量约为
@@ -708,34 +732,8 @@ target="_blank" rel="noopener" href="https://rcore-os.cn/rCore-Tutorial-Book-v3/
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

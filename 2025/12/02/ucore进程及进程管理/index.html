@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  flowchart LR     subgraph i">
 <meta property="og:type" content="article">
@@ -40,7 +40,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/","path":"2025/12/02/ucore进程及进程管理/","title":"uCore进程及进程管理"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -51,6 +50,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -118,7 +142,7 @@
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
             <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">uCore：进程及进程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E8%BF%9B%E7%A8%8B%E6%9C%89%E5%85%B3%E7%9A%84%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">与进程有关的重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.</span> <span class="nav-text">重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">fork 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">exec 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#waitpid-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">waitpid 系统调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.1.2.</span> <span class="nav-text">应用程序示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%88%9D%E5%A7%8B%E7%A8%8B%E5%BA%8F-initproc"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">用户初始程序-initproc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#shell%E7%A8%8B%E5%BA%8F-user_shell"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">shell程序-user_shell</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">进程管理的核心数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%BA%94%E7%94%A8%E5%90%8D%E7%9A%84%E5%BA%94%E7%94%A8%E9%93%BE%E6%8E%A5%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">基于应用名的应用链接&#x2F;加载器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6%E5%92%8C%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.2.2.</span> <span class="nav-text">进程标识符和内核栈</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">进程标识符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">内核栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-number">1.2.3.</span> <span class="nav-text">进程控制块</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#pcb"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">PCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tcb"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">TCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.3.3.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">1.2.4.</span> <span class="nav-text">任务管理器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%80%81%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">老版本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">新版本</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.</span> <span class="nav-text">进程管理机制的设计实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">1.3.1.</span> <span class="nav-text">初始进程的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.2.</span> <span class="nav-text">进程调度机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E6%88%90%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.3.</span> <span class="nav-text">进程的生成机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">fork 系统调用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#memorysetfrom_existed_user"><span class="nav-number">1.3.3.1.1.</span> <span class="nav-text">MemorySet#from_existed_user</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mapareafrom_another"><span class="nav-number">1.3.3.1.2.</span> <span class="nav-text">MapArea#from_another</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sys_fork%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.3.</span> <span class="nav-text">sys_fork的实现</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">exec 系统调用的实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%90%8E%E9%87%8D%E6%96%B0%E8%8E%B7%E5%8F%96-trap-%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">系统调用后重新获取 Trap
-上下文</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">进程资源回收机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA"><span class="nav-number">1.4.0.1.</span> <span class="nav-text">进程的退出</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E8%BF%9B%E7%A8%8B%E5%9B%9E%E6%94%B6%E5%AD%90%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90"><span class="nav-number">1.4.0.2.</span> <span class="nav-text">父进程回收子进程资源</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#user_stack%E5%92%8Ckernel_stack"><span class="nav-number">1.5.1.</span> <span class="nav-text">user_stack和kernel_stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1"><span class="nav-number">1.5.2.</span> <span class="nav-text">进程的退出</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#config.toml"><span class="nav-number">1.5.2.1.</span> <span class="nav-text">config.toml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#makefile"><span class="nav-number">1.5.2.2.</span> <span class="nav-text">Makefile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.5.2.3.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#start"><span class="nav-number">1.5.2.4.</span> <span class="nav-text">_start</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81"><span class="nav-number">1.5.2.5.</span> <span class="nav-text">汇编代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">1.5.3.</span> <span class="nav-text">进程状态机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernelstack"><span class="nav-number">1.5.4.</span> <span class="nav-text">KernelStack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kstack_allocator"><span class="nav-number">1.5.5.</span> <span class="nav-text">KSTACK_ALLOCATOR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.</span> <span class="nav-text">内存对齐</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90%E7%9A%84%E6%A0%B9%E6%9C%AC%E4%BD%9C%E7%94%A8"><span class="nav-number">1.5.6.1.</span> <span class="nav-text">内存对齐的根本作用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-cpu-%E8%A6%81%E6%B1%82%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.2.</span> <span class="nav-text">为什么 CPU 要求内存对齐</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%9C%BA%E6%99%AF%E7%9A%84%E5%AF%B9%E9%BD%90%E7%AD%96%E7%95%A5"><span class="nav-number">1.5.6.3.</span> <span class="nav-text">内核场景的对齐策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%9C%A8%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E5%92%8C%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E4%B8%AD%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.5.7.</span> <span class="nav-text">对象在物理地址和虚拟地址中的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory_set%E4%B8%AD%E7%9A%84trampoline%E5%92%8Ctrap_cx"><span class="nav-number">1.5.8.</span> <span class="nav-text">memory_set中的trampoline和trap_cx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#children%E5%92%8Cparent"><span class="nav-number">1.5.9.</span> <span class="nav-text">children和parent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E8%A7%A3%E6%9E%90"><span class="nav-number">1.5.10.</span> <span class="nav-text">elf解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.11.</span> <span class="nav-text">进程的内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.12.</span> <span class="nav-text">应用进程内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#base_size"><span class="nav-number">1.5.12.1.</span> <span class="nav-text">base_size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heap_bottom"><span class="nav-number">1.5.12.2.</span> <span class="nav-text">heap_bottom</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#program_brk"><span class="nav-number">1.5.12.3.</span> <span class="nav-text">program_brk</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.12.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%A0%86"><span class="nav-number">1.5.13.</span> <span class="nav-text">内核堆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.5.14.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exec"><span class="nav-number">1.5.15.</span> <span class="nav-text">exec</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%BB%E5%9D%80%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.1.</span> <span class="nav-text">寻址逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.2.</span> <span class="nav-text">执行逻辑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6"><span class="nav-number">1.5.16.</span> <span class="nav-text">进程的资源回收</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1"><span class="nav-number">1.6.</span> <span class="nav-text">代码统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.7.</span> <span class="nav-text">代码树</span></a></li></ol></li></ol></div>
+上下文</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">进程资源回收机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA"><span class="nav-number">1.4.1.</span> <span class="nav-text">进程的退出</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E8%BF%9B%E7%A8%8B%E5%9B%9E%E6%94%B6%E5%AD%90%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90"><span class="nav-number">1.4.2.</span> <span class="nav-text">父进程回收子进程资源</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#user_stack%E5%92%8Ckernel_stack"><span class="nav-number">1.5.1.</span> <span class="nav-text">user_stack和kernel_stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1"><span class="nav-number">1.5.2.</span> <span class="nav-text">进程的退出</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#config.toml"><span class="nav-number">1.5.2.1.</span> <span class="nav-text">config.toml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#makefile"><span class="nav-number">1.5.2.2.</span> <span class="nav-text">Makefile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.5.2.3.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#start"><span class="nav-number">1.5.2.4.</span> <span class="nav-text">_start</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81"><span class="nav-number">1.5.2.5.</span> <span class="nav-text">汇编代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">1.5.3.</span> <span class="nav-text">进程状态机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernelstack"><span class="nav-number">1.5.4.</span> <span class="nav-text">KernelStack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kstack_allocator"><span class="nav-number">1.5.5.</span> <span class="nav-text">KSTACK_ALLOCATOR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.</span> <span class="nav-text">内存对齐</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90%E7%9A%84%E6%A0%B9%E6%9C%AC%E4%BD%9C%E7%94%A8"><span class="nav-number">1.5.6.1.</span> <span class="nav-text">内存对齐的根本作用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-cpu-%E8%A6%81%E6%B1%82%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.2.</span> <span class="nav-text">为什么 CPU 要求内存对齐</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%9C%BA%E6%99%AF%E7%9A%84%E5%AF%B9%E9%BD%90%E7%AD%96%E7%95%A5"><span class="nav-number">1.5.6.3.</span> <span class="nav-text">内核场景的对齐策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%9C%A8%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E5%92%8C%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E4%B8%AD%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.5.7.</span> <span class="nav-text">对象在物理地址和虚拟地址中的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory_set%E4%B8%AD%E7%9A%84trampoline%E5%92%8Ctrap_cx"><span class="nav-number">1.5.8.</span> <span class="nav-text">memory_set中的trampoline和trap_cx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#children%E5%92%8Cparent"><span class="nav-number">1.5.9.</span> <span class="nav-text">children和parent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E8%A7%A3%E6%9E%90"><span class="nav-number">1.5.10.</span> <span class="nav-text">elf解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.11.</span> <span class="nav-text">进程的内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.12.</span> <span class="nav-text">应用进程内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#base_size"><span class="nav-number">1.5.12.1.</span> <span class="nav-text">base_size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heap_bottom"><span class="nav-number">1.5.12.2.</span> <span class="nav-text">heap_bottom</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#program_brk"><span class="nav-number">1.5.12.3.</span> <span class="nav-text">program_brk</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.12.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%A0%86"><span class="nav-number">1.5.13.</span> <span class="nav-text">内核堆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.5.14.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exec"><span class="nav-number">1.5.15.</span> <span class="nav-text">exec</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%BB%E5%9D%80%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.1.</span> <span class="nav-text">寻址逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.2.</span> <span class="nav-text">执行逻辑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6"><span class="nav-number">1.5.16.</span> <span class="nav-text">进程的资源回收</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1"><span class="nav-number">1.6.</span> <span class="nav-text">代码统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.7.</span> <span class="nav-text">代码树</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -220,49 +244,49 @@
 <p>为此，我们要对任务建立新的抽象： <strong>进程</strong>
 ，并实现若干基于 <strong>进程</strong> 的强大系统调用。</p>
 </blockquote>
-<pre class="mermaid">flowchart LR
-    subgraph init["初始化阶段：无用户任务"]
+<pre><code class="highlight mermaid">flowchart LR
+    subgraph init[&quot;初始化阶段：无用户任务&quot;]
         direction LR
-        registers_0("registers.cx: idle运行状态"):::pink
-        current_0("current: None"):::purple
-        idle_task_cx_0("idle_task_cx: zero.ctx（占位）"):::green
+        registers_0(&quot;registers.cx: idle运行状态&quot;):::pink
+        current_0(&quot;current: None&quot;):::purple
+        idle_task_cx_0(&quot;idle_task_cx: zero.ctx（占位）&quot;):::green
     end
 
-    subgraph stage_1["阶段1：fetch_task"]
+    subgraph stage_1[&quot;阶段1：fetch_task&quot;]
         direction LR
-        registers_1("registers.cx: task.cx（用户任务状态）"):::pink
-        current_1("current: Some(task)"):::purple
-        idle_task_cx_1("idle_task_cx: 原registers.cx（idle休眠状态）"):::green
+        registers_1(&quot;registers.cx: task.cx（用户任务状态）&quot;):::pink
+        current_1(&quot;current: Some(task)&quot;):::purple
+        idle_task_cx_1(&quot;idle_task_cx: 原registers.cx（idle休眠状态）&quot;):::green
     end
 
-    subgraph stage_2["阶段2：suspend"]
+    subgraph stage_2[&quot;阶段2：suspend&quot;]
         direction LR
-        registers_2("registers.cx: idle运行状态（从idle_task_cx_1加载）"):::pink
-        current_2("current: None"):::purple
-        idle_task_cx_2("idle_task_cx: 原registers_1（用户任务挂起状态）"):::green
+        registers_2(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_2(&quot;current: None&quot;):::purple
+        idle_task_cx_2(&quot;idle_task_cx: 原registers_1（用户任务挂起状态）&quot;):::green
     end
 
-    subgraph stage_3["阶段3：exit→用户任务退出"]
+    subgraph stage_3[&quot;阶段3：exit→用户任务退出&quot;]
         direction LR
-        registers_3("registers.cx: idle运行状态（从idle_task_cx_1加载）"):::pink
-        current_3("current: None"):::purple
-        idle_task_cx_3("idle_task_cx: 原idle_task_cx_1（无变化）"):::green
+        registers_3(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_3(&quot;current: None&quot;):::purple
+        idle_task_cx_3(&quot;idle_task_cx: 原idle_task_cx_1（无变化）&quot;):::green
     end
 
-    subgraph TaskManager["TaskManager：就绪队列"]
-        t_task("task.cx: 用户任务挂起状态（仅suspend后存在）"):::coral
+    subgraph TaskManager[&quot;TaskManager：就绪队列&quot;]
+        t_task(&quot;task.cx: 用户任务挂起状态（仅suspend后存在）&quot;):::coral
     end
 
     %% 流转逻辑（补充关键动作标注）
-    init -->|init| stage_1
-    stage_1 -->|suspend| stage_2
-    stage_1 -->|exit| stage_3
+    init --&gt;|init| stage_1
+    stage_1 --&gt;|suspend| stage_2
+    stage_1 --&gt;|exit| stage_3
 
     %% 状态转移细节
-    current_1 -->|take_current后add_task，共享task所有权| TaskManager
-    registers_1 -->|__switch保存用户任务状态到task.cx| t_task
-    idle_task_cx_1 -->|__switch加载idle状态到寄存器| registers_2
-    idle_task_cx_1 -->|__switch加载idle状态到寄存器| registers_3
+    current_1 --&gt;|take_current后add_task，共享task所有权| TaskManager
+    registers_1 --&gt;|__switch保存用户任务状态到task.cx| t_task
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_2
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_3
 
     %% 样式定义（沿用你的设计）
     classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
@@ -270,7 +294,7 @@
     classDef purple fill:#969,stroke:#333, font-weight: bold;
     classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
     classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h2 id="与进程有关的重要系统调用">与进程有关的重要系统调用</h2>
 <h3 id="重要系统调用">重要系统调用</h3>
 <h4 id="fork-系统调用">fork 系统调用</h4>
@@ -387,22 +411,22 @@ yield 让出时间片：</p>
 <li><code>PID_ALLOCATOR</code> 全局的唯一 <code>PidAllocator</code>
 实例；</li>
 </ol>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-PidHandler("PidHandler")
+PidHandler(&quot;PidHandler&quot;)
 
-PidAllocator("PidAllocator")
-PID_ALLOCATOR("PID_ALLOCATOR")
+PidAllocator(&quot;PidAllocator&quot;)
+PID_ALLOCATOR(&quot;PID_ALLOCATOR&quot;)
 
 
 PidAllocator --o|延迟加载唯一实例| PID_ALLOCATOR
 
 
-Kernel("Kernel") -.->|请求分配PID| PID_ALLOCATOR
-PID_ALLOCATOR -.->|分配PID| PidHandler 
+Kernel(&quot;Kernel&quot;) -.-&gt;|请求分配PID| PID_ALLOCATOR
+PID_ALLOCATOR -.-&gt;|分配PID| PidHandler 
 
-Kernel --> Process("Process")
-PidHandler --> Process</pre>
+Kernel --&gt; Process(&quot;Process&quot;)
+PidHandler --&gt; Process</code></pre>
 <h4 id="内核栈">内核栈</h4>
 <figure>
 <img src="/images/20251121/kernel-as-high.png" alt="kernel-as-high" />
@@ -433,45 +457,45 @@ href="#应用进程内存模型">应用进程内存模型</a></li>
 <li>查询任务元数据；</li>
 <li>代理当前任务的堆调整操作；</li>
 </ol>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-TaskManager("TaskManager"):::pink
+TaskManager(&quot;TaskManager&quot;):::pink
 
-run("执行任务"):::purple
-schedule("调度任务"):::purple
-meta("查询任务元数据"):::purple
-heap("堆调整操作"):::purple
+run(&quot;执行任务&quot;):::purple
+schedule(&quot;调度任务&quot;):::purple
+meta(&quot;查询任务元数据&quot;):::purple
+heap(&quot;堆调整操作&quot;):::purple
 
-run_first_task("run_first_task"):::green
-run_next_task("run_next_task"):::green
-find_next_task("find_next_task"):::green
-mark_current_suspended("mark_current_suspended"):::green
-mark_current_exited("mark_current_exited"):::green
-get_current_token("get_current_token"):::green
-get_current_trap_cx("get_current_trap_cx"):::green
-change_current_program_brk("change_current_program_brk"):::green
+run_first_task(&quot;run_first_task&quot;):::green
+run_next_task(&quot;run_next_task&quot;):::green
+find_next_task(&quot;find_next_task&quot;):::green
+mark_current_suspended(&quot;mark_current_suspended&quot;):::green
+mark_current_exited(&quot;mark_current_exited&quot;):::green
+get_current_token(&quot;get_current_token&quot;):::green
+get_current_trap_cx(&quot;get_current_trap_cx&quot;):::green
+change_current_program_brk(&quot;change_current_program_brk&quot;):::green
 
-TaskManager --> run
-run -->|执行首个任务| run_first_task
-run -->|执行下一个任务| run_next_task
+TaskManager --&gt; run
+run --&gt;|执行首个任务| run_first_task
+run --&gt;|执行下一个任务| run_next_task
 
-TaskManager --> schedule
-schedule -->|查找下一个待执行任务| find_next_task
-schedule -->|标记当前任务挂起| mark_current_suspended
-schedule -->|标记当前任务退出| mark_current_exited
+TaskManager --&gt; schedule
+schedule --&gt;|查找下一个待执行任务| find_next_task
+schedule --&gt;|标记当前任务挂起| mark_current_suspended
+schedule --&gt;|标记当前任务退出| mark_current_exited
 
-TaskManager --> meta
-meta -->|获取当前任务分页访问信息| get_current_token
-meta -->|获取当前陷阱上下文| get_current_trap_cx
+TaskManager --&gt; meta
+meta --&gt;|获取当前任务分页访问信息| get_current_token
+meta --&gt;|获取当前陷阱上下文| get_current_trap_cx
 
-TaskManager --> heap -->|调整当前程序堆指针| change_current_program_brk
+TaskManager --&gt; heap --&gt;|调整当前程序堆指针| change_current_program_brk
 
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    num_app: <span class="type">usize</span>,</span><br><span class="line">    inner: UPSafeCell&lt;TaskManagerInner&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">TaskManagerInner</span> &#123;</span><br><span class="line">    tasks: <span class="type">Vec</span>&lt;TaskControlBlock&gt;,</span><br><span class="line">    current_task: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">run_first_task</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> ! &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">run_next_task</span>(&amp;<span class="keyword">self</span>) &#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">find_next_task</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">usize</span>&gt; &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">mark_current_suspended</span>(&amp;<span class="keyword">self</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">mark_current_exited</span>(&amp;<span class="keyword">self</span>) &#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">get_current_token</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">get_current_trap_cx</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> TrapContext &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">change_current_program_brk</span>(&amp;<span class="keyword">self</span>, size: <span class="type">i32</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">usize</span>&gt; &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="新版本">新版本</h4>
 <p>在新的版本中，我们将它拆分为了 <code>TaskManager</code> 和
@@ -504,49 +528,49 @@ Task；</li>
 </ul></li>
 </ul></li>
 </ul>
-<pre class="mermaid">flowchart LR
-    subgraph init["初始化阶段：无用户任务"]
+<pre><code class="highlight mermaid">flowchart LR
+    subgraph init[&quot;初始化阶段：无用户任务&quot;]
         direction LR
-        registers_0("registers.cx: idle运行状态"):::pink
-        current_0("current: None"):::purple
-        idle_task_cx_0("idle_task_cx: zero.ctx（占位）"):::green
+        registers_0(&quot;registers.cx: idle运行状态&quot;):::pink
+        current_0(&quot;current: None&quot;):::purple
+        idle_task_cx_0(&quot;idle_task_cx: zero.ctx（占位）&quot;):::green
     end
 
-    subgraph stage_1["阶段1：fetch_task"]
+    subgraph stage_1[&quot;阶段1：fetch_task&quot;]
         direction LR
-        registers_1("registers.cx: task.cx（用户任务状态）"):::pink
-        current_1("current: Some(task)"):::purple
-        idle_task_cx_1("idle_task_cx: 原registers.cx（idle休眠状态）"):::green
+        registers_1(&quot;registers.cx: task.cx（用户任务状态）&quot;):::pink
+        current_1(&quot;current: Some(task)&quot;):::purple
+        idle_task_cx_1(&quot;idle_task_cx: 原registers.cx（idle休眠状态）&quot;):::green
     end
 
-    subgraph stage_2["阶段2：suspend"]
+    subgraph stage_2[&quot;阶段2：suspend&quot;]
         direction LR
-        registers_2("registers.cx: idle运行状态（从idle_task_cx_1加载）"):::pink
-        current_2("current: None"):::purple
-        idle_task_cx_2("idle_task_cx: 原registers_1（用户任务挂起状态）"):::green
+        registers_2(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_2(&quot;current: None&quot;):::purple
+        idle_task_cx_2(&quot;idle_task_cx: 原registers_1（用户任务挂起状态）&quot;):::green
     end
 
-    subgraph stage_3["阶段3：exit→用户任务退出"]
+    subgraph stage_3[&quot;阶段3：exit→用户任务退出&quot;]
         direction LR
-        registers_3("registers.cx: idle运行状态（从idle_task_cx_1加载）"):::pink
-        current_3("current: None"):::purple
-        idle_task_cx_3("idle_task_cx: 原idle_task_cx_1（无变化）"):::green
+        registers_3(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_3(&quot;current: None&quot;):::purple
+        idle_task_cx_3(&quot;idle_task_cx: 原idle_task_cx_1（无变化）&quot;):::green
     end
 
-    subgraph TaskManager["TaskManager：就绪队列"]
-        t_task("task.cx: 用户任务挂起状态（仅suspend后存在）"):::coral
+    subgraph TaskManager[&quot;TaskManager：就绪队列&quot;]
+        t_task(&quot;task.cx: 用户任务挂起状态（仅suspend后存在）&quot;):::coral
     end
 
     %% 流转逻辑（补充关键动作标注）
-    init -->|init| stage_1
-    stage_1 -->|suspend| stage_2
-    stage_1 -->|exit| stage_3
+    init --&gt;|init| stage_1
+    stage_1 --&gt;|suspend| stage_2
+    stage_1 --&gt;|exit| stage_3
 
     %% 状态转移细节
-    current_1 -->|take_current后add_task，共享task所有权| TaskManager
-    registers_1 -->|__switch保存用户任务状态到task.cx| t_task
-    idle_task_cx_1 -->|__switch加载idle状态到寄存器| registers_2
-    idle_task_cx_1 -->|__switch加载idle状态到寄存器| registers_3
+    current_1 --&gt;|take_current后add_task，共享task所有权| TaskManager
+    registers_1 --&gt;|__switch保存用户任务状态到task.cx| t_task
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_2
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_3
 
     %% 样式定义（沿用你的设计）
     classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
@@ -554,7 +578,7 @@ Task；</li>
     classDef purple fill:#969,stroke:#333, font-weight: bold;
     classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
     classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <blockquote>
 <p>整体可以总结为：</p>
 <ol type="1">
@@ -763,41 +787,41 @@ MapArea 的遍历复制中，因此无法通过 for 循环完成 VA→PA 映射�
 <p>可以明显看到，和 <code>fork</code>
 的最大区别就是，fork完全继承了父进程的memory_set。</p></li>
 </ol>
-<pre class="mermaid">block-beta
+<pre><code class="highlight mermaid">block-beta
     columns 3
         block
             columns 1
             space:6
-            user_stack_top("user_stack_top")
-            base_size("base_size")
-            heap_bottom("heap_bottom")
-            program_brk("program_brk")
+            user_stack_top(&quot;user_stack_top&quot;)
+            base_size(&quot;base_size&quot;)
+            heap_bottom(&quot;heap_bottom&quot;)
+            program_brk(&quot;program_brk&quot;)
             space:5
         end
         block
             columns 1
             space:8
-            eUserStack("User Stack End")
-            mUserStack("...")
-            sUserStack("User Stack Start")
-            sGuardPage("Guard Page")
-            sbss(".bss")
-            sdata(".data")
-            srodata(".rodata")
-            stext(".text")
+            eUserStack(&quot;User Stack End&quot;)
+            mUserStack(&quot;...&quot;)
+            sUserStack(&quot;User Stack Start&quot;)
+            sGuardPage(&quot;Guard Page&quot;)
+            sbss(&quot;.bss&quot;)
+            sdata(&quot;.data&quot;)
+            srodata(&quot;.rodata&quot;)
+            stext(&quot;.text&quot;)
         end
 
     block:group4:1
         columns 1
-        trampoline("Trampoline")
-        TrapContext("TrapContext")
+        trampoline(&quot;Trampoline&quot;)
+        TrapContext(&quot;TrapContext&quot;)
         space:14
     end
 
-    user_stack_top --> eUserStack
-    base_size --> eUserStack
-    heap_bottom --> eUserStack
-    program_brk --> eUserStack
+    user_stack_top --&gt; eUserStack
+    base_size --&gt; eUserStack
+    heap_bottom --&gt; eUserStack
+    program_brk --&gt; eUserStack
     
     style user_stack_top fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
     style base_size fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
@@ -817,7 +841,7 @@ MapArea 的遍历复制中，因此无法通过 for 循环完成 VA→PA 映射�
 
 
     style trampoline fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
-    style TrapContext fill:#e8e8e8,stroke:#555555,stroke-width:2px,stroke-dasharray:5,5,color:#222222,padding:8px,font-weight:bold</pre>
+    style TrapContext fill:#e8e8e8,stroke:#555555,stroke-width:2px,stroke-dasharray:5,5,color:#222222,padding:8px,font-weight:bold</code></pre>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span></span><br><span class="line">    <span class="comment">/// Load a new elf to replace the original application address space and start execution</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exec</span>(&amp;<span class="keyword">self</span>, elf_data: &amp;[<span class="type">u8</span>]) &#123;</span><br><span class="line">        <span class="comment">// memory_set with elf program headers/trampoline/trap context/user stack</span></span><br><span class="line">        <span class="keyword">let</span> (memory_set, user_sp, entry_point) = MemorySet::<span class="title function_ invoke__">from_elf</span>(elf_data);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx_ppn</span> = memory_set</span><br><span class="line">            .<span class="title function_ invoke__">translate</span>(VirtAddr::<span class="title function_ invoke__">from</span>(TRAP_CONTEXT_BASE).<span class="title function_ invoke__">into</span>())</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .<span class="title function_ invoke__">ppn</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// **** access current TCB exclusively</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">        <span class="comment">// substitute memory_set</span></span><br><span class="line">        inner.memory_set = memory_set;</span><br><span class="line">        <span class="comment">// update trap_cx ppn</span></span><br><span class="line">        inner.trap_cx_ppn = trap_cx_ppn;</span><br><span class="line">        <span class="comment">// initialize base_size</span></span><br><span class="line">        inner.base_size = user_sp;</span><br><span class="line">        <span class="comment">// initialize trap_cx</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx</span> = inner.<span class="title function_ invoke__">get_trap_cx</span>();</span><br><span class="line">        *trap_cx = TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">            entry_point,</span><br><span class="line">            user_sp,</span><br><span class="line">            KERNEL_SPACE.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">token</span>(),</span><br><span class="line">            <span class="keyword">self</span>.kernel_stack.<span class="title function_ invoke__">get_top</span>(),</span><br><span class="line">            trap_handler <span class="keyword">as</span> <span class="type">usize</span>,</span><br><span class="line">        );</span><br><span class="line">        <span class="comment">// **** release inner automatically</span></span><br><span class="line">    &#125;</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
 <h4 id="系统调用后重新获取-trap-上下文">系统调用后重新获取 Trap
 上下文</h4>
@@ -986,19 +1010,19 @@ href="#children和parent">children和parent</a>；</li>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">../user/build/elf/ch5b_getpid.elf:     file format elf64-littleriscv</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disassembly of section .text:</span><br><span class="line"></span><br><span class="line">0000000000000000 &lt;_start&gt;:</span><br><span class="line">       0:	7165                	addi	sp,sp,-400</span><br><span class="line">       # ...</span><br><span class="line">       c:	00002097          	auipc	ra,0x2</span><br><span class="line">      10:	b7e080e7          	jalr	-1154(ra) # 1b8a &lt;user_lib::clear_bss&gt;</span><br><span class="line">      </span><br><span class="line">000000000000009a &lt;.Lpcrel_hi6&gt;:</span><br><span class="line">	   #: ...</span><br><span class="line">     112:	ae8080e7          	jalr	-1304(ra) # 1bf6 &lt;user_lib::exit&gt;</span><br></pre></td></tr></table></figure>
 <p>我们可以看到，<code>exit()</code> 的兜底调用是在这里实现的。</p>
 <h3 id="进程状态机">进程状态机</h3>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-Ready("Ready"):::green
-Running("Running"):::purple
-Zombie("Zombie"):::error
+Ready(&quot;Ready&quot;):::green
+Running(&quot;Running&quot;):::purple
+Zombie(&quot;Zombie&quot;):::error
 
 
-Running -->|suspend_current_and_run_next| Ready
-Running -->|fork| Ready
+Running --&gt;|suspend_current_and_run_next| Ready
+Running --&gt;|fork| Ready
 
-Ready -->|run_tasks| Running
+Ready --&gt;|run_tasks| Running
 
-Running -->|exit_current_and_run_next| Zombie
+Running --&gt;|exit_current_and_run_next| Zombie
 
 
 
@@ -1006,7 +1030,7 @@ Running -->|exit_current_and_run_next| Zombie
     classDef green fill: #696,color: #fff,font-weight: bold;
     classDef purple fill:#969,stroke:#333, font-weight: bold;
     classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
-    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
 <h3 id="kernelstack">KernelStack</h3>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Kernel stack for a process(task)</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">KernelStack</span>(<span class="keyword">pub</span> <span class="type">usize</span>);</span><br></pre></td></tr></table></figure>
 <p><code>KernelStack</code> 是进程管理中，用于在<strong>Kernel Adress
@@ -1044,7 +1068,7 @@ Space(High)</strong>分配用户的应用内核栈的数据结构。</p>
 <code>sp</code> 都是用 <code>KernelStack</code>
 作为指针来操作自己的函数栈。</li>
 </ol>
-<pre class="mermaid">graph TD
+<pre><code class="highlight mermaid">graph TD
     %% 样式定义：按流程阶段区分，突出逻辑层级
     classDef init fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600;
     classDef branch fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-weight:600;
@@ -1053,29 +1077,29 @@ Space(High)</strong>分配用户的应用内核栈的数据结构。</p>
     classDef arrow stroke:#64748b, stroke-width:1.2px;
 
     %% 节点定义：特殊字符用双引号包裹，[]改为()
-    A("进程初始化"):::init
-    B{"初始化场景"}:::branch
-    B1("INITPROC new()"):::branch
-    B2("exec() 系统调用"):::branch
-    B3("fork() 系统调用"):::branch
-    C("分配内核栈，初始化 TrapContext（记录内核栈指针）"):::init
-    D{"进程运行"}:::runtime
-    D1("Trap 发生：__alltraps 切换到内核栈执行"):::runtime
-    D2("进程调度：保存内核栈 sp 到 TrapContext，切换到其他进程"):::runtime
-    E("进程退出（exit()）"):::exit
-    F("释放内核栈占用的物理页，回收 TrapContext 映射"):::exit
+    A(&quot;进程初始化&quot;):::init
+    B&#123;&quot;初始化场景&quot;&#125;:::branch
+    B1(&quot;INITPROC new()&quot;):::branch
+    B2(&quot;exec() 系统调用&quot;):::branch
+    B3(&quot;fork() 系统调用&quot;):::branch
+    C(&quot;分配内核栈，初始化 TrapContext（记录内核栈指针）&quot;):::init
+    D&#123;&quot;进程运行&quot;&#125;:::runtime
+    D1(&quot;Trap 发生：__alltraps 切换到内核栈执行&quot;):::runtime
+    D2(&quot;进程调度：保存内核栈 sp 到 TrapContext，切换到其他进程&quot;):::runtime
+    E(&quot;进程退出（exit()）&quot;):::exit
+    F(&quot;释放内核栈占用的物理页，回收 TrapContext 映射&quot;):::exit
 
     %% 逻辑连接：添加样式，保持原有流程
-    A --> B:::arrow
-    B --> B1:::arrow
-    B --> B2:::arrow
-    B --> B3:::arrow
-    B1 & B2 & B3 --> C:::arrow
-    C --> D:::arrow
-    D --> D1:::arrow
-    D --> D2:::arrow
-    D1 & D2 --> E:::arrow
-    E --> F:::arrow</pre>
+    A --&gt; B:::arrow
+    B --&gt; B1:::arrow
+    B --&gt; B2:::arrow
+    B --&gt; B3:::arrow
+    B1 &amp; B2 &amp; B3 --&gt; C:::arrow
+    C --&gt; D:::arrow
+    D --&gt; D1:::arrow
+    D --&gt; D2:::arrow
+    D1 &amp; D2 --&gt; E:::arrow
+    E --&gt; F:::arrow</code></pre>
 <h3 id="kstack_allocator">KSTACK_ALLOCATOR</h3>
 <p><code>KSTACK_ALLOCATOR</code> 是负责 <a
 href="#KernelStack">KernelStack</a>
@@ -1331,30 +1355,30 @@ user_stack_bottom + USER_STACK_SIZE 是用户进程的
 <p>刚初始化时，<code>base_size</code>/<code>heap_bottom</code>/<code>program_brk</code>
 都指向 <strong>End of User Stack</strong></p>
 </blockquote>
-<pre class="mermaid">block-beta
+<pre><code class="highlight mermaid">block-beta
     block:1
         columns 1
         space:2
-        eUserStack("End of User Stack")
-        sUserStack("Start of User Stack")
-        eGuardPage("End of Guard Page")
-        sGuardPage("Start of Guard Page")
-        ebss("ebss")
-        sbss("sbss")
-        edata("edata")
-        sdata("sdata")
-        erodata("erodata")
-        srodata("srodata")
-        etext("etext")
-        stext("stext")
+        eUserStack(&quot;End of User Stack&quot;)
+        sUserStack(&quot;Start of User Stack&quot;)
+        eGuardPage(&quot;End of Guard Page&quot;)
+        sGuardPage(&quot;Start of Guard Page&quot;)
+        ebss(&quot;ebss&quot;)
+        sbss(&quot;sbss&quot;)
+        edata(&quot;edata&quot;)
+        sdata(&quot;sdata&quot;)
+        erodata(&quot;erodata&quot;)
+        srodata(&quot;srodata&quot;)
+        etext(&quot;etext&quot;)
+        stext(&quot;stext&quot;)
     end
 
     block 
         columns 1
         space:2
-        init("user_stack_top/base_size/heap_bottom/program_brk")
+        init(&quot;user_stack_top/base_size/heap_bottom/program_brk&quot;)
     end
-    eUserStack --> init
+    eUserStack --&gt; init
 
     style eUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
     style sUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
@@ -1368,7 +1392,8 @@ user_stack_bottom + USER_STACK_SIZE 是用户进程的
     style srodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
     style etext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
     style stext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
-    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold</pre>
+    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold
+</code></pre>
 <blockquote>
 <p>第一次分配堆，我们需要增加
 <code>program_brk</code>，为我们的堆分配空间，此时
@@ -1376,34 +1401,34 @@ user_stack_bottom + USER_STACK_SIZE 是用户进程的
 代表 <code>End of User Stack</code>，<code>SOH</code> 代表
 <code>Start Of Heap</code></p>
 </blockquote>
-<pre class="mermaid">block-beta
+<pre><code class="highlight mermaid">block-beta
     block:1
         columns 1
         space:2
-        eHeap("End Of Heap")
-        eUserStack("EOUS/SOH")
-        sUserStack("Start of User Stack")
-        eGuardPage("End of Guard Page")
-        sGuardPage("Start of Guard Page")
-        ebss("ebss")
-        sbss("sbss")
-        edata("edata")
-        sdata("sdata")
-        erodata("erodata")
-        srodata("srodata")
-        etext("etext")
-        stext("stext")
+        eHeap(&quot;End Of Heap&quot;)
+        eUserStack(&quot;EOUS/SOH&quot;)
+        sUserStack(&quot;Start of User Stack&quot;)
+        eGuardPage(&quot;End of Guard Page&quot;)
+        sGuardPage(&quot;Start of Guard Page&quot;)
+        ebss(&quot;ebss&quot;)
+        sbss(&quot;sbss&quot;)
+        edata(&quot;edata&quot;)
+        sdata(&quot;sdata&quot;)
+        erodata(&quot;erodata&quot;)
+        srodata(&quot;srodata&quot;)
+        etext(&quot;etext&quot;)
+        stext(&quot;stext&quot;)
     end
 
     block 
         columns 1
         space:2
-        program_brk("program_brk")
-        init("base_size/heap_bottom")
+        program_brk(&quot;program_brk&quot;)
+        init(&quot;base_size/heap_bottom&quot;)
     end
 
-    eHeap --> program_brk
-    eUserStack --> init
+    eHeap --&gt; program_brk
+    eUserStack --&gt; init
 
     style eUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
     style sUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
@@ -1417,48 +1442,49 @@ user_stack_bottom + USER_STACK_SIZE 是用户进程的
     style srodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
     style etext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
     style stext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
-    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold</pre>
+    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold
+</code></pre>
 <blockquote>
 <p>既然 <code>base_size</code> 和 <code>heap_bottom</code>
 一直是一样的，为什么我们不直接合并这两个参数呢？因为我们可能在后续的扩展中会分离这两个变量。例如，我们可能希望在
 <code>Heap</code> 和 <code>Stack</code> 之间插入一个
 <code>Guard Page</code>。</p>
 </blockquote>
-<pre class="mermaid">block-beta
+<pre><code class="highlight mermaid">block-beta
     block:1
         columns 1
         space:2
-        eHeap("End Of Heap")
-        sHeap("Start Of Heap")
-        eGuardPage1("End of Guard Page")
-        sGuardPage1("Start of Guard Page")
-        eUserStack("End of User Stack")
-        sUserStack("Start of User Stack")
-        eGuardPage("End of Guard Page")
-        sGuardPage("Start of Guard Page")
-        ebss("ebss")
-        sbss("sbss")
-        edata("edata")
-        sdata("sdata")
-        erodata("erodata")
-        srodata("srodata")
-        etext("etext")
-        stext("stext")
+        eHeap(&quot;End Of Heap&quot;)
+        sHeap(&quot;Start Of Heap&quot;)
+        eGuardPage1(&quot;End of Guard Page&quot;)
+        sGuardPage1(&quot;Start of Guard Page&quot;)
+        eUserStack(&quot;End of User Stack&quot;)
+        sUserStack(&quot;Start of User Stack&quot;)
+        eGuardPage(&quot;End of Guard Page&quot;)
+        sGuardPage(&quot;Start of Guard Page&quot;)
+        ebss(&quot;ebss&quot;)
+        sbss(&quot;sbss&quot;)
+        edata(&quot;edata&quot;)
+        sdata(&quot;sdata&quot;)
+        erodata(&quot;erodata&quot;)
+        srodata(&quot;srodata&quot;)
+        etext(&quot;etext&quot;)
+        stext(&quot;stext&quot;)
     end
 
     block 
         columns 1
         space:2
-        program_brk("program_brk")
-        heap_bottom("heap_bottom")
+        program_brk(&quot;program_brk&quot;)
+        heap_bottom(&quot;heap_bottom&quot;)
         space:2
-        init("base_size")
+        init(&quot;base_size&quot;)
         space:11
     end
 
-    eHeap --> program_brk
-    sHeap --> heap_bottom
-    eUserStack --> init
+    eHeap --&gt; program_brk
+    sHeap --&gt; heap_bottom
+    eUserStack --&gt; init
 
     style eUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
     style sUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
@@ -1474,7 +1500,8 @@ user_stack_bottom + USER_STACK_SIZE 是用户进程的
     style srodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
     style etext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
     style stext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
-    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold</pre>
+    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold
+</code></pre>
 <h3 id="内核堆">内核堆</h3>
 <blockquote>
 <p>关于内核堆的分配可以参考之前的解析：<a
@@ -1666,34 +1693,8 @@ init 进程统一回收；</li>
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

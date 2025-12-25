@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="综述 本文是在学习python的过程中的一个简单的练手小项目，用于熟悉python内部的一些机制，全部的代码位于 tiny package manager。 整体的逻辑是，当我们在编译一个 yarn 项目的过程中，我们会存在一个 package.json 文件，在文件中我们会声明项目的所有依赖。我们通过该依赖文件来进行一个包依赖分析，判断是否项目是否存在版本冲突，如果可以编译，则给出选择对应的版本">
 <meta property="og:type" content="article">
@@ -36,7 +36,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/","path":"2025/08/07/如何实现一个最简单的包管理系统/","title":"如何实现一个最简单的包管理系统"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -47,6 +46,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -214,45 +238,46 @@ package manager</a>。</p>
 <code>package.json</code>
 文件，在文件中我们会声明项目的所有依赖。我们通过该依赖文件来进行一个包依赖分析，判断是否项目是否存在版本冲突，如果可以编译，则给出选择对应的版本。</p>
 <p>例如：</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: dependencies
 ---
 flowchart LR
 
-jest("jest"):::pink
+jest(&quot;jest&quot;):::pink
 
-jest2("0.0.61"):::green
-jest1("0.0.71"):::green
+jest2(&quot;0.0.61&quot;):::green
+jest1(&quot;0.0.71&quot;):::green
 
-express-resource("express-resource-*"):::purple
-underscore("underscore-*"):::purple
-sji("sji-*"):::purple
+express-resource(&quot;express-resource-*&quot;):::purple
+underscore(&quot;underscore-*&quot;):::purple
+sji(&quot;sji-*&quot;):::purple
 
 
-express("express-*"):::purple
-api-easy("api-easy-*"):::purple
-mongoose("mongoose-*"):::purple
+express(&quot;express-*&quot;):::purple
+api-easy(&quot;api-easy-*&quot;):::purple
+mongoose(&quot;mongoose-*&quot;):::purple
 
-indirect01("indirect dependency ..."):::animate
+indirect01(&quot;indirect dependency ...&quot;):::animate
 
-jest --> jest1
-jest --> jest2
+jest --&gt; jest1
+jest --&gt; jest2
 
-jest1 --> express-resource --> indirect01
-jest1 --> underscore --> indirect01
-jest1 --> sji --> indirect01
+jest1 --&gt; express-resource --&gt; indirect01
+jest1 --&gt; underscore --&gt; indirect01
+jest1 --&gt; sji --&gt; indirect01
 
-jest2 --> express --> indirect01
-jest2 --> api-easy --> indirect01
-jest2 --> mongoose --> indirect01
-jest2 --> express-resource
+jest2 --&gt; express --&gt; indirect01
+jest2 --&gt; api-easy --&gt; indirect01
+jest2 --&gt; mongoose --&gt; indirect01
+jest2 --&gt; express-resource
 
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+</code></pre>
 <h2 id="涉及模块">涉及模块</h2>
 <ul>
 <li><a target="_blank" rel="noopener" href="https://github.com/astral-sh/uv">uv</a></li>
@@ -411,77 +436,77 @@ indirect_1 的 &gt;1.0.0 的版本；</li>
 <li><code>babel</code> 的 <code>[(0.0.2), (0.0.3)]</code></li>
 <li><code>express</code> 的 <code>[(0.0.2)]</code></li>
 </ul>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: dependencies
 ---
 flowchart LR
 
-package_name("jest"):::pink
-package_version_1("0.0.1"):::green
-package_version_2("0.0.2"):::green
-package_version_3("0.0.3"):::green
+package_name(&quot;jest&quot;):::pink
+package_version_1(&quot;0.0.1&quot;):::green
+package_version_2(&quot;0.0.2&quot;):::green
+package_version_3(&quot;0.0.3&quot;):::green
 
-express("express"):::pink
-babel("babel"):::pink
+express(&quot;express&quot;):::pink
+babel(&quot;babel&quot;):::pink
 
-version_1("0.0.2"):::green
-version_2("0.0.3"):::green
+version_1(&quot;0.0.2&quot;):::green
+version_2(&quot;0.0.3&quot;):::green
 
-package_name --> package_version_1
-package_name --> package_version_2
-package_name --> package_version_3
+package_name --&gt; package_version_1
+package_name --&gt; package_version_2
+package_name --&gt; package_version_3
 
-package_version_1 --> express
-package_version_1 --> babel
+package_version_1 --&gt; express
+package_version_1 --&gt; babel
 
-express --> version_1
-express --> version_2
+express --&gt; version_1
+express --&gt; version_2
 
-babel --> version_1
+babel --&gt; version_1
 
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h2 id="实际代码">实际代码</h2>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: code
 ---
 flowchart LR
 
-Package("Pacakge"):::green
-Reference("Reference"):::green
-LocalPackage("LocalPackage"):::purple
-RemotePackage("RemotePackage"):::purple
-JsonReference("JsonReference"):::purple
-YarnReference("YarnReference"):::purple
+Package(&quot;Pacakge&quot;):::green
+Reference(&quot;Reference&quot;):::green
+LocalPackage(&quot;LocalPackage&quot;):::purple
+RemotePackage(&quot;RemotePackage&quot;):::purple
+JsonReference(&quot;JsonReference&quot;):::purple
+YarnReference(&quot;YarnReference&quot;):::purple
 
-Package --> LocalPackage
-Package --> RemotePackage
+Package --&gt; LocalPackage
+Package --&gt; RemotePackage
 
-Reference --> JsonReference
-Reference --> YarnReference
+Reference --&gt; JsonReference
+Reference --&gt; YarnReference
 
-Dependencies("Dependencies"):::green
-VersionDependencies("VersionDependencies"):::green
-VersionDependency("VersionDependency"):::green
+Dependencies(&quot;Dependencies&quot;):::green
+VersionDependencies(&quot;VersionDependencies&quot;):::green
+VersionDependency(&quot;VersionDependency&quot;):::green
 
-Cache("Cache"):::pink
+Cache(&quot;Cache&quot;):::pink
 
-Dependencies -->|package_name| VersionDependencies -->|version_name| VersionDependency
+Dependencies --&gt;|package_name| VersionDependencies --&gt;|version_name| VersionDependency
 
-Reference --> Package
-Reference --> Dependencies
-Reference --> Cache
+Reference --&gt; Package
+Reference --&gt; Dependencies
+Reference --&gt; Cache
 
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 
     </div>
 
@@ -553,34 +578,8 @@ classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

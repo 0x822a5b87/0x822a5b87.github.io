@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,17 +14,17 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="文件系统   layout  整体逻辑 graph BT     %% 核心模块：easy-fs（文件系统核心逻辑）     subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]         direction BT         subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]             direction TB">
+    <meta name="description" content="文件系统   layout  整体逻辑 graph BT     %% 核心模块：easy-fs（文件系统核心逻辑）     subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]         direction BT         subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]">
 <meta property="og:type" content="article">
 <meta property="og:title" content="uCore文件系统">
 <meta property="og:url" content="https://0x822a5b87.github.io/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="文件系统   layout  整体逻辑 graph BT     %% 核心模块：easy-fs（文件系统核心逻辑）     subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]         direction BT         subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]             direction TB">
+<meta property="og:description" content="文件系统   layout  整体逻辑 graph BT     %% 核心模块：easy-fs（文件系统核心逻辑）     subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]         direction BT         subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20251208/layout.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/20251208/easy-fs-demo.png">
@@ -41,7 +41,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/","path":"2025/12/09/uCore文件系统/","title":"uCore文件系统"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -52,6 +51,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -217,83 +241,83 @@
 <figcaption aria-hidden="true">layout</figcaption>
 </figure>
 <h2 id="整体逻辑">整体逻辑</h2>
-<pre class="mermaid">graph BT
+<pre><code class="highlight mermaid">graph BT
     %% 核心模块：easy-fs（文件系统核心逻辑）
-    subgraph easy-fs ["easy-fs（文件系统核心算法）"]
+    subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]
         direction BT
-        subgraph BD ["抽象层：BlockDevice（块设备接口）"]
+        subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]
             direction TB
-            read_block("read_block")
-            write_block("write_block")
+            read_block(&quot;read_block&quot;)
+            write_block(&quot;write_block&quot;)
         end
 
-        subgraph BC ["缓存层：BlockCache（块缓存）"]
+        subgraph BC [&quot;缓存层：BlockCache（块缓存）&quot;]
             direction TB
-            read("read")
-            modify("modify")
-            bc_other("其他缓存操作...")
+            read(&quot;read&quot;)
+            modify(&quot;modify&quot;)
+            bc_other(&quot;其他缓存操作...&quot;)
         end
 
-        subgraph LAY ["布局层：存储结构定义"]
+        subgraph LAY [&quot;布局层：存储结构定义&quot;]
             direction TB
-            SB("SuperBlock（超级块）")
-            BM("Bitmap（位图）")
-            DI("DiskInode（磁盘索引节点）")
-            DE("DirEntry（目录项）")
-            DB("DataBlock（数据块）")
+            SB(&quot;SuperBlock（超级块）&quot;)
+            BM(&quot;Bitmap（位图）&quot;)
+            DI(&quot;DiskInode（磁盘索引节点）&quot;)
+            DE(&quot;DirEntry（目录项）&quot;)
+            DB(&quot;DataBlock（数据块）&quot;)
         end
 
-        subgraph BMGR ["管理层：文件系统实例/接口"]
+        subgraph BMGR [&quot;管理层：文件系统实例/接口&quot;]
             direction TB
-            EFS("EasyFileSystem（文件系统实例）")
-            INODE("Inode（文件/目录操作接口）")
+            EFS(&quot;EasyFileSystem（文件系统实例）&quot;)
+            INODE(&quot;Inode（文件/目录操作接口）&quot;)
         end
 
         %% easy-fs 内部链路（修正方向）
-        BD -->|读写物理块| BC
-        BC -->|缓存读写| LAY
-        LAY -->|基于布局实现| BMGR
+        BD --&gt;|读写物理块| BC
+        BC --&gt;|缓存读写| LAY
+        LAY --&gt;|基于布局实现| BMGR
     end
 
     %% 辅助工具：easy-fs 配套工具（宿主机侧）
-    subgraph easy-fs-tools ["easy-fs-tools（宿主机工具）"]
+    subgraph easy-fs-tools [&quot;easy-fs-tools（宿主机工具）&quot;]
         direction TB
-        pack("easy_fs_pack（打包工具）")
-        fuse("easy-fs-fuse（FUSE调试工具）")
+        pack(&quot;easy_fs_pack（打包工具）&quot;)
+        fuse(&quot;easy-fs-fuse（FUSE调试工具）&quot;)
     end
-    easy-fs -->|依赖核心逻辑| pack
-    pack -->|生成镜像| fs_img["fs.img（raw格式镜像）"]
-    easy-fs -->|适配FUSE接口| fuse
-    fuse -->|挂载调试| fs_img
+    easy-fs --&gt;|依赖核心逻辑| pack
+    pack --&gt;|生成镜像| fs_img[&quot;fs.img（raw格式镜像）&quot;]
+    easy-fs --&gt;|适配FUSE接口| fuse
+    fuse --&gt;|挂载调试| fs_img
 
     %% QEMU（虚拟硬件层）
-    subgraph qemu ["QEMU（虚拟硬件）"]
+    subgraph qemu [&quot;QEMU（虚拟硬件）&quot;]
         direction TB
-        drive("-drive file=fs.img（后端存储）")
-        virtio_dev("-device virtio-blk-device（虚拟块设备）")
+        drive(&quot;-drive file=fs.img（后端存储）&quot;)
+        virtio_dev(&quot;-device virtio-blk-device（虚拟块设备）&quot;)
     end
-    fs_img -->|作为后端存储| drive
-    drive -->|绑定到虚拟设备| virtio_dev
+    fs_img --&gt;|作为后端存储| drive
+    drive --&gt;|绑定到虚拟设备| virtio_dev
 
     %% os 内核（驱动+文件系统调用）
-    subgraph os ["os（内核层）"]
+    subgraph os [&quot;os（内核层）&quot;]
         direction TB
-        subgraph VIRTIO ["驱动层：VirtIOBlock"]
+        subgraph VIRTIO [&quot;驱动层：VirtIOBlock&quot;]
             direction TB
-            virtio_bd("实现 BlockDevice 接口")
-            virtio_ops("virtio-blk 读写操作")
+            virtio_bd(&quot;实现 BlockDevice 接口&quot;)
+            virtio_ops(&quot;virtio-blk 读写操作&quot;)
         end
-        subgraph FS_CALL ["应用层：文件系统调用"]
+        subgraph FS_CALL [&quot;应用层：文件系统调用&quot;]
             direction TB
-            fs_open("open/read/write")
-            fs_exec("执行ELF文件")
+            fs_open(&quot;open/read/write&quot;)
+            fs_exec(&quot;执行ELF文件&quot;)
         end
     end
     %% 内核链路
-    qemu -->|暴露虚拟硬件| virtio_dev
-    virtio_dev -->|内核枚举设备| VIRTIO
-    VIRTIO -->|适配接口| easy-fs
-    easy-fs -->|提供文件操作| FS_CALL</pre>
+    qemu --&gt;|暴露虚拟硬件| virtio_dev
+    virtio_dev --&gt;|内核枚举设备| VIRTIO
+    VIRTIO --&gt;|适配接口| easy-fs
+    easy-fs --&gt;|提供文件操作| FS_CALL</code></pre>
 <h2 id="文件与文件描述符">文件与文件描述符</h2>
 <h3 id="文件简介">文件简介</h3>
 <p>这个接口在内存和I/O资源之间建立了数据交换的通道。其中
@@ -625,11 +649,11 @@ DirEntry；</li>
 <li>通过 DiskInode（File类型）到 data_areas 找到对应的 DataBlock；</li>
 </ol>
 <p>以查找 <code>/text.txt</code> 为例：</p>
-<pre class="mermaid">graph TD
-    A[根目录inode（DiskInode，inode_id=0）] -->|1.读取其指向的Data Block| B[目录项列表（DirEntry数组）]
-    B -->|"2.查找name='test.txt'的DirEntry"| C[DirEntry（name=test.txt, inode_id=10）]
-    C -->|3.通过inode_id=10计算物理位置| D[文件inode（DiskInode，类型=File）]
-    D -->|4.读取其direct/indirect指针| E[Data Block（存储test.txt的实际内容）]</pre>
+<pre><code class="highlight mermaid">graph TD
+    A[根目录inode（DiskInode，inode_id=0）] --&gt;|1.读取其指向的Data Block| B[目录项列表（DirEntry数组）]
+    B --&gt;|&quot;2.查找name=&#x27;test.txt&#x27;的DirEntry&quot;| C[DirEntry（name=test.txt, inode_id=10）]
+    C --&gt;|3.通过inode_id=10计算物理位置| D[文件inode（DiskInode，类型=File）]
+    D --&gt;|4.读取其direct/indirect指针| E[Data Block（存储test.txt的实际内容）]</code></pre>
 <h4 id="bitmap">Bitmap</h4>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// A bitmap</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Bitmap</span> &#123;</span><br><span class="line">    start_block_id: <span class="type">usize</span>,</span><br><span class="line">    blocks: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这里 <code>Bitmap</code>
@@ -652,7 +676,7 @@ SuperBlock::inode_bitmap_blocks。</p>
 <p>当下次我们再次启动时，我们首先读取
 SuperBlock::inode_bitmap_blocks，这样我们就可以知道我们当前的文件系统中的
 inode_bitmap 的数量。</p>
-<pre class="mermaid">block-beta
+<pre><code class="highlight mermaid">block-beta
     columns 8
     classDef superBlockField fill:#f0f8ff,stroke:#2196f3,stroke-width:1px,rounded:6px;
     classDef inodeBitmapField fill:#fef7fb,stroke:#9c27b0,stroke-width:1px,rounded:4px;
@@ -662,12 +686,12 @@ inode_bitmap 的数量。</p>
     classDef transparent fill:none,stroke:none,shadow:none,border:none;
 
     block:SuperBlock:16
-        magic("magic")
-        total_blocks("total")
-        inode_bitmap_blocks("inode_bitmap")
-        inode_area_blocks("inode_areas")
-        data_bitmap_blocks("data_bitmap")
-        data_area_blocks("data_area")
+        magic(&quot;magic&quot;)
+        total_blocks(&quot;total&quot;)
+        inode_bitmap_blocks(&quot;inode_bitmap&quot;)
+        inode_area_blocks(&quot;inode_areas&quot;)
+        data_bitmap_blocks(&quot;data_bitmap&quot;)
+        data_area_blocks(&quot;data_area&quot;)
     end
     class magic superBlockField
     class total_blocks superBlockField
@@ -677,25 +701,25 @@ inode_bitmap 的数量。</p>
     class data_area_blocks superBlockField
 
     block:inode_bitmap0:16
-        BitmapBlock_0("inode_bitmap_block_0: [u64; 64] (管理0~4095号inode)")
+        BitmapBlock_0(&quot;inode_bitmap_block_0: [u64; 64] (管理0~4095号inode)&quot;)
     end
     class BitmapBlock_0 inodeBitmapField
 
     block:inode_bitmap1:16
-        BitmapBlock_1("inode_bitmap_block_1: [u64; 64] (管理4096~8191号inode)")
+        BitmapBlock_1(&quot;inode_bitmap_block_1: [u64; 64] (管理4096~8191号inode)&quot;)
     end
     class BitmapBlock_1 inodeBitmapField
 
     block:inode_bitmapN:16
-        BitmapBlock_N("inode_bitmap_block_(inode_bitmap_blocks-1): ...")
+        BitmapBlock_N(&quot;inode_bitmap_block_(inode_bitmap_blocks-1): ...&quot;)
     end
     class BitmapBlock_N inodeBitmapField
 
     block:inode0:16
-        DiskInode_0("DiskInode_0"):1
-        DiskInode_1("DiskInode_1"):1
-        DiskInode_2("DiskInode_2"):1
-        DiskInode_3("DiskInode_3"):1
+        DiskInode_0(&quot;DiskInode_0&quot;):1
+        DiskInode_1(&quot;DiskInode_1&quot;):1
+        DiskInode_2(&quot;DiskInode_2&quot;):1
+        DiskInode_3(&quot;DiskInode_3&quot;):1
     end
     class DiskInode_0 diskInodeField
     class DiskInode_1 diskInodeField
@@ -703,10 +727,10 @@ inode_bitmap 的数量。</p>
     class DiskInode_3 diskInodeField
 
     block:inode1:16
-        DiskInode_4("DiskInode_4"):1
-        DiskInode_5("DiskInode_5"):1
-        DiskInode_6("DiskInode_6"):1
-        DiskInode_7("DiskInode_7"):1
+        DiskInode_4(&quot;DiskInode_4&quot;):1
+        DiskInode_5(&quot;DiskInode_5&quot;):1
+        DiskInode_6(&quot;DiskInode_6&quot;):1
+        DiskInode_7(&quot;DiskInode_7&quot;):1
     end
     class DiskInode_4 diskInodeField
     class DiskInode_5 diskInodeField
@@ -714,30 +738,30 @@ inode_bitmap 的数量。</p>
     class DiskInode_7 diskInodeField
 
     block:inode2:16
-        DiskInode_8("其他DiskInode"):1
+        DiskInode_8(&quot;其他DiskInode&quot;):1
     end
     class DiskInode_8 diskInodeField
 
     block:data_bitmap0:16
-        BitmapBlock_1_0("data_bitmap_block_0: [u64; 64] (管理0~4095号数据块)")
+        BitmapBlock_1_0(&quot;data_bitmap_block_0: [u64; 64] (管理0~4095号数据块)&quot;)
     end
     class BitmapBlock_1_0 dataBitmapField
 
     block:data_bitmapN:16
-        BitmapBlock_1_N("data_bitmap_block_(data_bitmap_blocks-1): ...")
+        BitmapBlock_1_N(&quot;data_bitmap_block_(data_bitmap_blocks-1): ...&quot;)
     end
     class BitmapBlock_1_N dataBitmapField
 
     block:data0:16
-        DataBlock_0("DataBlock_0: 普通文件数据")
+        DataBlock_0(&quot;DataBlock_0: 普通文件数据&quot;)
     end
     class DataBlock_0 dataBlockField
 
     block:data1:16
-        Dir0("DirEntry_0")
-        Dir1("DirEntry_1")
-        Dir2("...")
-        Dir15("DirEntry_15")
+        Dir0(&quot;DirEntry_0&quot;)
+        Dir1(&quot;DirEntry_1&quot;)
+        Dir2(&quot;...&quot;)
+        Dir15(&quot;DirEntry_15&quot;)
     end
     class Dir0 dataBlockField
     class Dir1 dataBlockField
@@ -745,18 +769,18 @@ inode_bitmap 的数量。</p>
     class Dir15 dataBlockField
 
     block:data2:16
-        DataBlock("其他的文件夹或者文件数据")
+        DataBlock(&quot;其他的文件夹或者文件数据&quot;)
     end
     class DataBlock dataBlockField
 
-    inode_bitmap_blocks --> inode_bitmap0
-    inode_bitmap_blocks --> inode_bitmap1
-    inode_bitmap_blocks --> inode_bitmapN
+    inode_bitmap_blocks --&gt; inode_bitmap0
+    inode_bitmap_blocks --&gt; inode_bitmap1
+    inode_bitmap_blocks --&gt; inode_bitmapN
 
-    data_bitmap_blocks --> data_bitmap0
-    data_bitmap_blocks --> data_bitmapN
+    data_bitmap_blocks --&gt; data_bitmap0
+    data_bitmap_blocks --&gt; data_bitmapN
 
-    class 1 transparent</pre>
+    class 1 transparent</code></pre>
 <h4 id="easy-fs-超级块">easy-fs 超级块</h4>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// easy-fs/src/layout.rs</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#[repr(C)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">SuperBlock</span> &#123;</span><br><span class="line">    magic: <span class="type">u32</span>,</span><br><span class="line">    <span class="keyword">pub</span> total_blocks: <span class="type">u32</span>,					<span class="comment">// 总blocks数量</span></span><br><span class="line">    <span class="keyword">pub</span> inode_bitmap_blocks: <span class="type">u32</span>,			<span class="comment">// inode bitmap blocks 数量</span></span><br><span class="line">    <span class="keyword">pub</span> inode_area_blocks: <span class="type">u32</span>,				<span class="comment">// inode blocks 数量</span></span><br><span class="line">    <span class="keyword">pub</span> data_bitmap_blocks: <span class="type">u32</span>,			<span class="comment">// data bitmap blocks 数量</span></span><br><span class="line">    <span class="keyword">pub</span> data_area_blocks: <span class="type">u32</span>,				<span class="comment">// data blocks 数量，可能是 DataNode 或者 DirEntry</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="位图">位图</h4>
@@ -807,58 +831,58 @@ inodes_per_block);</li>
 <p><strong>他的作用有一点类似于 <code>MemorySet</code>
 中的页表，可以将一个逻辑上连续但物理上不连续的空间（也就是文件/文件夹），映射到物理离散的
 DataBlock/DirEntry（持久化设备）</strong>。</p>
-<pre class="mermaid">flowchart TB
+<pre><code class="highlight mermaid">flowchart TB
 subgraph DiskInode
     subgraph direct
-        block_id_0("block id 0")
-        block_id_1("block id 1")
-        block_id_2("...")
-        block_id_n("block id 27")
+        block_id_0(&quot;block id 0&quot;)
+        block_id_1(&quot;block id 1&quot;)
+        block_id_2(&quot;...&quot;)
+        block_id_n(&quot;block id 27&quot;)
     end
-    indirect1("indirect1"):::purple
-    indirect2("indirect2"):::purple
+    indirect1(&quot;indirect1&quot;):::purple
+    indirect2(&quot;indirect2&quot;):::purple
 end
 
-IndirectBlock1("IndirectBlock<br/>[u32; BLOCK_SZ / 4]")
-IndirectBlock2("IndirectBlock<br/>[u32; BLOCK_SZ / 4]")
-IndirectBlock3("IndirectBlock<br/>[u32; BLOCK_SZ / 4]")
-IndirectBlock4("...")
+IndirectBlock1(&quot;IndirectBlock&lt;br/&gt;[u32; BLOCK_SZ / 4]&quot;)
+IndirectBlock2(&quot;IndirectBlock&lt;br/&gt;[u32; BLOCK_SZ / 4]&quot;)
+IndirectBlock3(&quot;IndirectBlock&lt;br/&gt;[u32; BLOCK_SZ / 4]&quot;)
+IndirectBlock4(&quot;...&quot;)
 
 subgraph block_1
-    DataBlock1("DataBlock - 01")
-    DataBlock2("DataBlock - 02")
+    DataBlock1(&quot;DataBlock - 01&quot;)
+    DataBlock2(&quot;DataBlock - 02&quot;)
 end
 subgraph block_2
-    DataBlock3("DataBlock - 03")
+    DataBlock3(&quot;DataBlock - 03&quot;)
 end
 subgraph block_3
-    DataBlock4("DataBlock - 04")
+    DataBlock4(&quot;DataBlock - 04&quot;)
 end
 subgraph block_4
-    DataBlock5("...")
+    DataBlock5(&quot;...&quot;)
 end
 subgraph block_5
-    DataBlock7("DataBlock - 27")
+    DataBlock7(&quot;DataBlock - 27&quot;)
 end
 
-block_id_0 --> DataBlock1
-block_id_1 --> DataBlock2
-block_id_2 --> DataBlock3
-block_id_2 --> DataBlock4
-block_id_2 --> DataBlock5
-block_id_n --> DataBlock7
+block_id_0 --&gt; DataBlock1
+block_id_1 --&gt; DataBlock2
+block_id_2 --&gt; DataBlock3
+block_id_2 --&gt; DataBlock4
+block_id_2 --&gt; DataBlock5
+block_id_n --&gt; DataBlock7
 
-indirect1 --> IndirectBlock1 --> MoreBlock
+indirect1 --&gt; IndirectBlock1 --&gt; MoreBlock
 
-indirect2 -->|二级间接| IndirectBlock2
-IndirectBlock2 -->|一级间接| IndirectBlock3 --> MoreBlock
-IndirectBlock2 -->|一级间接| IndirectBlock4 --> MoreBlock
+indirect2 --&gt;|二级间接| IndirectBlock2
+IndirectBlock2 --&gt;|一级间接| IndirectBlock3 --&gt; MoreBlock
+IndirectBlock2 --&gt;|一级间接| IndirectBlock4 --&gt; MoreBlock
 
 subgraph MoreBlock
     direction TB
-    DataBlock8("DataBlock - 28")
-    DataBlock9("DataBlock - 29")
-    DataBlock10("...")
+    DataBlock8(&quot;DataBlock - 28&quot;)
+    DataBlock9(&quot;DataBlock - 29&quot;)
+    DataBlock10(&quot;...&quot;)
 end
 
 DataBlock1:::green
@@ -888,7 +912,7 @@ classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <p>我们首先需要一些解析节点元数据的方法：</p>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">InodeDisk</span> &#123;</span><br><span class="line">    <span class="comment">/// Return block number correspond to size.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">data_blocks</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span>::_data_blocks(<span class="keyword">self</span>.size)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">_data_blocks</span>(size: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">        (size + BLOCK_SZ <span class="keyword">as</span> <span class="type">u32</span> - <span class="number">1</span>) / BLOCK_SZ <span class="keyword">as</span> <span class="type">u32</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// Return number of blocks needed include indirect1/2.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">total_blocks</span>(size: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">data_blocks</span> = <span class="keyword">Self</span>::_data_blocks(size) <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">total</span> = data_blocks <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line">        <span class="comment">// indirect1</span></span><br><span class="line">        <span class="keyword">if</span> data_blocks &gt; INODE_DIRECT_COUNT &#123;</span><br><span class="line">            total += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// indirect2</span></span><br><span class="line">        <span class="keyword">if</span> data_blocks &gt; INDIRECT1_BOUND &#123;</span><br><span class="line">            total += <span class="number">1</span>;</span><br><span class="line">            <span class="comment">// sub indirect1</span></span><br><span class="line">            total +=</span><br><span class="line">                (data_blocks - INDIRECT1_BOUND + INODE_INDIRECT1_COUNT - <span class="number">1</span>) / INODE_INDIRECT1_COUNT;</span><br><span class="line">        &#125;</span><br><span class="line">        total <span class="keyword">as</span> <span class="type">u32</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// Get the number of data blocks that have to be allocated given the new size of data</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">blocks_num_needed</span>(&amp;<span class="keyword">self</span>, new_size: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">        <span class="built_in">assert!</span>(new_size &gt;= <span class="keyword">self</span>.size);</span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">total_blocks</span>(new_size) - <span class="keyword">Self</span>::<span class="title function_ invoke__">total_blocks</span>(<span class="keyword">self</span>.size)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><code>get_block_id</code> 方法体现了 <code>DiskInode</code>
@@ -1226,41 +1250,41 @@ inode 的 “全局编号”）；</li>
 计算得到：<code>block_id</code> = start_of_inode_area_block_id +
 (inode_id / inodes_per_block);</p>
 <h3 id="五层模型">五层模型</h3>
-<pre class="mermaid">block-beta
+<pre><code class="highlight mermaid">block-beta
     columns 14
     space:5
 
 
     block:tag1:4
-        kernel("OS kernel")
+        kernel(&quot;OS kernel&quot;)
     end
     space:5
     space:4
     block:tag2:6
-        block_manager("块管理器与inode")
+        block_manager(&quot;块管理器与inode&quot;)
     end
     space:4
     space:3
     block:tag3:8
-        disk_structure("超级块-索引块-数据块")
+        disk_structure(&quot;超级块-索引块-数据块&quot;)
     end
     space:3
     space:2
     block:tag4:10
-        cache("块cache")
+        cache(&quot;块cache&quot;)
     end
     space:2
     space:1
     block:tag5:12
-        block_device("块设备接口 BlockDevice")
+        block_device(&quot;块设备接口 BlockDevice&quot;)
     end
     space:1
     block:tag6:14
-        driver("块设备驱动")
+        driver(&quot;块设备驱动&quot;)
     end
 
     classDef transparent fill:none,stroke:none,shadow:none,border:none;
-    class tag1,tag2,tag3,tag4,tag5,tag6 transparent</pre>
+    class tag1,tag2,tag3,tag4,tag5,tag6 transparent</code></pre>
 <h3 id="blockcache的类型推导">BlockCache的类型推导</h3>
 <blockquote>
 <p><strong>在 <code>rust</code>
@@ -1373,21 +1397,21 @@ trait 才能用 <code>dyn</code>，核心规则：
 <li><code>IntoIterator</code> 负责 “把一个类型转换成迭代器”</li>
 <li><code>Iterator</code> 负责 “定义迭代的具体行为”</li>
 </ul>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-struct("struct"):::green
+struct(&quot;struct&quot;):::green
 
-IntoIteratorInstance("struct转换为Iterator"):::purple
-IteratorInstance("迭代操作"):::purple
+IntoIteratorInstance(&quot;struct转换为Iterator&quot;):::purple
+IteratorInstance(&quot;迭代操作&quot;):::purple
 
-struct -.->|IntoIterator| IntoIteratorInstance -.->|Iterator| IteratorInstance
+struct -.-&gt;|IntoIterator| IntoIteratorInstance -.-&gt;|Iterator| IteratorInstance
 
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
 classDef purple fill:#969,stroke:#333, font-weight: bold;
 classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</pre>
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
 <h4 id="iterator">Iterator</h4>
 <p><code>Iterator</code>
 的定义相当复杂，但是实际上，我们需要做的事只有两个：</p>
@@ -1509,34 +1533,8 @@ href="#关联类型和泛型参数">关联类型和泛型参数</a>；</li>
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

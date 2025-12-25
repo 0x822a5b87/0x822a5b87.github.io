@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="test-fsm-arithmetic-operations   测试一下通过 Finite State Machine 实现简单的四则运算解析； 全部代码在 test-fsm-arithmetic-operations，因为只是为了测试状态机，所以有非常多的边界条件没有处理。   在之前 Programming Language Monkey 中，其实也实现了一版，但是当时只是简单的根据 Pra">
 <meta property="og:type" content="article">
@@ -37,7 +37,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2024/12/26/%E5%9F%BA%E4%BA%8E%E7%AE%80%E5%8D%95%E7%8A%B6%E6%80%81%E6%9C%BA%E7%9A%84%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/12/26/%E5%9F%BA%E4%BA%8E%E7%AE%80%E5%8D%95%E7%8A%B6%E6%80%81%E6%9C%BA%E7%9A%84%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97/","path":"2024/12/26/基于简单状态机的四则运算/","title":"基于简单状态机的四则运算"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -48,6 +47,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -234,12 +258,12 @@ Parsing</a>
 </ul>
 <h2 id="前言">前言</h2>
 <p>什么是状态机？简而言之就是，一个物体存在一个状态，在接收一个外部事件之后，跳转到另外一个状态的过程。例如，一个饥饿的人吃饱饭，我们可以使用如下的状态机描述他的状态转换过程：</p>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-hungry("fa:fa-battery-quarter hungry"):::error -->|eat| satisfied("fa:fa-battery-full satisfied"):::ptr
+hungry(&quot;fa:fa-battery-quarter hungry&quot;):::error --&gt;|eat| satisfied(&quot;fa:fa-battery-full satisfied&quot;):::ptr
 
 classDef error 1,fill:#FFCCCC,stroke:#333;
-classDef ptr fill: #696,color: #fff,font-weight: bold;</pre>
+classDef ptr fill: #696,color: #fff,font-weight: bold;</code></pre>
 <h2 id="bnf">BNF</h2>
 <p>在实现我们的四则运算之前，我们可以先通过一个简单的 <code>BNF</code>
 定义他的文法，我们直接基于 <code>antlr4</code>
@@ -264,24 +288,24 @@ term，就消除了左递归。</p>
 <p>这样，解析器在解析表达式时会先处理优先级较低的运算符，然后再处理优先级较高的运算符。在四则运算的语法规则中，先定义了
 term，然后再定义了
 expression，这样就可以保证乘法和除法的优先级高于加法和减法。</p>
-<pre class="mermaid">flowchart TB
+<pre><code class="highlight mermaid">flowchart TB
 
-expression("fa:fa-play expression"):::purple
-term("fa:fa-road term"):::green
-factor("fa:fa-road factor"):::ptr
-number("fa:fa-stop Number"):::error
-group("fa:fa-rotate '(' expression ')'"):::purple
+expression(&quot;fa:fa-play expression&quot;):::purple
+term(&quot;fa:fa-road term&quot;):::green
+factor(&quot;fa:fa-road factor&quot;):::ptr
+number(&quot;fa:fa-stop Number&quot;):::error
+group(&quot;fa:fa-rotate &#x27;(&#x27; expression &#x27;)&#x27;&quot;):::purple
 
-expression --> term --> factor --> number & group
+expression --&gt; term --&gt; factor --&gt; number &amp; group
 
-group --> expression
+group --&gt; expression
 
 classDef purple color:#FFFFFF,fill:#AA00FF,stroke:#AA00FF;
 classDef green color:#FFFFFF, stroke:#00C853, fill:#00C853
 classDef error 1,fill:#FFCCCC,stroke:#333;
 classDef ptr fill: #696,color: #fff,font-weight: bold;
 classDef back fill:#969,stroke:#333;
-classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</pre>
+classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</code></pre>
 <h2 id="状态机">状态机</h2>
 <p>一个确定有限状态自动机通常会包含以下四个重要的概念：</p>
 <ul>
@@ -298,35 +322,35 @@ classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 
 <li>输入 token，转换为 AST；</li>
 </ol>
 <p>而在这个过程中，其实我们应该是存在两个不同的状态机。</p>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-stream("stream")
-parser("parser")
-tokenizer("tokenizer")
+stream(&quot;stream&quot;)
+parser(&quot;parser&quot;)
+tokenizer(&quot;tokenizer&quot;)
 
-stream -->|char| tokenizer -->|token| parser</pre>
+stream --&gt;|char| tokenizer --&gt;|token| parser</code></pre>
 <h3 id="tokenizer">tokenizer</h3>
 <blockquote>
 <p><strong>注意：事实上，我们有更多更好的方式来实现
 <code>tokenizer</code>，
 这里只是单纯的出于学习状态机的目的才如此实现。</strong></p>
 </blockquote>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
-StartGroup("StartGroup"):::ptr
-EndGroup("EndGroup"):::ptr
-NewOperator("NewOperator"):::ptr
-AppendDigit("AppendDigit"):::ptr
+StartGroup(&quot;StartGroup&quot;):::ptr
+EndGroup(&quot;EndGroup&quot;):::ptr
+NewOperator(&quot;NewOperator&quot;):::ptr
+AppendDigit(&quot;AppendDigit&quot;):::ptr
 
-StartGroup -->|"APPEND_DIGIT<br>[0-9]"| AppendDigit
-AppendDigit -->|"APPEND_DIGIT<br>[0-9]"| AppendDigit
-AppendDigit -->|"END_GROUP<br>)"| EndGroup
-AppendDigit -->|"NEW_OPERATOR<br>[+-*/])"| NewOperator
-NewOperator -->|"START_GROUP<br>[()])"| StartGroup
+StartGroup --&gt;|&quot;APPEND_DIGIT&lt;br&gt;[0-9]&quot;| AppendDigit
+AppendDigit --&gt;|&quot;APPEND_DIGIT&lt;br&gt;[0-9]&quot;| AppendDigit
+AppendDigit --&gt;|&quot;END_GROUP&lt;br&gt;)&quot;| EndGroup
+AppendDigit --&gt;|&quot;NEW_OPERATOR&lt;br&gt;[+-*/])&quot;| NewOperator
+NewOperator --&gt;|&quot;START_GROUP&lt;br&gt;[()])&quot;| StartGroup
 
 
 classDef error 1,fill:#FFCCCC,stroke:#333;
-classDef ptr fill: #696,color: #fff,font-weight: bold;</pre>
+classDef ptr fill: #696,color: #fff,font-weight: bold;</code></pre>
 <h2 id="parser">parser</h2>
 <figure>
 <img src="../images/019/parser.png" alt="parser" />
@@ -339,23 +363,23 @@ classDef ptr fill: #696,color: #fff,font-weight: bold;</pre>
 LL(n) 来帮助我们进行做分支预测，语法规则判断等。</p>
 <p>这里使用状态机模型只是单纯的尝试对状态机进行一个简单的测试和探索。</p>
 </blockquote>
-<pre class="mermaid">sequenceDiagram
+<pre><code class="highlight mermaid">sequenceDiagram
 
 participant Input
 participant FSM
 participant Output
 
-FSM ->> FSM : init state
+FSM -&gt;&gt; FSM : init state
 Note over FSM : State
 
 
 loop NewEvent
-    Input -->> FSM : Event
-    Note over FSM : State<br/>Event
-    FSM -->> Output : Action
-    FSM ->> FSM : transition
-    Note over FSM : State(new)<br/>Event
-end</pre>
+    Input --&gt;&gt; FSM : Event
+    Note over FSM : State&lt;br/&gt;Event
+    FSM --&gt;&gt; Output : Action
+    FSM -&gt;&gt; FSM : transition
+    Note over FSM : State(new)&lt;br/&gt;Event
+end</code></pre>
 <h2 id="运算符优先级运算">运算符优先级运算</h2>
 <p>在我们进行计算的时候，我们有三个需要处理的优先级，从低到高对应的
 <code>token</code> 分别是：</p>
@@ -448,34 +472,8 @@ Is a Finite State Machine (FSM)? Meaning, Working, and Examples</a></li>
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

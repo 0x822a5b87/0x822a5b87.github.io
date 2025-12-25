@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,17 +14,17 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="uCore并发 sequenceDiagram     title 银行家算法 - 安全场景（sequenceDiagram）     银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available&#x2F;Allocation&#x2F;Need）     数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available&#x3D;{}, Work&#x3D;{}, Finish&#x3D;[F,F]）          %% 第一">
+    <meta name="description" content="uCore并发 sequenceDiagram     title 银行家算法 - 安全场景（sequenceDiagram）     银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available&#x2F;Allocation&#x2F;Need）     数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available&#x3D;&#123;&#125;, Work&#x3D;&#123;&amp;#12">
 <meta property="og:type" content="article">
 <meta property="og:title" content="uCore并发">
 <meta property="og:url" content="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="uCore并发 sequenceDiagram     title 银行家算法 - 安全场景（sequenceDiagram）     银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available&#x2F;Allocation&#x2F;Need）     数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available&#x3D;{}, Work&#x3D;{}, Finish&#x3D;[F,F]）          %% 第一">
+<meta property="og:description" content="uCore并发 sequenceDiagram     title 银行家算法 - 安全场景（sequenceDiagram）     银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available&#x2F;Allocation&#x2F;Need）     数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available&#x3D;&#123;&#125;, Work&#x3D;&#123;&amp;#12">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-12-13T08:00:35.000Z">
 <meta property="article:modified_time" content="2025-12-16T08:56:23.457Z">
@@ -37,7 +37,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/","path":"2025/12/13/uCore并发/","title":"uCore并发"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -48,6 +47,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -209,41 +233,41 @@
     
     
     <div class="post-body" itemprop="articleBody"><h1 id="ucore并发">uCore并发</h1>
-<pre class="mermaid">sequenceDiagram
+<pre><code class="highlight mermaid">sequenceDiagram
     title 银行家算法 - 安全场景（sequenceDiagram）
-    银行家算法 ->> 数据结构存储: 初始化请求（读取Available/Allocation/Need）
-    数据结构存储-->>银行家算法: 返回初始数据（Available={}, Work={}, Finish=[F,F]）
+    银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available/Allocation/Need）
+    数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available=&#123;&#125;, Work=&#123;&#125;, Finish=[F,F]）
     
     %% 第一次循环:找满足条件的线程
-    银行家算法 ->> 银行家算法: 遍历线程，检查条件（Need[i][j] ≤ Work[j] 且 Finish[i]=F）
-    银行家算法 ->> 数据结构存储: 查询线程1的Need/Finish
-    数据结构存储-->>银行家算法: 线程1:Need={200:1}，Finish=F
-    银行家算法 ->> 银行家算法: 线程1:Need > Work → 不满足
-    银行家算法 ->> 数据结构存储: 查询线程2的Need/Finish
-    数据结构存储-->>银行家算法: 线程2:Need={}，Finish=F
-    银行家算法 ->> 银行家算法: 线程2:Need ≤ Work → 满足
+    银行家算法 -&gt;&gt; 银行家算法: 遍历线程，检查条件（Need[i][j] ≤ Work[j] 且 Finish[i]=F）
+    银行家算法 -&gt;&gt; 数据结构存储: 查询线程1的Need/Finish
+    数据结构存储--&gt;&gt;银行家算法: 线程1:Need=&#123;200:1&#125;，Finish=F
+    银行家算法 -&gt;&gt; 银行家算法: 线程1:Need &gt; Work → 不满足
+    银行家算法 -&gt;&gt; 数据结构存储: 查询线程2的Need/Finish
+    数据结构存储--&gt;&gt;银行家算法: 线程2:Need=&#123;&#125;，Finish=F
+    银行家算法 -&gt;&gt; 银行家算法: 线程2:Need ≤ Work → 满足
     
     %% 模拟线程2释放资源
-    银行家算法 ->> 数据结构存储: 模拟线程2执行完毕，请求更新Work（Work += 线程2的Allocation{200:1}）
-    数据结构存储-->>银行家算法: Work更新成功（Work={200:1}）
-    银行家算法 ->> 数据结构存储: 请求标记线程2的Finish=true
-    数据结构存储-->>银行家算法: Finish更新成功（Finish=[F,T]）
+    银行家算法 -&gt;&gt; 数据结构存储: 模拟线程2执行完毕，请求更新Work（Work += 线程2的Allocation&#123;200:1&#125;）
+    数据结构存储--&gt;&gt;银行家算法: Work更新成功（Work=&#123;200:1&#125;）
+    银行家算法 -&gt;&gt; 数据结构存储: 请求标记线程2的Finish=true
+    数据结构存储--&gt;&gt;银行家算法: Finish更新成功（Finish=[F,T]）
     
     %% 第二次循环:找满足条件的线程
-    银行家算法 ->> 银行家算法: 重新遍历线程（仅线程1未完成）
-    银行家算法 ->> 数据结构存储: 查询线程1的Need/Work
-    数据结构存储-->>银行家算法: 线程1:Need={200:1}，Work={200:1}
-    银行家算法 ->> 银行家算法: 线程1:Need ≤ Work → 满足
+    银行家算法 -&gt;&gt; 银行家算法: 重新遍历线程（仅线程1未完成）
+    银行家算法 -&gt;&gt; 数据结构存储: 查询线程1的Need/Work
+    数据结构存储--&gt;&gt;银行家算法: 线程1:Need=&#123;200:1&#125;，Work=&#123;200:1&#125;
+    银行家算法 -&gt;&gt; 银行家算法: 线程1:Need ≤ Work → 满足
     
     %% 模拟线程1释放资源
-    银行家算法 ->> 数据结构存储: 模拟线程1执行完毕，请求更新Work（Work += 线程1的Allocation{100:1}）
-    数据结构存储-->>银行家算法: Work更新成功（Work={100:1,200:1}）
-    银行家算法 ->> 数据结构存储: 请求标记线程1的Finish=true
-    数据结构存储-->>银行家算法: Finish更新成功（Finish=[T,T]）
+    银行家算法 -&gt;&gt; 数据结构存储: 模拟线程1执行完毕，请求更新Work（Work += 线程1的Allocation&#123;100:1&#125;）
+    数据结构存储--&gt;&gt;银行家算法: Work更新成功（Work=&#123;100:1,200:1&#125;）
+    银行家算法 -&gt;&gt; 数据结构存储: 请求标记线程1的Finish=true
+    数据结构存储--&gt;&gt;银行家算法: Finish更新成功（Finish=[T,T]）
     
     %% 判定结果
-    银行家算法 ->> 银行家算法: 检查所有Finish是否为true
-    银行家算法-->>外部: 输出判定结果 → 系统安全（无死锁风险）</pre>
+    银行家算法 -&gt;&gt; 银行家算法: 检查所有Finish是否为true
+    银行家算法--&gt;&gt;外部: 输出判定结果 → 系统安全（无死锁风险）</code></pre>
 <h2 id="引言">引言</h2>
 <h3 id="线程定义">线程定义</h3>
 <p>简单地说，线程是进程的组成部分，进程可包含1 –
@@ -742,7 +766,7 @@ Semaphore）。可以看出， 互斥锁是信号量的一种特例 —
 </ol>
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">first</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="title function_ invoke__">sleep_blocking</span>(<span class="number">10</span>);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;First work, Change A --&gt; 1 and wakeup Second&quot;</span>);</span><br><span class="line">    <span class="title function_ invoke__">mutex_lock</span>(MUTEX_ID);</span><br><span class="line">    A = <span class="number">1</span>;</span><br><span class="line">    <span class="title function_ invoke__">condvar_signal</span>(CONDVAR_ID);</span><br><span class="line">    <span class="title function_ invoke__">mutex_unlock</span>(MUTEX_ID);</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="number">0</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">second</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Second want to continue,but need to wait A=1&quot;</span>);</span><br><span class="line">    <span class="title function_ invoke__">mutex_lock</span>(MUTEX_ID);</span><br><span class="line">    <span class="keyword">while</span> A == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Second: A is &#123;&#125;&quot;</span>, A);</span><br><span class="line">        <span class="title function_ invoke__">condvar_wait</span>(CONDVAR_ID, MUTEX_ID);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">mutex_unlock</span>(MUTEX_ID);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;A is &#123;&#125;, Second can work now&quot;</span>, A);</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="number">0</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="comment">// create condvar &amp; mutex</span></span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="title function_ invoke__">condvar_create</span>() <span class="keyword">as</span> <span class="type">usize</span>, CONDVAR_ID);</span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="title function_ invoke__">mutex_blocking_create</span>() <span class="keyword">as</span> <span class="type">usize</span>, MUTEX_ID);</span><br><span class="line">    <span class="comment">// create threads</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">threads</span> = <span class="built_in">vec!</span>[</span><br><span class="line">        <span class="title function_ invoke__">thread_create</span>(first <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>),</span><br><span class="line">        <span class="title function_ invoke__">thread_create</span>(second <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>),</span><br><span class="line">    ];</span><br><span class="line">    <span class="comment">// wait for all threads to complete</span></span><br><span class="line">    <span class="keyword">for</span> <span class="variable">thread</span> <span class="keyword">in</span> threads.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">        <span class="title function_ invoke__">waittid</span>(*thread <span class="keyword">as</span> <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;test_condvar passed!&quot;</span>);</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>整体执行逻辑如图所示：</p>
-<pre class="mermaid">sequenceDiagram
+<pre><code class="highlight mermaid">sequenceDiagram
     participant second线程
     participant first线程
     participant 内核调度器
@@ -751,39 +775,39 @@ Semaphore）。可以看出， 互斥锁是信号量的一种特例 —
     note over second线程,first线程: 前提：A初始值=0，MUTEX/CONDVAR已初始化
 
     %% ========== second线程先执行 ==========
-    second线程->>second线程: 打印 "Second want to continue,but need to wait A=1"
-    second线程->>互斥锁(MUTEX): mutex_lock(MUTEX_ID)
-    互斥锁(MUTEX)-->>second线程: 成功获取锁，进入临界区
-    second线程->>second线程: 检查 while A==0（A=0，条件成立）
-    second线程->>second线程: 打印 "Second: A is 0"
-    second线程->>条件变量(CONDVAR): condvar_wait(CONDVAR_ID, MUTEX_ID)
+    second线程-&gt;&gt;second线程: 打印 &quot;Second want to continue,but need to wait A=1&quot;
+    second线程-&gt;&gt;互斥锁(MUTEX): mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)--&gt;&gt;second线程: 成功获取锁，进入临界区
+    second线程-&gt;&gt;second线程: 检查 while A==0（A=0，条件成立）
+    second线程-&gt;&gt;second线程: 打印 &quot;Second: A is 0&quot;
+    second线程-&gt;&gt;条件变量(CONDVAR): condvar_wait(CONDVAR_ID, MUTEX_ID)
     note over second线程: condvar_wait内部逻辑
-    second线程->>互斥锁(MUTEX): unlock() 释放锁
-    second线程->>条件变量(CONDVAR): 加入等待队列
-    second线程->>内核调度器: block_current_and_run_next() 阻塞
-    内核调度器->>first线程: 调度first线程执行
+    second线程-&gt;&gt;互斥锁(MUTEX): unlock() 释放锁
+    second线程-&gt;&gt;条件变量(CONDVAR): 加入等待队列
+    second线程-&gt;&gt;内核调度器: block_current_and_run_next() 阻塞
+    内核调度器-&gt;&gt;first线程: 调度first线程执行
 
     %% ========== first线程执行 ==========
-    first线程->>first线程: sleep_blocking(10) 休眠结束
-    first线程->>first线程: 打印 "First work, Change A --> 1 and wakeup Second"
-    first线程->>互斥锁(MUTEX): mutex_lock(MUTEX_ID)
-    互斥锁(MUTEX)-->>first线程: 成功获取锁（second已释放）
-    first线程->>first线程: 修改 A = 1
-    first线程->>条件变量(CONDVAR): condvar_signal(CONDVAR_ID) 唤醒second
-    条件变量(CONDVAR)->>内核调度器: 将second从阻塞态→就绪态（加入调度队列）
+    first线程-&gt;&gt;first线程: sleep_blocking(10) 休眠结束
+    first线程-&gt;&gt;first线程: 打印 &quot;First work, Change A --&gt; 1 and wakeup Second&quot;
+    first线程-&gt;&gt;互斥锁(MUTEX): mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)--&gt;&gt;first线程: 成功获取锁（second已释放）
+    first线程-&gt;&gt;first线程: 修改 A = 1
+    first线程-&gt;&gt;条件变量(CONDVAR): condvar_signal(CONDVAR_ID) 唤醒second
+    条件变量(CONDVAR)-&gt;&gt;内核调度器: 将second从阻塞态→就绪态（加入调度队列）
     note over first线程: 仍持有锁，second就绪但无法执行
-    first线程->>互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
-    first线程->>first线程: exit(0) 线程退出
+    first线程-&gt;&gt;互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
+    first线程-&gt;&gt;first线程: exit(0) 线程退出
 
     %% ========== second线程被唤醒后执行 ==========
-    内核调度器->>second线程: 调度就绪的second线程执行
-    second线程->>条件变量(CONDVAR): 退出等待队列
-    second线程->>互斥锁(MUTEX): condvar_wait内部执行mutex_lock(MUTEX_ID)
-    互斥锁(MUTEX)-->>second线程: 成功获取锁（first已释放）
-    second线程->>second线程: 重新检查 while A==0（A=1，条件不成立）
-    second线程->>互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
-    second线程->>second线程: 打印 "A is 1, Second can work now"
-    second线程->>second线程: exit(0) 线程退出</pre>
+    内核调度器-&gt;&gt;second线程: 调度就绪的second线程执行
+    second线程-&gt;&gt;条件变量(CONDVAR): 退出等待队列
+    second线程-&gt;&gt;互斥锁(MUTEX): condvar_wait内部执行mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)--&gt;&gt;second线程: 成功获取锁（first已释放）
+    second线程-&gt;&gt;second线程: 重新检查 while A==0（A=1，条件不成立）
+    second线程-&gt;&gt;互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
+    second线程-&gt;&gt;second线程: 打印 &quot;A is 1, Second can work now&quot;
+    second线程-&gt;&gt;second线程: exit(0) 线程退出</code></pre>
 <h2 id="qa">QA</h2>
 <h3 id="代码">代码</h3>
 <figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">➜  2025a-rcore-0x822a5b87 git:(ch8) cloc os easy-fs</span><br><span class="line"><span class="code">     306 text files.</span></span><br><span class="line"><span class="code">     166 unique files.</span></span><br><span class="line"><span class="code">     349 files ignored.</span></span><br><span class="line"></span><br><span class="line"><span class="section">github.com/AlDanial/cloc v 2.06  T=0.12 s (1358.1 files/s, 59444.4 lines/s)</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">Language                     files          blank        comment           code</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line">Rust                            51            357            928           4613</span><br><span class="line">D                               42            117              0            631</span><br><span class="line">Assembly                         4             30             29            303</span><br><span class="line">make                             1             22              7             70</span><br><span class="line">JSON                            64              0              0             64</span><br><span class="line">Linker Script                    1              7              0             46</span><br><span class="line"><span class="section">TOML                             3              7              2             33</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">SUM:                           166            540            966           5760</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br></pre></td></tr></table></figure>
@@ -1127,34 +1151,8 @@ href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

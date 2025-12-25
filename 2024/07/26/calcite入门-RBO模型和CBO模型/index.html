@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,17 +14,17 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="calcite入门--RBO模型和CBO模型 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。 解析 sql parse 的过程 flowchart LR  subgraph 模版     direction LR     模板Parser.jj">
+    <meta name="description" content="calcite入门--RBO模型和CBO模型 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。 解析 sql parse 的过程 flowchart LR  subgraph 模版 	direction LR 	模板Parser.jj 	compoundI">
 <meta property="og:type" content="article">
 <meta property="og:title" content="calcite入门--RBO模型和CBO模型">
 <meta property="og:url" content="https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="calcite入门--RBO模型和CBO模型 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。 解析 sql parse 的过程 flowchart LR  subgraph 模版     direction LR     模板Parser.jj">
+<meta property="og:description" content="calcite入门--RBO模型和CBO模型 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。 解析 sql parse 的过程 flowchart LR  subgraph 模版 	direction LR 	模板Parser.jj 	compoundI">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/sql_joins.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/sqlNode_2_relNode.png">
@@ -42,7 +42,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/","path":"2024/07/26/calcite入门-RBO模型和CBO模型/","title":"calcite入门--RBO模型和CBO模型"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -53,6 +52,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -219,20 +243,20 @@ id="calcite入门--rbo模型和cbo模型">calcite入门--RBO模型和CBO模型</
 <p>由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。</p>
 <h2 id="解析">解析</h2>
 <h3 id="sql-parse-的过程">sql parse 的过程</h3>
-<pre class="mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart LR
 
 subgraph 模版
-    direction LR
-    模板Parser.jj
-    compoundIdentifier.ftl
-    parserImpls.ftl
-    config.fmpp
-    default_config.fmpp
+	direction LR
+	模板Parser.jj
+	compoundIdentifier.ftl
+	parserImpls.ftl
+	config.fmpp
+	default_config.fmpp
 end
 
-模版 --> FMPP --> Parser.jj:::underline --> JavaCC --> SqlParserImpl:::underline
+模版 --&gt; FMPP --&gt; Parser.jj:::underline --&gt; JavaCC --&gt; SqlParserImpl:::underline
 
-classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
 <p>我们通过 <code>freemarker</code> 以及 <code>javacc</code> 生成了一个
 <code>SalParserImpl</code>
 类，该类就是我们实际用于解析sql的类，内部包含了一个
@@ -254,36 +278,37 @@ freemarker 的模板共同作为输入生成一个可以作为 <code>JavaCC</cod
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> SqlNode <span class="title function_">parseSqlStmtEof</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="keyword">return</span> SqlStmtEof();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>整体的调用链路如下所示：</p>
-<pre class="mermaid">flowchart TD
-    SqlStmtEof -->|Parses an SQL statement followed by the end-of-file symbol.| SqlStmtm
-    SqlStmtm --> SqlAlter
-    SqlStmtm --> OrderedQueryOrExpr
-    SqlStmtm --> Other[...]
-    OrderedQueryOrExpr -->|expression or query with out order by| QueryOrExpr
-    OrderedQueryOrExpr -->|optional order by, fetch, and so on| OrderByLimitOpt
-    QueryOrExpr --> LeafQueryOrExpr
-    LeafQueryOrExpr -->|SELECT, VALUES OR TABLE| LeafQuery
-    LeafQueryOrExpr -->|expression| Expression
-    LeafQuery -->|SELECT| SqlSelect
-    LeafQuery -->|VALUES| TableConstructor
-    LeafQuery -->|TABLE| ExplicitTable</pre>
+<pre><code class="highlight mermaid">flowchart TD
+    SqlStmtEof --&gt;|Parses an SQL statement followed by the end-of-file symbol.| SqlStmtm
+    SqlStmtm --&gt; SqlAlter
+    SqlStmtm --&gt; OrderedQueryOrExpr
+    SqlStmtm --&gt; Other[...]
+    OrderedQueryOrExpr --&gt;|expression or query with out order by| QueryOrExpr
+    OrderedQueryOrExpr --&gt;|optional order by, fetch, and so on| OrderByLimitOpt
+    QueryOrExpr --&gt; LeafQueryOrExpr
+    LeafQueryOrExpr --&gt;|SELECT, VALUES OR TABLE| LeafQuery
+    LeafQueryOrExpr --&gt;|expression| Expression
+    LeafQuery --&gt;|SELECT| SqlSelect
+    LeafQuery --&gt;|VALUES| TableConstructor
+    LeafQuery --&gt;|TABLE| ExplicitTable
+</code></pre>
 <blockquote>
 <p>最终到达我们的 SELECT 解析方法。</p>
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Parses a leaf SELECT expression without ORDER BY.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">SqlSelect <span class="title function_">SqlSelect</span><span class="params">()</span> :</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">final</span> List&lt;SqlLiteral&gt; keywords = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;SqlLiteral&gt;();</span><br><span class="line">    <span class="keyword">final</span> SqlLiteral keyword;</span><br><span class="line">    <span class="keyword">final</span> SqlNodeList keywordList;</span><br><span class="line">    <span class="keyword">final</span> List&lt;SqlNode&gt; selectList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;SqlNode&gt;();</span><br><span class="line">    <span class="keyword">final</span> SqlNode fromClause;</span><br><span class="line">    <span class="keyword">final</span> SqlNode where;</span><br><span class="line">    <span class="keyword">final</span> SqlNodeList groupBy;</span><br><span class="line">    <span class="keyword">final</span> SqlNode having;</span><br><span class="line">    <span class="keyword">final</span> SqlNodeList windowDecls;</span><br><span class="line">    <span class="keyword">final</span> SqlNode qualify;</span><br><span class="line">    <span class="keyword">final</span> List&lt;SqlNode&gt; hints = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;SqlNode&gt;();</span><br><span class="line">    <span class="keyword">final</span> Span s;</span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    &lt;SELECT&gt; &#123; s = span(); &#125;</span><br><span class="line">    [ &lt;HINT_BEG&gt; AddHint(hints) ( &lt;COMMA&gt; AddHint(hints) )* &lt;COMMENT_END&gt; ]</span><br><span class="line">    <span class="comment">// Parses **dialect-specific** keywords immediately following the SELECT keyword.</span></span><br><span class="line">    <span class="comment">// 这里其实是一个接口，不同的dialect-specific有不同的实现</span></span><br><span class="line">    SqlSelectKeywords(keywords)</span><br><span class="line">    <span class="comment">// 是否为stream</span></span><br><span class="line">    (</span><br><span class="line">        &lt;STREAM&gt; &#123;</span><br><span class="line">            keywords.add(SqlSelectKeyword.STREAM.symbol(getPos()));</span><br><span class="line">        &#125;</span><br><span class="line">    )?</span><br><span class="line">    <span class="comment">// DISTINCT OR ALL</span></span><br><span class="line">    (</span><br><span class="line">        keyword = AllOrDistinct() &#123; keywords.add(keyword); &#125;</span><br><span class="line">    )?</span><br><span class="line">    <span class="comment">// STREAM keyworkd AND DISTINCT/ALL keyword</span></span><br><span class="line">    &#123;</span><br><span class="line">        keywordList = <span class="keyword">new</span> <span class="title class_">SqlNodeList</span>(keywords, s.addAll(keywords).pos());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// SELECT 选择的字段</span></span><br><span class="line">    AddSelectItem(selectList)</span><br><span class="line">    ( &lt;COMMA&gt; AddSelectItem(selectList) )*</span><br><span class="line">    (</span><br><span class="line">        &lt;FROM&gt; fromClause = FromClause()</span><br><span class="line">        ( where = Where() | &#123; where = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( groupBy = GroupBy() | &#123; groupBy = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( having = Having() | &#123; having = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( windowDecls = Window() | &#123; windowDecls = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( qualify = Qualify() | &#123; qualify = <span class="literal">null</span>; &#125; )</span><br><span class="line">    |</span><br><span class="line">        E() &#123;</span><br><span class="line">            fromClause = <span class="literal">null</span>;</span><br><span class="line">            where = <span class="literal">null</span>;</span><br><span class="line">            groupBy = <span class="literal">null</span>;</span><br><span class="line">            having = <span class="literal">null</span>;</span><br><span class="line">            windowDecls = <span class="literal">null</span>;</span><br><span class="line">            qualify = <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SqlSelect</span>(s.end(<span class="built_in">this</span>), keywordList,</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">SqlNodeList</span>(selectList, Span.of(selectList).pos()),</span><br><span class="line">            fromClause, where, groupBy, having, windowDecls, qualify,</span><br><span class="line">            <span class="literal">null</span>, <span class="literal">null</span>, <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">SqlNodeList</span>(hints, getPos()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="validator相关">validator相关</h3>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Schema
 ---
 classDiagram
-         Schema <|-- SchemaPlus
-         Schema <|-- AbstractSchema
-         Schema <|-- DelegatingSchema
-         Schema <|--JdbcSchema
-         
-         AbstractSchema <|-- FileSchema
-         AbstractSchema <|-- JdbcCatalogSchema
-         AbstractSchema <|-- MetadataSchema</pre>
+	     Schema &lt;|-- SchemaPlus
+	     Schema &lt;|-- AbstractSchema
+	     Schema &lt;|-- DelegatingSchema
+	     Schema &lt;|--JdbcSchema
+	     
+	     AbstractSchema &lt;|-- FileSchema
+	     AbstractSchema &lt;|-- JdbcCatalogSchema
+	     AbstractSchema &lt;|-- MetadataSchema</code></pre>
 <h4 id="schema">Schema</h4>
 <blockquote>
 <p>A namespace for tables and functions.</p>
@@ -314,36 +339,36 @@ by them；</p></li>
 internally.</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Defines a table within this schema. */</span></span><br><span class="line"><span class="keyword">public</span> TableEntry <span class="title function_">add</span><span class="params">(String tableName, Table table,</span></span><br><span class="line"><span class="params">    ImmutableList&lt;String&gt; sqls)</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="type">TableEntryImpl</span> <span class="variable">entry</span> <span class="operator">=</span></span><br><span class="line">      <span class="keyword">new</span> <span class="title class_">TableEntryImpl</span>(<span class="built_in">this</span>, tableName, table, sqls);</span><br><span class="line">  tableMap.put(tableName, entry);</span><br><span class="line">  <span class="keyword">return</span> entry;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 </blockquote>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Calcite Schema
 ---
 classDiagram
-    CalciteSchema <|-- CachingCalciteSchema
-    CalciteSchema <|-- SimpleCalciteSchema</pre>
+	CalciteSchema &lt;|-- CachingCalciteSchema
+	CalciteSchema &lt;|-- SimpleCalciteSchema</code></pre>
 <h4 id="prepare">Prepare</h4>
 <blockquote>
 <p><code>Prepare</code> Abstract base for classes that implement the
 process of preparing and executing SQL expressions.</p>
 </blockquote>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Calcite Schema
 ---
 classDiagram
-    Prepare <|-- CalcitePreparingStmt
-    CalcitePreparingStmt <|-- CalciteMaterializer</pre>
+	Prepare &lt;|-- CalcitePreparingStmt
+	CalcitePreparingStmt &lt;|-- CalciteMaterializer</code></pre>
 <h4 id="catalogreader">CatalogReader</h4>
 <blockquote>
 <p><code>CatalogReader</code> Interface by which validator and planner
 can read table metadata.</p>
 </blockquote>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: CatalogReader
 ---
 classDiagram
-    Wrapper <|-- SqlValidatorCatalogReader
-    SqlValidatorCatalogReader <|-- CatalogReader
-    RelOptSchema <|-- CatalogReader
-    SqlOperatorTable <|-- CatalogReader</pre>
+	Wrapper &lt;|-- SqlValidatorCatalogReader
+	SqlValidatorCatalogReader &lt;|-- CatalogReader
+	RelOptSchema &lt;|-- CatalogReader
+	SqlOperatorTable &lt;|-- CatalogReader</code></pre>
 <h3 id="joins">joins</h3>
 <figure>
 <img src="../images/003/sql_joins.png" alt="sql joins" />
@@ -360,20 +385,20 @@ classDiagram
 <code>RelNode</code> 的过程，其中 <code>SqlNode</code> -&gt;
 <code>RexNode</code> 和 <code>RexNode</code> -&gt; <code>RelNode</code>
 都是在 <code>SqlToRelConverter</code> 中发生。</p>
-<pre class="mermaid">sequenceDiagram
-    participant Input
-    participant SqlParser
-    participant SqlValidator
-    participant SqlToRelConverter
-    participant Planner
-    
-    Input -->> SqlParser : string
-    SqlParser ->> SqlValidator : SqlNode
-    SqlValidator -->> SqlValidator : validate(SqlNode)
-    SqlValidator ->> SqlToRelConverter : SqlNode
-    SqlToRelConverter -->> SqlToRelConverter : convertQuery(SqlNode)
-    NOTE OVER SqlToRelConverter : RexBuilder && SqlNodeToRexConverter convert SqlNode to RexNode
-  SqlToRelConverter -->> Planner : RelNode</pre>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant Input
+	participant SqlParser
+	participant SqlValidator
+	participant SqlToRelConverter
+	participant Planner
+	
+	Input --&gt;&gt; SqlParser : string
+	SqlParser -&gt;&gt; SqlValidator : SqlNode
+	SqlValidator --&gt;&gt; SqlValidator : validate(SqlNode)
+	SqlValidator -&gt;&gt; SqlToRelConverter : SqlNode
+	SqlToRelConverter --&gt;&gt; SqlToRelConverter : convertQuery(SqlNode)
+	NOTE OVER SqlToRelConverter : RexBuilder &amp;&amp; SqlNodeToRexConverter convert SqlNode to RexNode
+  SqlToRelConverter --&gt;&gt; Planner : RelNode</code></pre>
 <h3 id="relnode-和-sqlnode-的区别是什么">RelNode 和 SqlNode
 的区别是什么</h3>
 <p>在 Calcite 中，<code>RelNode</code> 和 <code>SqlNode</code>
@@ -397,25 +422,25 @@ Planner 使用：</p>
 <p>它的SqlNode可能如下（省略了大部分节点），其中每个节点都是 SqlNode
 的子类。</p>
 </blockquote>
-<pre class="mermaid">flowchart LR
-    SqlOrderBy --> SqlSelect
-    SqlOrderBy --> SqlNodeList[SqlNodeList for Order by]
-    
-    SqlSelect --> SqlNodeList1[SqlNodeList for selectList]
-    SqlSelect --> SqlJoin[SqlJoin for from]
-    SqlSelect --> SqlBasicCall[SqlBasicCall for where]</pre>
+<pre><code class="highlight mermaid">flowchart LR
+	SqlOrderBy --&gt; SqlSelect
+	SqlOrderBy --&gt; SqlNodeList[SqlNodeList for Order by]
+	
+	SqlSelect --&gt; SqlNodeList1[SqlNodeList for selectList]
+	SqlSelect --&gt; SqlJoin[SqlJoin for from]
+	SqlSelect --&gt; SqlBasicCall[SqlBasicCall for where]</code></pre>
 <blockquote>
 <p>它的RelNode则可能如下（展示了所有的节点），每个节点都是
 <code>RelNode</code> 的子类 <code>HepRelVertex</code></p>
 </blockquote>
-<pre class="mermaid">flowchart TD
-    LogicalSort["LogicalSort(sort0=[$0], dir0=[ASC])"] --> LogicalProject["LogicalProject(USER_ID=[$0], USER_NAME=[$1], USER_COMPANY=[$5], USER_AGE=[$2])"]
-    LogicalProject --> LogicalFilter["LogicalFilter(condition=[AND(>($2, 30), >($3, 10))])"]
-    LogicalFilter --> LogicalJoin1["LogicalJoin(condition=[=($0, $3)], joinType=[inner])"]
-    LogicalJoin1 --> LogicalJoin2["LogicalJoin(condition=[=($0, $3)], joinType=[inner])"]
-    LogicalJoin1 --> EnumerableTableScan3["EnumerableTableScan(table=[[USERS]])"]
-    LogicalJoin2 --> EnumerableTableScan1["EnumerableTableScan(table=[[USERS]])"]
-    LogicalJoin2 --> EnumerableTableScan2["EnumerableTableScan(table=[[JOBS]])"]</pre>
+<pre><code class="highlight mermaid">flowchart TD
+	LogicalSort[&quot;LogicalSort(sort0=[$0], dir0=[ASC])&quot;] --&gt; LogicalProject[&quot;LogicalProject(USER_ID=[$0], USER_NAME=[$1], USER_COMPANY=[$5], USER_AGE=[$2])&quot;]
+	LogicalProject --&gt; LogicalFilter[&quot;LogicalFilter(condition=[AND(&gt;($2, 30), &gt;($3, 10))])&quot;]
+	LogicalFilter --&gt; LogicalJoin1[&quot;LogicalJoin(condition=[=($0, $3)], joinType=[inner])&quot;]
+	LogicalJoin1 --&gt; LogicalJoin2[&quot;LogicalJoin(condition=[=($0, $3)], joinType=[inner])&quot;]
+	LogicalJoin1 --&gt; EnumerableTableScan3[&quot;EnumerableTableScan(table=[[USERS]])&quot;]
+	LogicalJoin2 --&gt; EnumerableTableScan1[&quot;EnumerableTableScan(table=[[USERS]])&quot;]
+	LogicalJoin2 --&gt; EnumerableTableScan2[&quot;EnumerableTableScan(table=[[JOBS]])&quot;]</code></pre>
 <blockquote>
 <p><strong>有一个很重要的特征是，SqlNode
 树的节点非常多，这也是为什么我们只画了一部分节点，而逻辑执行计划的节点相对则非常少。</strong>而在逻辑执行计划中，多个条件可能会在一个节点中。</p>
@@ -433,28 +458,28 @@ calcite
 <code>Context</code> 类。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * An environment for related relational expressions during the</span></span><br><span class="line"><span class="comment"> * optimization of a query.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RelOptCluster</span> &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="逻辑执行计划的节点">逻辑执行计划的节点</h3>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Logical Planner Node
 ---
 classDiagram
-        RelOptNode <|-- RelNode
-        Cloneable <|-- RelNode
-        RelNode <|-- AbstractRelNode
-        AbstractRelNode <|-- SingleRel
-        AbstractRelNode <|-- BiRel
-        
-        SingleRel <|-- Filter 
-        Filter <|-- LogicalFilter
-        Filter <|-- EnumerableFilter
-        Filter <|-- BindableFilter
-        SingleRel <|-- Sort
-        Sort <|-- LogicalSort
-        SingleRel <|-- Project
-        Project <|-- LogicalProject
-        
-        BiRel <|-- Join
-        Join <|-- LogicalJoin
-        Join <|-- EquiJoin</pre>
+	    RelOptNode &lt;|-- RelNode
+	    Cloneable &lt;|-- RelNode
+	    RelNode &lt;|-- AbstractRelNode
+	    AbstractRelNode &lt;|-- SingleRel
+	    AbstractRelNode &lt;|-- BiRel
+	    
+	    SingleRel &lt;|-- Filter 
+	    Filter &lt;|-- LogicalFilter
+	    Filter &lt;|-- EnumerableFilter
+	    Filter &lt;|-- BindableFilter
+	    SingleRel &lt;|-- Sort
+	    Sort &lt;|-- LogicalSort
+	    SingleRel &lt;|-- Project
+	    Project &lt;|-- LogicalProject
+	    
+	    BiRel &lt;|-- Join
+	    Join &lt;|-- LogicalJoin
+	    Join &lt;|-- EquiJoin</code></pre>
 <h4 id="reloptnode">RelOptNode</h4>
 <p><code>RelOptNode</code> 是 planner 中的基本节点对应的
 <strong>interface</strong>，所有的节点都是 RelOptNode 的子类，通过
@@ -498,24 +523,24 @@ convention trait；</li>
 的基类，之所以保留 <code>RelNode</code> 是因为所有的 interface
 都必须从另一个 interface 导出。</p>
 <h3 id="singlerel">SingleRel</h3>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Abstract base class for relational expressions with a single input.
 ---
 classDiagram
 
-SingleRel <|-- Sort
-SingleRel <|-- Filter
-SingleRel <|-- Project
-SingleRel <|-- Window
-SingleRel <|-- Calc
-SingleRel <|-- Aggregate
+SingleRel &lt;|-- Sort
+SingleRel &lt;|-- Filter
+SingleRel &lt;|-- Project
+SingleRel &lt;|-- Window
+SingleRel &lt;|-- Calc
+SingleRel &lt;|-- Aggregate
 
-Sort <|-- LogicalSort
-Filter <|-- LogicalFilter
-Project <|-- LogicalProject
-Window <|-- LogicalWindow
-Calc <|-- LogicalCalc
-Aggregate <|-- LogicalAggregate</pre>
+Sort &lt;|-- LogicalSort
+Filter &lt;|-- LogicalFilter
+Project &lt;|-- LogicalProject
+Window &lt;|-- LogicalWindow
+Calc &lt;|-- LogicalCalc
+Aggregate &lt;|-- LogicalAggregate</code></pre>
 <h3 id="converter">Converter</h3>
 <blockquote>
 <p><code>Converter</code> A relational expression implements the
@@ -547,14 +572,14 @@ java 里的 <code>class</code> 和
 <blockquote>
 <p>RelTrait的结构如下所示。</p>
 </blockquote>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: RelTrait 表示关系表达式特征在特征定义中的表现。
 ---
 classDiagram
-    RelTrait <|-- Convention
-    RelTrait <|-- RelMultipleTrait
-    RelMultipleTrait <|-- RelDistribution
-    RelMultipleTrait <|-- RelCollation</pre>
+	RelTrait &lt;|-- Convention
+	RelTrait &lt;|-- RelMultipleTrait
+	RelMultipleTrait &lt;|-- RelDistribution
+	RelMultipleTrait &lt;|-- RelCollation</code></pre>
 <figure>
 <img src="../images/003/RelTrait.png" alt="RelTrait" />
 <figcaption aria-hidden="true">RelTrait</figcaption>
@@ -618,21 +643,21 @@ target="_blank" rel="noopener" href="https://calcite.apache.org/docs/algebra.htm
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> `USERS`.`id`, `USERS`.`name`, `USERS`.`age`</span><br><span class="line"><span class="keyword">FROM</span> `x`.`USERS` <span class="keyword">AS</span> `USERS`</span><br></pre></td></tr></table></figure>
 <p>改写后的SQL会作为 SqlToRelConverter 的输入</p>
 </blockquote>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: SqlToRelConverter
 ---
 flowchart TD
-    convertQuery --> convertQueryRecursive -->|SELECT| convertSelect
-    convertSelect -->|getWhereScope| SqlValidatorScope
-    convertSelect -->|createBlackboard| Blackboard
-    convertSelect --> convertSelectImpl
-    convertSelectImpl -->|1| convertFrom
-    convertSelectImpl -->|2| convertSelectList
-    
-    convertFrom -->|1. REMOVE AS| convertFrom
-    convertFrom -->|2| convertIdentifier
-    convertIdentifier --> setRoot
-    convertSelectList --> RelBuilder.projectNamed</pre>
+	convertQuery --&gt; convertQueryRecursive --&gt;|SELECT| convertSelect
+	convertSelect --&gt;|getWhereScope| SqlValidatorScope
+	convertSelect --&gt;|createBlackboard| Blackboard
+	convertSelect --&gt; convertSelectImpl
+	convertSelectImpl --&gt;|1| convertFrom
+	convertSelectImpl --&gt;|2| convertSelectList
+	
+	convertFrom --&gt;|1. REMOVE AS| convertFrom
+	convertFrom --&gt;|2| convertIdentifier
+	convertIdentifier --&gt; setRoot
+	convertSelectList --&gt; RelBuilder.projectNamed</code></pre>
 <h2 id="优化">优化</h2>
 <h3 id="rbo">RBO</h3>
 <p>规则的定义需要<code>Pattern</code>和<code>Substitution</code>,
@@ -659,13 +684,13 @@ alt="project push down" />
 </ul>
 </blockquote>
 <h3 id="calcite查询优化器实现">Calcite查询优化器实现</h3>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Calcite查询优化器实现
 ---
 classDiagram
-    RelOptPlanner <|-- AbstractRelOptPlanner
-    AbstractRelOptPlanner <|-- HepPlanner
-    AbstractRelOptPlanner <|-- VolcanoPlanner</pre>
+	RelOptPlanner &lt;|-- AbstractRelOptPlanner
+	AbstractRelOptPlanner &lt;|-- HepPlanner
+	AbstractRelOptPlanner &lt;|-- VolcanoPlanner</code></pre>
 <h4 id="查询优化器相关概念和数据结构">查询优化器相关概念和数据结构</h4>
 <blockquote>
 <p>无论是RBO还是CBO, 实际都是由规则驱动的.</p>
@@ -697,20 +722,19 @@ Convention的表达式转换为另一种Calling Convention的表达式,
 <p><code>FilterMergeRule</code> 是一个简单的
 <code>TransformationRule</code> 实例，它将查询树种的上下两个
 <code>Filter</code> 算子合并为一个。</p>
-<pre class="mermaid">> ---
+<pre><code class="highlight mermaid">---
 title: FilterMergeRule
 ---
 flowchart LR
-  beforeOpt --> afterOpt
-  subgraph beforeOpt
-      Filter0[topFilter] --> Filter1[bottomFilter] --> anyInputs
-  end
-  
-  subgraph afterOpt
-      Filter2Input[anyInputs] --> Filter2["topFilter.condition()"]
-      Filter2Input[anyInputs] --> Filter3["bottomFilter.condition()"]
-  end
-</pre>
+	beforeOpt --&gt; afterOpt
+	subgraph beforeOpt
+		Filter0[topFilter] --&gt; Filter1[bottomFilter] --&gt; anyInputs
+	end
+	
+	subgraph afterOpt
+		Filter2Input[anyInputs] --&gt; Filter2[&quot;topFilter.condition()&quot;]
+		Filter2Input[anyInputs] --&gt; Filter3[&quot;bottomFilter.condition()&quot;]
+	end</code></pre>
 <p>可以看到，我们的代码有如下特点：</p>
 <ol type="1">
 <li>在 <code>matches</code> 中匹配，在 <code>onMatch</code>
@@ -744,23 +768,22 @@ convention</strong> 指的是在基于 Enumerable 调用约定的计算模型中
 Filter 操作的具体实现方式。</p>
 <p>在下面的代码中，EnumerableFilterRule 通过 <code>DEFAULT_CONFIG</code>
 声明了一个如下的 <code>ConverterRule</code>。</p>
-<pre class="mermaid">> ---
+<pre><code class="highlight mermaid">---
 title: EnumerableFilterRule
 ---
 flowchart TD
-  from --> to
-  
-  subgraph from
-      direction LR
-      InTraits --> IntraitsValue[Convention.NONE]
-      OutTraits --> OutTraitsValue[EnumerableConvention.INSTANCE]
-      OperandSupplier --> LogicalFilter -->|with predict| PredictValue["f -> !f.containsOver()"]
-  end
-  
-  subgraph to
-      EnumerableFilter
-  end
-</pre>
+	from --&gt; to
+	
+	subgraph from
+		direction LR
+		InTraits --&gt; IntraitsValue[Convention.NONE]
+		OutTraits --&gt; OutTraitsValue[EnumerableConvention.INSTANCE]
+		OperandSupplier --&gt; LogicalFilter --&gt;|with predict| PredictValue[&quot;f -&gt; !f.containsOver()&quot;]
+	end
+	
+	subgraph to
+		EnumerableFilter
+	end</code></pre>
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Rule to convert a &#123;<span class="doctag">@link</span> LogicalFilter&#125; to an &#123;<span class="doctag">@link</span> EnumerableFilter&#125;.</span></span><br><span class="line"><span class="comment"> * You may provide a custom config to convert other nodes that extend &#123;<span class="doctag">@link</span> Filter&#125;.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> EnumerableRules#ENUMERABLE_FILTER_RULE</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EnumerableFilterRule</span> <span class="keyword">extends</span> <span class="title class_">ConverterRule</span> &#123;</span><br><span class="line">  <span class="comment">/** Default configuration. */</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Config</span> <span class="variable">DEFAULT_CONFIG</span> <span class="operator">=</span> Config.INSTANCE</span><br><span class="line">      <span class="comment">// 1st, 2nd params used to specify operandSupplier</span></span><br><span class="line">      <span class="comment">// b -&gt; b.operand(operandClazz).predicate(predicate).convert(in)</span></span><br><span class="line">      .withConversion(LogicalFilter.class,                    <span class="comment">// operandClazz</span></span><br><span class="line">                      f -&gt; !f.containsOver(),                 <span class="comment">// predicate</span></span><br><span class="line">                      Convention.NONE,                        <span class="comment">// inTrait</span></span><br><span class="line">                      EnumerableConvention.INSTANCE,          <span class="comment">// outTrait</span></span><br><span class="line">                      <span class="string">&quot;EnumerableFilterRule&quot;</span>)                 <span class="comment">// description</span></span><br><span class="line">      .withRuleFactory(EnumerableFilterRule::<span class="keyword">new</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">protected</span> <span class="title function_">EnumerableFilterRule</span><span class="params">(Config config)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(config);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span> <span class="keyword">public</span> RelNode <span class="title function_">convert</span><span class="params">(RelNode rel)</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">Filter</span> <span class="variable">filter</span> <span class="operator">=</span> (Filter) rel;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">EnumerableFilter</span>(rel.getCluster(),</span><br><span class="line">                                rel.getTraitSet().replace(EnumerableConvention.INSTANCE),</span><br><span class="line">                                convert(filter.getInput(),</span><br><span class="line">                                        filter.getInput().getTraitSet()</span><br><span class="line">                                              .replace(EnumerableConvention.INSTANCE)), filter.getCondition());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
@@ -789,16 +812,16 @@ instructions and programs immutable. All mutable state is held in the
 state objects.</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">HepState</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> HepPlanner planner;</span><br><span class="line">  <span class="keyword">final</span> HepProgram.State programState;</span><br><span class="line"></span><br><span class="line">  HepState(HepInstruction.PrepareContext px) &#123;</span><br><span class="line">    <span class="built_in">this</span>.planner = px.planner;</span><br><span class="line">    <span class="built_in">this</span>.programState = px.programState;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Executes the instruction. */</span></span><br><span class="line">  <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">execute</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Re-initializes the state. (The state was initialized when it was created</span></span><br><span class="line"><span class="comment">   * via &#123;<span class="doctag">@link</span> HepInstruction#prepare&#125;.) */</span></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="summary">Summary</h4>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Hep Instruction Sets
 ---
 classDiagram
-        HepInstruction <|-- HepProgram
-        HepInstruction <|-- RuleCollection
-        HepInstruction <|-- ConverterRules
-        HepInstruction <|-- MatchOrder
-        HepInstruction <|-- MatchLimit
-        HepInstruction <|-- BeginGroup</pre>
+	    HepInstruction &lt;|-- HepProgram
+	    HepInstruction &lt;|-- RuleCollection
+	    HepInstruction &lt;|-- ConverterRules
+	    HepInstruction &lt;|-- MatchOrder
+	    HepInstruction &lt;|-- MatchLimit
+	    HepInstruction &lt;|-- BeginGroup</code></pre>
 <blockquote>
 <p><code>HepInstruction</code> 表示 <code>HepProgram</code>
 中的一条指令，实际指令集在 <code>HepInstruction.java</code>
@@ -849,39 +872,39 @@ in use by a single planner at a time</strong>.</p>
 <h4 id="example-1">Example</h4>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">HepProgramBuilder</span> <span class="variable">hepProgramBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepProgramBuilder</span>();</span><br><span class="line"><span class="comment">// 添加优化规则</span></span><br><span class="line">hepProgramBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);</span><br><span class="line">hepProgramBuilder.addRuleInstance(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);</span><br><span class="line">hepProgramBuilder.addRuleInstance(EnumerableRules.ENUMERABLE_CALC_RULE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1. 构建HepPlanner</span></span><br><span class="line"><span class="type">HepPlanner</span> <span class="variable">planner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepPlanner</span>(hepProgramBuilder.build());</span><br><span class="line"><span class="comment">// 2. 构建DAG</span></span><br><span class="line">planner.setRoot(root);</span><br><span class="line"><span class="comment">// 3. 执行优化</span></span><br><span class="line"><span class="type">RelNode</span> <span class="variable">optimizedRoot</span> <span class="operator">=</span> planner.findBestExp();</span><br></pre></td></tr></table></figure>
 <p>HepPlanner 的优化分为两步</p>
-<pre class="mermaid">sequenceDiagram
-    participant HepPlanner
-    HepPlanner -->> HepPlanner : setRoot()
-    HepPlanner -->> HepPlanner : findBestExp()</pre>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant HepPlanner
+	HepPlanner --&gt;&gt; HepPlanner : setRoot()
+	HepPlanner --&gt;&gt; HepPlanner : findBestExp()</code></pre>
 <h4 id="setroot">setRoot()</h4>
-<pre class="mermaid">sequenceDiagram
-    participant User
-    participant HepPlanner
-    participant RelNode
-    participant HepRelVertex
-    participant DirectedGraph as DirectedGraph<HepRelVertex, DefaultEdge>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant User
+	participant HepPlanner
+	participant RelNode
+	participant HepRelVertex
+	participant DirectedGraph as DirectedGraph&lt;HepRelVertex, DefaultEdge&gt;
 
 
-    User -->> HepPlanner : setRoot(RelNode)
-    HepPlanner -->> HepPlanner : addRelToGraph(RelNode)
-    HepPlanner -->> RelNode : getInputs()
-    RelNode -->> HepPlanner : List<RelNode>
-    loop List<RelNode>
-            NOTE OVER HepPlanner : depth first
-            HepPlanner -->> HepPlanner: addRelToGraph(RelNode)!
+	User --&gt;&gt; HepPlanner : setRoot(RelNode)
+	HepPlanner --&gt;&gt; HepPlanner : addRelToGraph(RelNode)
+	HepPlanner --&gt;&gt; RelNode : getInputs()
+	RelNode --&gt;&gt; HepPlanner : List&lt;RelNode&gt;
+	loop List&lt;RelNode&gt;
+			NOTE OVER HepPlanner : depth first
+			HepPlanner --&gt;&gt; HepPlanner: addRelToGraph(RelNode)!
   end
 
-    HepPlanner -->> RelNode : recomputeDigest()
-    HepPlanner -->> HepRelVertex : new
-    HepRelVertex -->> HepPlanner : HepRelVertex
-    
-    HepPlanner -->> DirectedGraph : addVertex(HepRelVertex)
-    HepPlanner -->> HepPlanner : updateVertex(newVertex, oldRel)
-    NOTE OVER HepPlanner : notify discard && replace old rel by new rel
-            
-    User -->> HepPlanner : findBestExp()
-    
-    HepPlanner -->> User : RelNode</pre>
+	HepPlanner --&gt;&gt; RelNode : recomputeDigest()
+	HepPlanner --&gt;&gt; HepRelVertex : new
+	HepRelVertex --&gt;&gt; HepPlanner : HepRelVertex
+	
+	HepPlanner --&gt;&gt; DirectedGraph : addVertex(HepRelVertex)
+	HepPlanner --&gt;&gt; HepPlanner : updateVertex(newVertex, oldRel)
+	NOTE OVER HepPlanner : notify discard &amp;&amp; replace old rel by new rel
+			
+	User --&gt;&gt; HepPlanner : findBestExp()
+	
+	HepPlanner --&gt;&gt; User : RelNode</code></pre>
 <h4 id="findbestexp">findBestExp()</h4>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span> <span class="keyword">public</span> RelNode <span class="title function_">findBestExp</span><span class="params">()</span> &#123;</span><br><span class="line">  requireNonNull(root, <span class="string">&quot;root&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Initializes state and then invokes the program.</span></span><br><span class="line">  executeProgram(mainProgram);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Get rid of everything except what&#x27;s in the final plan.</span></span><br><span class="line">  collectGarbage();</span><br><span class="line">  dumpRuleAttemptsInfo();</span><br><span class="line">  <span class="keyword">return</span> buildFinalPlan(requireNonNull(root, <span class="string">&quot;root&quot;</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
@@ -922,31 +945,31 @@ executeProgram(program)；这里的program就是刚才传进来的 HepProgram；
 <code>HepPlanner.executeProgram()</code> 执行完毕。</li>
 </ol>
 </blockquote>
-<pre class="mermaid">sequenceDiagram
-    participant HepProgramBuilder
-    participant HepProgram
-    participant HepPlanner
-    participant HepProgram#State
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant HepProgramBuilder
+	participant HepProgram
+	participant HepPlanner
+	participant HepProgram#State
 
-            
-    HepProgramBuilder -->> HepProgramBuilder : addRuleInstance/addMatchLimit/...
-    NOTE OVER HepProgramBuilder : HepInstrucionts
-    HepProgramBuilder -->> HepProgram : build()
-    HepProgram -->> HepPlanner : new()
-    NOTE OVER HepPlanner : HepInstrucionts
-    NOTE OVER HepPlanner : findBestExp()
-    NOTE OVER HepPlanner : executeProgram()
-    HepPlanner -->> HepProgram#State : prepare(HepPlanner)
-    loop HepInstructions
-            HepProgram#State -->> HepInstruction: prepare()
-            HepInstruction -->> HepProgram#State : HepState
-    end
-    NOTE OVER HepProgram#State : HepStates
-    NOTE OVER HepProgram#State : execte()
-    HepProgram#State -->> HepPlanner : executeProgram(HepProgram.this, this)
-    loop HepStates
-        HepPlanner -->> HepPlanner : instructionState.execute()
-    end</pre>
+			
+	HepProgramBuilder --&gt;&gt; HepProgramBuilder : addRuleInstance/addMatchLimit/...
+	NOTE OVER HepProgramBuilder : HepInstrucionts
+	HepProgramBuilder --&gt;&gt; HepProgram : build()
+	HepProgram --&gt;&gt; HepPlanner : new()
+	NOTE OVER HepPlanner : HepInstrucionts
+	NOTE OVER HepPlanner : findBestExp()
+	NOTE OVER HepPlanner : executeProgram()
+	HepPlanner --&gt;&gt; HepProgram#State : prepare(HepPlanner)
+	loop HepInstructions
+			HepProgram#State --&gt;&gt; HepInstruction: prepare()
+			HepInstruction --&gt;&gt; HepProgram#State : HepState
+	end
+	NOTE OVER HepProgram#State : HepStates
+	NOTE OVER HepProgram#State : execte()
+	HepProgram#State --&gt;&gt; HepPlanner : executeProgram(HepProgram.this, this)
+	loop HepStates
+		HepPlanner --&gt;&gt; HepPlanner : instructionState.execute()
+	end</code></pre>
 <blockquote>
 <p>相对来说，如果代码写成如下形式将更加直观：</p>
 </blockquote>
@@ -1059,34 +1082,8 @@ target="_blank" rel="noopener" href="https://io-meter.com/2018/11/01/sql-query-o
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>

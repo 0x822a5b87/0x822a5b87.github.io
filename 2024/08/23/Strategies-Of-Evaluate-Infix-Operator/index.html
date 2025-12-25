@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -14,10 +14,10 @@
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="Strategies of Evaluate Infix Operator when we are implementing a compiler, there is always a difficult problem we will encounter.  How can we evaluate an infix operator?  What is Infix Operator An inf">
 <meta property="og:type" content="article">
@@ -38,7 +38,6 @@
 <link rel="canonical" href="https://0x822a5b87.github.io/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/">
 
 
-
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/","path":"2024/08/23/Strategies-Of-Evaluate-Infix-Operator/","title":"Strategies Of Evaluate Infix Operator"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
@@ -49,6 +48,31 @@
 
 
 
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -227,14 +251,14 @@ operator:</p>
 <li><code>/</code></li>
 </ul>
 <p>the most common usage is described in the following diagram.</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Usage of Infix diagram
 ---
 flowchart LR
 
-    LhsExpression --> InfixOperator:::literal --> RhsExpression
+	LhsExpression --&gt; InfixOperator:::literal --&gt; RhsExpression
 
-classDef literal fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+classDef literal fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
 <h2 id="define-the-infix-expression">Define the Infix Expression</h2>
 <h3 id="node">Node</h3>
 <p>every node in our AST has to implement the Node interface meaning it
@@ -261,71 +285,71 @@ and <code>Float</code> and the operator is <code>Plus</code>.</p>
 <h3 id="enumeration">enumeration</h3>
 <p>the simplest way to evaluate a infix operator is by using
 enumeration.</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: enumeration
 ---
 flowchart LR
 
-CheckInfixOperator --Minus--> CheckMinusExpressionType
-CheckInfixOperator --Asterisk--> CheckMultiplyExpressionType
+CheckInfixOperator --Minus--&gt; CheckMinusExpressionType
+CheckInfixOperator --Asterisk--&gt; CheckMultiplyExpressionType
 
-CheckMinusExpressionType --Integer--> MinusInteger
-CheckMinusExpressionType --Float--> MinusFloat
+CheckMinusExpressionType --Integer--&gt; MinusInteger
+CheckMinusExpressionType --Float--&gt; MinusFloat
 
-CheckMultiplyExpressionType --Integer--> MultiplyInteger
-CheckMultiplyExpressionType --Float--> MultiplyFloat
+CheckMultiplyExpressionType --Integer--&gt; MultiplyInteger
+CheckMultiplyExpressionType --Float--&gt; MultiplyFloat
 
 subgraph MinusInteger
-    direction LR
-    LhsInteger0["LhsInteger"] --> Minus0["-"]:::operator --> RhsInteger0["RhsInteger"]
+	direction LR
+	LhsInteger0[&quot;LhsInteger&quot;] --&gt; Minus0[&quot;-&quot;]:::operator --&gt; RhsInteger0[&quot;RhsInteger&quot;]
 end
 
 subgraph MinusFloat
-    direction LR
-    LhsFloat0["LhsFloat"] --> Minus1["-"]:::operator --> RhsFloat0["RhsFloat"]
+	direction LR
+	LhsFloat0[&quot;LhsFloat&quot;] --&gt; Minus1[&quot;-&quot;]:::operator --&gt; RhsFloat0[&quot;RhsFloat&quot;]
 end
 
 subgraph MultiplyInteger
-    direction LR
-    LhsInteger["LhsInteger"] --> Mul0["*"]:::operator --> RhsInteger["RhsInteger"]
+	direction LR
+	LhsInteger[&quot;LhsInteger&quot;] --&gt; Mul0[&quot;*&quot;]:::operator --&gt; RhsInteger[&quot;RhsInteger&quot;]
 end
 
 subgraph MultiplyFloat
-    direction LR
-    LhsFloat1["LhsFloat"] --> Mul1["*"]:::operator --> RhsFloat1["RhsFloat"]
+	direction LR
+	LhsFloat1[&quot;LhsFloat&quot;] --&gt; Mul1[&quot;*&quot;]:::operator --&gt; RhsFloat1[&quot;RhsFloat&quot;]
 end
 
-classDef operator fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+classDef operator fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
 <p>apparently, we can combine the <code>-</code>, <code>/</code>
 operations for integers, and the <code>-</code>, <code>/</code>
 operations for float, just like this:</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: enumeration after merge
 ---
 flowchart LR
 
-CheckInfixOperator --Minus--> CheckMinusExpressionType
-CheckInfixOperator --Asterisk--> CheckMultiplyExpressionType
+CheckInfixOperator --Minus--&gt; CheckMinusExpressionType
+CheckInfixOperator --Asterisk--&gt; CheckMultiplyExpressionType
 
-CheckMinusExpressionType --Integer--> Integer
-CheckMinusExpressionType --Float--> Float
+CheckMinusExpressionType --Integer--&gt; Integer
+CheckMinusExpressionType --Float--&gt; Float
 
-CheckMultiplyExpressionType --Integer--> Integer
-CheckMultiplyExpressionType --Float--> Float
+CheckMultiplyExpressionType --Integer--&gt; Integer
+CheckMultiplyExpressionType --Float--&gt; Float
 
 subgraph Integer
-    direction LR
-    LhsInteger0["LhsInteger"] --> Minus0["-"]:::operator --> RhsInteger0["RhsInteger"]
-    LhsInteger["LhsInteger"] --> Mul0["*"]:::operator --> RhsInteger["RhsInteger"]
+	direction LR
+	LhsInteger0[&quot;LhsInteger&quot;] --&gt; Minus0[&quot;-&quot;]:::operator --&gt; RhsInteger0[&quot;RhsInteger&quot;]
+	LhsInteger[&quot;LhsInteger&quot;] --&gt; Mul0[&quot;*&quot;]:::operator --&gt; RhsInteger[&quot;RhsInteger&quot;]
 end
 
 subgraph Float
-    direction LR
-    LhsFloat0["LhsFloat"] --> Minus1["-"]:::operator --> RhsFloat0["RhsFloat"]
-    LhsFloat1["LhsFloat"] --> Mul1["*"]:::operator --> RhsFloat1["RhsFloat"]
+	direction LR
+	LhsFloat0[&quot;LhsFloat&quot;] --&gt; Minus1[&quot;-&quot;]:::operator --&gt; RhsFloat0[&quot;RhsFloat&quot;]
+	LhsFloat1[&quot;LhsFloat&quot;] --&gt; Mul1[&quot;*&quot;]:::operator --&gt; RhsFloat1[&quot;RhsFloat&quot;]
 end
 
-classDef operator fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+classDef operator fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// evaluate infix expression</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">evalInfixExpression</span><span class="params">(infix *ast.InfixExpression)</span></span> object.Object &#123;</span><br><span class="line">	lhsObj := Eval(infix.Lhs)</span><br><span class="line">	rhsObj := Eval(infix.Rhs)</span><br><span class="line">	<span class="keyword">switch</span> infix.Operator &#123;</span><br><span class="line">	<span class="keyword">case</span> <span class="type">string</span>(token.SUB):</span><br><span class="line">		<span class="keyword">if</span> lhsObj.Type() == object.ObjInteger &amp;&amp; rhsObj.Type() == object.ObjInteger &#123;</span><br><span class="line">			<span class="keyword">return</span> evalInfixExpressionIntegerLiteral(token.SUB, lhsObj.(*object.Integer), rhsObj.(*object.Integer))</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> lhsObj.Type() == object.ObjFloat &amp;&amp; rhsObj.Type() == object.ObjFloat &#123;</span><br><span class="line">			<span class="keyword">return</span> evalInfixExpressionFloatLiteral(token.SUB, lhsObj.(*object.Float), rhsObj.(*object.Float))</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">case</span> <span class="type">string</span>(token.ASTERISK):</span><br><span class="line">		<span class="keyword">if</span> lhsObj.Type() == object.ObjInteger &amp;&amp; rhsObj.Type() == object.ObjInteger &#123;</span><br><span class="line">			<span class="keyword">return</span> evalInfixExpressionIntegerLiteral(token.ASTERISK, lhsObj.(*object.Integer), rhsObj.(*object.Integer))</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> lhsObj.Type() == object.ObjFloat &amp;&amp; rhsObj.Type() == object.ObjFloat &#123;</span><br><span class="line">			<span class="keyword">return</span> evalInfixExpressionFloatLiteral(token.ASTERISK, lhsObj.(*object.Float), rhsObj.(*object.Float))</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> object.NativeNull</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// TODO support more infix expression</span></span><br><span class="line">	<span class="keyword">return</span> object.NativeNull</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">evalInfixExpressionIntegerLiteral</span><span class="params">(operator token.TokenType, lhsIntegerObj, rhsIntegerObj *object.Integer)</span></span> object.Object &#123;</span><br><span class="line">	<span class="keyword">switch</span> operator &#123;</span><br><span class="line">	<span class="keyword">case</span> token.SUB:</span><br><span class="line">		<span class="keyword">return</span> &amp;object.Integer&#123;Value: lhsIntegerObj.Value - rhsIntegerObj.Value&#125;</span><br><span class="line">	<span class="keyword">case</span> token.ASTERISK:</span><br><span class="line">		<span class="keyword">return</span> &amp;object.Integer&#123;Value: lhsIntegerObj.Value * rhsIntegerObj.Value&#125;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> object.NativeNull</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">evalInfixExpressionFloatLiteral</span><span class="params">(operator token.TokenType, lhsIntegerObj, rhsIntegerObj *object.Float)</span></span> object.Object &#123;</span><br><span class="line">	<span class="keyword">switch</span> operator &#123;</span><br><span class="line">	<span class="keyword">case</span> token.SUB:</span><br><span class="line">		<span class="keyword">return</span> &amp;object.Float&#123;Value: lhsIntegerObj.Value - rhsIntegerObj.Value&#125;</span><br><span class="line">	<span class="keyword">case</span> token.ASTERISK:</span><br><span class="line">		<span class="keyword">return</span> &amp;object.Float&#123;Value: lhsIntegerObj.Value * rhsIntegerObj.Value&#125;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> object.NativeNull</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>Until now, the problem seems to be solved. However, if we are going
 to add a new type such as <code>BigInteger</code>,We found that there is
@@ -344,21 +368,21 @@ flexible approach to support infix operators</strong></p>
 <h3 id="generics">Generics</h3>
 <p>The most common approach is using <code>Generics</code> and
 <code>Interface</code>:</p>
-<pre class="mermaid">---
+<pre><code class="highlight mermaid">---
 title: Infix Operator With Generics
 ---
 flowchart LR
 
-CheckInfixOperator --Minus--> GenericsSubtract:::generics
-CheckInfixOperator --Asterisk--> GenericsMultiply:::generics
+CheckInfixOperator --Minus--&gt; GenericsSubtract:::generics
+CheckInfixOperator --Asterisk--&gt; GenericsMultiply:::generics
 
-GenericsSubtract --> IntegerSub
-GenericsSubtract --> FloatSub
+GenericsSubtract --&gt; IntegerSub
+GenericsSubtract --&gt; FloatSub
 
-GenericsMultiply --> IntegerMultiply
-GenericsMultiply --> FloatMultiply
+GenericsMultiply --&gt; IntegerMultiply
+GenericsMultiply --&gt; FloatMultiply
 
-classDef generics fill:#f9f,stroke:#333,stroke-width:4px;</pre>
+classDef generics fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
 <p>t seems that this approach is similar to our initial enumeration
 method, but the internal implementation is completely different.</p>
 <p>For example, in the enumeration method, our <code>MinusInteger</code>
@@ -452,34 +476,8 @@ appropriate method.</p>
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":"forest","version":"10.9.1","options":null,"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js","integrity":"sha256-stuqcu2FrjYCXDOytWFA5SoUE/r3nkp6gTglzNSlavU="}}</script>
-  <script src="/js/third-party/tags/mermaid.js"></script>
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
 <script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
-<script src="/js/third-party/comments/utterances.js"></script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
 
 </body>
 </html>
