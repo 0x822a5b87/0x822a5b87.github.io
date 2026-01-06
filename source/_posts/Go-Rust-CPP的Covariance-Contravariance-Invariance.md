@@ -56,7 +56,7 @@ type AnySubsystem Subsystem[Item, Value]
 
 这个逻辑本来看上去相当的合理，然而在实现时发现：**go语言的泛型并不支持[Covariance](#Covariance)。于是，我们的如下代码将直接抛出异常。
 
-```go
+```go mark:22-24
 // 这一段代码的编译是通过的
 func (f *CgroupFileSystem) Write(ss subsystem.AnySubsystem) error {
 	cgroupPath, err := subsystem.GetCgroupPath(ss, f.Path, f.AutoCreate)
