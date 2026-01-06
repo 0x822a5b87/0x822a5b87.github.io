@@ -12,9 +12,9 @@ tags:
 
 # 前言
 
-> 本文基于 `OpenCloudOS` 操作系统以及 `x86_64` 平台，`go1.24.11` 语言开发测试。
+> 本文基于 `OpenCloudOS` 操作系统以及 `x86_64` 平台，`go1.24.11` 语言开发测试，全部代码位于 [tiny-docker](https://github.com/0x822a5b87/tiny-docker)。
 >
-> ```shell
+> ```bash mark:1,4,7
 > uname -a
 > # Linux VM-0-10-opencloudos 6.6.117-45.1.oc9.x86_64 #1 SMP Tue Dec 16 11:49:47 CST 2025 x86_64 x86_64 x86_64 GNU/Linux
 > 
@@ -122,7 +122,7 @@ docker run -it -d \
 
 我们的第一个例子，我们使用 `CLONE_NEWUTS` 指定我们要创建一个 `UTS Namespace`。
 
-```go
+```go mark:9
 // StartContainer start a container with UTS Namespace in linux
 func StartContainer(cmd string) error {
 	command := exec.Command(cmd)
@@ -616,18 +616,18 @@ classDef dotted fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharr
 我们目前的思路是：将整个引擎分为多层：
 
 1. 将指标分为两个部分，`Value` 表示指标本身，`Item` 表示指标内部的值，例如：
-   - `Value` 是一个接口，提供了 `From` 和 `Into` 在 `Value` 和 `string` 类型之间的转换；
-   - `Item` 是一个 `any` 类型；
-   - 对于 `cgroups.procs` 类型，`Value` 对应整个 pid 数组， `Item` 对应数组内的每个 pid；
-   - 对于 `cpu.max`  类型，`Value` 和 `Item` 均对应同一个值，因为他们是一个整体；
+    - `Value` 是一个接口，提供了 `From` 和 `Into` 在 `Value` 和 `string` 类型之间的转换；
+    - `Item` 是一个 `any` 类型；
+    - 对于 `cgroups.procs` 类型，`Value` 对应整个 pid 数组， `Item` 对应数组内的每个 pid；
+    - 对于 `cpu.max`  类型，`Value` 和 `Item` 均对应同一个值，因为他们是一个整体；
 2. 抽象了 `Subsystem[I Item, V Value]` 接口，每个不同的类型都需要实现这个接口来实现修改/删除等功能：
-   - `Set(I)`
-   - `Del(I)`
-   - `Empty() bool`
+    - `Set(I)`
+    - `Del(I)`
+    - `Empty() bool`
 3. 最底层为 `CgroupFileSystem`，这一层负责和操作系统交互。更明确来说，就是负责读/写 `/sys/fs/cgroup/system.slice` 文件夹下的配置文件，并向上提供读/写接口；
 4. `CgroupFileSystem` 的上层为 `CgroupManager`，他包含了：
-   - 对 `CgroupFileSystem` 的引用，用于读/写底层文件；
-   - 对多个 `Subsystem` 的引用，用于操作指标值；
+    - 对 `CgroupFileSystem` 的引用，用于读/写底层文件；
+    - 对多个 `Subsystem` 的引用，用于操作指标值；
 
 整体结果逻辑如图所示：
 
@@ -705,7 +705,454 @@ classDiagram
 
 ```
 
+# 构造镜像
 
+## 什么是构造镜像
+
+“让容器跑在有镜像的环境中”，核心是解决当前容器的两个关键问题 ——**目录环境不隔离**、**挂载点继承父进程**，本质是让容器运行在一个**由镜像提供的、独立且标准化的文件系统环境**中，而非直接复用宿主机的目录和挂载。
+
+### 有镜像的环境
+
+>   先通俗理解：“有镜像的环境” = 容器的 “独立根文件系统”
+
+可以把镜像理解为：**一个打包好的、包含完整操作系统 / 应用运行所需的 “文件系统快照”**；而 “有镜像的环境”，就是让容器不再复用宿主机的 `/` 根目录、不再继承宿主机的挂载点，而是将这个 “文件系统快照” 作为容器自己的 `/` 根目录（即 `chroot`/`pivot_root` 切换根），容器内看到的所有文件、目录、挂载点，都来自这个镜像，和宿主机完全隔离。
+
+>   实现 “有镜像的环境” 的核心步骤
+
+要让容器跑在 “有镜像的环境” 中，核心要加 3 步：
+
+#### 准备镜像
+
+先制作一个简单的镜像，这里我们使用 `busybox` 作为我们的镜像系统：
+
+```shell
+docker pull busybox
+docker run -d busybox top -b
+# 16423fa6038a4ad688f88fa21e38b54ef5a6d357453a2efe90f6d9248e236e81
+
+# 通过docker export将镜像打包成tar
+docker export -o busybox.tar 16423fa6038a4ad688f88fa21e38b54ef5a6d357453a2efe90f6d9248e236e81
+tar -xvf busybox.tar -C busybox
+```
+
+#### 在容器初始化时切换根目录（pivot_root/chroot）
+
+在你 `fork` 出的子进程中（`init` 进程），先执行 `pivot_root` 切换到镜像的根目录，这段代码中做了这些事情： 
+
+1. 将一个新的目录root挂载到了挂载点； 
+2. 创建 root/.pivot_root 并执行 pivot_root，执行完成之后，root 变成了我们的参数 root，宿主机的root被挂载到 root/.pivot_root 下；
+3. 删除对 root/.pivot_root 的绑定，这个指向了我们的宿主机根目录。删除临时文件。 
+
+至此，我们完成了对文件目录的隔离，进程再也无法访问宿主机的目录了。
+
+```go
+func pivotRoot(root string) error {
+	// 这一步总的来说就是为了在不改变root本身内容的情况下，将它绑定到挂载点，以便于后续的pivot_root使用。
+	// 1. pivot_root 要求新的根目录必须是一个独立的挂载点，而 mount --bind 就是实现这一要求的标准方法。
+	// 2. mount --bind source target 是一个特殊的挂载方式，可以把它理解为文件系统级别的硬链接。
+	// 		它的作用是将 source 目录的内容，原封不动地 “镜像” 到 target 目录。
+	// 3. syscall.MS_BIND: bind 挂载的标志。
+	// 4. syscall.MS_REC: 递归（Recursive）标志。这个标志非常重要，它会确保 root 目录下的所有
+	//		子挂载点也一同被 bind 挂载过来，保证了新根文件系统的完整性。
+	if err := syscall.Mount(root, root, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+		return fmt.Errorf("Mount rootfs to itself error: %v", err)
+	}
+
+	// 创建 rootfs/.pivot_root 存储 old_root
+	pivotDir := filepath.Join(root, ".pivot_root")
+	if err := os.Mkdir(pivotDir, 0777); err != nil {
+		return err
+	}
+
+	// 在使用 pivot_root 切换根目录的时候，需要两个目录：
+	//
+	// 1. new_root，这个是我们切换的目标目录；
+	// 2. old_root，这个并不是指的我们的宿主机的根目录，而是一个目录用来mount根目录的。
+	if err := syscall.PivotRoot(root, pivotDir); err != nil {
+		return fmt.Errorf("pivot_root %v", err)
+	}
+	// 修改当前的工作目录到根目录
+	if err := syscall.Chdir("/"); err != nil {
+		return fmt.Errorf("chdir / %v", err)
+	}
+
+	pivotDir = filepath.Join("/", ".pivot_root")
+	// umount rootfs/.pivot_root
+	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
+		return fmt.Errorf("unmount pivot_root dir %v", err)
+	}
+	// 删除临时文件夹
+	return os.Remove(pivotDir)
+}
+```
+
+#### 重新初始化容器内的挂载点
+
+在执行 `mount` 命令之前，`/proc` 和 `/dev` 在我们的容器根文件系统中，仅仅是两个**普通的、空的目录**：
+
+- `syscall.Mount("proc", "/proc", "proc", ...)` **明确地**告诉内核：“我要把 `/proc` 这个目录，和 `proc` 类型的虚拟文件系统关联起来。”内核收到指令后，会启动 `proc` 文件系统的驱动程序。这个驱动程序会开始动态地将内核中的进程信息、系统状态等，实时地生成为文件和目录，并 “填充” 到 `/proc` 目录中。
+- `syscall.Mount("tmpfs", "/dev", "tmpfs", ...)` **明确地**告诉内核：“我要把 `/dev` 这个目录，和 `tmpfs` 类型的内存文件系统关联起来。”内核创建一个基于内存的临时文件系统，并将其挂载到 `/dev`。
+
+>   注意，通常我们在 `mount` 的时候需要五个参数：
+>
+>   1. `source`
+>   2. `target`
+>   3. `fstype`
+>   4. `flags`
+>   5. `data`
+>
+>   表示将 `target` 以 `fstype` 的类型挂载到 `source`（其他两个参数我们暂时忽略）。
+>
+>   而 `proc` 和 `tmpfs` 是虚拟文件系统，它们的数据**不是来自一个物理设备**，而是由**内核动态生成的**。
+>
+>   - `proc` 的内容是内核中进程、内存等信息的实时映射。
+>   - `tmpfs` 的内容存放在内存或交换分区中。
+>
+>   因此，它们不需要一个传统的 source（物理设备路径）。内核在处理这些文件系统类型时，会直接忽略 source 参数。
+
+```go
+func setUpMount() {
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Errorf("Get current location error %v", err)
+		return
+	}
+	log.Infof("Current location is %s", pwd)
+	pivotRoot(pwd)
+
+	//mount proc
+	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
+	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+
+	syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
+}
+```
+
+需要注意的一点是，**在`Exec()` 或者 `Start()` 的时候，我们可以指定代码的环境变量，为了使得 `busybox` 的命令能正常执行，我们必须指定它的环境变量：**
+
+```go mark:4,5
+func NewParentProcess(tty bool, commands []string, env []string) *exec.Cmd {
+	// ...
+	cmd.Dir = constant.DefaultPwd
+    // env = "PATH=/bin"
+	cmd.Env = env
+	return cmd
+}
+```
+
+## 镜像的write layer
+
+### COW(Copy-On-Write)
+
+`COW` 是现代软件系统中最为常用的几个性能优化思想之一，在 `linux进程创建`，`LSM数据结构` 等地方都有广泛应用，但是不论是在哪个场景下的应用，他的思想可以最简单被概括为：
+
+1.  **分层划分**：将存储或资源划分为 **只读层（Read Layer）** 和 **可写层（Write Layer）**。
+    -   只读层可以是多层（比如容器的基础镜像层 + 业务镜像层），具备**只读、可共享**的特性；
+    -   可写层只有一层，是**专属、可修改**的，所有变更都只发生在这里。
+2.  **统一视图层（Merge Layer）**：通过一个抽象的 “合并逻辑层”，对外提供**单一、透明的访问入口**，屏蔽底层分层的复杂性。
+    -   **读操作**：**自上而下**搜索各层。优先读取可写层的数据；若可写层不存在，则依次向下读取只读层；最终返回找到的第一个结果。
+    -   **写操作**：**不修改只读层**。若数据在只读层已存在，先将其**复制到可写层**，再修改可写层的副本；若数据不存在，直接在可写层创建。
+    -   **删除操作**：**不删除只读层数据**。而是在可写层创建一个 **“删除标记”**（比如 OverlayFS 的 whiteout 文件），合并视图时会识别这个标记，对外表现为 “文件已删除”。
+
+**这是CoW 在 “分层存储” 场景下的核心形态**，而 Linux 进程 fork 的 CoW 虽然原理一致，但表现形式略有不同（没有显性的 “Merge Layer”，而是通过内核内存页的权限标记 + 复制来实现）。
+
+```mermaid
+flowchart BT
+    %% 样式定义：区分不同层级和操作
+    classDef writeLayer fill:#FFE0B2,stroke:#E65100,stroke-width:2px,rounded:8px,font-weight:600;
+    classDef readLayer fill:#E1F5FE,stroke:#0288D1,stroke-width:2px,rounded:8px,font-weight:600;
+    classDef operation fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,rounded:8px,font-weight:600;
+    classDef step fill:#E8F5E8,stroke:#2E7D32,stroke-width:1px,rounded:6px;
+    classDef arrow stroke:#555555,stroke-width:1.5px;
+
+    %% 1. 分层结构
+    subgraph LayerStructure["1. 分层结构"]
+        direction BT
+        WLayer(可写层 / Write Layer):::writeLayer
+        RLayer(只读层 / Read Layer):::readLayer
+        RLayer --> WLayer
+    end
+    class LayerStructure operation
+
+    %% 2. 读操作
+    subgraph ReadOperation["2. 读操作 (自上而下)"]
+        direction LR
+        RStart(读请求):::step
+        RCheckWrite{检查可写层?}:::step
+        RHitWrite(找到数据<br/>直接返回):::step
+        RMissWrite(未找到):::step
+        RCheckRead{检查只读层?}:::step
+        RHitRead(找到数据<br/>直接返回):::step
+        RMissRead(未找到<br/>返回不存在):::step
+
+        RStart --> RCheckWrite
+        RCheckWrite -->|"是"| RHitWrite
+        RCheckWrite -->|"否"| RMissWrite
+        RMissWrite --> RCheckRead
+        RCheckRead -->|"是"| RHitRead
+        RCheckRead -->|"否"| RMissRead
+    end
+    class ReadOperation operation
+
+    %% 3. 写操作 (Copy-on-Write)
+    subgraph WriteOperation["3. 写操作 (Copy-on-Write)"]
+        direction LR
+        WStart(写请求):::step
+        WCheckWrite{数据在可写层?}:::step
+        WUpdate(直接更新<br/>可写层数据):::step
+        WMissWrite(数据不存在):::step
+        WCheckRead{数据在只读层?}:::step
+        WCopy(复制数据到<br/>可写层):::step
+        WUpdateNew(在可写层<br/>创建新数据):::step
+
+        WStart --> WCheckWrite
+        WCheckWrite -->|"是"| WUpdate
+        WCheckWrite -->|"否"| WMissWrite
+        WMissWrite --> WCheckRead
+        WCheckRead -->|"是"| WCopy
+        WCheckRead -->|"否"| WUpdateNew
+        WCopy --> WUpdate
+    end
+    class WriteOperation operation
+
+    %% 整体布局连接
+    LayerStructure -.->|为以下操作提供基础| ReadOperation:::arrow
+    LayerStructure -.->|为以下操作提供基础| WriteOperation:::arrow
+```
+
+
+
+### Layer的原理
+
+现在，通过pivot_root，我们已经可以在启动的时候隔离宿主机的文件系统了。现在还存在的一个问题是，我们对镜像的任何变更，都会影响原本的镜像，这个是不正常的。 
+
+在老版本的docker中，通过AUFS实现了一个特性：在启动的时候会启动两个layer，一个write layer和一个container-init layer。现代容器技术（包括新版 Docker）已经不再推荐使用 AUFS，而是采用了更通用、更强大的 ** 存储驱动（Storage Driver）** 模型，其中最核心的技术是 **[Union File System (UnionFS)](#unionfs)** 的各种现代实现。这个特性的实现原理在现代容器中被称为 **Copy-on-Write (写时复制，CoW)**。
+
+这个特性的逻辑可以如下描述：
+
+1.   **只读层 (Read-only Layers)**：
+     -   `busybox` 镜像本身就是一个**只读层**。它包含了容器运行所需的所有基础文件和目录；
+     -   这个层永远不会被修改。如果多个容器基于同一个镜像启动，它们会共享这同一个只读层，极大地节省了磁盘空间。
+2.   可写层 (Writable Layer)：
+     -   当我们启动一个容器时，容器运行时会在只读的镜像层之上，**挂载一个新的、可写的层**。
+     -   这个可写层通常是一个 `tmpfs`（内存文件系统）或者 `overlayfs` 的上层目录。
+
+而这些特性都是基于 `UnionFs` 以及 `COW` 实现的：
+
+1.   **UnionFS 的作用**：
+     -   **UnionFS** 技术（如 `overlay2`, `devicemapper` 等）能够将多个不同的目录（可写层和只读层）“合并” 成一个统一的文件系统视图。
+     -   从容器内部看，它只能看到一个统一的 `/` 根目录，但实际上这个目录是由多个层 “联合” 而成的。
+2.   **Copy-on-Write (写时复制) 机制**：
+     -   **读操作**：当容器需要读取一个文件时，UnionFS 驱动会先在可写层查找。如果找不到，它会继续向下在只读的镜像层中查找，并返回找到的文件。
+     -   **写 / 修改操作**：当容器需要创建或修改一个文件时，UnionFS 驱动会：
+         -   如果文件不存在：直接在**可写层**创建。
+         -   如果文件已存在于只读层：UnionFS 驱动会**先将该文件从只读层复制到可写层**，然后再对可写层中的副本进行修改。原始的只读层文件保持不变。
+     -   **删除操作**：删除一个文件时，UnionFS 驱动并不会真的删除只读层里的文件，而是在**可写层创建一个特殊的 “白名单” 文件（whiteout file）**，标记该文件已被删除。这样，在统一视图中，该文件就 “消失” 了。
+
+### Layer的实现
+
+整体的逻辑可以如图描述：
+
+```mermaid
+flowchart LR
+    subgraph Phase1["父进程（tiny-docker run）"]
+        direction TB
+        A["解析命令行参数<br/>(-m/-c/镜像路径/用户程序)"]
+        B["初始化read/write/work/merge文件夹"]
+        C["解压镜像.tar到read文件夹（只读层）"]
+        D["创建Cgroup并设置资源限制<br/>(内存/CPU)"]
+        E["fork()创建子进程<br/>(带CLONE_NEWNS/PID/UTS等Namespace)"]
+        
+        A --> B --> C --> D --> E
+    end
+
+    subgraph Phase2["子进程（init逻辑）"]
+        direction TB
+        F["读取父进程传递的路径参数/环境变量"]
+        G["初始化UnionFS(OverlayFS)<br/>(mount lowerdir=read,upperdir=write)"]
+        H["初始化proc/tmpfs等挂载<br/>(mount proc /proc)"]
+        I["pivot_root切换根目录<br/>(根目录指向merge)"]
+        J["exec替换为用户进程<br/>(/bin/ash等)"]
+        
+        F --> G --> H --> I --> J
+    end
+
+    subgraph Phase3["容器运行"]
+        K["用户进程执行<br/>(/bin/ash/stress等)"]
+        L["基于UnionFS读写文件<br/>(写操作落write层)"]
+        
+        K --> L
+    end
+
+    Phase1 -.->|fork创建子进程（带Namespace）| Phase2
+    Phase2 -.->|exec覆盖地址空间（无新进程）| Phase3
+```
+
+
+
+我们的实现思路是：
+
+1.   `UnionFS` 的工作最少需要如下几个文件
+     -   只读层
+     -   可写层
+     -   工作层
+     -   对外暴露的挂载点
+2.   在启动时，我们可以指定一个 `busybox.tar` 作为输入，这个输入模拟的就是docker中只读的镜像，将 `busybox.tar` 解压到 `/root/tiny-docker/busybox/read` 下；这个对应于我们的只读层；
+3.   创建文件夹 `/root/tiny-docker/busybox/write`；这个对应于我们的可写层。
+4.   工作层是一个临时文件目录，我们将他放到 `/root/tiny-docker/busybox/work`；
+5.   对外暴露的挂载点我们使用 `/root/tiny-docker/busybox/merged`；
+6.   执行 `mount -t overlay overlay -o lowerdir=${lower},upperdir=${upper},workdir=${work} ${merged}` ，这条命令的功能是：
+     -   `-t overlay` 指定使用 overlay 文件系统；
+     -   `overlay` 指定设备名称
+     -   `-o lowerdir=${lower},upperdir=${upper},workdir=${work}` 指定了只读层，可写层，工作层；
+     -   `${merged}` 指定了挂载点。
+
+>   因为目前我们还没有实现镜像管理，那么我们可以直接使用 `busybox.tar` 作为我们的镜像，我们会将它解压后作为我们的只读层，那么我们的命令就可以修改到如下：
+>
+>   ```bash mark:5
+>   ./tiny-docker run -it \
+>                    -e PATH=/bin/ \
+>                    -m 2000m \
+>                    -c '10000 100000' \
+>                    /root/busybox.tar /bin/ash
+>   ```
+
+1.   **`tiny-docker run` 启动**：父进程开始执行。
+2.   **父进程初始化**：
+     -   解析命令行参数。
+     -   初始化 Cgroup 配置。
+     -   **准备文件系统目录**：确保 `read`, `write`, `work`, `merged` 目录存在。
+3.   **`fork()` 创建子进程**：
+     -   子进程继承了父进程的资源。
+     -   **在子进程中，立即设置 Mount Namespace** (`syscall.Unshare(syscall.CLONE_NEWNS)`)。这一步至关重要，它让子进程的后续挂载操作**不会影响到宿主机和父进程**。
+4.   **子进程内部准备**：
+     -   **执行 `mount` 命令**：在子进程中，执行 `mount -t overlay overlay -o lowerdir=...,upperdir=...,workdir=... /root/tiny-docker/busybox/merged`。此时，在子进程中 `ls /root/tiny-docker/busybox/merged`，应该能看到 `busybox` 的文件列表。
+     -   **执行 `pivot_root`**：现在，将子进程的根目录切换到这个刚刚挂载好的 `merged` 目录。
+     -   **执行 `chdir("/")`**：切换当前工作目录到新的根目录。
+     -   **清理旧的挂载点**：卸载掉之前的 `merged` 目录的旧挂载点，它现在位于 `.pivot_root` 目录下。
+5.   **`exec()` 执行用户程序**：在子进程中，执行 `execve("/bin/ash", ...)`。
+
+#### EnsureDirectoryExists
+
+确保文件存在的实现很简单，因为go已经为我们封装好了所有的函数，我们需要做的是，在初始化container之前去执行对应的逻辑即可。
+
+```go mark:3, 18
+func EnsureDirectoryExists(path string) error {
+	logrus.Infof("Ensuring directory exists: {%s}", path)
+	if err := os.MkdirAll(path, 0755); err != nil {
+		logrus.Infof("Failed to create directory %s: %v", path, err)
+		return err
+	}
+
+	logrus.Infof("Directory %s is ready.", path)
+	return nil
+}
+
+// init read-layer, write-layer, work-layer, merge-layer for container
+func setupLayer() error {
+	name := conf.GlobalConfig.Meta.Name
+	// ...
+
+	var err error
+	if err = util.EnsureDirectoryExists(readPath); err != nil {
+		logrus.Errorf("ensure directory error : %s", err.Error())
+		return err
+	}
+
+    // ...
+
+	return nil
+}
+```
+
+#### 子进程内部准备
+
+子进程的内部，我们只需要按照前面描述的逻辑去执行即可，但是这里存在一个问题是，我们的逻辑是：通过 exec 创建一个子进程，并切换namespace，那么：
+
+1.   在通过exec创建子进程之后，`GlobalConfig` 不再可用，因为 `exec` 会使用一个全新的内存地址空间替换父进程的内存地址空间；
+2.   在子进程中，由于我们切换了`namespace`，它也没有办法读取到我们的配置文件；
+
+为此，我们需要有一个方式来作为父进程和子进程中间传递信息的桥梁，有三个方式：
+
+1.   通过命令行参数传递，它的实现最为简单，但是当命令行过长时维护困难；
+2.   通过环境变量传递，他的实现也很简单，并且非常灵活：
+     -   比命令行参数更灵活，适合传递多个配置。
+     -   信息不会暴露在 ps 输出中，更安全。
+     -   仍然不适合传递非常复杂的结构化数据。
+     -   环境变量的命名需要全局唯一，以避免冲突。
+3.   通过文件描述符传递，它是最健壮也最灵活的方式，但是实现相对比较复杂。
+
+>   这里，我们选用**环境变量传参**的方式来实现我们的逻辑。
+
+先读取我们的配置文件：
+
+```go mark:2,6,10,14,18
+type FsConfig struct {
+	Root string `yaml:"root"`
+}
+
+func (c Config) ReadPath(containerId string) string {
+	return filepath.Join(c.Fs.Root, containerId, "read")
+}
+
+func (c Config) WritePath(containerId string) string {
+	return filepath.Join(c.Fs.Root, containerId, "write")
+}
+
+func (c Config) WorkPath(containerId string) string {
+	return filepath.Join(c.Fs.Root, containerId, "work")
+}
+
+func (c Config) MergePath(containerId string) string {
+	return filepath.Join(c.Fs.Root, containerId, "merge")
+}
+```
+
+随后将它添加到我们的环境变量中
+
+```go mark:2,3,9,10
+func Run(commands RunCommands) error {
+	parent := container.NewParentProcess(commands.Tty, commands.Args, commands.UserEnv)
+	setupEnv(parent)
+    // ...
+	return nil
+}
+
+func setupEnv(cmd *exec.Cmd) {
+	util.AppendEnv(cmd, constant.MetaName, conf.GlobalConfig.Meta.Name)
+	util.AppendEnv(cmd, constant.FsBasePath, conf.GlobalConfig.Fs.Root)
+    // ...
+}
+```
+
+这里需要注意的是，由于我们的程序是基于 `UnionFS` 上的，所以我们需要修改我们的工作目录：
+
+```go mark:3,4
+func NewParentProcess(tty bool, commands []string, env []string) *exec.Cmd {
+	// ...
+	cmd.Dir = conf.GlobalConfig.MergePath()
+	cmd.Env = env
+	return cmd
+}
+```
+
+此时，我们只需要在 `pivot_root` 之前，通过 `UnionFS` 挂载我们的文件系统即可：
+
+```go mark:4-6
+func RunContainerInitProcess(command string, args []string) error {
+	logrus.Infof("init process command: {%s}, args: {%v}", command, args)
+	var err error
+	if err = setupUnionFs(); err != nil {
+		return err
+	}
+	logrus.Info("setup layer success.")
+	if err = setupMount(); err != nil {
+		return err
+	}
+	// ...
+	return nil
+}
+```
 
 # QA
 
@@ -917,3 +1364,240 @@ cat /sys/fs/cgroup/my-app/cgroup.procs
 - **作用范围**：NIS 服务集群内，用于统一管理多台主机的用户、密码、主机映射等信息。
 - **使用场景**：仅适用于老旧的 NIS 服务架构，**现代 Linux / 容器环境几乎不用**，主要是为了兼容 UTS 标准而保留。
 
+## pivot_root和chroot
+
+`pivot_root` 和 `chroot` 都是为了改变当前进程及其子进程的**文件系统根目录（`/`）**。他们的核心区别可以如下概括：
+
+| 特性               | `chroot` (Change Root)                                       | `pivot_root` (Pivot Root)                                    |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **概念**           | 改变当前进程的根目录视图。                                   | 将整个进程的根目录 “切换” 到一个新的文件系统，并将旧的根目录 “隐藏” 起来。 |
+| **安全性**         | **较低**。存在 “逃脱” 的可能。                               | **更高**。几乎不可能从标准环境中逃脱。                       |
+| **对旧根的处理**   | **旧根目录仍然可达**。如果在执行 `chroot` 之前，进程持有一个指向旧根目录（如 `/`）的文件描述符（fd），那么它可以通过操作这个 fd 来 “逃脱” chroot 环境。 | **旧根目录被彻底隔离**。`pivot_root` 会将旧的根目录移动到新根目录下的一个临时目录中，并使其成为一个私有的挂载点。原始的根目录对新的根目录进程来说是**不可见且不可访问**的。 |
+| **对父进程的影响** | **无影响**。父进程的根目录依然是原来的根目录。`chroot` 只影响当前进程及其子进程。 | **无影响**。同样只影响当前进程及其子进程。                   |
+| **使用前提**       | 新的根目录必须是一个**已存在的目录**。                       | 新的根目录必须是一个**独立的挂载点（mount point）**。这意味着你通常需要先执行 `mount --bind newroot newroot` 来将一个目录变成它自身的挂载点。 |
+
+## mount
+
+>       All files accessible in a Unix system are arranged in one big tree, the file hierarchy, rooted at /. These files can be spread out over several devices. The `mount` command serves to attach the filesystem found on some device to the big file tree. Conversely, the umount(8) command will detach it again. The filesystem is used to control how data is stored on the device or provided in a virtual way by network or other services.
+
+### mount的作用
+
+linux的文件系统是一颗以根目录（"/"）作为起始节点的树，任何对文件系统的访问都可以从根目录开始向下搜索得到。 而我们的mount，就是将我们的目标文件作为树上的一个节点，挂载（mount）到这颗树上。 
+
+例如，在最开始我们的树的结构是：
+
+```
+/
+├── bin
+├── usr
+├── dev
+│   └── ... # 设备文件
+├── mnt
+│   └── ... # 挂载路径
+└── ...
+```
+
+假设我们现在有一个移动硬盘，他是一个以ext4文件系统格式化好的文件系统，此时我们没有办法访问它，因为当前linux的文件树上没有硬盘的任何信息，**如果我们想要访问这个移动硬盘，我们就必须先把移动硬盘挂载到linux的目录树**。大概得逻辑可以概括如下：
+
+1. 移动硬盘接入后，Linux 内核识别为物理设备，在 `/dev` 目录下创建设备文件 `/dev/sda1`（这是内核给设备的 “标识”，不是可访问文件的目录），此时目录结构为：
+
+```
+/
+├── bin
+├── usr
+├── dev
+│   ├── sda1  # 移动硬盘
+│   └── ...
+├── mnt
+│   └── ...   # 挂载路径
+└── ...
+```
+
+2. `/dev/sda1` 是一个 `设备节点`，我们需要执行 `mount /dev/sda1 /mnt/usb`：
+
+-   `device`：`/dev/sda1`（要接入的 ext4 文件系统，对应移动硬盘）；
+-   `mountpoint`：`/mnt/usb`（目录树上的空目录，作为访问硬盘的入口）；
+
+此时，我们才可以访问我们的移动硬盘：
+
+``` bash mark:4,5,7,8,9,10
+/
+├── bin
+├── usr
+├── dev
+│   ├── sda1           # 移动硬盘，仍为设备文件（不变）
+│   └── ...
+├── mnt
+│   └── usb            # 挂载点（接入了硬盘的 ext4 文件系统）
+│       ├── movie.mp4  # 硬盘里的文件
+│       ├── photo.jpg
+│       └── ...
+└── ...
+```
+
+### mount的使用
+
+一个标准的mount调用形式如下：
+
+```bash
+mount -t type device dir
+```
+
+这条命令指示内核将设备上找到的文件系统（类型为 type）挂载到目录 dir。选项 -t type 是可选的。mount 命令通常能够检测到文件系统。默认情况下，挂载文件系统需要 root 权限。
+
+我们也可以只使用 `dir` 作为参数，这种情况下，mount 会搜索 `/etc/fstab` 来挂载。
+
+```bash
+mount /dir
+```
+
+`/etc/fstab` 类似于配置文件，例如：我们约定好，U盘我们就挂载到 `/mnt/usb`，那么 `/etc/fstab` 中就可能有一条这样的配置。
+
+```
+/dev/sdb1  /mnt/usb xfs  defaults  0  2
+```
+
+那么，我们下面这两条指令就是等价的：
+
+```bash
+mount /mnt/usb
+# mount 会在 /etc/fstab 中搜索挂载点为 /mnt/usb 的文件
+
+mount /dev/sdb1 /mnt/usb
+```
+
+## UnionFS
+
+**UnionFS（联合文件系统）** 是一种**分层、轻量级**的文件系统技术，核心能力是 **将多个独立的目录（称为 “层”）以只读或读写的方式联合挂载，对外呈现为一个统一的文件系统视图**，而不需要实际合并这些目录的物理数据。
+
+### UnionFS的核心概念
+
+1.  **层（Layer）**
+
+    UnionFS 的核心是**多层目录的联合**，这些目录被分为两类：
+
+    -   **只读层（Read-only Layer）**：作为基础层，内容不可修改，可被多个容器共享（比如 Docker 镜像的基础层、业务层）。
+    -   **可写层（Writable Layer）**：作为最上层，所有的写操作（创建、修改、删除文件）都只发生在这一层，不会影响只读层。
+
+2.  **统一视图（Unified View）**
+
+    所有层被联合后，用户看到的是一个**单一的、无缝的文件系统目录树**，无法感知底层的分层结构。
+
+    例如：只读层有 `/bin/ls`，可写层有 `/etc/my.conf`，联合后的视图里就同时存在这两个文件。
+
+3.  **写时复制（Copy-on-Write, CoW）**
+
+    这是 UnionFS 实现**只读层共享 + 可写层隔离**的关键机制，和我们之前讨论的 CoW 思想完全一致：
+
+    -   **读操作**：优先从上层（可写层）读取文件；若上层不存在，则向下遍历只读层，找到后返回。
+    -   **写操作**：
+        -   新建文件：直接在**可写层**创建，不会影响任何只读层。
+        -   修改只读层已有的文件：先把该文件**复制到可写层**，再修改可写层的副本；原始只读层的文件保持不变。
+    -   **删除操作**：不会真正删除只读层的文件，而是在**可写层创建一个 “白名单文件（whiteout）”**，标记该文件已被删除；联合视图中会识别这个标记，对外表现为文件不存在。
+
+### UnionFS 的工作流程
+
+假设我们有两个目录：
+
+-   只读层 `lowerdir`：包含 `file1.txt`（内容：`hello`）、`bin/ls`
+-   可写层 `upperdir`：初始为空
+-   联合挂载点 `merged`：对外的统一视图
+
+1.  **挂载联合文件系统**
+
+    通过挂载命令将 `lowerdir` 和 `upperdir` 联合到 `merged`，此时 `merged` 目录下能看到 `file1.txt` 和 `bin/ls`。
+
+2.  **读操作**
+
+    读取 `merged/file1.txt`：UnionFS 发现可写层没有该文件，于是从只读层读取，返回内容 `hello`。
+
+3.  **写操作（修改只读层文件）**
+
+    修改 `merged/file1.txt` 内容为 `hello world`：
+
+    -   UnionFS 先将 `lowerdir/file1.txt` 复制到 `upperdir`；
+    -   然后修改 `upperdir/file1.txt` 的内容；
+    -   此时 `merged/file1.txt` 实际指向的是 `upperdir` 里的副本，只读层的 `file1.txt` 依然是 `hello`。
+
+4.  **写操作（新建文件）**
+
+    在 `merged` 下创建 `file2.txt`：文件会直接保存在 `upperdir`，只读层无任何变化。
+
+5.  **删除操作**
+
+    删除 `merged/file1.txt`：UnionFS 不会删除 `lowerdir` 里的文件，而是在 `upperdir` 创建一个 whiteout 文件；此时 `merged` 下看不到 `file1.txt`，但 `lowerdir/file1.txt` 依然存在。
+
+### UnionFS的优势和劣势
+
+-   优势
+    -   **节省磁盘空间**：多个容器可以共享同一个只读镜像层，只有可写层是容器专属的，极大降低了重复数据的存储开销。
+    -   **实现镜像分层复用**：Docker 镜像的分层构建（`Dockerfile` 的每一行生成一个层）就是基于 UnionFS 思想：每一层都是只读的，上层可以基于下层构建，且可以被多个镜像共享。
+    -   **隔离容器变更**：容器的所有修改都局限在可写层，删除容器时只需删除可写层即可，只读镜像层可以保留复用，实现 “镜像只读、容器可写” 的核心需求。
+-   劣势
+    -   **多层嵌套的性能损耗**：当只读层数量过多时，文件查找需要遍历多层，会带来一定的性能开销；
+    -   **内核兼容性**：早期的 UnionFS 不是 Linux 内核原生支持的，需要额外安装补丁；
+    -   **不适合大文件频繁修改场景**：对于大文件的频繁修改，CoW 机制需要复制整个文件到可写层，会产生额外的 IO 开销。
+
+### UnionFS中的大文件
+
+>   **不适合大文件频繁修改场景**：对于大文件的频繁修改，CoW 机制需要复制整个文件到可写层，会产生额外的 IO 开销。
+
+这句话，初看其实是有问题的：从操作系统的角度来讲，一个文件可以被拆分为多个`block`，那为什么我们修改大文件时，要把整个文件都复制到可写层而不是将被修改的那个block复制到可写层呢？举个简单的例子，操作系统中的进程复制在最初所有的内存都是共享的，在修改时**操作系统只会复制被修改的内存页数据并修改。**
+
+这是因为这种块粒度的 CoW 是 **Btrfs、ZFS** 这类高级文件系统的实现方式 —— 它们本身就是 “感知块” 的文件系统，因此可以做到精细的块级复制。而 UnionFS、OverlayFS 这类联合文件系统的定位是 **“用户态目录的联合”**，它们的设计目标是**简单、轻量、兼容所有底层文件系统**（ext4、xfs 等），而非深度介入块管理。它们的 CoW 逻辑是**基于文件的**，原因有两点：
+
+-   **不感知底层块结构**：UnionFS 只处理目录和文件的 “视图合并”，它不知道一个文件的哪些 block 被修改了 —— 对它来说，只要文件被打开并写入，就判定为 “文件需要 CoW”。
+-   **实现复杂度低**：块粒度 CoW 需要跟踪文件的每一个 block 的归属（属于只读层还是可写层），这会引入大量的元数据管理开销；而文件粒度 CoW 只需要记录 “这个文件是否被复制过”，逻辑简单。
+
+## 为什么需要pivot_root
+
+在我们的代码逻辑中，我们创建进程时已经指定了 `unix.CLONE_NEWNS`
+
+```go mark:7
+func NewParentProcess(tty bool, commands []string, env []string) *exec.Cmd {
+	// ...
+	cmd := exec.Command(constant.UnixProcSelfExe, args...)
+	cmd.SysProcAttr = &unix.SysProcAttr{
+		Cloneflags: unix.CLONE_NEWUTS |
+			unix.CLONE_NEWPID |
+			unix.CLONE_NEWNS |
+			unix.CLONE_NEWNET |
+			unix.CLONE_NEWIPC,
+		Unshareflags: unix.CLONE_NEWNS,
+	}
+	// ...
+}
+```
+
+而在我们的用户进程执行之前，我们又执行了一次 `pivot_root`：
+
+```go mark:8,9,10
+func pivotRoot(root string) error {
+	// ...
+	pivotDir := filepath.Join(root, ".pivot_root")
+	if err := os.Mkdir(pivotDir, 0777); err != nil {
+		return constant.ErrMountRootFS.Wrap(err)
+	}
+
+	if err := syscall.PivotRoot(root, pivotDir); err != nil {
+		return constant.ErrMountRootFS.Wrap(err)
+	}
+
+    // ...
+	return os.Remove(pivotDir)
+}
+```
+
+这是因为：
+
+-   **unix.CLONE_NEWNS**只是让子进程拥有**私有 Mount Namespace**（挂载视图），但**初始时完全继承父进程的挂载树**—— 子进程既可以访问父进程的所有文件系统路径，也可以执行 `mount/umount` 操作（这些操作仅影响自己的挂载视图，不会污染父进程 / 宿主机）；
+-   **pivot_root/chroot**：这才是让子进程「脱离父进程目录树」的关键操作 —— 执行后，子进程的根目录 `/` 被切换，才会无法访问宿主机的原始路径；
+
+`CLONE_NEWNS` 的核心作用是**隔离挂载操作**，而非**隔离路径访问**：
+
+| 操作                          | 子进程（CLONE_NEWNS）        | 父进程（宿主机） |
+| ----------------------------- | ---------------------------- | ---------------- |
+| 访问 `/root/tiny-docker/read` | ✅ 可以访问（初始挂载树继承） | ✅ 可以访问       |
+| 执行 `mount overlay ...`      | ✅ 仅修改自己的挂载视图       | ❌ 无任何影响     |
+| 执行 `umount /tmp`            | ✅ 仅卸载自己的 `/tmp`        | ❌ `/tmp` 仍可用  |
+| 执行 `pivot_root merge`       | ✅ 根目录切换到 merge         | ❌ 无影响         |
