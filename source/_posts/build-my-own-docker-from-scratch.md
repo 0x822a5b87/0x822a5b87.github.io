@@ -1154,6 +1154,655 @@ func RunContainerInitProcess(command string, args []string) error {
 }
 ```
 
+## 镜像打包
+
+镜像打包的逻辑非常简单，就是进入到我们指定的目录中，将文件打包，唯一需要注意的是，我们的系统是基于 `UnionFS` 的，我们在打包的时候也需要先对UnionFS进行mount，随后打包我们的 `merge` 文件夹即可。
+
+```go mark:4-13
+func Commit(cmd conf.CommitCommands) error {
+	logrus.Infof("Commit Commands: %s", cmd)
+	conf.LoadCommitConfig(cmd)
+	if err := SetupUnionFsFromConfig(); err != nil {
+		logrus.Error("error setting up union fs", err)
+		return err
+	}
+	defer func() {
+		err := ClearUnionFsFromConfig()
+		if err != nil {
+			logrus.Error("error clear up union fs", err)
+		}
+	}()
+	root := conf.GlobalConfig.MergePath()
+	return util.Tar(conf.GlobalConfig.Cmd.DstImage, root)
+}
+```
+
+# 容器的进阶管理
+
+## 从daemon到containerd/runc
+
+### daemon
+
+目前我们的容器的基本功能已经实现了，但是我们还缺少一个 `daemon` 进程来为我们管理我们的容器，它应该需要支持以下功能：
+
+-   `docker ps` 查看当前正在执行的容器
+-   `docker logs` 查看容器的输出
+-   `docker exec` 进入一个已经创建好的容器
+
+想要支持这些功能，我们就需要**在父进程创建子进程之后detach子进程**，在老版本的docker中，所有的容器init进程都是从docker daemon中fork出来的，这也带来了一个问题：假设我们当前存在如下的进程层级关系：
+
+```mermaid
+flowchart BT
+
+init("PID 1 进程（systemd/init）")
+daemon("docker daemon")
+container("container")
+
+init --> daemon -->|fork| container
+```
+
+当 `daemon` 进程崩溃，根据linux的孤儿进程收养机制：
+
+1.   `container` 首先会变成孤儿进程；
+2.   `linux` 将 收养 `container` 进程（也就是此时 container 的 PPID 为 1），由 `INITPROC` 来管理它的资源回收；
+
+我们面临的问题是：
+
+1.   所有的 container 虽然还可以正常执行，但是daemon存储的所有容器元数据都已经丢失了；
+2.   新启动的daemon进程无法识别这些孤儿容器 -- `docker ps/logs/stop` 等指令都无法执行；
+3.   container占用的端口，volume，网络命名资源等都已经无法通过docker清理，只能手动操作；
+
+### containerd
+
+为了解决daemon进程崩溃引发的一系列问题，**docker在1.11+引入了 `containerd + runc` 的分层架构**用来解决这个问题：
+
+1.   daemon 不再是容器的直接父进程：
+     -   `dockerd`（daemon）仅负责 API / 调度，他通过gRPC和 `containerd` 交互来实现对所有容器管理逻辑；
+     -   `containerd` 负责容器生命周期管理；
+     -   `runc` 是轻量级工具，仅负责 fork/exec 启动容器 init 进程，启动后立即退出；
+     -   最终容器 init 进程的父进程是 `containerd-shim`（而非 dockerd/containerd）；
+2.   **containerd-shim 的核心作用**：
+     -   作为容器进程的「托管父进程」，即使 dockerd/containerd 挂掉，shim 仍运行；
+     -   维护容器的 STDIO / 日志 / 状态，daemon 重启后可通过 shim 重新识别容器；
+     -   容器进程的生命周期与 daemon 解耦，daemon 挂掉 / 重启不影响容器的可管理性。
+
+### containerd-shim
+
+>   看到这里，你可能会有一个问题：`containerd-shim` 也是一个进程，如果它崩溃了，那么我们不是面临了和`daemon` 崩溃一样的问题吗？这是因为**`containerd-shim` 的「轻量级、无状态、可重建」特性**。这也是他名字的由来：`shim` 表示的是：**a thin packing strip or washer often used with a number of similar washers or strips to adjust a clearance for gears, etc** 
+
+对于老的docker架构，所有的init进程都是从daemon fork出来的，它的职责是中心化的：
+
+```mermaid
+flowchart TB
+
+daemon("docker daemon"):::purple
+
+busybox("busybox"):::pale_pink
+linux("linux"):::pale_pink
+kafka("kafka"):::pale_pink
+
+daemon --> busybox
+daemon --> linux
+daemon --> kafka
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;
+```
+
+而 `containerd-shim` 的设计是**一个容器对应一个shim进程**：
+
+```mermaid
+---
+title: docker engine
+---
+
+flowchart TB
+    engine("Docker Engine"):::purple
+    dockerd("dockerd"):::green
+    containerd("containerd"):::yellow
+
+    shim1("containerd-shim"):::pale_pink
+    runc1("runc"):::error
+    shim2("containerd-shim"):::pale_pink
+    runc2("runc"):::error
+    shim3("..."):::pale_pink
+    runc3("..."):::error
+
+    engine --> dockerd
+    dockerd -.->|gRPC 通信/CRUD 指令| containerd
+    containerd --> shim1
+    containerd --> shim2
+    containerd --> shim3
+    shim1 --> runc1
+    shim2 --> runc2
+    shim3 --> runc3
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;
+```
+
+`containerd-shim` 的职责非常单一，他只负责**某一个特定的container**的生命周期管理：
+
+1.   **作为容器 `init` 进程的直接父进程**：承接 `runc` 启动容器后的父子关系，`runc` 启动容器后会立即退出，`shim` 接管成为容器的父进程；
+2.   **接管容器的 IO 与日志**：负责将容器的 `stdin/stdout/stderr` 转发给 `containerd`，或写入日志文件；
+3.   **处理容器的退出事件**：当容器进程退出时，`shim` 负责回收僵尸进程、收集退出码，并通知 `containerd`；
+4.   **无状态设计**：`shim` 不存储容器的元数据（元数据存在 `containerd` 的持久化存储中），它只做「实时转发和事件上报」。
+
+当某个容器的 `containerd-shim` 进程崩溃时：
+
+1.   容器进程由linux的孤儿进程机制托底继续正常执行：
+     -   容器进程本身的运行不受任何影响；
+     -   该容器的 `init` 进程会变成**孤儿进程**，按照 Linux 进程收养规则，最终会被 `PID 1`（`systemd`/`init`）接管；
+2.   容器元数据不会丢失：containerd 保存了完整的容器配置
+     -   `containerd-shim` 是**无状态**的，容器的所有核心元数据（容器 ID、配置、网络 / 存储信息、镜像层信息等）都保存在 `containerd` 的持久化存储中（通常是 `/var/lib/containerd`）。
+3.   `shim` 进程可重建：`containerd` 会自动「复活」新的 shim
+     -   一旦检测到某个容器的 `shim` 崩溃，`containerd` 会**立即重新启动一个新的 `shim` 进程**；
+     -   新 `shim` 进程会根据 `containerd` 中保存的容器元数据，重新连接到容器进程的 IO、接管父子关系（通过 Linux 的进程 `ptrace` 或 cgroup 关联）；
+     -   重建后的 `shim` 会继续履行「IO 转发、事件上报」的职责，整个过程对容器进程**完全透明**。
+
+### runc
+
+目前，我们所有其他的组件的职责边界都很清晰，只有 `runc` 还是比较模糊 -- 为什么我们不能直接让 `containerd` 来负责进程的 `fork`/`exec` 等操作呢？
+
+我们要知道 `runc` 的核心定位：他是 `OCI` 标准的容器运行时，它的唯一核心职责是：**根据 OCI 规范的配置文件，创建 / 销毁容器进程（完成 Namespace/Cgroup 配置、rootfs 挂载、`fork/exec` 等底层操作）**。OCI 规范是容器生态的「通用语言」，而 `runc` 是这个规范的「官方参考实现」。
+
+-   如果让 `containerd-shim` 直接负责 `fork/exec`，`shim` 会和「容器进程创建的底层逻辑」深度耦合，不同厂商（Docker/CRI-O/containerd）会各自实现一套 `fork/exec` 逻辑，导致容器配置不兼容（比如 Docker 容器无法在 CRI-O 中运行）；
+-   引入 `runc` 后：
+    -   `containerd-shim` 只需要「调用 `runc`」，无需关心 `fork/exec`、Namespace 配置的底层细节；
+    -   任何符合 OCI 规范的运行时（如 `crun`、`kata-runtime`）都可以直接替换 `runc`，无需修改 `containerd`/`shim` 的代码 —— 比如想使用轻量级的 `crun` 或安全的 `kata-runtime`，只需替换 `runc` 二进制文件即可。
+
+举几个简单的例子：
+
+1.   cgroup 存在 v1 和 v2 两个版本，两者的配置语法、挂载路径、限制方式完全不同；
+2.   Linux 内核不断新增 Namespace 类型（比如 User Namespace 实现容器内非 root 运行，Time Namespace 隔离容器时间），不同内核版本支持的 Namespace 不同；
+3.   需要进行容器运行时的替换（runc → crun/kata-runtime）：业务需要优化容器启动速度（换轻量级的 crun），或提升安全性（换 kata-runtime 基于虚拟机隔离）：
+
+不论是哪种情况，如果让 containerd-shim 来实施都会违背我们containerd-shim负责container的生命周期管理的原则，过多的陷入不必要的细节中；
+
+### 新老方案的对比
+
+从 `daemon` 迁移到 `containerd/runc` 的实现中，最重要的是：对容器管理的职责进行了拆分，从 `daemon` 的一个大而全的中心化管理端拆分为了负责api交互的`dockerd`，负责生命周期管理以及元数据的持久化存储的`containerd`，负责单个container的管理的`containerd-shim`，负责进程的fork/exec的`runc`。
+
+他们互相关联并且各自负责自己的核心业务逻辑：
+
+1.   当 `dockerd` 崩溃时不影响容器的运行而只会影响 `docker ps/logs/stop` 等指令的执行；当用户重新拉起`dockerd`时，它直接可以开始和 `containerd` 通信继续正常服务；
+2.   当 `containerd` 崩溃时，所有的 `containerd-shim` 和容器进程由 Linux 孤儿机制保证继续正常执行；而 `containerd` 通常由系统级守护进程（如 `systemd`）负责重新启动（`dockerd` 不直接重启 `containerd`）。
+3.   当 `containerd-shim` 崩溃时，所有的 `container` 由linux的孤儿机制来保证继续正常执行；而 `containerd-shim` 则会被 `containerd` 来重新拉起；新 `shim` 进程会根据 `containerd` 中保存的容器元数据，重新连接到容器进程的 IO（通过文件描述符 / 日志文件），并通过 cgroup / 进程命名空间关联容器进程
+4.   `runc` 作为标准化的容器运行时，仅负责一次性的进程创建（fork/exec + Namespace/Cgroup 配置），执行完即退出，无长期运行的风险，进一步降低了整体架构的故障概率。
+
+理论上来说，我们也可以让 `daemon` 进程来持久化元数据，并且增加一个额外的 `daemon-daemon` 来保证在它异常时会被正常拉起，但是这样违背了单一职责原则，并且单进程挂掉的概率显然会比多个进程崩溃的概率来的更大。
+
+## 容器的后台运行
+
+>   在开始这一节的开发之前，我们可以查看QA中的这些信息来详细了解一些关于linux中的进程组，终端等的知识：
+>
+>   -   [tty控制权](#tty控制权)
+>   -   [linux中的进程组和会话](#linux中的进程组和会话)
+>   -   [会话和终端](#会话和终端)
+>   -   [进程和子进程的协同](#进程和子进程的协同)
+
+### detach模式运行容器
+
+在我们目前的代码逻辑中，父进程会等待子进程的结束：
+
+```go mark:8-11
+func Run(commands conf.RunCommands) error {
+	// ...
+	if err = parent.Start(); err != nil {
+		logrus.Error(err, "error start process.")
+		return err
+	}
+
+	if commands.Tty {
+		logrus.Infof("Running {%s} in attach mode.", conf.GlobalConfig.ImageName())
+		return parent.Wait()
+	}
+
+	logrus.Infof("Running {%s}, pid = {%d} exit.", conf.GlobalConfig.ImageName(), os.Getpid())
+	return nil
+}
+```
+
+但是，当我们修改代码到 detach 模式时我们会发现一个有趣的现象 -- 子进程竟然和父进程一起退出了！
+
+```sh mark:2
+./mini-docker run \
+    -d \
+    -e PATH=/bin/ -m 2000m -c '10000 100000' /root/images/busybox.tar /bin/ash
+```
+
+子进程并没有如我们所预料的被linux初始进程接管：唯一的输出就是我们的grep本身！
+
+```sh mark:3
+ps -eo pid,ppid,pcpu,cmd | grep /bin/ash
+
+#1767832 1745835  0.0 grep --color=auto --exclude-dir=.bzr --exclude-dir=CVS --exclude-dir=.git --exclude-dir=.hg --exclude-dir=.svn --exclude-dir=.idea --exclude-dir=.tox --exclude-dir=.venv --exclude-dir=venv /bin/ash
+```
+
+这里，导致我们子进程和父进程一起退出的原因，是因为**子进程没有正确的脱离父进程的进程组（Process Group）和会话（Session），这样父进程在退出的时候会触发子进程的 `SIGHUP`（终端挂起） 信号，导致子进程被终止**。具体的信息可以查看[进程和子进程的协同](#进程和子进程的协同)，我们的主线还是需要解决这个问题：我们需要做的有几点：
+
+1.   为我们的命令行新增一个参数 `-d` 指定以 `detach` 模式运行；
+2.   当我们指定 `detach` 模式运行时：
+     -   为我们的子进程创建一个新的 `session`，避免父进程退出时产生的 `SIGHUP` 信号导致子进程一起退出；
+     -   避免子进程的 `session` 绑定到任何的 `终端`，可以通过两次 `Setsid()` 实现；
+
+于是我们简单的修改我们的创建子进程命令，这里我们实现了上面所说的逻辑：
+
+```go mark:32-35,41-43
+func newParentProcess() *exec.Cmd {
+	commands := conf.GlobalConfig.Cmd
+	args := []string{"init"}
+	for _, arg := range commands.Args {
+		args = append(args, arg)
+	}
+	cmd := exec.Command(constant.UnixProcSelfExe, args...)
+	cmd.SysProcAttr = &unix.SysProcAttr{
+		Cloneflags: unix.CLONE_NEWUTS |
+			unix.CLONE_NEWPID |
+			unix.CLONE_NEWNS |
+			unix.CLONE_NEWNET |
+			unix.CLONE_NEWIPC,
+		Unshareflags: unix.CLONE_NEWNS,
+	}
+
+	setTtyMode(cmd, commands.Tty)
+	setDetachMode(cmd, commands.Detach, commands.Tty)
+
+	cmd.Dir = conf.GlobalConfig.MergePath()
+	cmd.Env = commands.UserEnv
+	return cmd
+}
+
+func setTtyMode(cmd *exec.Cmd, tty bool) {
+	cmd.SysProcAttr.Setctty = tty
+	if tty {
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	} else {
+		nullFile := nullFileWithPanic()
+		cmd.Stdin = nullFile
+		cmd.Stdout = nullFile
+		cmd.Stderr = nullFile
+	}
+}
+
+func setDetachMode(cmd *exec.Cmd, detach bool, tty bool) {
+	if detach {
+		logrus.Infof("Running new process in detach mode.")
+		cmd.SysProcAttr.Setsid = true
+		cmd.SysProcAttr.Setctty = false
+	} else {
+		logrus.Infof("Running new process in attach mode.")
+		cmd.SysProcAttr.Setsid = true
+		cmd.SysProcAttr.Noctty = !tty
+	}
+}
+
+```
+
+随后，我们可以通过一个简单的指令来查看我们的 `detach` 模式是否正常，注意，这里我们使用了 `--` 作为选项终止符，具体的说明可以参考 [选项终止符](#选项终止符)：
+
+```sh
+./mini-docker run \
+    -d \
+    -e PATH=/bin/ \
+    /root/images/busybox.tar \
+    -- \
+    /bin/ash -c "while true; do sleep 1; done"
+```
+
+查看我们的进程，我们可以看到：子进程仍然在正常的执行中，但是他的父进程已经变成了 `1`，因为父进程退出后被linux初始进程收养。
+
+```sh
+ps -eo pid,ppid,pcpu,cmd | grep /bin/ash | grep -v grep
+
+# 2087031       1  0.0 /bin/ash -c while true; do sleep 1; done
+```
+
+## 容器的状态管理
+
+### mini-dockerd
+
+通过我们的努力，现在我们已经可以在 `detach` 模式下运行我们的容器了，那么新问题来了：**我怎么知道我当前容器的状态？**按照我们之前对新版本docker的实现的描述，我们应该是需要实现 `dockerd`/`containerd`/`containerd-shim`/`runc` 等逻辑，但是这对于一个玩具项目来说太过于复杂了，所以这里我决定参考老版本的docker，重新设计一套轻量级的容器生命周期管理方法。
+
+我们有两种不同的设计思路：
+
+1.   不抽象任何的daemon进程，让 `mini-dorker` 的每个指令在执行（例如 `docker run`/`docker start`）的时候去记录自身的状态到特定的目录；当我们需要查询容器状态时，启动一个init进程去这个特定的目录并返回给用户；
+2.   抽象一个用来管理容器声明周期的 `daemon` 进程，这里让我们简单的把他称之为 `mini-dockerd`，**所有的container都是从mini-dockerd这个进程fork()得到，也就是说他是所有container进程的父进程**，它直接负责容器的全部状态管理，通过 `gRPC` 或者其他的方式来和 `mini-dockerd` 通信。
+     -   当我们执行 `mini-docker start` 时：
+         1.   `mini-docker` 会启动一个全新的进程，他向 `mini-dockerd` 发送 `start` 指令请求创建 container；
+         2.   `mini-dockerd` 接受到请求，会实现我们所有容器初始化必要的操作：分配容器ID，创建文件夹等；
+         3.   `mini-dockerd` 通过 `fork()` 创建一个全新的进程，这个进程就是我们的 container；container 进程内部执行我们之前的初始化流程：确认detach模式，初始化文件系统等；
+         4.   随后 `mini-dockerd` 会将全部必要的信息记录下来；
+         5.   `mini-docker` 进程退出；
+     -   当我们执行 `mini-docker ps` 时：
+         1.   `mini-docker` 会启动一个全新的进程，向 `mini-dockerd` 发送 `ps` 指令请求查询数据；
+         2.   `mini-dockerd` 通过之前记录的信息，查询数据并向 `mini-docker` 返回结果；
+         3.   `mini-docker` 向Stdout输出日志，并退出进程；
+
+这两种方式都比现代docker的生命周期管理更加简单，但是他们之间也有各自的优缺点：
+
+1.   第一种方式的最大的问题在于，所有的容器进程没有一个共同的父进程 -- 他们的父进程是各自的 `mini-docker`，或者是 `detach` 模式下被 PID=1 的进程收养，这为我们的管理带来了很大的挑战；
+2.   第二种方式的最大的问题在于，我们需要增加额外的依赖以便于和 `mini-dockerd` 进行跨进程的通信，并且我们需要非常细心的去设计 `mini-dockerd`  的接口以便于适应我们不断变化的管理需求。
+
+这里，我们选择了第二个方案，具体的架构逻辑如下图所示。注意，这里的 `mini-docker` 和 `mini-dockerd` 的通信我选择使用了 [UDS](#uds)。
+
+```mermaid
+---
+title: mini-dockerd
+---
+
+flowchart TB
+mini-docker("mini-docker"):::animate
+dockerd("mini-dockerd"):::green
+state("状态存储<br/>(内存+文件)"):::pale_pink
+pid_sock("标识文件<br/>(dockerd.pid + dockerd.sock)"):::purple
+
+ubuntu1("container-1(ubuntu)"):::yellow
+ubuntu2("container-2(ubuntu)"):::yellow
+busybox("container-3(busybox)"):::yellow
+nginx("container-4(nginx)"):::yellow
+other("..."):::yellow
+
+mini-docker -->|1.读取标识文件| pid_sock
+mini-docker <-.->|2.UDS通信| dockerd
+dockerd <-->|读写状态| state
+dockerd -->|"fork()/管控"| ubuntu1
+dockerd -->|"fork()/管控"| ubuntu2
+dockerd -->|"fork()/管控"| busybox
+dockerd -->|"fork()/管控"| nginx
+dockerd -->|"fork()/管控"| other
+dockerd -->|写入PID/UDS地址| pid_sock
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;
+```
+
+### 通过UDS通信
+
+有了技术方案之后，后面的实现就没有那么复杂了，但是我们现在需要一个方式，来提供给客户端和服务端来进行通信。这里我们选择了 [UDS](#uds) 作为我们的通信方式。这个方案虽然限制比较多，但是足够轻量级。我们的客户端和服务端的代码都不复杂，这里直接给出：
+
+#### UDS服务端
+
+```go mark:17-20,32-36
+func CreateUdsServer() error {
+	if isUdsServerRunning() {
+		logrus.Fatalf("UDS server is already running")
+		return nil
+	}
+
+	udsPath := conf.RuntimeDockerdUdsFile.Get()
+
+	err := util.EnsureFileExists(udsPath)
+	if err != nil {
+		logrus.Errorf("UDS server uds path does not exist: {%s}", udsPath)
+		return err
+	}
+	_ = os.Remove(udsPath)
+
+	network := constant.OS
+	listener, err := net.ListenUnix(network, &net.UnixAddr{
+		Name: udsPath,
+		Net:  network,
+	})
+
+	if err != nil {
+		return constant.ErrCreateUdsServer.Wrap(err)
+	}
+
+	defer listener.Close()
+
+	if err = os.Chmod(udsPath, 0600); err != nil {
+		return err
+	}
+
+	pidFile := conf.RuntimeDockerdUdsPidFile.Get()
+	if err = util.EnsureFileExists(pidFile); err != nil {
+		logrus.Errorf("UDS pid file does not exist: {%s}", pidFile)
+		return err
+	}
+
+	if err = os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", os.Getpid())), 0600); err != nil {
+		logrus.Errorf("error write file : %v", pidFile)
+		return err
+	}
+
+	logrus.Infof("start UDS for mini-dockerd on : %s", udsPath)
+
+	for {
+		conn, err := listener.AcceptUnix()
+		if err != nil {
+			logrus.Errorf("error accept unix：%v\n", err)
+			continue
+		}
+		go handleClient(conn)
+	}
+}
+```
+
+其中，两段标准的代码：
+
+-   `17-20` 用来监听 `dockerd.sock` 文件的输入；
+-   `32-35` 用来绑定 `UDS` 进程，这样我们可以知道当前 `UDS` 进程的存活状态。
+
+#### UDS客户端
+
+```go mark:8-11,18-23,25-30
+func SendRequest(req *Request) (error, Response) {
+	if !isUdsServerRunning() {
+		logrus.Fatalf("UDS server is not running")
+		return constant.ErrIllegalUdsServerStatus, Response{}
+	}
+
+	// connect client
+	conn, err := net.DialUnix(constant.OS, nil, &net.UnixAddr{
+		Name: conf.RuntimeDockerdUdsFile.Get(),
+		Net:  constant.OS,
+	})
+	if err != nil {
+		logrus.Errorf("failed to dial mini-dockerd: %v\n", err.Error())
+		return err, Response{}
+	}
+	defer conn.Close()
+
+	reqData, _ := json.Marshal(req)
+	_, err = conn.Write(reqData)
+	if err != nil {
+		logrus.Errorf("failed to send uds request: %v\n", err.Error())
+		return err, Response{}
+	}
+
+	buf := make([]byte, 1024*10)
+	n, err := conn.Read(buf)
+	if err != nil {
+		logrus.Errorf("failed to read uds response: %v\n", err)
+		return err, Response{}
+	}
+
+	var rsp Response
+	err = json.Unmarshal(buf[:n], &rsp)
+	if err != nil {
+		logrus.Errorf("error unmarshal uds response: %v\n", err.Error())
+		return err, Response{}
+	}
+
+	return nil, rsp
+}
+```
+
+标注的三段代码：
+
+-   `8-11` 请求连接UDS服务端；
+-   `18-23` 通过获取的连接想UDS服务端发送请求数据；
+-   `25-30` 读取UDS服务端的返回；
+
+### `mini-docker ps`
+
+下面是我们实现 `mini-docker ps` 的逻辑：
+
+#### 逻辑抽象
+
+我们将所有的请求都抽象为 `ActionHandler`，每一个用户的请求都绑定到一个对应的 `Action`，这样我们只需要按照声明去实现请求，就可以轻松的为我们的 `mini-docker` 添加额外的操作；
+
+```go
+type ActionHandler func(req Request) (rsp Response, err error)
+
+func AddHandler(action constant.Action, ac ActionHandler) {
+	registry[action] = ac
+}
+
+func handleRequest(req Request) (Response, error) {
+	h, ok := registry[req.Act]
+	if !ok {
+		return ErrorResponse(fmt.Errorf("%s", req.Act.String()), constant.ErrUnsupportedAction)
+	}
+	return h(req)
+}
+```
+
+#### 绑定handler
+
+这里，我们为 `ps` 命令绑定我们的处理函数 `handlePs`
+
+```go mark:2
+func init() {
+	handler.AddHandler(constant.Ps, handlePs)
+	handler.AddHandler(constant.Commit, handleCommit)
+	handler.AddHandler(constant.Run, handleContainerRun)
+	handler.AddHandler(constant.Stop, handleContainerStop)
+	handler.AddHandler(constant.Logs, handleContainerLogs)
+}
+```
+
+#### handlePs的实现
+
+`handlePs` 的逻辑实现非常简单，就是在收到请求之后，去读取我们存储容器状态的文件读取所有的容器状态，并且按照请求中的要求返回。
+
+```go
+func ps(command conf.PsCommand) ([]entity.Container, error) {
+	allContainers, err := readAllContainers()
+	if err != nil {
+		logrus.Errorf("error reading all containers: %v", err)
+		return nil, err
+	}
+
+	if command.All {
+		return allContainers, nil
+	}
+
+	targetContainers := make([]entity.Container, 0)
+	for _, container := range allContainers {
+		if container.Status != entity.ContainerRunning {
+			continue
+		}
+		targetContainers = append(targetContainers, container)
+	}
+	return targetContainers, nil
+}
+```
+
+### 通过 `nsenter` 进入已经创建好的容器
+
+接下来，我们需要开始实现一个相对复杂的逻辑 -- **假设我们存在一个id等于 `28f4ccc7b638` 的 `ubuntu` 容器，我们可以通过`docker exec -it 28f4ccc7b638 /bin/bash` 进入到容器内部。**这个逻辑是通过 [nsenter](#nsenter) 来实现的。整体的实现步骤如下图所示：
+
+```mermaid
+flowchart TD
+    A["解析 exec 命令参数（-it、容器ID、执行命令）"] --> B["校验容器状态（必须运行中）"]
+    B --> C["获取容器的 init 进程 PID（容器的第一个进程）"]
+    C --> D["构造 nsenter 命令，进入容器命名空间"]
+    D --> E["处理 -it 参数：分配 TTY、重定向 stdin/stdout/stderr"]
+    E --> F["执行 nsenter 命令，进入容器交互"]
+```
+
+
+
+这里我们可以先查看 [/proc进程相关](#/proc进程相关) 这一小节中关于一个 docker 容器的例子，以及 [nsenter和docker exec的区别](#nsenter和docker exec的区别) 这一小节来初步了解如何使用 `nsenter` 来模拟 `docker exec`。
+
+#### 流程
+
+所以，我们现在可以把我们整体实现 `exec` 流程表示为如下：
+
+```mermaid
+flowchart TB
+    docker("mini-docker exec <br/>&lt;容器ID&gt; &lt;命令&gt;"):::green
+
+    subgraph proc["/proc/&lt;容器PID&gt;/"]
+        direction TB
+        ns["ns/ <br/>(mnt/pid/net/uts/ipc)"]:::pale_pink          
+        environ("environ <br/>(环境变量)"):::pale_pink
+        cwd("cwd <br/>(工作目录)"):::pale_pink
+        cgroup("cgroup <br/>(可选)"):::pale_pink
+    end
+
+    step1("1. 解析容器ID → 获取容器PID"):::green
+    step2("2. 读取上下文 <br/>(cwd/environ)"):::green
+    step3("3. 构造nsenter命令 <br/>nsenter <br/> -t &lt;PID&gt; -a <br/>/bin/bash <br/>-w &lt;cwd&gt;<br/> -e &lt;env> <br/>&lt;命令&gt;"):::yellow
+    exec("4. syscall.Exec() <br/>执行nsenter，传递环境变量"):::yellow
+
+    docker --> step1
+    step1 <-.->|"读取PID"| proc
+    step1 --> step2
+    step2 <-.->|"读取上下文"| environ & cwd
+    step2 --> step3
+    step3 --> exec
+    exec <-.->|"依赖命名空间文件"| ns
+
+    classDef pale_pink fill:#E1BEE7,color:#000000;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef yellow fill:#FFF9C4,color:#000000;
+```
+
+#### 实现
+
+在思路清楚之后，具体的实现就变得简单了：只需要拼好我们的命令行参数即可。
+
+```go mark:12-15
+func NsenterExec(pid int, args []string, env []string) error {
+	path, err := exec.LookPath(constant.Nsenter)
+	if err != nil {
+		panic(err)
+	}
+	argv := []string{
+		constant.Nsenter,
+		"-t", fmt.Sprintf("%d", pid),
+		"-a",
+	}
+	argv = append(argv, args...)
+	if err = syscall.Exec(path, argv, env); err != nil {
+		logrus.Errorf("error exec %s : %v", path, err)
+		return err
+	}
+	return nil
+}
+
+func ReadNsEnv(pid int) ([]string, error) {
+	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/environ", pid))
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(string(data), "\x00"), nil
+}
+```
+
 # QA
 
 ## Proc
@@ -1601,3 +2250,1027 @@ func pivotRoot(root string) error {
 | 执行 `mount overlay ...`      | ✅ 仅修改自己的挂载视图       | ❌ 无任何影响     |
 | 执行 `umount /tmp`            | ✅ 仅卸载自己的 `/tmp`        | ❌ `/tmp` 仍可用  |
 | 执行 `pivot_root merge`       | ✅ 根目录切换到 merge         | ❌ 无影响         |
+
+## tty控制权
+
+在开发的过程中，我发现一个奇怪的问题，当我通过
+
+```sh
+./mini-docker run -it -e PATH=/bin/ -m 2000m -c '10000 100000' /root/images/busybox.tar /bin/ash
+```
+
+进入非detach模式时，我的终端会进入到 `/bin/ash`，此时可以观察到下面几个现象：
+
+1. 当我通过 exit 退出进程时，父进程和子进程都会退出；
+2. 当我通过 kill -9 杀死父进程时，父进程会退出，子进程会被pid=1的进程接管；但是此时会出现一个奇怪的问题，我们的标准输入看起来非常奇怪：好像一会儿在向我的 `zsh`（这是我的宿主机终端）输入，一会在向 `/bin/ash` 输入。
+
+这是因为我在创建container的过程中，使用了如下操作：
+
+```go mark:8-13
+func newParentProcess(tty bool, commands []string, env []string) *exec.Cmd {
+     args := []string{"init"}
+     for _, command := range commands {
+          args = append(args, command)
+     }
+     // ...
+
+     if tty {
+          logrus.Info("Running new process in tty.")
+          cmd.Stdin = os.Stdin
+          cmd.Stdout = os.Stdout
+          cmd.Stderr = os.Stderr
+     }
+     cmd.Dir = conf.GlobalConfig.MergePath()
+     cmd.Env = env
+     return cmd
+}
+```
+
+于是一切都解释得通了：
+
+1.   通过exit退出进程：
+     1.   `exit` 是输入给容器子进程（ash）的命令，ash 执行 exit 后自身退出；
+     2.   父进程的 `parent.Wait()` 会阻塞等待子进程退出，子进程退出后 `Wait()` 返回，父进程才跟着退出；
+2.   当我们通过 kill -9 杀死父进程时，此时的逻辑是：
+     1.   父进程被强制杀死后，`parent.Wait()` 逻辑中断，但容器子进程的 `Stdin/Stdout/Stderr` 依然绑定在宿主机终端的 IO 描述符上；
+     2.   子进程被 PID=1 的进程接管后仍在运行，此时宿主机 `zsh` 和容器子进程「共享同一个终端 IO」；
+     3.   内核会将终端输入的字符随机分配给 zsh 或容器子进程，输出也会混在一起，表现为「一会儿向 zsh 输入，一会儿向 ash 输入」。
+
+## /proc
+
+### 定义
+
+`/proc` 是 Linux 特有的**虚拟文件系统（VFS）** —— 它不存储在磁盘上，而是由内核实时生成，用于暴露内核 / 进程的运行时状态和配置。可以把 `/proc` 理解为：**用户空间与内核交互的 “窗口”**，`/proc` 有以下几个核心特点：
+
+-   **无持久化**：所有文件 / 目录都是内核动态生成的，重启后消失；
+-   **只读为主**：大部分文件仅允许读取（获取状态），少数可写入（修改内核配置）；
+-   **以 PID 为核心**：每个运行的进程都对应 `/proc/<pid>` 目录（`<pid>` 是进程 ID）。
+
+`/proc` 下可以笼统的分为两大类型：
+
+-   `/proc/<pid>` 存放了pid进程下的相关信息；
+-   以及除了进程相关的通用信息；
+
+### 通用信息
+
+```bash
+ls /proc | grep -E -v '^[0-9]+$'
+
+#acpi		devices		iomem		kpageflags	mtrr		sli		tty
+#bt_aug_stat	diskstats	ioports		latency_stats	net		softirqs	unevictable
+#bt_stat		dma		irq		loadavg		pagetypeinfo	stat		uptime
+#buddyinfo	driver		kallsyms	loadavg_bt	partitions	swaps		version
+#bus		dynamic_debug	kcore		locks		pressure	sys		vmallocinfo
+#cgroups		execdomains	keys		mdstat		schedstat	sysrq-trigger	vmstat
+#cmdline		fb		key-users	meminfo		scsi		sysvipc		zoneinfo
+#consoles	filesystems	kmsg		misc		scx_stat	thread-self
+#cpuinfo		fs		kpagecgroup	modules		self		timer_list
+#crypto		interrupts	kpagecount	mounts		slabinfo	tkernel
+```
+
+#### 几个常用的信息
+
+|      路径       |       作用        |                  容器场景的意义                  |
+| :-------------: | :---------------: | :----------------------------------------------: |
+| `/proc/cpuinfo` | 显示 CPU 硬件信息 |  容器内读取的是宿主机 CPU 信息（除非做了隔离）   |
+| `/proc/meminfo` | 显示内存使用状态  | 容器内读取的是 cgroup 限制后的内存（而非宿主机） |
+| `/proc/mounts`  |  显示系统挂载点   |    容器内显示的是自己的挂载命名空间中的挂载点    |
+
+以我的这台云服务器为例：
+
+```bash
+CPU	4核
+内存	16GB
+系统盘	SSD云硬盘 180GB
+```
+
+#### /proc/cpuinfo
+
+```bash
+cat /proc/cpuinfo
+```
+
+得到以下输出（只保留了必要部分）：
+
+```
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu MHz		: 2545.218
+cache size	: 512 KB
+TLB size	: 1024 4K pages
+cache_alignment	: 64
+
+processor	: 1
+processor	: 2
+processor	: 3
+```
+
+从输出信息我们可以看到：
+
+-   `processor:0 ~ processor:3` 表明我们的服务器有四个**逻辑核心**（而非物理核心）；
+-   `vendor_id: AuthenticAMD`：CPU 厂商为 AMD；
+-   `cpu MHz`：CPU 实时运行频率（2545.218 MHz，即约 2.54GHz）；
+-   `TLB size`：快表大小（1024 个 4K 页的条目）；
+-   `cache_alignment`：缓存对齐大小（64 字节，CPU 缓存读写的最小单位）；
+
+### /proc进程相关
+
+>   `/proc/<pid>` 下保存了和特定进程相关的信息。
+
+#### 几个常用的信息
+
+|         路径          |            作用            |                   容器场景的意义                   |
+| :-------------------: | :------------------------: | :------------------------------------------------: |
+|     `/proc/<pid>`     |     单个进程的专属目录     | 容器内的 1 号进程，对应宿主机的 `/proc/<host-pid>` |
+| `/proc/<pid>/environ` |       进程的环境变量       |               查看容器进程的环境变量               |
+|   `/proc/<pid>/exe`   | 指向进程可执行文件的软链接 |       找到容器 init 进程的实际可执行文件路径       |
+|   `/proc/<pid>/cwd`   |     进程的当前工作目录     |               查看容器进程的工作目录               |
+|   `/proc/<pid>/ns`    |   进程所属的命名空间文件   |                 容器隔离的核心入口                 |
+
+#### 示例
+
+我们通过如下指令启动一个容器：
+
+```bash
+docker run -itd \
+    --cpus=1.0 -m 128m \				# 指定cgroup信息
+    -e name=example-ubuntu \			# 指定环境变量
+    -w /media \							# 指定工作目录
+    ubuntu /bin/bash
+# 2bcd026d203d
+    
+ps -eo pid,ppid,pcpu,cmd | grep -E "/bin/bash" | grep -v grep
+# 3252163 3252018  0.0 /bin/bash
+```
+
+现在我们可以直接来查看我们的相关信息了
+
+#### environ
+
+这里需要注意的一点是，每个环境变量（`KEY=VALUE`）之间用 **空字符（`\0`，ASCII 0）** 分隔，而非换行 / 空格；
+
+```bash
+cat /proc/3252163/environ | tr '\0' '\n'
+# PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# HOSTNAME=2bcd026d203d
+# TERM=xterm
+# name=example-ubuntu
+# HOME=/root
+```
+
+#### cwd
+
+`/cwd` 是一个软链接指向了我们声明的 `/media`
+
+```bash
+ll /proc/3252163/cwd
+
+# lrwxrwxrwx 1 root root 0 Jan 11 10:41 /proc/3252163/cwd -> /media
+```
+
+#### cgroup
+
+`/proc/<pid>/cgroup` 是 Linux 内核暴露进程所属 cgroup 信息的文件，其每行格式为：`层级ID:控制器列表:路径`
+
+|    字段    |        示例值         |                           核心含义                           |
+| :--------: | :-------------------: | :----------------------------------------------------------: |
+|  层级 ID   |          `0`          | cgroup 层级的唯一编号（cgroup v2 中只有 1 个层级，固定为 0） |
+| 控制器列表 | 空（`::` 中间无内容） | cgroup v2 不再按 “控制器” 划分，统一用单个层级管理所有资源（cpu/mem 等），因此控制器列表为空 |
+|    路径    |  `/system.slice/...`  | 进程所属的 cgroup 在层级中的具体路径（对应 Docker 容器的 cgroup 路径） |
+
+```bash
+cat /proc/3252163/cgroup
+
+# 0::/system.slice/docker-2bcd026d203d8f3f9eda18f43d188c51675be34a2e0510a2900549bfafc5772e.scope
+```
+
+我们可以在宿主机上找到我们声明的`cgroup`信息：
+
+```bash
+cat /sys/fs/cgroup/system.slice/docker-2bcd026d203d8f3f9eda18f43d188c51675be34a2e0510a2900549bfafc5772e.scope/cpu.max
+# 100000 100000
+
+cat /sys/fs/cgroup/system.slice/docker-2bcd026d203d8f3f9eda18f43d188c51675be34a2e0510a2900549bfafc5772e.scope/memory.max
+# 134217728
+```
+
+## /proc/pid/ns
+
+### 定义
+
+`/proc/<pid>/ns` 是 Linux 内核为每个进程暴露**命名空间（Namespace）** 信息的专属目录，核心作用是：**以 “文件” 的形式，标识进程所属的每一种命名空间，同时提供「进入该命名空间」的入口（是 `nsenter`、`docker exec` 等功能的底层基础）。**
+
+Linux 命名空间是容器 “隔离性” 的核心 —— 它让进程 “误以为” 自己拥有独立的主机名、PID 空间、网络栈等资源。而 `/proc/<pid>/ns` 就是这些隔离资源的 “可视化入口”：
+
+-   每个进程的 `/proc/<pid>/ns` 目录下，一个文件对应一种命名空间；
+-   同一命名空间内的所有进程，对应 `ns` 文件的「inode 号」完全一致。
+
+### 示例
+
+还是以我们在 [/proc进程相关](#/proc进程相关) 中，我们启动的容器进程 `3252163` 为例。
+
+```bash
+ls -li /proc/3252163/ns/
+```
+
+我们可看到大量的文件
+
+```bash
+1273617591 lrwxrwxrwx 1 root root 0 Jan 11 10:39 cgroup -> 'cgroup:[4026532365]'
+1273617588 lrwxrwxrwx 1 root root 0 Jan 11 10:39 ipc -> 'ipc:[4026532363]'
+1273524119 lrwxrwxrwx 1 root root 0 Jan 11 10:39 mnt -> 'mnt:[4026532361]'
+1273522023 lrwxrwxrwx 1 root root 0 Jan 11 10:39 net -> 'net:[4026532366]'
+1273617590 lrwxrwxrwx 1 root root 0 Jan 11 10:39 pid -> 'pid:[4026532364]'
+1280325885 lrwxrwxrwx 1 root root 0 Jan 11 10:58 pid_for_children -> 'pid:[4026532364]'
+1280325887 lrwxrwxrwx 1 root root 0 Jan 11 10:58 time -> 'time:[4026531834]'
+1280325888 lrwxrwxrwx 1 root root 0 Jan 11 10:58 time_for_children -> 'time:[4026531834]'
+1280325886 lrwxrwxrwx 1 root root 0 Jan 11 10:58 user -> 'user:[4026531837]'
+1273617589 lrwxrwxrwx 1 root root 0 Jan 11 10:39 uts -> 'uts:[4026532362]'
+```
+
+基本上，他们就是对应了我们的几个 `namespace` 系统。
+
+### 使用go操作ns
+
+**ns文件是“可操作的入口”，他和很多的 /proc 文件不一样，它不是普通的文本文件，而是内核的 “文件描述符”—— 通过打开该文件，再调用 `setns` 系统调用，就能让当前进程进入目标命名空间。这也是 `nsenter`/`docker exec` 的底层实现逻辑。**
+
+我们在`go`语言内也是一致的逻辑：
+
+```go
+func main() {
+	args := os.Args
+	if len(args) != 2 {
+		panic("Usage: nsenter <pid>")
+	}
+	pid := args[1]
+	fmt.Printf("pid : {%s}\n", pid)
+
+	command := "nsenter"
+	path, err := exec.LookPath(command)
+	if err != nil {
+		panic(err)
+	}
+	if err = syscall.Exec(path, []string{command, "-t", pid, "-a", "/bin/bash"}, syscall.Environ()); err != nil {
+		panic(err)
+	}
+}
+```
+
+### nsenter和docker exec的区别
+
+>   以我们在 [/proc进程相关](#/proc进程相关) 中，我们启动的容器进程 `3252163` 为例。
+
+我们可以观察到一个现象：
+
+```bash
+docker exec -it 2bcd026d203d /bin/bash
+```
+
+当我们通过以上命令进入到容器时：
+
+-   我们的 `cwd` 在 `/media` 下；
+-   `echo $name` 可以看到我们声明的环境变量；
+
+```bash
+nsenter -t 3252163 -a /bin/bash
+```
+
+而当我们通过以上命令进入到容器时：
+
+-   我们的 `cwd` 在 `/` 下；
+-   `echo $name` 发现没有该环境变量；
+
+**这里最关键的区别在于：`nsenter` 依然读取了 `/proc/<pid>/ns/`（只是没复刻容器的「进程上下文」）。**
+
+|         操作          |         命名空间         |          进程上下文（工作目录 / 环境变量 / 用户等）          |
+| :-------------------: | :----------------------: | :----------------------------------------------------------: |
+| `nsenter -t <pid> -a` | ✅ 进入容器的所有命名空间 | ❌ 从零创建新 bash，继承宿主机的默认上下文（工作目录`/`、无自定义环境变量） |
+|   `docker exec -it`   | ✅ 进入容器的所有命名空间 |     ✅ 复刻容器进程的上下文（工作目录、环境变量、用户等）     |
+
+简单来说就是：
+
+-   `nsenter` 只解决「进入命名空间」的问题，**不关心容器进程的 “运行状态”**；
+-   `docker exec` 是在「进入命名空间」的基础上，额外复刻了容器进程的上下文（工作目录、环境变量等）；
+
+## nsenter
+
+### 定义
+
+`nsenter` 是 `NameSpace Enter` 的简写，是 Linux 系统提供的一个**命名空间（Namespace）操作工具**，核心作用是「进入另一个进程的命名空间并执行命令」—— 这是实现容器 `exec`、调试容器 / 进程隔离环境的核心工具，也是 Docker / 容器运行时（如 runc）实现 `docker exec` 的底层依赖。
+
+### 作用
+
+`nsenter` 的核心作用可以总结为：
+
+1.   指定一个**目标进程**（通过 PID）；
+2.   进入该进程的**一个或多个命名空间**；
+3.   在这个隔离的命名空间中执行任意命令。
+
+简单说：宿主机上的进程默认在「宿主机命名空间」，`nsenter` 能让我们「跳」到其他进程（比如容器的 init 进程）的隔离命名空间中，相当于「钻进去」容器 / 目标进程的隔离环境。
+
+事实上，容器的所有进程都运行在自己的 Namespace 中，宿主机直接执行命令是「在宿主机命名空间」，看不到容器的隔离资源；而 `nsenter` 能突破这个隔离，进入容器的 Namespace 执行命令 —— 这是 `docker exec` 的底层原理。
+
+### 基本用法
+
+```bash
+Usage:
+ nsenter [options] [<program> [<argument>...]]
+
+Run a program with namespaces of other processes.
+```
+
+我们先创建一个容器：
+
+```bash
+# 创建容器
+docker run -itd --cpus=1.0 -m 128m ubuntu /bin/bash
+# 13a9328c9ddfcece6a7b9f85a80416fbf0e83d88f38a93701cae92f9d1694a10
+
+# 找到容器对应的pid
+ps -eo pid,ppid,pcpu,cmd | grep -E "/bin/bash" | grep -v grep
+# 4112769 4112603  0.1 /bin/bash
+
+# 现在，我们可以通过nsenter进入到我们创建的容器了
+nsenter -t 4112769 -a /bin/bash
+# 将数据写入到我们的文件内
+echo "hello world!" > data
+# 退出命名空间
+exit
+
+# 通过 docker exec 进入命名空间，现在我们会发现刚才我们写入的文件可以在容器内看到了！
+docker exec -it 13a9328c9ddf /bin/bash
+cat data
+#hello world!
+```
+
+## UDS
+
+### 核心定义
+
+UDS（Unix Domain Socket，Unix 域套接字）是**仅用于同一台主机内进程间通信（IPC）** 的机制，我们可以把它理解为：
+
+-   「文件系统路径作为地址」的套接字（替代 TCP/UDP 的 IP + 端口）；
+-   比 TCP/UDP 更高效（无需网络协议栈、无封包 / 解包、无校验和 / 路由）；
+-   仅支持本机通信，无法跨主机（这也是它适合`mini-docker`+`mini-dockerd`场景的原因）。
+
+### 核心特点
+
+|     特性     |                  UDS                  |           TCP Socket           |     管道（Pipe）     |
+| :----------: | :-----------------------------------: | :----------------------------: | :------------------: |
+|   通信范围   |              本机内进程               |         跨主机 / 本机          | 父子进程 / 兄弟进程  |
+|   地址形式   | 文件路径（如`/var/run/dockerd.sock`） | IP + 端口（如 127.0.0.1:8080） | 无显式地址（一对一） |
+|   通信模型   |        支持多客户端 + 单服务端        |    支持多客户端 + 单服务端     |       仅一对一       |
+| 数据传输效率 |         极高（本机内存拷贝）          |      较高（需网络协议栈）      |    高，但扩展性差    |
+|   权限控制   |        基于文件权限（0600 等）        |          需应用层校验          |          无          |
+|   数据格式   |  任意字节流（可封装 JSON/Protobuf）   |           任意字节流           |   字节流，无结构化   |
+
+### 核心概念
+
+UDS 的核心由 `服务端` 和 `客户端` 组成：
+
+-   **服务端**：`mini-dockerd` 作为服务端，创建一个 UDS 文件（如`/var/run/dockerd.sock`），监听这个文件上的连接请求；
+-   **客户端**：`mini-docker`（run/ps/stop 指令）作为客户端，连接这个 UDS 文件，发送请求并接收响应。
+
+UDS 文件的特殊性质：
+
+-   UDS 文件是「伪文件」，不占用磁盘空间（仅作为通信地址标识）；
+-   权限控制和普通文件一致（如设置`0600`，仅 root 可读写，避免非授权进程通信）；
+-   服务端退出后，UDS 文件不会自动删除，需手动清理（否则下次启动会报错「地址已被占用」）。
+
+### 一个简单的例子
+
+#### 服务端
+
+```go
+package main
+
+import (
+	"0x822a5b87/cgroup"
+	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+)
+
+func main() {
+	// 1. 清理残留的UDS文件（避免启动失败）
+	udsPath := "/var/run/tiny-docker/dockerd.sock"
+	os.Remove(udsPath)
+
+	// 2. 创建UDS服务端
+	listener, err := net.ListenUnix("unix", &net.UnixAddr{
+		Name: udsPath,
+		Net:  "unix",
+	})
+	if err != nil {
+		panic(fmt.Sprintf("监听UDS失败：%v", err))
+	}
+	defer listener.Close()
+
+	// 3. 设置UDS文件权限（仅root可访问）
+	os.Chmod(udsPath, 0600)
+
+	// 4. 写入mini-dockerd的PID文件（供客户端校验）
+	pidFile := "/var/run/tiny-docker/dockerd.pid"
+	os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", os.Getpid())), 0600)
+
+	fmt.Println("mini-dockerd启动，监听UDS：", udsPath)
+
+	// 5. 循环接收客户端连接
+	for {
+		conn, err := listener.AcceptUnix()
+		if err != nil {
+			fmt.Printf("接收连接失败：%v\n", err)
+			continue
+		}
+		// 每个客户端连接启动协程处理（避免阻塞）
+		go handleClient(conn)
+	}
+}
+
+// 处理客户端请求
+func handleClient(conn *net.UnixConn) {
+	defer conn.Close()
+
+	// 1. 读取客户端请求（简化：读取1024字节）
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		fmt.Printf("读取请求失败：%v\n", err)
+		return
+	}
+
+	// 2. 解析JSON请求
+	var req cgroup.Request
+	err = json.Unmarshal(buf[:n], &req)
+	if err != nil {
+		resp := cgroup.Response{Code: 1, Msg: "请求格式错误：" + err.Error()}
+		sendResponse(conn, resp)
+		return
+	}
+
+	// 3. 处理不同指令（简化版）
+	var resp cgroup.Response
+	switch req.Action {
+	case "ps":
+		// 模拟返回容器列表
+		resp = cgroup.Response{
+			Code: 0,
+			Msg:  "success",
+			Data: []map[string]interface{}{
+				{"id": "abc123", "pid": 12345, "status": "running"},
+				{"id": "def456", "pid": 67890, "status": "exited"},
+			},
+		}
+	case "run":
+		// 模拟创建容器
+		resp = cgroup.Response{
+			Code: 0,
+			Msg:  "容器创建成功",
+			Data: map[string]interface{}{"id": "ghi789", "pid": 11223},
+		}
+	default:
+		resp = cgroup.Response{Code: 2, Msg: "不支持的指令：" + req.Action}
+	}
+
+	// 4. 返回响应
+	sendResponse(conn, resp)
+}
+
+// 发送响应给客户端
+func sendResponse(conn *net.UnixConn, resp cgroup.Response) {
+	respData, _ := json.Marshal(resp)
+	conn.Write(respData)
+}
+
+```
+
+#### 客户端
+
+```go
+package main
+
+import (
+	"0x822a5b87/cgroup"
+	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"syscall"
+)
+
+// 复用上面的Request/Response结构
+
+func main() {
+	// 1. 校验mini-dockerd是否存活（读取PID文件）
+	pidFile := "/var/run/tiny-docker/dockerd.pid"
+	pidStr, err := os.ReadFile(pidFile)
+	if err != nil {
+		panic("mini-dockerd未运行：" + err.Error())
+	}
+	pid := 0
+	fmt.Sscanf(string(pidStr), "%d", &pid)
+	// 用kill -0校验进程是否存活
+	if err := syscall.Kill(pid, 0); err != nil {
+		panic("mini-dockerd进程已退出：" + err.Error())
+	}
+
+	// 2. 连接UDS服务端
+	udsPath := "/var/run/tiny-docker/dockerd.sock"
+	conn, err := net.DialUnix("unix", nil, &net.UnixAddr{
+		Name: udsPath,
+		Net:  "unix",
+	})
+	if err != nil {
+		panic("连接mini-dockerd失败：" + err.Error())
+	}
+	defer conn.Close()
+
+	// 3. 构造请求（示例：查询容器列表）
+	req := cgroup.Request{
+		Action: "ps",
+		Params: map[string]interface{}{},
+	}
+	reqData, _ := json.Marshal(req)
+
+	// 4. 发送请求
+	conn.Write(reqData)
+
+	// 5. 读取响应
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		panic("读取响应失败：" + err.Error())
+	}
+
+	// 6. 解析并输出响应
+	var resp cgroup.Response
+	json.Unmarshal(buf[:n], &resp)
+	fmt.Printf("响应结果：\nCode: %d\nMsg: %s\nData: %v\n", resp.Code, resp.Msg, resp.Data)
+}
+```
+
+## 选项终止符
+
+我们在传递命令行参数的时候可能会碰到这样一个问题：同一个命令行中，一部分命令行参数是传递给我们主进程的，另外一部分是传递给我们的子进程的，例如：
+
+```sh
+./mini-docker run \
+    -d \
+    -c '10000 100000' \
+    /root/images/busybox.tar \
+    /bin/ash -c "while true; do sleep 1; done"
+```
+
+这里，后面的 `-c` 参数会覆盖前面的 `-c` 参数导致我们参数解析异常，解决方法也非常简单，为命令行参数新增一个 `--` 作为分隔符即可：
+
+```sh mark:5
+./mini-docker run \
+    -d \
+    -c '10000 100000' \
+    /root/images/busybox.tar \
+    -- \
+    /bin/ash -c "while true; do sleep 1; done"
+```
+
+### 定义
+
+`--` 是 **Unix/Linux 命令行的通用分隔符**，核心作用是「明确区分命令的选项（参数）和后续的非选项参数（如文件名、命令字符串）」，避免参数名冲突：
+
+-   **作用范围**：`--` 之前的所有内容，都会被解析为「命令工具自身的选项 / 参数」；
+-   **终止解析**：`--` 之后的所有内容，**不会被当作工具的选项解析**，而是原封不动地传递给后续的子命令 / 程序；
+-   **通用性**：这是 POSIX 标准定义的规则，Docker、Git、ls、rm 等绝大多数 Unix/Linux 工具都遵循这个规则。
+
+## linux中的进程组和会话
+
+```mermaid
+---
+title: session and process group
+---
+
+flowchart TB
+
+linux("Linux 系统"):::purple
+
+subgraph session1["zsh（会话首进程）"]
+    tty("控制终端 tty"):::green
+    subgraph pg1["前台进程组：vim"]
+        vim("vim"):::yellow
+    end
+    subgraph pg2["后台进程组：ls | grep | wc"]
+        direction TB
+        ls("ls"):::yellow
+        grep("grep"):::yellow
+        wc("wc"):::yellow
+    end
+    pg1 <-->|IO 交互| tty
+    pg2 -.->|无直接 IO（被阻塞）| tty
+end
+
+subgraph session2["/bin/ash（会话首进程）"]
+    pg4("processes"):::yellow
+    pg4 -.->|无控制终端| null("/dev/null"):::error
+end
+
+linux --> session1
+linux --> session2
+linux --> session3("session3 ...")
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;
+
+```
+
+### 进程组和会话的通俗描述
+
+如果我们把一个linux操作系统看做是一个大型的财团，那么我们可以做出如下类比：
+
+|      概念       |        通俗比喻        |                   核心作用                   |
+| :-------------: | :--------------------: | :------------------------------------------: |
+| 进程（Process） |        单个员工        |                 最小执行单元                 |
+|  进程组（PG）   | 部门（比如「研发部」） | 把相关进程归为一组，方便批量管理（如发信号） |
+| 会话（Session） |  公司（包含多个部门）  |  管理「终端连接」，一个会话对应一个控制终端  |
+| 控制终端（TTY） |   公司的「总机电话」   |  会话内的进程通过终端交互，终端关闭会发信号  |
+
+### Process Group
+
+进程组（PG）是批量管理进程的最小单位：
+
+-   每个进程都属于一个进程组，进程组通过 `PGID` 标识；
+-   进程组有一个 `组长进程`：PGID等于组长进程的PID，只要组内有一个进程存活，进程组就存在：**即使组长退出**；组长退出的时候，进程组的PGID不变；
+-   进程创建时，默认继承父进程的进程组；
+-   可以通过 `setpgid()` 系统调用修改进程组；
+
+为什么我们需要进程组：最典型的场景：我们在终端执行 `ls | grep txt | wc -l`，这会创建 3 个进程（ls、grep、wc），它们会被归为**同一个进程组**。
+
+-   当我们按 `Ctrl+C` 时，内核会向这个进程组的**所有进程**发送 `SIGINT` 信号，批量终止它们（而不是只杀一个）；
+-   如果我们只杀其中一个进程，其他进程不受影响 —— 进程组的核心价值是「分组管控」。
+
+```sh mark:3
+ps -eo pid,ppid,pgid,sid,cmd | head -5
+
+# pid：进程ID | ppid：父进程ID | pgid：进程组ID | sid：会话ID | cmd：命令
+
+#    PID    PPID    PGID     SID CMD
+#      1       0       1       1 /usr/lib/systemd/systemd --switched-root --system --deserialize=41
+#      2       0       0       0 [kthreadd]
+#      3       2       0       0 [pool_workqueue_release]
+#      4       2       0       0 [kworker/R-rcu_g]
+```
+
+### Session
+
+会话是管理终端连接的一个更大单位：
+
+-   一个会话包含**一个或多个进程组**，会话用「会话 ID（SID）」标识；
+-   会话有一个「会话首进程」：SID = 首进程的 PID；
+-   一个会话最多关联**一个控制终端**（TTY/PTY），终端的「控制进程」是会话首进程（比如我们的 zsh/bash）；
+-   可以通过 `setsid()` 系统调用创建新会话（我们代码里的 `syscall.Setsid()` 就是这个作用）。
+
+#### 会话的核心特性
+
+>   终端关闭 → 发送 SIGHUP 信号：当控制终端关闭（比如父进程退出、终端窗口关闭），内核会向会话的「前台进程组」所有进程发送 `SIGHUP` 信号（默认行为是终止进程）。
+
+在我们的代码中，当我们在使用detach模式的时候，tty 设置为false了，所以父进程和子进程在同一个session中。
+
+```go mark:11,12
+func newParentProcess(tty bool, commands []string, env []string) *exec.Cmd {
+	// ...
+	cmd := exec.Command(constant.UnixProcSelfExe, args...)
+	cmd.SysProcAttr = &unix.SysProcAttr{
+		Cloneflags: unix.CLONE_NEWUTS |
+			unix.CLONE_NEWPID |
+			unix.CLONE_NEWNS |
+			unix.CLONE_NEWNET |
+			unix.CLONE_NEWIPC,
+		Unshareflags: unix.CLONE_NEWNS,
+		Setctty:      tty,
+		Setsid:       tty,
+	}
+
+	// ...
+}
+```
+
+>   **新会话创建时不会关联控制终端**
+
+如果我们对进程调用 `setsid()`，那么这个进程会：
+
+1.   成为新会话的首进程；
+2.   成为新进程组的组长；
+3.   **失去原控制终端，且新会话无控制终端**；
+
+#### 会话的典型场景
+
+-   终端启动的所有进程（比如 bash、ls、vim）都属于同一个会话；
+-   后台守护进程（比如 nginx、redis）会通过 `setsid()` 创建独立会话，脱离终端，即使终端关闭也能继续运行。
+
+## 会话和终端
+
+在 [会话的核心特性](#会话的核心特性) 中提到了**新会话创建时不会关联控制终端**，而这个是一个非常容易碰到的陷阱 -- 它创建时不会关联控制终端，但是仍然有机会关联控制终端。
+
+### 什么是控制终端
+
+控制终端不是单纯的「输入输出设备」，而是 Linux 内核给「会话」分配的「专属交互通道」：
+
+-   一个**会话**最多只能绑定**一个**控制终端；
+-   一个**控制终端**最多只能绑定**一个**会话（一对一关系）；
+-   终端的所有输入 / 输出、信号（如 `Ctrl+C`/`SIGHUP`），都只针对「绑定的会话」生效。
+
+### 会话与终端绑定的核心规则
+
+Linux 内核规定：**只有「会话首进程」才有资格申请 / 绑定控制终端**，非会话首进程完全没有这个权限。这个规则的设计目的是：避免多个进程争抢同一个终端，导致交互混乱。例如我们在 [tty控制权](#tty控制权) 中碰到的问题，就是因为多个进程争抢同一个终端引起的。下面是终端绑定的完整流程（**只有会话首进程能触发**）
+
+1.  会话首进程调用 `open("/dev/tty")`（或打开其他终端设备）；
+2.  内核检查该终端是否已绑定其他会话：
+    -   若未绑定：将终端分配给当前会话，成为「控制终端」；
+    -   若已绑定：返回错误（终端已被占用）；
+3.  绑定成功后，会话内的「前台进程组」可与终端交互，后台进程组被阻塞。
+
+### setsid()的陷阱
+
+>   1.   **只有会话首进程才可以申请/绑定控制终端**；
+>   2.   **只有非会话首进程才可以调用 `syscall.Setsid()` 创建新会话。**
+
+我们在回头思考，我们前面提到的逻辑存在这样一个问题：
+
+1.   子进程通过 `syscall.Setsid()`，通知内核为我们创建一个新的session；
+2.   子进程成为新的session的**会话首进程，但是没有绑定控制终端**；
+3.   子进程在后续的代码中，执行了 `open("/dev/tty")` ，此时会触发内核的逻辑，将这个终端绑定到我们新建的这个会话！
+
+**所以，我们需要，调用两次 `setsid()`：第一次是为了创建新的会话，第二次是为了确保进程不是会话首进程。这里需要注意的是，第二次调用 setsid() 并不会创建新会话，反而会直接失败（返回错误），但这个「失败」恰恰是我们要的效果（剥夺会话首进程身份）。**
+
+我们可以使用下面这个例子，第二次调用 `syscall.Setsid()` 时，**内核会直接拒绝创建新会话（返回错误），且不会改变当前会话 ID，只会剥夺进程的「会话首进程」身份**—— 我们的进程不会成为任何新会话的首进程，最终变成「无首进程身份的普通进程」。这是因为，`setsid()` 是 Linux 系统调用，内核执行它时会先做权限检查，**只有满足「非会话首进程」这个条件，才会创建新会话。**
+
+而Linux 内核禁止「会话首进程」再次调用 `setsid()` 创建新会话，本质是为了：
+
+1.   **避免会话嵌套**：一个进程不能同时属于多个会话，否则会导致终端控制、信号传递逻辑混乱；
+2.   **保护终端绑定规则**：会话首进程是「终端绑定的唯一入口」，如果允许它反复创建新会话，会破坏「一个终端绑定一个会话」的规则。
+
+```go mark:14-19
+import (
+	"fmt"
+	"syscall"
+)
+
+func main() {
+	var err error
+	var pid int
+    // 创建新会话（setsid）：子进程成为新会话的首进程，脱离原会话
+	if pid, err = syscall.Setsid(); err != nil {
+		fmt.Printf("first pid: %d, setsid: %v\n", pid, err)
+	}
+
+    // 第二个 setsid 确保进程不是「控制终端的会话首进程」，彻底脱离终端
+    // 注意，这个调用并不会创建新的会话，而是直接失败。
+    // second pid: -1, setsid: operation not permitted
+	if pid, err = syscall.Setsid(); err != nil {
+		fmt.Printf("second pid: %d, setsid: %v\n", pid, err)
+	}
+}
+```
+
+## 控制进程
+
+在 Linux 终端与会话的体系里，**控制进程（Controlling Process）** 就是**与终端设备绑定的那个会话的首进程**，它是终端的「管理者」，负责维护终端和会话之间的关联关系。
+
+**注意，控制进程一定是会话首进程，而会话首进程不一定是控制进程**：只有当会话首进程绑定了控制终端时，它才会成为这个终端的控制进程。
+
+### 控制进程的核心属性
+
+控制进程一定是某个会话的**会话首进程**，且这个会话必须绑定了一个控制终端（比如 `/dev/pts/0`）。简单说：**只有会话首进程才有资格成为终端的控制进程**，普通进程或非会话首进程都不行。
+
+### 生命周期关联
+
+控制进程和终端的「生死」强相关：
+
+-   如果控制进程退出，内核会认为这个终端「失去了管理者」，进而触发**终端关闭**的逻辑；
+-   终端关闭时，内核只会向该终端绑定的会话的前台进程组发送 `SIGHUP` 信号，和其他会话无关。
+
+### 控制权唯一
+
+一个终端设备同一时间只能有一个控制进程，就像一把锁只能配一把钥匙 —— 终端和控制进程是「一对一」的关系。
+
+## 进程和子进程的协同
+
+在我们最开始的实现逻辑中，存在如下代码：
+
+```go mark:10,11,14-19
+func newParentProcess(tty bool, commands []string, env []string) *exec.Cmd {
+	// ...
+	cmd.SysProcAttr = &unix.SysProcAttr{
+		Cloneflags: unix.CLONE_NEWUTS |
+			unix.CLONE_NEWPID |
+			unix.CLONE_NEWNS |
+			unix.CLONE_NEWNET |
+			unix.CLONE_NEWIPC,
+		Unshareflags: unix.CLONE_NEWNS,
+		Setctty:      tty,
+		Setsid:       true,
+	}
+
+	if tty {
+		logrus.Info("Running new process in tty.")
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
+	cmd.Dir = conf.GlobalConfig.MergePath()
+	cmd.Env = env
+	return cmd
+}
+
+```
+
+可以看到，我们的代码中通过 `Setsid = true` 设置了在创建子进程的时候，开启了新的session，然而我们可以观察到两个现象：
+
+1.   当我们设置 `Setctty = true` 时，按下 `Ctrl + D` 会使得父进程和子进程同时退出；
+2.   当我们设置 `Setctty = false 和 Setsid = true` 时，即使没有输入 `Ctrl + D`，父进程和子进程仍然会同时退出。
+
+### 开启tty
+
+在我们开启tty时，我们的逻辑是这样的：
+
+1.   `mini-docker` 初始化子进程（也就是我们的init进程），由于设置了 `Setsid = true`，此时init进程会启动一个新的会话；
+2.   init进程被绑定到 `stdio`；
+3.   从 `stdin` 输入 `Ctrl + D`，子进程退出；
+4.   `mini-docker` 进程的 `parent.Wait()` 返回，父进程退出；
+
+### 不开启tty
+
+代码中仅设置 `Setsid: true && Setctty: false`，但缺少两个关键操作，导致子进程仍无法「彻底脱离父进程 / 终端」：
+
+-   IO 未重定向到 /dev/null
+    -   tty=false 时，子进程的 stdin/stdout/stderr 仍继承父进程的终端 FD；
+    -   父进程退出后，终端 FD 被关闭 → 子进程尝试读写 FD 时触发 `SIGPIPE`/`SIGHUP` → 子进程退出；
+-   未执行二次 setsid ()
+    -   子进程虽是新会话首进程，但仍有「绑定终端的权限」；
+    -   若容器内进程误操作 `open("/dev/tty")`，会重新绑定终端 → 终端关闭时子进程收 SIGHUP；
+
+所以他的逻辑是这样的：
+
+1.   `mini-docker` 初始化子进程（也就是我们的init进程），由于设置了 `Setsid = true`，init 进程**创建了新会话**，但因 `Setctty = false` 未绑定终端；且 IO 未重定向，子进程仍继承父进程的终端 FD。
+2.   父进程退出，终端FD被关闭，子进程尝试读写 FD 时触发 `SIGPIPE`/`SIGHUP` 导致子进程退出。
+
+## PTY和TTY
+
+>   1.   我有个问题是，脱离TTY的是我的daemon进程，我的container进程是从daemon进程中fork出来的，它fork出来后也是没有TTY的对吗？
+
+### TTY的定义
+
+`TTY` 是 `Teletype` 的缩写，原意是「电传打字机」—— 这是早期 Unix/Linux 与计算机交互的**物理设备**（没有屏幕，靠打字机输入 / 打印输出）。现代 Linux 中，TTY 被保留为「**系统原生终端设备**」的统称，核心特征：
+
+-   是「硬件 / 内核级」的终端，直接和系统内核绑定；
+-   每个 TTY 对应一个独立的「控制台会话」，比如我们在服务器开机后看到的黑白界面；
+-   进程的 `ps -ef` 输出中，TTY 列显示 `tty1`/`tty2` 等，就代表该进程运行在「原生 TTY 终端」中；
+-   TTY 是「独占式」的：一个 TTY 只能被一个会话使用；
+-   守护进程（如 mini-dockerd、nginx）会主动「脱离 TTY」：启动时通过 `setsid()` 创建新会话，不再关联任何 TTY，因此 `ps -ef` 中 TTY 列显示 `?`；
+-   无 TTY 的进程，无法直接做「终端交互」（比如我们如果直接给 mini-dockerd 绑定 `-it`，会触发 ioctl 错误 —— 因为它没有 TTY 可以用）。
+
+```sh mark:3,10
+ps -ef
+
+# ? 代表已经脱离TTY
+#UID          PID    PPID  C STIME TTY          TIME CMD
+#root           1       0  0  2025 ?        00:01:05 /usr/lib/systemd/systemd --switched-root --system --deserialize=41
+#root        1583       1  0  2025 tty1     00:00:00 /sbin/agetty -o -p -- \u --noclear - linux
+
+ps aux | grep /proc/self/exe | grep -v grep
+
+# 可以看到，我们的 mini-dockerd 进程已经脱离TTY了
+# USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+# root     2355486  0.0  0.0 1599936 7428 ?        Ssl  21:13   0:00 /proc/self/exe init
+```
+
+### PTY的定义
+
+PTY 是 `Pseudo-Terminal` 的缩写，即「伪终端」—— 它是**内核模拟出来的终端设备**，核心目的是解决「没有物理 TTY 但需要终端交互」的问题（比如 SSH 登录、终端模拟器、我们的 mini-docker `-it` 模式）。我们可以把 PTY 理解为：**给「无物理终端的进程」造一个「虚拟的 TTY」**，让进程以为自己在和真实 TTY 交互，但实际是通过「内存 / 网络」传输数据。
+
+PTY 的核心结构包括：Master/Slave（主从设备）：PTY 不是「单一设备」，而是「一对相互关联的虚拟设备」。一个通用的PTY设备可能如下所示
+
+```mermaid
+flowchart LR
+
+terminal("用户（SSH/终端模拟器）")
+master("PTY Master")
+slave("PTY Slave")
+process("进程（如容器内的bash）")
+
+terminal --> master --> slave --> process
+```
+
+其中：
+
+-   **PTY Master**：对接「用户交互端」（比如 SSH 客户端、我们的宿主机终端）；
+-   **PTY Slave**：对接「被控制的进程」（比如容器内的 `/bin/ash`）；
+
+我们可以登录服务器如下操作：
+
+```bash mark:3
+tty
+# /dev/pts/1
+# /dev/pts/1 这个输出表示 pts = pseudo-terminal slave，即 PTY 从设备
+
+ps -ef | grep bash
+# root     1563963 1563939  0 Jan07 pts/0    00:00:00 /bin/bash
+# root     2630791 2630768  0  2025 pts/0    00:00:00 /bin/bash
+# pts/0 表示bash运行在 PTY 中。
+```
+
+### 为什么必须使用PTY？
+
+在我们的 `-it` 模式下，我们会面临一个问题：**daemon进程主动脱离TTY，container进程继承了daemon进程的特性，但是我们又希望他能通过终端交互。如果不使用PTY，我们在fork()进程时会直接抛出异常：`inappropriate ioctl for device` -- 因为我们没有可用的TTY。**
+
+在这个场景下，我们必须使用PTY：
+
+-   即使进程（如 mini-dockerd）没有 TTY，也能通过创建 PTY 给子进程（容器）模拟终端；
+-   跨环境兼容：不管是 SSH、守护进程、容器，都能创建 PTY 实现终端交互；
+-   我们 `pty.Start(cmd)` 本质：就是让库帮我们创建「Master/Slave PTY 对」，并把 Slave 绑定到容器进程的 stdin/stdout/stderr。
+
+### TTY和PTY的区别
+
+|       特性       |       TTY（原生终端）        |           PTY（伪终端）           |
+| :--------------: | :--------------------------: | :-------------------------------: |
+|       本质       |  物理 / 内核级原生终端设备   |      内核模拟的虚拟终端设备       |
+|     关联方式     | 直接绑定物理控制台（Alt+F1） | 绑定远程 / 虚拟会话（SSH / 容器） |
+|     设备路径     |   `/dev/tty1`/`/dev/tty2`    |     `/dev/pts/0`/`/dev/pts/1`     |
+| 进程 TTY 列显示  |       `tty1`/`tty2` 等       |        `pts/0`/`pts/1` 等         |
+| 守护进程能否使用 |   不能（守护进程脱离 TTY）   |        能（手动创建即可）         |
+| mini-docker 场景 |   detach 模式：不需要 TTY    |   -it 模式：必须用 PTY 模拟终端   |
+
+总结来说，我们在创建进程的时候会有两个参数：
+
+-   `-it`  其实是 `-i` 和 `-t` 两个参数合并：
+    -   `-i`（`interactive`）：让容器的 `stdin` 保持打开（即使没有终端关联），保证用户输入能传递到容器；
+    -   `-t`（`tty`）：为容器分配 PTY 伪终端，让容器内的进程（如 bash）以为自己运行在真实终端中，支持「命令回显、换行、Ctrl+C 中断、Tab 补全」等终端特性；
+-   `-d`（`detach`）表示「后台守护」场景（用户不需要交互）。
+
+他们是**互斥且互补**的：
+
+|     维度     |          `-it` 模式          |        `-d` 模式         |
+| :----------: | :--------------------------: | :----------------------: |
+|   运行方式   |   前台运行（阻塞当前终端）   |  后台运行（不阻塞终端）  |
+|   终端依赖   |     必须分配 PTY 伪终端      |     禁用所有终端关联     |
+|  标准流处理  | 绑定用户终端（stdin/stdout） |   重定向到 `/dev/null`   |
+| 进程退出条件 |   用户手动 exit / 关闭终端   | 容器内程序退出 / 被 kill |
+| 典型使用场景 |     调试容器、交互式命令     | 运行服务（nginx/redis）  |
+
+也就是说，这两个参数的使用会存在三个场景：
+
+|        参数组合         | 是否合法 |      核心行为      |                         典型应用场景                         |
+| :---------------------: | :------: | :----------------: | :----------------------------------------------------------: |
+| `-it=true && -d=false`  |   合法   | 分配 PTY，阻塞终端 | 进入容器执行命令（`docker run -it ubuntu bash`）、运行交互式程序（python/redis-cli） |
+| `-it=false && -d=true`  |   合法   | 禁用 PTY，后台运行 | 运行服务型程序（`docker run -d nginx`/`mini-dockerd`）、定时任务、后台脚本 |
+| `-it=false && -d=false` |   合法   | 禁用 PTY，阻塞终端 | 运行「一次性、无交互、需要看输出」的程序<br/>例如 `docker run ubuntu ls /` |
+|  `-it=true && -d=true`  |  `非法`  |  Docker 直接报错   |               无（前台交互和后台运行无法共存）               |
+
+### 如何使用
+
+#### mini-dockerd
+
+`mini-dockerd` 的使用非常简单，因为他一定是 `-it = false && -d = true` 的。
+
+#### container
+
+我们的 `container` 的使用则相对比较复杂，因为他的使用场景根据容器的功能而会发生变化
+
+##### -it = false && -d = true
+
+这个场景较为简单，我们直接和 `mini-dockerd` 一样配置即可；
+
+##### -it = true && -d = false
+
+这个场景相对于其他的几项来说比较复杂，因为这里涉及到一个问题：
+
+-   `daemon` 主动断开了TTY；
+-   `container` 从 `daemon` 进程 fork 得到，他会继承这个特性，我们必须显示的去配置它。
+
+在这个场景下，我们必须为 `container` 初始化一个 `PTY` 并绑定它。
+
+##### -it = false && -d = false
+
+这个场景在我们目前的玩具项目中，暂时不考虑支持。
+
+#### 架构逻辑
+
+```mermaid
+flowchart TD
+    A[用户执行：mini-docker run -it ...] --> B[客户端（有TTY，stdio指向用户终端）]
+    B --> C[客户端配置终端原始模式（ioctl有效）]
+    B --> D[客户端通过Socket给daemon发创建容器指令]
+    D --> E[daemon（无TTY，stdio=/dev/null）]
+    E --> F[daemon创建容器进程+绑定PTY（PTY不关联daemon的stdio）]
+    F --> G[daemon启动两个goroutine：PTY ↔ Socket]
+    G --> H[客户端启动两个goroutine：Socket ↔ 自身stdio（用户终端）]
+    H --> I[用户终端 ↔ 客户端stdio ↔ Socket ↔ daemon ↔ 容器PTY ↔ 容器ash]
+```
+
+
+
