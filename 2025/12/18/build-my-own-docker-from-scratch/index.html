@@ -27,7 +27,7 @@
 <meta property="og:description" content="build my own docker from scratch  Docker is an OS‑level virtualization (or containerization) platform, which allows applications to share the host OS kernel instead of running a separate guest OS like">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-12-18T15:24:46.000Z">
-<meta property="article:modified_time" content="2026-01-06T11:48:44.294Z">
+<meta property="article:modified_time" content="2026-01-11T06:52:10.199Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="docker">
 <meta property="article:tag" content="go">
@@ -139,8 +139,9 @@
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
             <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#build-my-own-docker-from-scratch"><span class="nav-number">1.</span> <span class="nav-text">build my own docker from
-scratch</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#docker%E4%BE%9D%E8%B5%96%E7%9A%84linux%E5%9F%BA%E7%A1%80%E7%89%B9%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">docker依赖的linux基础特性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#namespace"><span class="nav-number">3.1.</span> <span class="nav-text">namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#uts-namespace"><span class="nav-number">3.1.1.</span> <span class="nav-text">UTS namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#user-namespace"><span class="nav-number">3.1.2.</span> <span class="nav-text">User namespace</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroups"><span class="nav-number">3.2.</span> <span class="nav-text">cgroups</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.2.1.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#subsystem"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">Subsystem</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hierarchy"><span class="nav-number">3.2.1.2.</span> <span class="nav-text">Hierarchy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cgroup%E6%8E%A7%E5%88%B6%E7%BB%84"><span class="nav-number">3.2.1.3.</span> <span class="nav-text">cgroup（控制组）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E8%80%85%E7%9A%84%E6%A0%B8%E5%BF%83%E5%85%B3%E7%B3%BB"><span class="nav-number">3.2.1.4.</span> <span class="nav-text">三者的核心关系</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAhierarchy"><span class="nav-number">3.2.1.4.1.</span> <span class="nav-text">创建hierarchy</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-subsystem"><span class="nav-number">3.2.1.4.2.</span> <span class="nav-text">配置 Subsystem</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%88%91%E4%BB%AC%E7%9A%84cgroup"><span class="nav-number">3.2.1.4.3.</span> <span class="nav-text">测试我们的cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E5%9B%9E%E9%A1%BE"><span class="nav-number">3.2.2.</span> <span class="nav-text">整体回顾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8cgroup"><span class="nav-number">3.2.3.</span> <span class="nav-text">docker如何使用cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%AE%B9%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">构造容器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8Enamespace%E6%9E%84%E9%80%A0%E5%AE%B9%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">基于namespace构造容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E6%9E%84%E9%80%A0%E7%9A%84%E5%AE%B9%E5%99%A8%E5%A2%9E%E5%8A%A0cgroup%E9%99%90%E5%88%B6"><span class="nav-number">4.2.</span> <span class="nav-text">为构造的容器增加cgroup限制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cgroup%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">4.2.1.</span> <span class="nav-text">cgroup的分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8cgroup%E9%9A%94%E7%A6%BB%E8%B5%84%E6%BA%90"><span class="nav-number">4.3.</span> <span class="nav-text">使用cgroup隔离资源</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E9%95%9C%E5%83%8F"><span class="nav-number">5.</span> <span class="nav-text">构造镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%9E%84%E9%80%A0%E9%95%9C%E5%83%8F"><span class="nav-number">5.1.</span> <span class="nav-text">什么是构造镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E9%95%9C%E5%83%8F%E7%9A%84%E7%8E%AF%E5%A2%83"><span class="nav-number">5.1.1.</span> <span class="nav-text">有镜像的环境</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E9%95%9C%E5%83%8F"><span class="nav-number">5.1.1.1.</span> <span class="nav-text">准备镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9C%A8%E5%AE%B9%E5%99%A8%E5%88%9D%E5%A7%8B%E5%8C%96%E6%97%B6%E5%88%87%E6%8D%A2%E6%A0%B9%E7%9B%AE%E5%BD%95pivot_rootchroot"><span class="nav-number">5.1.1.2.</span> <span class="nav-text">在容器初始化时切换根目录（pivot_root&#x2F;chroot）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E6%96%B0%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AE%B9%E5%99%A8%E5%86%85%E7%9A%84%E6%8C%82%E8%BD%BD%E7%82%B9"><span class="nav-number">5.1.1.3.</span> <span class="nav-text">重新初始化容器内的挂载点</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E7%9A%84write-layer"><span class="nav-number">5.2.</span> <span class="nav-text">镜像的write layer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cowcopy-on-write"><span class="nav-number">5.2.1.</span> <span class="nav-text">COW(Copy-On-Write)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#layer%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">5.2.2.</span> <span class="nav-text">Layer的原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#layer%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.2.3.</span> <span class="nav-text">Layer的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ensuredirectoryexists"><span class="nav-number">5.2.3.1.</span> <span class="nav-text">EnsureDirectoryExists</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E8%BF%9B%E7%A8%8B%E5%86%85%E9%83%A8%E5%87%86%E5%A4%87"><span class="nav-number">5.2.3.2.</span> <span class="nav-text">子进程内部准备</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">6.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#proc"><span class="nav-number">6.1.</span> <span class="nav-text">Proc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E6%80%A7"><span class="nav-number">6.1.1.</span> <span class="nav-text">核心特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">6.1.2.</span> <span class="nav-text">目录结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#namespace-1"><span class="nav-number">6.2.</span> <span class="nav-text">Namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">6.2.1.</span> <span class="nav-text">Namespace 是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-namespace-%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">6.2.2.</span> <span class="nav-text">Linux Namespace 的分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace-%E7%9A%84%E6%A0%B8%E5%BF%83%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">6.2.3.</span> <span class="nav-text">Namespace 的核心工作原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroup"><span class="nav-number">6.3.</span> <span class="nav-text">cgroup</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cgroup%E7%9A%84%E6%A0%B8%E5%BF%83%E6%96%87%E4%BB%B6"><span class="nav-number">6.3.1.</span> <span class="nav-text">cgroup的核心文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8cgroup%E9%99%90%E5%88%B6cpu-50-%E5%86%85%E5%AD%98-1gb"><span class="nav-number">6.3.2.</span> <span class="nav-text">使用cgroup限制CPU 50% + 内存
-1GB</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E5%90%AF%E7%94%A8%E5%AD%90%E7%B3%BB%E7%BB%9F%E4%BC%A0%E9%80%92%E6%9D%83%E9%99%90"><span class="nav-number">6.3.2.1.</span> <span class="nav-text">一、启用子系统传递权限</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E5%88%9B%E5%BB%BA%E8%87%AA%E5%AE%9A%E4%B9%89-cgroup-%E5%AD%90%E7%BB%84"><span class="nav-number">6.3.2.2.</span> <span class="nav-text">二、创建自定义 Cgroup 子组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E9%85%8D%E7%BD%AE%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6%E8%A7%84%E5%88%99"><span class="nav-number">6.3.2.3.</span> <span class="nav-text">三、配置资源限制规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E7%BB%91%E5%AE%9A%E8%BF%9B%E7%A8%8B%E5%88%B0-cgroup-%E5%AD%90%E7%BB%84"><span class="nav-number">6.3.2.4.</span> <span class="nav-text">四、绑定进程到 Cgroup 子组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E5%85%B6%E4%BB%96%E9%99%90%E5%88%B6"><span class="nav-number">6.3.2.5.</span> <span class="nav-text">五、其他限制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#uts"><span class="nav-number">6.4.</span> <span class="nav-text">UTS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hostname"><span class="nav-number">6.4.1.</span> <span class="nav-text">hostname</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#domainname"><span class="nav-number">6.4.2.</span> <span class="nav-text">domainname</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pivot_root%E5%92%8Cchroot"><span class="nav-number">6.5.</span> <span class="nav-text">pivot_root和chroot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mount"><span class="nav-number">6.6.</span> <span class="nav-text">mount</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mount%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">6.6.1.</span> <span class="nav-text">mount的作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mount%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">6.6.2.</span> <span class="nav-text">mount的使用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unionfs"><span class="nav-number">6.7.</span> <span class="nav-text">UnionFS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">6.7.1.</span> <span class="nav-text">UnionFS的核心概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs-%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">6.7.2.</span> <span class="nav-text">UnionFS 的工作流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs%E7%9A%84%E4%BC%98%E5%8A%BF%E5%92%8C%E5%8A%A3%E5%8A%BF"><span class="nav-number">6.7.3.</span> <span class="nav-text">UnionFS的优势和劣势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs%E4%B8%AD%E7%9A%84%E5%A4%A7%E6%96%87%E4%BB%B6"><span class="nav-number">6.7.4.</span> <span class="nav-text">UnionFS中的大文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81pivot_root"><span class="nav-number">6.8.</span> <span class="nav-text">为什么需要pivot_root</span></a></li></ol></li></ol></div>
+scratch</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#docker%E4%BE%9D%E8%B5%96%E7%9A%84linux%E5%9F%BA%E7%A1%80%E7%89%B9%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">docker依赖的linux基础特性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#namespace"><span class="nav-number">3.1.</span> <span class="nav-text">namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#uts-namespace"><span class="nav-number">3.1.1.</span> <span class="nav-text">UTS namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#user-namespace"><span class="nav-number">3.1.2.</span> <span class="nav-text">User namespace</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroups"><span class="nav-number">3.2.</span> <span class="nav-text">cgroups</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.2.1.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#subsystem"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">Subsystem</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hierarchy"><span class="nav-number">3.2.1.2.</span> <span class="nav-text">Hierarchy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cgroup%E6%8E%A7%E5%88%B6%E7%BB%84"><span class="nav-number">3.2.1.3.</span> <span class="nav-text">cgroup（控制组）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E8%80%85%E7%9A%84%E6%A0%B8%E5%BF%83%E5%85%B3%E7%B3%BB"><span class="nav-number">3.2.1.4.</span> <span class="nav-text">三者的核心关系</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAhierarchy"><span class="nav-number">3.2.1.4.1.</span> <span class="nav-text">创建hierarchy</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-subsystem"><span class="nav-number">3.2.1.4.2.</span> <span class="nav-text">配置 Subsystem</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%88%91%E4%BB%AC%E7%9A%84cgroup"><span class="nav-number">3.2.1.4.3.</span> <span class="nav-text">测试我们的cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E5%9B%9E%E9%A1%BE"><span class="nav-number">3.2.2.</span> <span class="nav-text">整体回顾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8cgroup"><span class="nav-number">3.2.3.</span> <span class="nav-text">docker如何使用cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%AE%B9%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">构造容器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8Enamespace%E6%9E%84%E9%80%A0%E5%AE%B9%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">基于namespace构造容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E6%9E%84%E9%80%A0%E7%9A%84%E5%AE%B9%E5%99%A8%E5%A2%9E%E5%8A%A0cgroup%E9%99%90%E5%88%B6"><span class="nav-number">4.2.</span> <span class="nav-text">为构造的容器增加cgroup限制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cgroup%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">4.2.1.</span> <span class="nav-text">cgroup的分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8cgroup%E9%9A%94%E7%A6%BB%E8%B5%84%E6%BA%90"><span class="nav-number">4.3.</span> <span class="nav-text">使用cgroup隔离资源</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E9%95%9C%E5%83%8F"><span class="nav-number">5.</span> <span class="nav-text">构造镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%9E%84%E9%80%A0%E9%95%9C%E5%83%8F"><span class="nav-number">5.1.</span> <span class="nav-text">什么是构造镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E9%95%9C%E5%83%8F%E7%9A%84%E7%8E%AF%E5%A2%83"><span class="nav-number">5.1.1.</span> <span class="nav-text">有镜像的环境</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E9%95%9C%E5%83%8F"><span class="nav-number">5.1.1.1.</span> <span class="nav-text">准备镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9C%A8%E5%AE%B9%E5%99%A8%E5%88%9D%E5%A7%8B%E5%8C%96%E6%97%B6%E5%88%87%E6%8D%A2%E6%A0%B9%E7%9B%AE%E5%BD%95pivot_rootchroot"><span class="nav-number">5.1.1.2.</span> <span class="nav-text">在容器初始化时切换根目录（pivot_root&#x2F;chroot）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E6%96%B0%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AE%B9%E5%99%A8%E5%86%85%E7%9A%84%E6%8C%82%E8%BD%BD%E7%82%B9"><span class="nav-number">5.1.1.3.</span> <span class="nav-text">重新初始化容器内的挂载点</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E7%9A%84write-layer"><span class="nav-number">5.2.</span> <span class="nav-text">镜像的write layer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cowcopy-on-write"><span class="nav-number">5.2.1.</span> <span class="nav-text">COW(Copy-On-Write)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#layer%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">5.2.2.</span> <span class="nav-text">Layer的原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#layer%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.2.3.</span> <span class="nav-text">Layer的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ensuredirectoryexists"><span class="nav-number">5.2.3.1.</span> <span class="nav-text">EnsureDirectoryExists</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E8%BF%9B%E7%A8%8B%E5%86%85%E9%83%A8%E5%87%86%E5%A4%87"><span class="nav-number">5.2.3.2.</span> <span class="nav-text">子进程内部准备</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E6%89%93%E5%8C%85"><span class="nav-number">5.3.</span> <span class="nav-text">镜像打包</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%9A%84%E8%BF%9B%E9%98%B6%E7%AE%A1%E7%90%86"><span class="nav-number">6.</span> <span class="nav-text">容器的进阶管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8Edaemon%E5%88%B0containerdrunc"><span class="nav-number">6.1.</span> <span class="nav-text">从daemon到containerd&#x2F;runc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#daemon"><span class="nav-number">6.1.1.</span> <span class="nav-text">daemon</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#containerd"><span class="nav-number">6.1.2.</span> <span class="nav-text">containerd</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#containerd-shim"><span class="nav-number">6.1.3.</span> <span class="nav-text">containerd-shim</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#runc"><span class="nav-number">6.1.4.</span> <span class="nav-text">runc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B0%E8%80%81%E6%96%B9%E6%A1%88%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">6.1.5.</span> <span class="nav-text">新老方案的对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%9A%84%E5%90%8E%E5%8F%B0%E8%BF%90%E8%A1%8C"><span class="nav-number">6.2.</span> <span class="nav-text">容器的后台运行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#detach%E6%A8%A1%E5%BC%8F%E8%BF%90%E8%A1%8C%E5%AE%B9%E5%99%A8"><span class="nav-number">6.2.1.</span> <span class="nav-text">detach模式运行容器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%9A%84%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86"><span class="nav-number">6.3.</span> <span class="nav-text">容器的状态管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mini-dockerd"><span class="nav-number">6.3.1.</span> <span class="nav-text">mini-dockerd</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87uds%E9%80%9A%E4%BF%A1"><span class="nav-number">6.3.2.</span> <span class="nav-text">通过UDS通信</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#uds%E6%9C%8D%E5%8A%A1%E7%AB%AF"><span class="nav-number">6.3.2.1.</span> <span class="nav-text">UDS服务端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#uds%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">6.3.2.2.</span> <span class="nav-text">UDS客户端</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mini-docker-ps"><span class="nav-number">6.3.3.</span> <span class="nav-text">mini-docker ps</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E6%8A%BD%E8%B1%A1"><span class="nav-number">6.3.3.1.</span> <span class="nav-text">逻辑抽象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%91%E5%AE%9Ahandler"><span class="nav-number">6.3.3.2.</span> <span class="nav-text">绑定handler</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#handleps%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.3.3.3.</span> <span class="nav-text">handlePs的实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-nsenter-%E8%BF%9B%E5%85%A5%E5%B7%B2%E7%BB%8F%E5%88%9B%E5%BB%BA%E5%A5%BD%E7%9A%84%E5%AE%B9%E5%99%A8"><span class="nav-number">6.3.4.</span> <span class="nav-text">通过 nsenter
+进入已经创建好的容器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-number">6.3.4.1.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.3.4.2.</span> <span class="nav-text">实现</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">7.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#proc"><span class="nav-number">7.1.</span> <span class="nav-text">Proc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E6%80%A7"><span class="nav-number">7.1.1.</span> <span class="nav-text">核心特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">7.1.2.</span> <span class="nav-text">目录结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#namespace-1"><span class="nav-number">7.2.</span> <span class="nav-text">Namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">7.2.1.</span> <span class="nav-text">Namespace 是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-namespace-%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">7.2.2.</span> <span class="nav-text">Linux Namespace 的分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace-%E7%9A%84%E6%A0%B8%E5%BF%83%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">7.2.3.</span> <span class="nav-text">Namespace 的核心工作原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroup"><span class="nav-number">7.3.</span> <span class="nav-text">cgroup</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cgroup%E7%9A%84%E6%A0%B8%E5%BF%83%E6%96%87%E4%BB%B6"><span class="nav-number">7.3.1.</span> <span class="nav-text">cgroup的核心文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8cgroup%E9%99%90%E5%88%B6cpu-50-%E5%86%85%E5%AD%98-1gb"><span class="nav-number">7.3.2.</span> <span class="nav-text">使用cgroup限制CPU 50% + 内存
+1GB</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E5%90%AF%E7%94%A8%E5%AD%90%E7%B3%BB%E7%BB%9F%E4%BC%A0%E9%80%92%E6%9D%83%E9%99%90"><span class="nav-number">7.3.2.1.</span> <span class="nav-text">一、启用子系统传递权限</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E5%88%9B%E5%BB%BA%E8%87%AA%E5%AE%9A%E4%B9%89-cgroup-%E5%AD%90%E7%BB%84"><span class="nav-number">7.3.2.2.</span> <span class="nav-text">二、创建自定义 Cgroup 子组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E9%85%8D%E7%BD%AE%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6%E8%A7%84%E5%88%99"><span class="nav-number">7.3.2.3.</span> <span class="nav-text">三、配置资源限制规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E7%BB%91%E5%AE%9A%E8%BF%9B%E7%A8%8B%E5%88%B0-cgroup-%E5%AD%90%E7%BB%84"><span class="nav-number">7.3.2.4.</span> <span class="nav-text">四、绑定进程到 Cgroup 子组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E5%85%B6%E4%BB%96%E9%99%90%E5%88%B6"><span class="nav-number">7.3.2.5.</span> <span class="nav-text">五、其他限制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#uts"><span class="nav-number">7.4.</span> <span class="nav-text">UTS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hostname"><span class="nav-number">7.4.1.</span> <span class="nav-text">hostname</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#domainname"><span class="nav-number">7.4.2.</span> <span class="nav-text">domainname</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pivot_root%E5%92%8Cchroot"><span class="nav-number">7.5.</span> <span class="nav-text">pivot_root和chroot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mount"><span class="nav-number">7.6.</span> <span class="nav-text">mount</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mount%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">7.6.1.</span> <span class="nav-text">mount的作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mount%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">7.6.2.</span> <span class="nav-text">mount的使用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unionfs"><span class="nav-number">7.7.</span> <span class="nav-text">UnionFS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">7.7.1.</span> <span class="nav-text">UnionFS的核心概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs-%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">7.7.2.</span> <span class="nav-text">UnionFS 的工作流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs%E7%9A%84%E4%BC%98%E5%8A%BF%E5%92%8C%E5%8A%A3%E5%8A%BF"><span class="nav-number">7.7.3.</span> <span class="nav-text">UnionFS的优势和劣势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unionfs%E4%B8%AD%E7%9A%84%E5%A4%A7%E6%96%87%E4%BB%B6"><span class="nav-number">7.7.4.</span> <span class="nav-text">UnionFS中的大文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81pivot_root"><span class="nav-number">7.8.</span> <span class="nav-text">为什么需要pivot_root</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tty%E6%8E%A7%E5%88%B6%E6%9D%83"><span class="nav-number">7.9.</span> <span class="nav-text">tty控制权</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#proc-1"><span class="nav-number">7.10.</span> <span class="nav-text">&#x2F;proc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89"><span class="nav-number">7.10.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E4%BF%A1%E6%81%AF"><span class="nav-number">7.10.2.</span> <span class="nav-text">通用信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%A0%E4%B8%AA%E5%B8%B8%E7%94%A8%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="nav-number">7.10.2.1.</span> <span class="nav-text">几个常用的信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#proccpuinfo"><span class="nav-number">7.10.2.2.</span> <span class="nav-text">&#x2F;proc&#x2F;cpuinfo</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#proc%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3"><span class="nav-number">7.10.3.</span> <span class="nav-text">&#x2F;proc进程相关</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%A0%E4%B8%AA%E5%B8%B8%E7%94%A8%E7%9A%84%E4%BF%A1%E6%81%AF-1"><span class="nav-number">7.10.3.1.</span> <span class="nav-text">几个常用的信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">7.10.3.2.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#environ"><span class="nav-number">7.10.3.3.</span> <span class="nav-text">environ</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cwd"><span class="nav-number">7.10.3.4.</span> <span class="nav-text">cwd</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cgroup-1"><span class="nav-number">7.10.3.5.</span> <span class="nav-text">cgroup</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#procpidns"><span class="nav-number">7.11.</span> <span class="nav-text">&#x2F;proc&#x2F;pid&#x2F;ns</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-1"><span class="nav-number">7.11.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">7.11.2.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8go%E6%93%8D%E4%BD%9Cns"><span class="nav-number">7.11.3.</span> <span class="nav-text">使用go操作ns</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nsenter%E5%92%8Cdocker-exec%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">7.11.4.</span> <span class="nav-text">nsenter和docker exec的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nsenter"><span class="nav-number">7.12.</span> <span class="nav-text">nsenter</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-2"><span class="nav-number">7.12.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%9C%E7%94%A8"><span class="nav-number">7.12.2.</span> <span class="nav-text">作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95"><span class="nav-number">7.12.3.</span> <span class="nav-text">基本用法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#uds"><span class="nav-number">7.13.</span> <span class="nav-text">UDS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%B9%89"><span class="nav-number">7.13.1.</span> <span class="nav-text">核心定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E7%82%B9"><span class="nav-number">7.13.2.</span> <span class="nav-text">核心特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5-1"><span class="nav-number">7.13.3.</span> <span class="nav-text">核心概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">7.13.4.</span> <span class="nav-text">一个简单的例子</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E7%AB%AF"><span class="nav-number">7.13.4.1.</span> <span class="nav-text">服务端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">7.13.4.2.</span> <span class="nav-text">客户端</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E9%A1%B9%E7%BB%88%E6%AD%A2%E7%AC%A6"><span class="nav-number">7.14.</span> <span class="nav-text">选项终止符</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-3"><span class="nav-number">7.14.1.</span> <span class="nav-text">定义</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E4%B8%AD%E7%9A%84%E8%BF%9B%E7%A8%8B%E7%BB%84%E5%92%8C%E4%BC%9A%E8%AF%9D"><span class="nav-number">7.15.</span> <span class="nav-text">linux中的进程组和会话</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%BB%84%E5%92%8C%E4%BC%9A%E8%AF%9D%E7%9A%84%E9%80%9A%E4%BF%97%E6%8F%8F%E8%BF%B0"><span class="nav-number">7.15.1.</span> <span class="nav-text">进程组和会话的通俗描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#process-group"><span class="nav-number">7.15.2.</span> <span class="nav-text">Process Group</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#session"><span class="nav-number">7.15.3.</span> <span class="nav-text">Session</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%9A%E8%AF%9D%E7%9A%84%E6%A0%B8%E5%BF%83%E7%89%B9%E6%80%A7"><span class="nav-number">7.15.3.1.</span> <span class="nav-text">会话的核心特性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%9A%E8%AF%9D%E7%9A%84%E5%85%B8%E5%9E%8B%E5%9C%BA%E6%99%AF"><span class="nav-number">7.15.3.2.</span> <span class="nav-text">会话的典型场景</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%9A%E8%AF%9D%E5%92%8C%E7%BB%88%E7%AB%AF"><span class="nav-number">7.16.</span> <span class="nav-text">会话和终端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%8E%A7%E5%88%B6%E7%BB%88%E7%AB%AF"><span class="nav-number">7.16.1.</span> <span class="nav-text">什么是控制终端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%9A%E8%AF%9D%E4%B8%8E%E7%BB%88%E7%AB%AF%E7%BB%91%E5%AE%9A%E7%9A%84%E6%A0%B8%E5%BF%83%E8%A7%84%E5%88%99"><span class="nav-number">7.16.2.</span> <span class="nav-text">会话与终端绑定的核心规则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setsid%E7%9A%84%E9%99%B7%E9%98%B1"><span class="nav-number">7.16.3.</span> <span class="nav-text">setsid()的陷阱</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6%E8%BF%9B%E7%A8%8B"><span class="nav-number">7.17.</span> <span class="nav-text">控制进程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E5%B1%9E%E6%80%A7"><span class="nav-number">7.17.1.</span> <span class="nav-text">控制进程的核心属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E5%85%B3%E8%81%94"><span class="nav-number">7.17.2.</span> <span class="nav-text">生命周期关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6%E6%9D%83%E5%94%AF%E4%B8%80"><span class="nav-number">7.17.3.</span> <span class="nav-text">控制权唯一</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%92%8C%E5%AD%90%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%8D%8F%E5%90%8C"><span class="nav-number">7.18.</span> <span class="nav-text">进程和子进程的协同</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AFtty"><span class="nav-number">7.18.1.</span> <span class="nav-text">开启tty</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%BC%80%E5%90%AFtty"><span class="nav-number">7.18.2.</span> <span class="nav-text">不开启tty</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pty%E5%92%8Ctty"><span class="nav-number">7.19.</span> <span class="nav-text">PTY和TTY</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tty%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">7.19.1.</span> <span class="nav-text">TTY的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pty%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">7.19.2.</span> <span class="nav-text">PTY的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E4%BD%BF%E7%94%A8pty"><span class="nav-number">7.19.3.</span> <span class="nav-text">为什么必须使用PTY？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tty%E5%92%8Cpty%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">7.19.4.</span> <span class="nav-text">TTY和PTY的区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8"><span class="nav-number">7.19.5.</span> <span class="nav-text">如何使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#mini-dockerd-1"><span class="nav-number">7.19.5.1.</span> <span class="nav-text">mini-dockerd</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#container"><span class="nav-number">7.19.5.2.</span> <span class="nav-text">container</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#it-false--d-true"><span class="nav-number">7.19.5.2.1.</span> <span class="nav-text">-it &#x3D; false &amp;&amp; -d &#x3D; true</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#it-true--d-false"><span class="nav-number">7.19.5.2.2.</span> <span class="nav-text">-it &#x3D; true &amp;&amp; -d &#x3D; false</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#it-false--d-false"><span class="nav-number">7.19.5.2.3.</span> <span class="nav-text">-it &#x3D; false &amp;&amp; -d &#x3D; false</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E9%80%BB%E8%BE%91"><span class="nav-number">7.19.5.3.</span> <span class="nav-text">架构逻辑</span></a></li></ol></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -221,7 +222,7 @@ scratch</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-06 19:48:44" itemprop="dateModified" datetime="2026-01-06T19:48:44+08:00">2026-01-06</time>
+      <time title="修改时间：2026-01-11 14:52:10" itemprop="dateModified" datetime="2026-01-11T14:52:10+08:00">2026-01-11</time>
     </span>
 
   
@@ -1181,6 +1182,473 @@ exec 创建一个子进程，并切换namespace，那么：</p>
 <p>此时，我们只需要在 <code>pivot_root</code> 之前，通过
 <code>UnionFS</code> 挂载我们的文件系统即可：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">RunContainerInitProcess</span><span class="params">(command <span class="type">string</span>, args []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	logrus.Infof(<span class="string">&quot;init process command: &#123;%s&#125;, args: &#123;%v&#125;&quot;</span>, command, args)</span><br><span class="line">	<span class="keyword">var</span> err <span class="type">error</span></span><br><span class="line marked">	<span class="keyword">if</span> err = setupUnionFs(); err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		<span class="keyword">return</span> err</span><br><span class="line marked">	&#125;</span><br><span class="line">	logrus.Info(<span class="string">&quot;setup layer success.&quot;</span>)</span><br><span class="line">	<span class="keyword">if</span> err = setupMount(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="镜像打包">镜像打包</h2>
+<p>镜像打包的逻辑非常简单，就是进入到我们指定的目录中，将文件打包，唯一需要注意的是，我们的系统是基于
+<code>UnionFS</code>
+的，我们在打包的时候也需要先对UnionFS进行mount，随后打包我们的
+<code>merge</code> 文件夹即可。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Commit</span><span class="params">(cmd conf.CommitCommands)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	logrus.Infof(<span class="string">&quot;Commit Commands: %s&quot;</span>, cmd)</span><br><span class="line">	conf.LoadCommitConfig(cmd)</span><br><span class="line marked">	<span class="keyword">if</span> err := SetupUnionFsFromConfig(); err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		logrus.Error(<span class="string">&quot;error setting up union fs&quot;</span>, err)</span><br><span class="line marked">		<span class="keyword">return</span> err</span><br><span class="line marked">	&#125;</span><br><span class="line marked">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line marked">		err := ClearUnionFsFromConfig()</span><br><span class="line marked">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">			logrus.Error(<span class="string">&quot;error clear up union fs&quot;</span>, err)</span><br><span class="line marked">		&#125;</span><br><span class="line marked">	&#125;()</span><br><span class="line">	root := conf.GlobalConfig.MergePath()</span><br><span class="line">	<span class="keyword">return</span> util.Tar(conf.GlobalConfig.Cmd.DstImage, root)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="容器的进阶管理">容器的进阶管理</h1>
+<h2 id="从daemon到containerdrunc">从daemon到containerd/runc</h2>
+<h3 id="daemon">daemon</h3>
+<p>目前我们的容器的基本功能已经实现了，但是我们还缺少一个
+<code>daemon</code>
+进程来为我们管理我们的容器，它应该需要支持以下功能：</p>
+<ul>
+<li><code>docker ps</code> 查看当前正在执行的容器</li>
+<li><code>docker logs</code> 查看容器的输出</li>
+<li><code>docker exec</code> 进入一个已经创建好的容器</li>
+</ul>
+<p>想要支持这些功能，我们就需要<strong>在父进程创建子进程之后detach子进程</strong>，在老版本的docker中，所有的容器init进程都是从docker
+daemon中fork出来的，这也带来了一个问题：假设我们当前存在如下的进程层级关系：</p>
+<pre><code class="highlight mermaid">flowchart BT
+
+init(&quot;PID 1 进程（systemd/init）&quot;)
+daemon(&quot;docker daemon&quot;)
+container(&quot;container&quot;)
+
+init --&gt; daemon --&gt;|fork| container</code></pre>
+<p>当 <code>daemon</code> 进程崩溃，根据linux的孤儿进程收养机制：</p>
+<ol type="1">
+<li><code>container</code> 首先会变成孤儿进程；</li>
+<li><code>linux</code> 将 收养 <code>container</code> 进程（也就是此时
+container 的 PPID 为 1），由 <code>INITPROC</code>
+来管理它的资源回收；</li>
+</ol>
+<p>我们面临的问题是：</p>
+<ol type="1">
+<li>所有的 container
+虽然还可以正常执行，但是daemon存储的所有容器元数据都已经丢失了；</li>
+<li>新启动的daemon进程无法识别这些孤儿容器 --
+<code>docker ps/logs/stop</code> 等指令都无法执行；</li>
+<li>container占用的端口，volume，网络命名资源等都已经无法通过docker清理，只能手动操作；</li>
+</ol>
+<h3 id="containerd">containerd</h3>
+<p>为了解决daemon进程崩溃引发的一系列问题，<strong>docker在1.11+引入了
+<code>containerd + runc</code> 的分层架构</strong>用来解决这个问题：</p>
+<ol type="1">
+<li>daemon 不再是容器的直接父进程：
+<ul>
+<li><code>dockerd</code>（daemon）仅负责 API / 调度，他通过gRPC和
+<code>containerd</code> 交互来实现对所有容器管理逻辑；</li>
+<li><code>containerd</code> 负责容器生命周期管理；</li>
+<li><code>runc</code> 是轻量级工具，仅负责 fork/exec 启动容器 init
+进程，启动后立即退出；</li>
+<li>最终容器 init 进程的父进程是 <code>containerd-shim</code>（而非
+dockerd/containerd）；</li>
+</ul></li>
+<li><strong>containerd-shim 的核心作用</strong>：
+<ul>
+<li>作为容器进程的「托管父进程」，即使 dockerd/containerd 挂掉，shim
+仍运行；</li>
+<li>维护容器的 STDIO / 日志 / 状态，daemon 重启后可通过 shim
+重新识别容器；</li>
+<li>容器进程的生命周期与 daemon 解耦，daemon 挂掉 /
+重启不影响容器的可管理性。</li>
+</ul></li>
+</ol>
+<h3 id="containerd-shim">containerd-shim</h3>
+<blockquote>
+<p>看到这里，你可能会有一个问题：<code>containerd-shim</code>
+也是一个进程，如果它崩溃了，那么我们不是面临了和<code>daemon</code>
+崩溃一样的问题吗？这是因为<strong><code>containerd-shim</code>
+的「轻量级、无状态、可重建」特性</strong>。这也是他名字的由来：<code>shim</code>
+表示的是：<strong>a thin packing strip or washer often used with a
+number of similar washers or strips to adjust a clearance for gears,
+etc</strong></p>
+</blockquote>
+<p>对于老的docker架构，所有的init进程都是从daemon
+fork出来的，它的职责是中心化的：</p>
+<pre><code class="highlight mermaid">flowchart TB
+
+daemon(&quot;docker daemon&quot;):::purple
+
+busybox(&quot;busybox&quot;):::pale_pink
+linux(&quot;linux&quot;):::pale_pink
+kafka(&quot;kafka&quot;):::pale_pink
+
+daemon --&gt; busybox
+daemon --&gt; linux
+daemon --&gt; kafka
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;</code></pre>
+<p>而 <code>containerd-shim</code>
+的设计是<strong>一个容器对应一个shim进程</strong>：</p>
+<pre><code class="highlight mermaid">---
+title: docker engine
+---
+
+flowchart TB
+    engine(&quot;Docker Engine&quot;):::purple
+    dockerd(&quot;dockerd&quot;):::green
+    containerd(&quot;containerd&quot;):::yellow
+
+    shim1(&quot;containerd-shim&quot;):::pale_pink
+    runc1(&quot;runc&quot;):::error
+    shim2(&quot;containerd-shim&quot;):::pale_pink
+    runc2(&quot;runc&quot;):::error
+    shim3(&quot;...&quot;):::pale_pink
+    runc3(&quot;...&quot;):::error
+
+    engine --&gt; dockerd
+    dockerd -.-&gt;|gRPC 通信/CRUD 指令| containerd
+    containerd --&gt; shim1
+    containerd --&gt; shim2
+    containerd --&gt; shim3
+    shim1 --&gt; runc1
+    shim2 --&gt; runc2
+    shim3 --&gt; runc3
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;</code></pre>
+<p><code>containerd-shim</code>
+的职责非常单一，他只负责<strong>某一个特定的container</strong>的生命周期管理：</p>
+<ol type="1">
+<li><strong>作为容器 <code>init</code> 进程的直接父进程</strong>：承接
+<code>runc</code> 启动容器后的父子关系，<code>runc</code>
+启动容器后会立即退出，<code>shim</code> 接管成为容器的父进程；</li>
+<li><strong>接管容器的 IO 与日志</strong>：负责将容器的
+<code>stdin/stdout/stderr</code> 转发给
+<code>containerd</code>，或写入日志文件；</li>
+<li><strong>处理容器的退出事件</strong>：当容器进程退出时，<code>shim</code>
+负责回收僵尸进程、收集退出码，并通知 <code>containerd</code>；</li>
+<li><strong>无状态设计</strong>：<code>shim</code>
+不存储容器的元数据（元数据存在 <code>containerd</code>
+的持久化存储中），它只做「实时转发和事件上报」。</li>
+</ol>
+<p>当某个容器的 <code>containerd-shim</code> 进程崩溃时：</p>
+<ol type="1">
+<li>容器进程由linux的孤儿进程机制托底继续正常执行：
+<ul>
+<li>容器进程本身的运行不受任何影响；</li>
+<li>该容器的 <code>init</code> 进程会变成<strong>孤儿进程</strong>，按照
+Linux 进程收养规则，最终会被
+<code>PID 1</code>（<code>systemd</code>/<code>init</code>）接管；</li>
+</ul></li>
+<li>容器元数据不会丢失：containerd 保存了完整的容器配置
+<ul>
+<li><code>containerd-shim</code>
+是<strong>无状态</strong>的，容器的所有核心元数据（容器 ID、配置、网络 /
+存储信息、镜像层信息等）都保存在 <code>containerd</code>
+的持久化存储中（通常是 <code>/var/lib/containerd</code>）。</li>
+</ul></li>
+<li><code>shim</code> 进程可重建：<code>containerd</code>
+会自动「复活」新的 shim
+<ul>
+<li>一旦检测到某个容器的 <code>shim</code> 崩溃，<code>containerd</code>
+会<strong>立即重新启动一个新的 <code>shim</code> 进程</strong>；</li>
+<li>新 <code>shim</code> 进程会根据 <code>containerd</code>
+中保存的容器元数据，重新连接到容器进程的 IO、接管父子关系（通过 Linux
+的进程 <code>ptrace</code> 或 cgroup 关联）；</li>
+<li>重建后的 <code>shim</code> 会继续履行「IO
+转发、事件上报」的职责，整个过程对容器进程<strong>完全透明</strong>。</li>
+</ul></li>
+</ol>
+<h3 id="runc">runc</h3>
+<p>目前，我们所有其他的组件的职责边界都很清晰，只有 <code>runc</code>
+还是比较模糊 -- 为什么我们不能直接让 <code>containerd</code>
+来负责进程的 <code>fork</code>/<code>exec</code> 等操作呢？</p>
+<p>我们要知道 <code>runc</code> 的核心定位：他是 <code>OCI</code>
+标准的容器运行时，它的唯一核心职责是：<strong>根据 OCI
+规范的配置文件，创建 / 销毁容器进程（完成 Namespace/Cgroup 配置、rootfs
+挂载、<code>fork/exec</code> 等底层操作）</strong>。OCI
+规范是容器生态的「通用语言」，而 <code>runc</code>
+是这个规范的「官方参考实现」。</p>
+<ul>
+<li>如果让 <code>containerd-shim</code> 直接负责
+<code>fork/exec</code>，<code>shim</code>
+会和「容器进程创建的底层逻辑」深度耦合，不同厂商（Docker/CRI-O/containerd）会各自实现一套
+<code>fork/exec</code> 逻辑，导致容器配置不兼容（比如 Docker 容器无法在
+CRI-O 中运行）；</li>
+<li>引入 <code>runc</code> 后：
+<ul>
+<li><code>containerd-shim</code> 只需要「调用
+<code>runc</code>」，无需关心 <code>fork/exec</code>、Namespace
+配置的底层细节；</li>
+<li>任何符合 OCI 规范的运行时（如
+<code>crun</code>、<code>kata-runtime</code>）都可以直接替换
+<code>runc</code>，无需修改 <code>containerd</code>/<code>shim</code>
+的代码 —— 比如想使用轻量级的 <code>crun</code> 或安全的
+<code>kata-runtime</code>，只需替换 <code>runc</code>
+二进制文件即可。</li>
+</ul></li>
+</ul>
+<p>举几个简单的例子：</p>
+<ol type="1">
+<li>cgroup 存在 v1 和 v2
+两个版本，两者的配置语法、挂载路径、限制方式完全不同；</li>
+<li>Linux 内核不断新增 Namespace 类型（比如 User Namespace 实现容器内非
+root 运行，Time Namespace 隔离容器时间），不同内核版本支持的 Namespace
+不同；</li>
+<li>需要进行容器运行时的替换（runc →
+crun/kata-runtime）：业务需要优化容器启动速度（换轻量级的
+crun），或提升安全性（换 kata-runtime 基于虚拟机隔离）：</li>
+</ol>
+<p>不论是哪种情况，如果让 containerd-shim
+来实施都会违背我们containerd-shim负责container的生命周期管理的原则，过多的陷入不必要的细节中；</p>
+<h3 id="新老方案的对比">新老方案的对比</h3>
+<p>从 <code>daemon</code> 迁移到 <code>containerd/runc</code>
+的实现中，最重要的是：对容器管理的职责进行了拆分，从 <code>daemon</code>
+的一个大而全的中心化管理端拆分为了负责api交互的<code>dockerd</code>，负责生命周期管理以及元数据的持久化存储的<code>containerd</code>，负责单个container的管理的<code>containerd-shim</code>，负责进程的fork/exec的<code>runc</code>。</p>
+<p>他们互相关联并且各自负责自己的核心业务逻辑：</p>
+<ol type="1">
+<li>当 <code>dockerd</code> 崩溃时不影响容器的运行而只会影响
+<code>docker ps/logs/stop</code>
+等指令的执行；当用户重新拉起<code>dockerd</code>时，它直接可以开始和
+<code>containerd</code> 通信继续正常服务；</li>
+<li>当 <code>containerd</code> 崩溃时，所有的
+<code>containerd-shim</code> 和容器进程由 Linux
+孤儿机制保证继续正常执行；而 <code>containerd</code>
+通常由系统级守护进程（如
+<code>systemd</code>）负责重新启动（<code>dockerd</code> 不直接重启
+<code>containerd</code>）。</li>
+<li>当 <code>containerd-shim</code> 崩溃时，所有的
+<code>container</code> 由linux的孤儿机制来保证继续正常执行；而
+<code>containerd-shim</code> 则会被 <code>containerd</code>
+来重新拉起；新 <code>shim</code> 进程会根据 <code>containerd</code>
+中保存的容器元数据，重新连接到容器进程的 IO（通过文件描述符 /
+日志文件），并通过 cgroup / 进程命名空间关联容器进程</li>
+<li><code>runc</code>
+作为标准化的容器运行时，仅负责一次性的进程创建（fork/exec +
+Namespace/Cgroup
+配置），执行完即退出，无长期运行的风险，进一步降低了整体架构的故障概率。</li>
+</ol>
+<p>理论上来说，我们也可以让 <code>daemon</code>
+进程来持久化元数据，并且增加一个额外的 <code>daemon-daemon</code>
+来保证在它异常时会被正常拉起，但是这样违背了单一职责原则，并且单进程挂掉的概率显然会比多个进程崩溃的概率来的更大。</p>
+<h2 id="容器的后台运行">容器的后台运行</h2>
+<blockquote>
+<p>在开始这一节的开发之前，我们可以查看QA中的这些信息来详细了解一些关于linux中的进程组，终端等的知识：</p>
+<ul>
+<li><a href="#tty控制权">tty控制权</a></li>
+<li><a href="#linux中的进程组和会话">linux中的进程组和会话</a></li>
+<li><a href="#会话和终端">会话和终端</a></li>
+<li><a href="#进程和子进程的协同">进程和子进程的协同</a></li>
+</ul>
+</blockquote>
+<h3 id="detach模式运行容器">detach模式运行容器</h3>
+<p>在我们目前的代码逻辑中，父进程会等待子进程的结束：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Run</span><span class="params">(commands conf.RunCommands)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	<span class="keyword">if</span> err = parent.Start(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Error(err, <span class="string">&quot;error start process.&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	<span class="keyword">if</span> commands.Tty &#123;</span><br><span class="line marked">		logrus.Infof(<span class="string">&quot;Running &#123;%s&#125; in attach mode.&quot;</span>, conf.GlobalConfig.ImageName())</span><br><span class="line marked">		<span class="keyword">return</span> parent.Wait()</span><br><span class="line marked">	&#125;</span><br><span class="line"></span><br><span class="line">	logrus.Infof(<span class="string">&quot;Running &#123;%s&#125;, pid = &#123;%d&#125; exit.&quot;</span>, conf.GlobalConfig.ImageName(), os.Getpid())</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是，当我们修改代码到 detach 模式时我们会发现一个有趣的现象 --
+子进程竟然和父进程一起退出了！</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker run \</span><br><span class="line marked">    -d \</span><br><span class="line">    -e PATH=/bin/ -m 2000m -c <span class="string">&#x27;10000 100000&#x27;</span> /root/images/busybox.tar /bin/ash</span><br></pre></td></tr></table></figure>
+<p>子进程并没有如我们所预料的被linux初始进程接管：唯一的输出就是我们的grep本身！</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ps -eo pid,ppid,pcpu,cmd | grep /bin/ash</span><br><span class="line"></span><br><span class="line marked"><span class="comment">#1767832 1745835  0.0 grep --color=auto --exclude-dir=.bzr --exclude-dir=CVS --exclude-dir=.git --exclude-dir=.hg --exclude-dir=.svn --exclude-dir=.idea --exclude-dir=.tox --exclude-dir=.venv --exclude-dir=venv /bin/ash</span></span><br></pre></td></tr></table></figure>
+<p>这里，导致我们子进程和父进程一起退出的原因，是因为<strong>子进程没有正确的脱离父进程的进程组（Process
+Group）和会话（Session），这样父进程在退出的时候会触发子进程的
+<code>SIGHUP</code>（终端挂起）
+信号，导致子进程被终止</strong>。具体的信息可以查看<a
+href="#进程和子进程的协同">进程和子进程的协同</a>，我们的主线还是需要解决这个问题：我们需要做的有几点：</p>
+<ol type="1">
+<li>为我们的命令行新增一个参数 <code>-d</code> 指定以
+<code>detach</code> 模式运行；</li>
+<li>当我们指定 <code>detach</code> 模式运行时：
+<ul>
+<li>为我们的子进程创建一个新的
+<code>session</code>，避免父进程退出时产生的 <code>SIGHUP</code>
+信号导致子进程一起退出；</li>
+<li>避免子进程的 <code>session</code> 绑定到任何的
+<code>终端</code>，可以通过两次 <code>Setsid()</code> 实现；</li>
+</ul></li>
+</ol>
+<p>于是我们简单的修改我们的创建子进程命令，这里我们实现了上面所说的逻辑：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newParentProcess</span><span class="params">()</span></span> *exec.Cmd &#123;</span><br><span class="line">	commands := conf.GlobalConfig.Cmd</span><br><span class="line">	args := []<span class="type">string</span>&#123;<span class="string">&quot;init&quot;</span>&#125;</span><br><span class="line">	<span class="keyword">for</span> _, arg := <span class="keyword">range</span> commands.Args &#123;</span><br><span class="line">		args = <span class="built_in">append</span>(args, arg)</span><br><span class="line">	&#125;</span><br><span class="line">	cmd := exec.Command(constant.UnixProcSelfExe, args...)</span><br><span class="line">	cmd.SysProcAttr = &amp;unix.SysProcAttr&#123;</span><br><span class="line">		Cloneflags: unix.CLONE_NEWUTS |</span><br><span class="line">			unix.CLONE_NEWPID |</span><br><span class="line">			unix.CLONE_NEWNS |</span><br><span class="line">			unix.CLONE_NEWNET |</span><br><span class="line">			unix.CLONE_NEWIPC,</span><br><span class="line">		Unshareflags: unix.CLONE_NEWNS,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	setTtyMode(cmd, commands.Tty)</span><br><span class="line">	setDetachMode(cmd, commands.Detach, commands.Tty)</span><br><span class="line"></span><br><span class="line">	cmd.Dir = conf.GlobalConfig.MergePath()</span><br><span class="line">	cmd.Env = commands.UserEnv</span><br><span class="line">	<span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">setTtyMode</span><span class="params">(cmd *exec.Cmd, tty <span class="type">bool</span>)</span></span> &#123;</span><br><span class="line">	cmd.SysProcAttr.Setctty = tty</span><br><span class="line">	<span class="keyword">if</span> tty &#123;</span><br><span class="line">		cmd.Stdin = os.Stdin</span><br><span class="line">		cmd.Stdout = os.Stdout</span><br><span class="line">		cmd.Stderr = os.Stderr</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line marked">		nullFile := nullFileWithPanic()</span><br><span class="line marked">		cmd.Stdin = nullFile</span><br><span class="line marked">		cmd.Stdout = nullFile</span><br><span class="line marked">		cmd.Stderr = nullFile</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">setDetachMode</span><span class="params">(cmd *exec.Cmd, detach <span class="type">bool</span>, tty <span class="type">bool</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> detach &#123;</span><br><span class="line marked">		logrus.Infof(<span class="string">&quot;Running new process in detach mode.&quot;</span>)</span><br><span class="line marked">		cmd.SysProcAttr.Setsid = <span class="literal">true</span></span><br><span class="line marked">		cmd.SysProcAttr.Setctty = <span class="literal">false</span></span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		logrus.Infof(<span class="string">&quot;Running new process in attach mode.&quot;</span>)</span><br><span class="line">		cmd.SysProcAttr.Setsid = <span class="literal">true</span></span><br><span class="line">		cmd.SysProcAttr.Noctty = !tty</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>随后，我们可以通过一个简单的指令来查看我们的 <code>detach</code>
+模式是否正常，注意，这里我们使用了 <code>--</code>
+作为选项终止符，具体的说明可以参考 <a
+href="#选项终止符">选项终止符</a>：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker run \</span><br><span class="line">    -d \</span><br><span class="line">    -e PATH=/bin/ \</span><br><span class="line">    /root/images/busybox.tar \</span><br><span class="line">    -- \</span><br><span class="line">    /bin/ash -c <span class="string">&quot;while true; do sleep 1; done&quot;</span></span><br></pre></td></tr></table></figure>
+<p>查看我们的进程，我们可以看到：子进程仍然在正常的执行中，但是他的父进程已经变成了
+<code>1</code>，因为父进程退出后被linux初始进程收养。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ps -eo pid,ppid,pcpu,cmd | grep /bin/ash | grep -v grep</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2087031       1  0.0 /bin/ash -c while true; do sleep 1; done</span></span><br></pre></td></tr></table></figure>
+<h2 id="容器的状态管理">容器的状态管理</h2>
+<h3 id="mini-dockerd">mini-dockerd</h3>
+<p>通过我们的努力，现在我们已经可以在 <code>detach</code>
+模式下运行我们的容器了，那么新问题来了：<strong>我怎么知道我当前容器的状态？</strong>按照我们之前对新版本docker的实现的描述，我们应该是需要实现
+<code>dockerd</code>/<code>containerd</code>/<code>containerd-shim</code>/<code>runc</code>
+等逻辑，但是这对于一个玩具项目来说太过于复杂了，所以这里我决定参考老版本的docker，重新设计一套轻量级的容器生命周期管理方法。</p>
+<p>我们有两种不同的设计思路：</p>
+<ol type="1">
+<li>不抽象任何的daemon进程，让 <code>mini-dorker</code>
+的每个指令在执行（例如
+<code>docker run</code>/<code>docker start</code>）的时候去记录自身的状态到特定的目录；当我们需要查询容器状态时，启动一个init进程去这个特定的目录并返回给用户；</li>
+<li>抽象一个用来管理容器声明周期的 <code>daemon</code>
+进程，这里让我们简单的把他称之为
+<code>mini-dockerd</code>，<strong>所有的container都是从mini-dockerd这个进程fork()得到，也就是说他是所有container进程的父进程</strong>，它直接负责容器的全部状态管理，通过
+<code>gRPC</code> 或者其他的方式来和 <code>mini-dockerd</code> 通信。
+<ul>
+<li>当我们执行 <code>mini-docker start</code> 时：
+<ol type="1">
+<li><code>mini-docker</code> 会启动一个全新的进程，他向
+<code>mini-dockerd</code> 发送 <code>start</code> 指令请求创建
+container；</li>
+<li><code>mini-dockerd</code>
+接受到请求，会实现我们所有容器初始化必要的操作：分配容器ID，创建文件夹等；</li>
+<li><code>mini-dockerd</code> 通过 <code>fork()</code>
+创建一个全新的进程，这个进程就是我们的 container；container
+进程内部执行我们之前的初始化流程：确认detach模式，初始化文件系统等；</li>
+<li>随后 <code>mini-dockerd</code> 会将全部必要的信息记录下来；</li>
+<li><code>mini-docker</code> 进程退出；</li>
+</ol></li>
+<li>当我们执行 <code>mini-docker ps</code> 时：
+<ol type="1">
+<li><code>mini-docker</code> 会启动一个全新的进程，向
+<code>mini-dockerd</code> 发送 <code>ps</code> 指令请求查询数据；</li>
+<li><code>mini-dockerd</code> 通过之前记录的信息，查询数据并向
+<code>mini-docker</code> 返回结果；</li>
+<li><code>mini-docker</code> 向Stdout输出日志，并退出进程；</li>
+</ol></li>
+</ul></li>
+</ol>
+<p>这两种方式都比现代docker的生命周期管理更加简单，但是他们之间也有各自的优缺点：</p>
+<ol type="1">
+<li>第一种方式的最大的问题在于，所有的容器进程没有一个共同的父进程 --
+他们的父进程是各自的 <code>mini-docker</code>，或者是
+<code>detach</code> 模式下被 PID=1
+的进程收养，这为我们的管理带来了很大的挑战；</li>
+<li>第二种方式的最大的问题在于，我们需要增加额外的依赖以便于和
+<code>mini-dockerd</code> 进行跨进程的通信，并且我们需要非常细心的去设计
+<code>mini-dockerd</code> 的接口以便于适应我们不断变化的管理需求。</li>
+</ol>
+<p>这里，我们选择了第二个方案，具体的架构逻辑如下图所示。注意，这里的
+<code>mini-docker</code> 和 <code>mini-dockerd</code> 的通信我选择使用了
+<a href="#uds">UDS</a>。</p>
+<pre><code class="highlight mermaid">---
+title: mini-dockerd
+---
+
+flowchart TB
+mini-docker(&quot;mini-docker&quot;):::animate
+dockerd(&quot;mini-dockerd&quot;):::green
+state(&quot;状态存储&lt;br/&gt;(内存+文件)&quot;):::pale_pink
+pid_sock(&quot;标识文件&lt;br/&gt;(dockerd.pid + dockerd.sock)&quot;):::purple
+
+ubuntu1(&quot;container-1(ubuntu)&quot;):::yellow
+ubuntu2(&quot;container-2(ubuntu)&quot;):::yellow
+busybox(&quot;container-3(busybox)&quot;):::yellow
+nginx(&quot;container-4(nginx)&quot;):::yellow
+other(&quot;...&quot;):::yellow
+
+mini-docker --&gt;|1.读取标识文件| pid_sock
+mini-docker &lt;-.-&gt;|2.UDS通信| dockerd
+dockerd &lt;--&gt;|读写状态| state
+dockerd --&gt;|&quot;fork()/管控&quot;| ubuntu1
+dockerd --&gt;|&quot;fork()/管控&quot;| ubuntu2
+dockerd --&gt;|&quot;fork()/管控&quot;| busybox
+dockerd --&gt;|&quot;fork()/管控&quot;| nginx
+dockerd --&gt;|&quot;fork()/管控&quot;| other
+dockerd --&gt;|写入PID/UDS地址| pid_sock
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;</code></pre>
+<h3 id="通过uds通信">通过UDS通信</h3>
+<p>有了技术方案之后，后面的实现就没有那么复杂了，但是我们现在需要一个方式，来提供给客户端和服务端来进行通信。这里我们选择了
+<a href="#uds">UDS</a>
+作为我们的通信方式。这个方案虽然限制比较多，但是足够轻量级。我们的客户端和服务端的代码都不复杂，这里直接给出：</p>
+<h4 id="uds服务端">UDS服务端</h4>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">CreateUdsServer</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> isUdsServerRunning() &#123;</span><br><span class="line">		logrus.Fatalf(<span class="string">&quot;UDS server is already running&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	udsPath := conf.RuntimeDockerdUdsFile.Get()</span><br><span class="line"></span><br><span class="line">	err := util.EnsureFileExists(udsPath)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Errorf(<span class="string">&quot;UDS server uds path does not exist: &#123;%s&#125;&quot;</span>, udsPath)</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	_ = os.Remove(udsPath)</span><br><span class="line"></span><br><span class="line">	network := constant.OS</span><br><span class="line marked">	listener, err := net.ListenUnix(network, &amp;net.UnixAddr&#123;</span><br><span class="line marked">		Name: udsPath,</span><br><span class="line marked">		Net:  network,</span><br><span class="line marked">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> constant.ErrCreateUdsServer.Wrap(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">defer</span> listener.Close()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err = os.Chmod(udsPath, <span class="number">0600</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	pidFile := conf.RuntimeDockerdUdsPidFile.Get()</span><br><span class="line marked">	<span class="keyword">if</span> err = util.EnsureFileExists(pidFile); err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		logrus.Errorf(<span class="string">&quot;UDS pid file does not exist: &#123;%s&#125;&quot;</span>, pidFile)</span><br><span class="line marked">		<span class="keyword">return</span> err</span><br><span class="line marked">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err = os.WriteFile(pidFile, []<span class="type">byte</span>(fmt.Sprintf(<span class="string">&quot;%d&quot;</span>, os.Getpid())), <span class="number">0600</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Errorf(<span class="string">&quot;error write file : %v&quot;</span>, pidFile)</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	logrus.Infof(<span class="string">&quot;start UDS for mini-dockerd on : %s&quot;</span>, udsPath)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		conn, err := listener.AcceptUnix()</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			logrus.Errorf(<span class="string">&quot;error accept unix：%v\n&quot;</span>, err)</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">go</span> handleClient(conn)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，两段标准的代码：</p>
+<ul>
+<li><code>17-20</code> 用来监听 <code>dockerd.sock</code>
+文件的输入；</li>
+<li><code>32-35</code> 用来绑定 <code>UDS</code>
+进程，这样我们可以知道当前 <code>UDS</code> 进程的存活状态。</li>
+</ul>
+<h4 id="uds客户端">UDS客户端</h4>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SendRequest</span><span class="params">(req *Request)</span></span> (<span class="type">error</span>, Response) &#123;</span><br><span class="line">	<span class="keyword">if</span> !isUdsServerRunning() &#123;</span><br><span class="line">		logrus.Fatalf(<span class="string">&quot;UDS server is not running&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span> constant.ErrIllegalUdsServerStatus, Response&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// connect client</span></span><br><span class="line marked">	conn, err := net.DialUnix(constant.OS, <span class="literal">nil</span>, &amp;net.UnixAddr&#123;</span><br><span class="line marked">		Name: conf.RuntimeDockerdUdsFile.Get(),</span><br><span class="line marked">		Net:  constant.OS,</span><br><span class="line marked">	&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Errorf(<span class="string">&quot;failed to dial mini-dockerd: %v\n&quot;</span>, err.Error())</span><br><span class="line">		<span class="keyword">return</span> err, Response&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> conn.Close()</span><br><span class="line"></span><br><span class="line marked">	reqData, _ := json.Marshal(req)</span><br><span class="line marked">	_, err = conn.Write(reqData)</span><br><span class="line marked">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		logrus.Errorf(<span class="string">&quot;failed to send uds request: %v\n&quot;</span>, err.Error())</span><br><span class="line marked">		<span class="keyword">return</span> err, Response&#123;&#125;</span><br><span class="line marked">	&#125;</span><br><span class="line"></span><br><span class="line marked">	buf := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">1024</span>*<span class="number">10</span>)</span><br><span class="line marked">	n, err := conn.Read(buf)</span><br><span class="line marked">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		logrus.Errorf(<span class="string">&quot;failed to read uds response: %v\n&quot;</span>, err)</span><br><span class="line marked">		<span class="keyword">return</span> err, Response&#123;&#125;</span><br><span class="line marked">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> rsp Response</span><br><span class="line">	err = json.Unmarshal(buf[:n], &amp;rsp)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Errorf(<span class="string">&quot;error unmarshal uds response: %v\n&quot;</span>, err.Error())</span><br><span class="line">		<span class="keyword">return</span> err, Response&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span>, rsp</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>标注的三段代码：</p>
+<ul>
+<li><code>8-11</code> 请求连接UDS服务端；</li>
+<li><code>18-23</code> 通过获取的连接想UDS服务端发送请求数据；</li>
+<li><code>25-30</code> 读取UDS服务端的返回；</li>
+</ul>
+<h3 id="mini-docker-ps"><code>mini-docker ps</code></h3>
+<p>下面是我们实现 <code>mini-docker ps</code> 的逻辑：</p>
+<h4 id="逻辑抽象">逻辑抽象</h4>
+<p>我们将所有的请求都抽象为
+<code>ActionHandler</code>，每一个用户的请求都绑定到一个对应的
+<code>Action</code>，这样我们只需要按照声明去实现请求，就可以轻松的为我们的
+<code>mini-docker</code> 添加额外的操作；</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> ActionHandler <span class="function"><span class="keyword">func</span><span class="params">(req Request)</span></span> (rsp Response, err <span class="type">error</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">AddHandler</span><span class="params">(action constant.Action, ac ActionHandler)</span></span> &#123;</span><br><span class="line">	registry[action] = ac</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">handleRequest</span><span class="params">(req Request)</span></span> (Response, <span class="type">error</span>) &#123;</span><br><span class="line">	h, ok := registry[req.Act]</span><br><span class="line">	<span class="keyword">if</span> !ok &#123;</span><br><span class="line">		<span class="keyword">return</span> ErrorResponse(fmt.Errorf(<span class="string">&quot;%s&quot;</span>, req.Act.String()), constant.ErrUnsupportedAction)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> h(req)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="绑定handler">绑定handler</h4>
+<p>这里，我们为 <code>ps</code> 命令绑定我们的处理函数
+<code>handlePs</code></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">init</span><span class="params">()</span></span> &#123;</span><br><span class="line marked">	handler.AddHandler(constant.Ps, handlePs)</span><br><span class="line">	handler.AddHandler(constant.Commit, handleCommit)</span><br><span class="line">	handler.AddHandler(constant.Run, handleContainerRun)</span><br><span class="line">	handler.AddHandler(constant.Stop, handleContainerStop)</span><br><span class="line">	handler.AddHandler(constant.Logs, handleContainerLogs)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="handleps的实现">handlePs的实现</h4>
+<p><code>handlePs</code>
+的逻辑实现非常简单，就是在收到请求之后，去读取我们存储容器状态的文件读取所有的容器状态，并且按照请求中的要求返回。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ps</span><span class="params">(command conf.PsCommand)</span></span> ([]entity.Container, <span class="type">error</span>) &#123;</span><br><span class="line">	allContainers, err := readAllContainers()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Errorf(<span class="string">&quot;error reading all containers: %v&quot;</span>, err)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> command.All &#123;</span><br><span class="line">		<span class="keyword">return</span> allContainers, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	targetContainers := <span class="built_in">make</span>([]entity.Container, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">for</span> _, container := <span class="keyword">range</span> allContainers &#123;</span><br><span class="line">		<span class="keyword">if</span> container.Status != entity.ContainerRunning &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		targetContainers = <span class="built_in">append</span>(targetContainers, container)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> targetContainers, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="通过-nsenter-进入已经创建好的容器">通过 <code>nsenter</code>
+进入已经创建好的容器</h3>
+<p>接下来，我们需要开始实现一个相对复杂的逻辑 --
+<strong>假设我们存在一个id等于 <code>28f4ccc7b638</code> 的
+<code>ubuntu</code>
+容器，我们可以通过<code>docker exec -it 28f4ccc7b638 /bin/bash</code>
+进入到容器内部。</strong>这个逻辑是通过 <a href="#nsenter">nsenter</a>
+来实现的。整体的实现步骤如下图所示：</p>
+<pre><code class="highlight mermaid">flowchart TD
+    A[&quot;解析 exec 命令参数（-it、容器ID、执行命令）&quot;] --&gt; B[&quot;校验容器状态（必须运行中）&quot;]
+    B --&gt; C[&quot;获取容器的 init 进程 PID（容器的第一个进程）&quot;]
+    C --&gt; D[&quot;构造 nsenter 命令，进入容器命名空间&quot;]
+    D --&gt; E[&quot;处理 -it 参数：分配 TTY、重定向 stdin/stdout/stderr&quot;]
+    E --&gt; F[&quot;执行 nsenter 命令，进入容器交互&quot;]</code></pre>
+<p>这里我们可以先查看 <a href="#/proc进程相关">/proc进程相关</a>
+这一小节中关于一个 docker 容器的例子，以及 <a
+href="#nsenter和docker%20exec的区别">nsenter和docker exec的区别</a>
+这一小节来初步了解如何使用 <code>nsenter</code> 来模拟
+<code>docker exec</code>。</p>
+<h4 id="流程">流程</h4>
+<p>所以，我们现在可以把我们整体实现 <code>exec</code>
+流程表示为如下：</p>
+<pre><code class="highlight mermaid">flowchart TB
+    docker(&quot;mini-docker exec &lt;br/&gt;&amp;lt;容器ID&amp;gt; &amp;lt;命令&amp;gt;&quot;):::green
+
+    subgraph proc[&quot;/proc/&amp;lt;容器PID&amp;gt;/&quot;]
+        direction TB
+        ns[&quot;ns/ &lt;br/&gt;(mnt/pid/net/uts/ipc)&quot;]:::pale_pink          
+        environ(&quot;environ &lt;br/&gt;(环境变量)&quot;):::pale_pink
+        cwd(&quot;cwd &lt;br/&gt;(工作目录)&quot;):::pale_pink
+        cgroup(&quot;cgroup &lt;br/&gt;(可选)&quot;):::pale_pink
+    end
+
+    step1(&quot;1. 解析容器ID → 获取容器PID&quot;):::green
+    step2(&quot;2. 读取上下文 &lt;br/&gt;(cwd/environ)&quot;):::green
+    step3(&quot;3. 构造nsenter命令 &lt;br/&gt;nsenter &lt;br/&gt; -t &amp;lt;PID&amp;gt; -a &lt;br/&gt;/bin/bash &lt;br/&gt;-w &amp;lt;cwd&amp;gt;&lt;br/&gt; -e &amp;lt;env&gt; &lt;br/&gt;&amp;lt;命令&amp;gt;&quot;):::yellow
+    exec(&quot;4. syscall.Exec() &lt;br/&gt;执行nsenter，传递环境变量&quot;):::yellow
+
+    docker --&gt; step1
+    step1 &lt;-.-&gt;|&quot;读取PID&quot;| proc
+    step1 --&gt; step2
+    step2 &lt;-.-&gt;|&quot;读取上下文&quot;| environ &amp; cwd
+    step2 --&gt; step3
+    step3 --&gt; exec
+    exec &lt;-.-&gt;|&quot;依赖命名空间文件&quot;| ns
+
+    classDef pale_pink fill:#E1BEE7,color:#000000;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef yellow fill:#FFF9C4,color:#000000;</code></pre>
+<h4 id="实现">实现</h4>
+<p>在思路清楚之后，具体的实现就变得简单了：只需要拼好我们的命令行参数即可。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NsenterExec</span><span class="params">(pid <span class="type">int</span>, args []<span class="type">string</span>, env []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	path, err := exec.LookPath(constant.Nsenter)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	argv := []<span class="type">string</span>&#123;</span><br><span class="line">		constant.Nsenter,</span><br><span class="line">		<span class="string">&quot;-t&quot;</span>, fmt.Sprintf(<span class="string">&quot;%d&quot;</span>, pid),</span><br><span class="line">		<span class="string">&quot;-a&quot;</span>,</span><br><span class="line">	&#125;</span><br><span class="line">	argv = <span class="built_in">append</span>(argv, args...)</span><br><span class="line marked">	<span class="keyword">if</span> err = syscall.Exec(path, argv, env); err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		logrus.Errorf(<span class="string">&quot;error exec %s : %v&quot;</span>, path, err)</span><br><span class="line marked">		<span class="keyword">return</span> err</span><br><span class="line marked">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ReadNsEnv</span><span class="params">(pid <span class="type">int</span>)</span></span> ([]<span class="type">string</span>, <span class="type">error</span>) &#123;</span><br><span class="line">	data, err := os.ReadFile(fmt.Sprintf(<span class="string">&quot;/proc/%d/environ&quot;</span>, pid))</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> strings.Split(<span class="type">string</span>(data), <span class="string">&quot;\x00&quot;</span>), <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h1 id="qa">QA</h1>
 <h2 id="proc">Proc</h2>
 <p><code>/proc</code> 是 Linux
@@ -1871,6 +2339,972 @@ Namespace</strong>（挂载视图），但<strong>初始时完全继承父进程
 </tr>
 </tbody>
 </table>
+<h2 id="tty控制权">tty控制权</h2>
+<p>在开发的过程中，我发现一个奇怪的问题，当我通过</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker run -it -e PATH=/bin/ -m 2000m -c <span class="string">&#x27;10000 100000&#x27;</span> /root/images/busybox.tar /bin/ash</span><br></pre></td></tr></table></figure>
+<p>进入非detach模式时，我的终端会进入到
+<code>/bin/ash</code>，此时可以观察到下面几个现象：</p>
+<ol type="1">
+<li>当我通过 exit 退出进程时，父进程和子进程都会退出；</li>
+<li>当我通过 kill -9
+杀死父进程时，父进程会退出，子进程会被pid=1的进程接管；但是此时会出现一个奇怪的问题，我们的标准输入看起来非常奇怪：好像一会儿在向我的
+<code>zsh</code>（这是我的宿主机终端）输入，一会在向
+<code>/bin/ash</code> 输入。</li>
+</ol>
+<p>这是因为我在创建container的过程中，使用了如下操作：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newParentProcess</span><span class="params">(tty <span class="type">bool</span>, commands []<span class="type">string</span>, env []<span class="type">string</span>)</span></span> *exec.Cmd &#123;</span><br><span class="line">     args := []<span class="type">string</span>&#123;<span class="string">&quot;init&quot;</span>&#125;</span><br><span class="line">     <span class="keyword">for</span> _, command := <span class="keyword">range</span> commands &#123;</span><br><span class="line">          args = <span class="built_in">append</span>(args, command)</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line marked">     <span class="keyword">if</span> tty &#123;</span><br><span class="line marked">          logrus.Info(<span class="string">&quot;Running new process in tty.&quot;</span>)</span><br><span class="line marked">          cmd.Stdin = os.Stdin</span><br><span class="line marked">          cmd.Stdout = os.Stdout</span><br><span class="line marked">          cmd.Stderr = os.Stderr</span><br><span class="line marked">     &#125;</span><br><span class="line">     cmd.Dir = conf.GlobalConfig.MergePath()</span><br><span class="line">     cmd.Env = env</span><br><span class="line">     <span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>于是一切都解释得通了：</p>
+<ol type="1">
+<li>通过exit退出进程：
+<ol type="1">
+<li><code>exit</code> 是输入给容器子进程（ash）的命令，ash 执行 exit
+后自身退出；</li>
+<li>父进程的 <code>parent.Wait()</code>
+会阻塞等待子进程退出，子进程退出后 <code>Wait()</code>
+返回，父进程才跟着退出；</li>
+</ol></li>
+<li>当我们通过 kill -9 杀死父进程时，此时的逻辑是：
+<ol type="1">
+<li>父进程被强制杀死后，<code>parent.Wait()</code>
+逻辑中断，但容器子进程的 <code>Stdin/Stdout/Stderr</code>
+依然绑定在宿主机终端的 IO 描述符上；</li>
+<li>子进程被 PID=1 的进程接管后仍在运行，此时宿主机 <code>zsh</code>
+和容器子进程「共享同一个终端 IO」；</li>
+<li>内核会将终端输入的字符随机分配给 zsh
+或容器子进程，输出也会混在一起，表现为「一会儿向 zsh 输入，一会儿向 ash
+输入」。</li>
+</ol></li>
+</ol>
+<h2 id="proc-1">/proc</h2>
+<h3 id="定义">定义</h3>
+<p><code>/proc</code> 是 Linux
+特有的<strong>虚拟文件系统（VFS）</strong> ——
+它不存储在磁盘上，而是由内核实时生成，用于暴露内核 /
+进程的运行时状态和配置。可以把 <code>/proc</code>
+理解为：<strong>用户空间与内核交互的 “窗口”</strong>，<code>/proc</code>
+有以下几个核心特点：</p>
+<ul>
+<li><strong>无持久化</strong>：所有文件 /
+目录都是内核动态生成的，重启后消失；</li>
+<li><strong>只读为主</strong>：大部分文件仅允许读取（获取状态），少数可写入（修改内核配置）；</li>
+<li><strong>以 PID 为核心</strong>：每个运行的进程都对应
+<code>/proc/&lt;pid&gt;</code> 目录（<code>&lt;pid&gt;</code> 是进程
+ID）。</li>
+</ul>
+<p><code>/proc</code> 下可以笼统的分为两大类型：</p>
+<ul>
+<li><code>/proc/&lt;pid&gt;</code> 存放了pid进程下的相关信息；</li>
+<li>以及除了进程相关的通用信息；</li>
+</ul>
+<h3 id="通用信息">通用信息</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> /proc | grep -E -v <span class="string">&#x27;^[0-9]+$&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#acpi		devices		iomem		kpageflags	mtrr		sli		tty</span></span><br><span class="line"><span class="comment">#bt_aug_stat	diskstats	ioports		latency_stats	net		softirqs	unevictable</span></span><br><span class="line"><span class="comment">#bt_stat		dma		irq		loadavg		pagetypeinfo	stat		uptime</span></span><br><span class="line"><span class="comment">#buddyinfo	driver		kallsyms	loadavg_bt	partitions	swaps		version</span></span><br><span class="line"><span class="comment">#bus		dynamic_debug	kcore		locks		pressure	sys		vmallocinfo</span></span><br><span class="line"><span class="comment">#cgroups		execdomains	keys		mdstat		schedstat	sysrq-trigger	vmstat</span></span><br><span class="line"><span class="comment">#cmdline		fb		key-users	meminfo		scsi		sysvipc		zoneinfo</span></span><br><span class="line"><span class="comment">#consoles	filesystems	kmsg		misc		scx_stat	thread-self</span></span><br><span class="line"><span class="comment">#cpuinfo		fs		kpagecgroup	modules		self		timer_list</span></span><br><span class="line"><span class="comment">#crypto		interrupts	kpagecount	mounts		slabinfo	tkernel</span></span><br></pre></td></tr></table></figure>
+<h4 id="几个常用的信息">几个常用的信息</h4>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 21%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">路径</th>
+<th style="text-align: center;">作用</th>
+<th style="text-align: center;">容器场景的意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>/proc/cpuinfo</code></td>
+<td style="text-align: center;">显示 CPU 硬件信息</td>
+<td style="text-align: center;">容器内读取的是宿主机 CPU
+信息（除非做了隔离）</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>/proc/meminfo</code></td>
+<td style="text-align: center;">显示内存使用状态</td>
+<td style="text-align: center;">容器内读取的是 cgroup
+限制后的内存（而非宿主机）</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>/proc/mounts</code></td>
+<td style="text-align: center;">显示系统挂载点</td>
+<td
+style="text-align: center;">容器内显示的是自己的挂载命名空间中的挂载点</td>
+</tr>
+</tbody>
+</table>
+<p>以我的这台云服务器为例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CPU	4核</span><br><span class="line">内存	16GB</span><br><span class="line">系统盘	SSD云硬盘 180GB</span><br></pre></td></tr></table></figure>
+<h4 id="proccpuinfo">/proc/cpuinfo</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/cpuinfo</span><br></pre></td></tr></table></figure>
+<p>得到以下输出（只保留了必要部分）：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">processor</span>	: <span class="number">0</span></span><br><span class="line"><span class="attribute">vendor_id</span>	: AuthenticAMD</span><br><span class="line"><span class="attribute">cpu</span> MHz		: <span class="number">2545</span>.<span class="number">218</span></span><br><span class="line"><span class="attribute">cache</span> size	: <span class="number">512</span> KB</span><br><span class="line"><span class="attribute">TLB</span> size	: <span class="number">1024</span> <span class="number">4</span>K pages</span><br><span class="line"><span class="attribute">cache_alignment</span>	: <span class="number">64</span></span><br><span class="line"></span><br><span class="line"><span class="attribute">processor</span>	: <span class="number">1</span></span><br><span class="line"><span class="attribute">processor</span>	: <span class="number">2</span></span><br><span class="line"><span class="attribute">processor</span>	: <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>从输出信息我们可以看到：</p>
+<ul>
+<li><code>processor:0 ~ processor:3</code>
+表明我们的服务器有四个<strong>逻辑核心</strong>（而非物理核心）；</li>
+<li><code>vendor_id: AuthenticAMD</code>：CPU 厂商为 AMD；</li>
+<li><code>cpu MHz</code>：CPU 实时运行频率（2545.218 MHz，即约
+2.54GHz）；</li>
+<li><code>TLB size</code>：快表大小（1024 个 4K 页的条目）；</li>
+<li><code>cache_alignment</code>：缓存对齐大小（64 字节，CPU
+缓存读写的最小单位）；</li>
+</ul>
+<h3 id="proc进程相关">/proc进程相关</h3>
+<blockquote>
+<p><code>/proc/&lt;pid&gt;</code> 下保存了和特定进程相关的信息。</p>
+</blockquote>
+<h4 id="几个常用的信息-1">几个常用的信息</h4>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 26%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">路径</th>
+<th style="text-align: center;">作用</th>
+<th style="text-align: center;">容器场景的意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>/proc/&lt;pid&gt;</code></td>
+<td style="text-align: center;">单个进程的专属目录</td>
+<td style="text-align: center;">容器内的 1 号进程，对应宿主机的
+<code>/proc/&lt;host-pid&gt;</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><code>/proc/&lt;pid&gt;/environ</code></td>
+<td style="text-align: center;">进程的环境变量</td>
+<td style="text-align: center;">查看容器进程的环境变量</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>/proc/&lt;pid&gt;/exe</code></td>
+<td style="text-align: center;">指向进程可执行文件的软链接</td>
+<td style="text-align: center;">找到容器 init
+进程的实际可执行文件路径</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>/proc/&lt;pid&gt;/cwd</code></td>
+<td style="text-align: center;">进程的当前工作目录</td>
+<td style="text-align: center;">查看容器进程的工作目录</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>/proc/&lt;pid&gt;/ns</code></td>
+<td style="text-align: center;">进程所属的命名空间文件</td>
+<td style="text-align: center;">容器隔离的核心入口</td>
+</tr>
+</tbody>
+</table>
+<h4 id="示例">示例</h4>
+<p>我们通过如下指令启动一个容器：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">docker run -itd \</span><br><span class="line">    --cpus=1.0 -m 128m \				<span class="comment"># 指定cgroup信息</span></span><br><span class="line">    -e name=example-ubuntu \			<span class="comment"># 指定环境变量</span></span><br><span class="line">    -w /media \							<span class="comment"># 指定工作目录</span></span><br><span class="line">    ubuntu /bin/bash</span><br><span class="line"><span class="comment"># 2bcd026d203d</span></span><br><span class="line">    </span><br><span class="line">ps -eo pid,ppid,pcpu,cmd | grep -E <span class="string">&quot;/bin/bash&quot;</span> | grep -v grep</span><br><span class="line"><span class="comment"># 3252163 3252018  0.0 /bin/bash</span></span><br></pre></td></tr></table></figure>
+<p>现在我们可以直接来查看我们的相关信息了</p>
+<h4 id="environ">environ</h4>
+<p>这里需要注意的一点是，每个环境变量（<code>KEY=VALUE</code>）之间用
+<strong>空字符（<code>\0</code>，ASCII 0）</strong> 分隔，而非换行 /
+空格；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/3252163/environ | <span class="built_in">tr</span> <span class="string">&#x27;\0&#x27;</span> <span class="string">&#x27;\n&#x27;</span></span><br><span class="line"><span class="comment"># PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</span></span><br><span class="line"><span class="comment"># HOSTNAME=2bcd026d203d</span></span><br><span class="line"><span class="comment"># TERM=xterm</span></span><br><span class="line"><span class="comment"># name=example-ubuntu</span></span><br><span class="line"><span class="comment"># HOME=/root</span></span><br></pre></td></tr></table></figure>
+<h4 id="cwd">cwd</h4>
+<p><code>/cwd</code> 是一个软链接指向了我们声明的
+<code>/media</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ll /proc/3252163/cwd</span><br><span class="line"></span><br><span class="line"><span class="comment"># lrwxrwxrwx 1 root root 0 Jan 11 10:41 /proc/3252163/cwd -&gt; /media</span></span><br></pre></td></tr></table></figure>
+<h4 id="cgroup-1">cgroup</h4>
+<p><code>/proc/&lt;pid&gt;/cgroup</code> 是 Linux 内核暴露进程所属
+cgroup 信息的文件，其每行格式为：<code>层级ID:控制器列表:路径</code></p>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 23%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">字段</th>
+<th style="text-align: center;">示例值</th>
+<th style="text-align: center;">核心含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">层级 ID</td>
+<td style="text-align: center;"><code>0</code></td>
+<td style="text-align: center;">cgroup 层级的唯一编号（cgroup v2 中只有
+1 个层级，固定为 0）</td>
+</tr>
+<tr>
+<td style="text-align: center;">控制器列表</td>
+<td style="text-align: center;">空（<code>::</code> 中间无内容）</td>
+<td style="text-align: center;">cgroup v2 不再按 “控制器”
+划分，统一用单个层级管理所有资源（cpu/mem 等），因此控制器列表为空</td>
+</tr>
+<tr>
+<td style="text-align: center;">路径</td>
+<td style="text-align: center;"><code>/system.slice/...</code></td>
+<td style="text-align: center;">进程所属的 cgroup
+在层级中的具体路径（对应 Docker 容器的 cgroup 路径）</td>
+</tr>
+</tbody>
+</table>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/3252163/cgroup</span><br><span class="line"></span><br><span class="line"><span class="comment"># 0::/system.slice/docker-2bcd026d203d8f3f9eda18f43d188c51675be34a2e0510a2900549bfafc5772e.scope</span></span><br></pre></td></tr></table></figure>
+<p>我们可以在宿主机上找到我们声明的<code>cgroup</code>信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /sys/fs/cgroup/system.slice/docker-2bcd026d203d8f3f9eda18f43d188c51675be34a2e0510a2900549bfafc5772e.scope/cpu.max</span><br><span class="line"><span class="comment"># 100000 100000</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cat</span> /sys/fs/cgroup/system.slice/docker-2bcd026d203d8f3f9eda18f43d188c51675be34a2e0510a2900549bfafc5772e.scope/memory.max</span><br><span class="line"><span class="comment"># 134217728</span></span><br></pre></td></tr></table></figure>
+<h2 id="procpidns">/proc/pid/ns</h2>
+<h3 id="定义-1">定义</h3>
+<p><code>/proc/&lt;pid&gt;/ns</code> 是 Linux
+内核为每个进程暴露<strong>命名空间（Namespace）</strong>
+信息的专属目录，核心作用是：<strong>以 “文件”
+的形式，标识进程所属的每一种命名空间，同时提供「进入该命名空间」的入口（是
+<code>nsenter</code>、<code>docker exec</code>
+等功能的底层基础）。</strong></p>
+<p>Linux 命名空间是容器 “隔离性” 的核心 —— 它让进程 “误以为”
+自己拥有独立的主机名、PID 空间、网络栈等资源。而
+<code>/proc/&lt;pid&gt;/ns</code> 就是这些隔离资源的 “可视化入口”：</p>
+<ul>
+<li>每个进程的 <code>/proc/&lt;pid&gt;/ns</code>
+目录下，一个文件对应一种命名空间；</li>
+<li>同一命名空间内的所有进程，对应 <code>ns</code> 文件的「inode
+号」完全一致。</li>
+</ul>
+<h3 id="示例-1">示例</h3>
+<p>还是以我们在 <a href="#/proc进程相关">/proc进程相关</a>
+中，我们启动的容器进程 <code>3252163</code> 为例。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -li /proc/3252163/ns/</span><br></pre></td></tr></table></figure>
+<p>我们可看到大量的文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">1273617591 lrwxrwxrwx 1 root root 0 Jan 11 10:39 cgroup -&gt; <span class="string">&#x27;cgroup:[4026532365]&#x27;</span></span><br><span class="line">1273617588 lrwxrwxrwx 1 root root 0 Jan 11 10:39 ipc -&gt; <span class="string">&#x27;ipc:[4026532363]&#x27;</span></span><br><span class="line">1273524119 lrwxrwxrwx 1 root root 0 Jan 11 10:39 mnt -&gt; <span class="string">&#x27;mnt:[4026532361]&#x27;</span></span><br><span class="line">1273522023 lrwxrwxrwx 1 root root 0 Jan 11 10:39 net -&gt; <span class="string">&#x27;net:[4026532366]&#x27;</span></span><br><span class="line">1273617590 lrwxrwxrwx 1 root root 0 Jan 11 10:39 pid -&gt; <span class="string">&#x27;pid:[4026532364]&#x27;</span></span><br><span class="line">1280325885 lrwxrwxrwx 1 root root 0 Jan 11 10:58 pid_for_children -&gt; <span class="string">&#x27;pid:[4026532364]&#x27;</span></span><br><span class="line">1280325887 lrwxrwxrwx 1 root root 0 Jan 11 10:58 <span class="keyword">time</span> -&gt; <span class="string">&#x27;time:[4026531834]&#x27;</span></span><br><span class="line">1280325888 lrwxrwxrwx 1 root root 0 Jan 11 10:58 time_for_children -&gt; <span class="string">&#x27;time:[4026531834]&#x27;</span></span><br><span class="line">1280325886 lrwxrwxrwx 1 root root 0 Jan 11 10:58 user -&gt; <span class="string">&#x27;user:[4026531837]&#x27;</span></span><br><span class="line">1273617589 lrwxrwxrwx 1 root root 0 Jan 11 10:39 uts -&gt; <span class="string">&#x27;uts:[4026532362]&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>基本上，他们就是对应了我们的几个 <code>namespace</code> 系统。</p>
+<h3 id="使用go操作ns">使用go操作ns</h3>
+<p><strong>ns文件是“可操作的入口”，他和很多的 /proc
+文件不一样，它不是普通的文本文件，而是内核的 “文件描述符”——
+通过打开该文件，再调用 <code>setns</code>
+系统调用，就能让当前进程进入目标命名空间。这也是
+<code>nsenter</code>/<code>docker exec</code>
+的底层实现逻辑。</strong></p>
+<p>我们在<code>go</code>语言内也是一致的逻辑：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	args := os.Args</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(args) != <span class="number">2</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(<span class="string">&quot;Usage: nsenter &lt;pid&gt;&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	pid := args[<span class="number">1</span>]</span><br><span class="line">	fmt.Printf(<span class="string">&quot;pid : &#123;%s&#125;\n&quot;</span>, pid)</span><br><span class="line"></span><br><span class="line">	command := <span class="string">&quot;nsenter&quot;</span></span><br><span class="line">	path, err := exec.LookPath(command)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err = syscall.Exec(path, []<span class="type">string</span>&#123;command, <span class="string">&quot;-t&quot;</span>, pid, <span class="string">&quot;-a&quot;</span>, <span class="string">&quot;/bin/bash&quot;</span>&#125;, syscall.Environ()); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="nsenter和docker-exec的区别">nsenter和docker exec的区别</h3>
+<blockquote>
+<p>以我们在 <a href="#/proc进程相关">/proc进程相关</a>
+中，我们启动的容器进程 <code>3252163</code> 为例。</p>
+</blockquote>
+<p>我们可以观察到一个现象：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it 2bcd026d203d /bin/bash</span><br></pre></td></tr></table></figure>
+<p>当我们通过以上命令进入到容器时：</p>
+<ul>
+<li>我们的 <code>cwd</code> 在 <code>/media</code> 下；</li>
+<li><code>echo $name</code> 可以看到我们声明的环境变量；</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nsenter -t 3252163 -a /bin/bash</span><br></pre></td></tr></table></figure>
+<p>而当我们通过以上命令进入到容器时：</p>
+<ul>
+<li>我们的 <code>cwd</code> 在 <code>/</code> 下；</li>
+<li><code>echo $name</code> 发现没有该环境变量；</li>
+</ul>
+<p><strong>这里最关键的区别在于：<code>nsenter</code> 依然读取了
+<code>/proc/&lt;pid&gt;/ns/</code>（只是没复刻容器的「进程上下文」）。</strong></p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 22%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">操作</th>
+<th style="text-align: center;">命名空间</th>
+<th style="text-align: center;">进程上下文（工作目录 / 环境变量 /
+用户等）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td
+style="text-align: center;"><code>nsenter -t &lt;pid&gt; -a</code></td>
+<td style="text-align: center;">✅ 进入容器的所有命名空间</td>
+<td style="text-align: center;">❌ 从零创建新
+bash，继承宿主机的默认上下文（工作目录<code>/</code>、无自定义环境变量）</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>docker exec -it</code></td>
+<td style="text-align: center;">✅ 进入容器的所有命名空间</td>
+<td style="text-align: center;">✅
+复刻容器进程的上下文（工作目录、环境变量、用户等）</td>
+</tr>
+</tbody>
+</table>
+<p>简单来说就是：</p>
+<ul>
+<li><code>nsenter</code>
+只解决「进入命名空间」的问题，<strong>不关心容器进程的
+“运行状态”</strong>；</li>
+<li><code>docker exec</code>
+是在「进入命名空间」的基础上，额外复刻了容器进程的上下文（工作目录、环境变量等）；</li>
+</ul>
+<h2 id="nsenter">nsenter</h2>
+<h3 id="定义-2">定义</h3>
+<p><code>nsenter</code> 是 <code>NameSpace Enter</code> 的简写，是 Linux
+系统提供的一个<strong>命名空间（Namespace）操作工具</strong>，核心作用是「进入另一个进程的命名空间并执行命令」——
+这是实现容器 <code>exec</code>、调试容器 / 进程隔离环境的核心工具，也是
+Docker / 容器运行时（如 runc）实现 <code>docker exec</code>
+的底层依赖。</p>
+<h3 id="作用">作用</h3>
+<p><code>nsenter</code> 的核心作用可以总结为：</p>
+<ol type="1">
+<li>指定一个<strong>目标进程</strong>（通过 PID）；</li>
+<li>进入该进程的<strong>一个或多个命名空间</strong>；</li>
+<li>在这个隔离的命名空间中执行任意命令。</li>
+</ol>
+<p>简单说：宿主机上的进程默认在「宿主机命名空间」，<code>nsenter</code>
+能让我们「跳」到其他进程（比如容器的 init
+进程）的隔离命名空间中，相当于「钻进去」容器 / 目标进程的隔离环境。</p>
+<p>事实上，容器的所有进程都运行在自己的 Namespace
+中，宿主机直接执行命令是「在宿主机命名空间」，看不到容器的隔离资源；而
+<code>nsenter</code> 能突破这个隔离，进入容器的 Namespace 执行命令 ——
+这是 <code>docker exec</code> 的底层原理。</p>
+<h3 id="基本用法">基本用法</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Usage:</span><br><span class="line"> nsenter [options] [&lt;program&gt; [&lt;argument&gt;...]]</span><br><span class="line"></span><br><span class="line">Run a program with namespaces of other processes.</span><br></pre></td></tr></table></figure>
+<p>我们先创建一个容器：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建容器</span></span><br><span class="line">docker run -itd --cpus=1.0 -m 128m ubuntu /bin/bash</span><br><span class="line"><span class="comment"># 13a9328c9ddfcece6a7b9f85a80416fbf0e83d88f38a93701cae92f9d1694a10</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 找到容器对应的pid</span></span><br><span class="line">ps -eo pid,ppid,pcpu,cmd | grep -E <span class="string">&quot;/bin/bash&quot;</span> | grep -v grep</span><br><span class="line"><span class="comment"># 4112769 4112603  0.1 /bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 现在，我们可以通过nsenter进入到我们创建的容器了</span></span><br><span class="line">nsenter -t 4112769 -a /bin/bash</span><br><span class="line"><span class="comment"># 将数据写入到我们的文件内</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;hello world!&quot;</span> &gt; data</span><br><span class="line"><span class="comment"># 退出命名空间</span></span><br><span class="line"><span class="built_in">exit</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 通过 docker exec 进入命名空间，现在我们会发现刚才我们写入的文件可以在容器内看到了！</span></span><br><span class="line">docker <span class="built_in">exec</span> -it 13a9328c9ddf /bin/bash</span><br><span class="line"><span class="built_in">cat</span> data</span><br><span class="line"><span class="comment">#hello world!</span></span><br></pre></td></tr></table></figure>
+<h2 id="uds">UDS</h2>
+<h3 id="核心定义">核心定义</h3>
+<p>UDS（Unix Domain Socket，Unix
+域套接字）是<strong>仅用于同一台主机内进程间通信（IPC）</strong>
+的机制，我们可以把它理解为：</p>
+<ul>
+<li>「文件系统路径作为地址」的套接字（替代 TCP/UDP 的 IP + 端口）；</li>
+<li>比 TCP/UDP 更高效（无需网络协议栈、无封包 / 解包、无校验和 /
+路由）；</li>
+<li>仅支持本机通信，无法跨主机（这也是它适合<code>mini-docker</code>+<code>mini-dockerd</code>场景的原因）。</li>
+</ul>
+<h3 id="核心特点">核心特点</h3>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 37%" />
+<col style="width: 30%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">特性</th>
+<th style="text-align: center;">UDS</th>
+<th style="text-align: center;">TCP Socket</th>
+<th style="text-align: center;">管道（Pipe）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">通信范围</td>
+<td style="text-align: center;">本机内进程</td>
+<td style="text-align: center;">跨主机 / 本机</td>
+<td style="text-align: center;">父子进程 / 兄弟进程</td>
+</tr>
+<tr>
+<td style="text-align: center;">地址形式</td>
+<td
+style="text-align: center;">文件路径（如<code>/var/run/dockerd.sock</code>）</td>
+<td style="text-align: center;">IP + 端口（如 127.0.0.1:8080）</td>
+<td style="text-align: center;">无显式地址（一对一）</td>
+</tr>
+<tr>
+<td style="text-align: center;">通信模型</td>
+<td style="text-align: center;">支持多客户端 + 单服务端</td>
+<td style="text-align: center;">支持多客户端 + 单服务端</td>
+<td style="text-align: center;">仅一对一</td>
+</tr>
+<tr>
+<td style="text-align: center;">数据传输效率</td>
+<td style="text-align: center;">极高（本机内存拷贝）</td>
+<td style="text-align: center;">较高（需网络协议栈）</td>
+<td style="text-align: center;">高，但扩展性差</td>
+</tr>
+<tr>
+<td style="text-align: center;">权限控制</td>
+<td style="text-align: center;">基于文件权限（0600 等）</td>
+<td style="text-align: center;">需应用层校验</td>
+<td style="text-align: center;">无</td>
+</tr>
+<tr>
+<td style="text-align: center;">数据格式</td>
+<td style="text-align: center;">任意字节流（可封装 JSON/Protobuf）</td>
+<td style="text-align: center;">任意字节流</td>
+<td style="text-align: center;">字节流，无结构化</td>
+</tr>
+</tbody>
+</table>
+<h3 id="核心概念-1">核心概念</h3>
+<p>UDS 的核心由 <code>服务端</code> 和 <code>客户端</code> 组成：</p>
+<ul>
+<li><strong>服务端</strong>：<code>mini-dockerd</code>
+作为服务端，创建一个 UDS
+文件（如<code>/var/run/dockerd.sock</code>），监听这个文件上的连接请求；</li>
+<li><strong>客户端</strong>：<code>mini-docker</code>（run/ps/stop
+指令）作为客户端，连接这个 UDS 文件，发送请求并接收响应。</li>
+</ul>
+<p>UDS 文件的特殊性质：</p>
+<ul>
+<li>UDS 文件是「伪文件」，不占用磁盘空间（仅作为通信地址标识）；</li>
+<li>权限控制和普通文件一致（如设置<code>0600</code>，仅 root
+可读写，避免非授权进程通信）；</li>
+<li>服务端退出后，UDS
+文件不会自动删除，需手动清理（否则下次启动会报错「地址已被占用」）。</li>
+</ul>
+<h3 id="一个简单的例子">一个简单的例子</h3>
+<h4 id="服务端">服务端</h4>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;0x822a5b87/cgroup&quot;</span></span><br><span class="line">	<span class="string">&quot;encoding/json&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;net&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// 1. 清理残留的UDS文件（避免启动失败）</span></span><br><span class="line">	udsPath := <span class="string">&quot;/var/run/tiny-docker/dockerd.sock&quot;</span></span><br><span class="line">	os.Remove(udsPath)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. 创建UDS服务端</span></span><br><span class="line">	listener, err := net.ListenUnix(<span class="string">&quot;unix&quot;</span>, &amp;net.UnixAddr&#123;</span><br><span class="line">		Name: udsPath,</span><br><span class="line">		Net:  <span class="string">&quot;unix&quot;</span>,</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(fmt.Sprintf(<span class="string">&quot;监听UDS失败：%v&quot;</span>, err))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> listener.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 3. 设置UDS文件权限（仅root可访问）</span></span><br><span class="line">	os.Chmod(udsPath, <span class="number">0600</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4. 写入mini-dockerd的PID文件（供客户端校验）</span></span><br><span class="line">	pidFile := <span class="string">&quot;/var/run/tiny-docker/dockerd.pid&quot;</span></span><br><span class="line">	os.WriteFile(pidFile, []<span class="type">byte</span>(fmt.Sprintf(<span class="string">&quot;%d&quot;</span>, os.Getpid())), <span class="number">0600</span>)</span><br><span class="line"></span><br><span class="line">	fmt.Println(<span class="string">&quot;mini-dockerd启动，监听UDS：&quot;</span>, udsPath)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 5. 循环接收客户端连接</span></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		conn, err := listener.AcceptUnix()</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			fmt.Printf(<span class="string">&quot;接收连接失败：%v\n&quot;</span>, err)</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 每个客户端连接启动协程处理（避免阻塞）</span></span><br><span class="line">		<span class="keyword">go</span> handleClient(conn)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 处理客户端请求</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">handleClient</span><span class="params">(conn *net.UnixConn)</span></span> &#123;</span><br><span class="line">	<span class="keyword">defer</span> conn.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 1. 读取客户端请求（简化：读取1024字节）</span></span><br><span class="line">	buf := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">1024</span>)</span><br><span class="line">	n, err := conn.Read(buf)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">&quot;读取请求失败：%v\n&quot;</span>, err)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. 解析JSON请求</span></span><br><span class="line">	<span class="keyword">var</span> req cgroup.Request</span><br><span class="line">	err = json.Unmarshal(buf[:n], &amp;req)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		resp := cgroup.Response&#123;Code: <span class="number">1</span>, Msg: <span class="string">&quot;请求格式错误：&quot;</span> + err.Error()&#125;</span><br><span class="line">		sendResponse(conn, resp)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 3. 处理不同指令（简化版）</span></span><br><span class="line">	<span class="keyword">var</span> resp cgroup.Response</span><br><span class="line">	<span class="keyword">switch</span> req.Action &#123;</span><br><span class="line">	<span class="keyword">case</span> <span class="string">&quot;ps&quot;</span>:</span><br><span class="line">		<span class="comment">// 模拟返回容器列表</span></span><br><span class="line">		resp = cgroup.Response&#123;</span><br><span class="line">			Code: <span class="number">0</span>,</span><br><span class="line">			Msg:  <span class="string">&quot;success&quot;</span>,</span><br><span class="line">			Data: []<span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>&#123;&#125;&#123;</span><br><span class="line">				&#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;abc123&quot;</span>, <span class="string">&quot;pid&quot;</span>: <span class="number">12345</span>, <span class="string">&quot;status&quot;</span>: <span class="string">&quot;running&quot;</span>&#125;,</span><br><span class="line">				&#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;def456&quot;</span>, <span class="string">&quot;pid&quot;</span>: <span class="number">67890</span>, <span class="string">&quot;status&quot;</span>: <span class="string">&quot;exited&quot;</span>&#125;,</span><br><span class="line">			&#125;,</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">case</span> <span class="string">&quot;run&quot;</span>:</span><br><span class="line">		<span class="comment">// 模拟创建容器</span></span><br><span class="line">		resp = cgroup.Response&#123;</span><br><span class="line">			Code: <span class="number">0</span>,</span><br><span class="line">			Msg:  <span class="string">&quot;容器创建成功&quot;</span>,</span><br><span class="line">			Data: <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>&#123;&#125;&#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;ghi789&quot;</span>, <span class="string">&quot;pid&quot;</span>: <span class="number">11223</span>&#125;,</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		resp = cgroup.Response&#123;Code: <span class="number">2</span>, Msg: <span class="string">&quot;不支持的指令：&quot;</span> + req.Action&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4. 返回响应</span></span><br><span class="line">	sendResponse(conn, resp)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 发送响应给客户端</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sendResponse</span><span class="params">(conn *net.UnixConn, resp cgroup.Response)</span></span> &#123;</span><br><span class="line">	respData, _ := json.Marshal(resp)</span><br><span class="line">	conn.Write(respData)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="客户端">客户端</h4>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;0x822a5b87/cgroup&quot;</span></span><br><span class="line">	<span class="string">&quot;encoding/json&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;net&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 复用上面的Request/Response结构</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// 1. 校验mini-dockerd是否存活（读取PID文件）</span></span><br><span class="line">	pidFile := <span class="string">&quot;/var/run/tiny-docker/dockerd.pid&quot;</span></span><br><span class="line">	pidStr, err := os.ReadFile(pidFile)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(<span class="string">&quot;mini-dockerd未运行：&quot;</span> + err.Error())</span><br><span class="line">	&#125;</span><br><span class="line">	pid := <span class="number">0</span></span><br><span class="line">	fmt.Sscanf(<span class="type">string</span>(pidStr), <span class="string">&quot;%d&quot;</span>, &amp;pid)</span><br><span class="line">	<span class="comment">// 用kill -0校验进程是否存活</span></span><br><span class="line">	<span class="keyword">if</span> err := syscall.Kill(pid, <span class="number">0</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(<span class="string">&quot;mini-dockerd进程已退出：&quot;</span> + err.Error())</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. 连接UDS服务端</span></span><br><span class="line">	udsPath := <span class="string">&quot;/var/run/tiny-docker/dockerd.sock&quot;</span></span><br><span class="line">	conn, err := net.DialUnix(<span class="string">&quot;unix&quot;</span>, <span class="literal">nil</span>, &amp;net.UnixAddr&#123;</span><br><span class="line">		Name: udsPath,</span><br><span class="line">		Net:  <span class="string">&quot;unix&quot;</span>,</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(<span class="string">&quot;连接mini-dockerd失败：&quot;</span> + err.Error())</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> conn.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 3. 构造请求（示例：查询容器列表）</span></span><br><span class="line">	req := cgroup.Request&#123;</span><br><span class="line">		Action: <span class="string">&quot;ps&quot;</span>,</span><br><span class="line">		Params: <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>&#123;&#125;&#123;&#125;,</span><br><span class="line">	&#125;</span><br><span class="line">	reqData, _ := json.Marshal(req)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4. 发送请求</span></span><br><span class="line">	conn.Write(reqData)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 5. 读取响应</span></span><br><span class="line">	buf := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">1024</span>)</span><br><span class="line">	n, err := conn.Read(buf)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(<span class="string">&quot;读取响应失败：&quot;</span> + err.Error())</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 6. 解析并输出响应</span></span><br><span class="line">	<span class="keyword">var</span> resp cgroup.Response</span><br><span class="line">	json.Unmarshal(buf[:n], &amp;resp)</span><br><span class="line">	fmt.Printf(<span class="string">&quot;响应结果：\nCode: %d\nMsg: %s\nData: %v\n&quot;</span>, resp.Code, resp.Msg, resp.Data)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="选项终止符">选项终止符</h2>
+<p>我们在传递命令行参数的时候可能会碰到这样一个问题：同一个命令行中，一部分命令行参数是传递给我们主进程的，另外一部分是传递给我们的子进程的，例如：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker run \</span><br><span class="line">    -d \</span><br><span class="line">    -c <span class="string">&#x27;10000 100000&#x27;</span> \</span><br><span class="line">    /root/images/busybox.tar \</span><br><span class="line">    /bin/ash -c <span class="string">&quot;while true; do sleep 1; done&quot;</span></span><br></pre></td></tr></table></figure>
+<p>这里，后面的 <code>-c</code> 参数会覆盖前面的 <code>-c</code>
+参数导致我们参数解析异常，解决方法也非常简单，为命令行参数新增一个
+<code>--</code> 作为分隔符即可：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker run \</span><br><span class="line">    -d \</span><br><span class="line">    -c <span class="string">&#x27;10000 100000&#x27;</span> \</span><br><span class="line">    /root/images/busybox.tar \</span><br><span class="line marked">    -- \</span><br><span class="line">    /bin/ash -c <span class="string">&quot;while true; do sleep 1; done&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="定义-3">定义</h3>
+<p><code>--</code> 是 <strong>Unix/Linux
+命令行的通用分隔符</strong>，核心作用是「明确区分命令的选项（参数）和后续的非选项参数（如文件名、命令字符串）」，避免参数名冲突：</p>
+<ul>
+<li><strong>作用范围</strong>：<code>--</code>
+之前的所有内容，都会被解析为「命令工具自身的选项 / 参数」；</li>
+<li><strong>终止解析</strong>：<code>--</code>
+之后的所有内容，<strong>不会被当作工具的选项解析</strong>，而是原封不动地传递给后续的子命令
+/ 程序；</li>
+<li><strong>通用性</strong>：这是 POSIX
+标准定义的规则，Docker、Git、ls、rm 等绝大多数 Unix/Linux
+工具都遵循这个规则。</li>
+</ul>
+<h2 id="linux中的进程组和会话">linux中的进程组和会话</h2>
+<pre><code class="highlight mermaid">---
+title: session and process group
+---
+
+flowchart TB
+
+linux(&quot;Linux 系统&quot;):::purple
+
+subgraph session1[&quot;zsh（会话首进程）&quot;]
+    tty(&quot;控制终端 tty&quot;):::green
+    subgraph pg1[&quot;前台进程组：vim&quot;]
+        vim(&quot;vim&quot;):::yellow
+    end
+    subgraph pg2[&quot;后台进程组：ls | grep | wc&quot;]
+        direction TB
+        ls(&quot;ls&quot;):::yellow
+        grep(&quot;grep&quot;):::yellow
+        wc(&quot;wc&quot;):::yellow
+    end
+    pg1 &lt;--&gt;|IO 交互| tty
+    pg2 -.-&gt;|无直接 IO（被阻塞）| tty
+end
+
+subgraph session2[&quot;/bin/ash（会话首进程）&quot;]
+    pg4(&quot;processes&quot;):::yellow
+    pg4 -.-&gt;|无控制终端| null(&quot;/dev/null&quot;):::error
+end
+
+linux --&gt; session1
+linux --&gt; session2
+linux --&gt; session3(&quot;session3 ...&quot;)
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef pale_pink fill:#E1BEE7,color:#000000;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+classDef yellow fill:#FFF9C4,color:#000000;
+</code></pre>
+<h3 id="进程组和会话的通俗描述">进程组和会话的通俗描述</h3>
+<p>如果我们把一个linux操作系统看做是一个大型的财团，那么我们可以做出如下类比：</p>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 27%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">概念</th>
+<th style="text-align: center;">通俗比喻</th>
+<th style="text-align: center;">核心作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">进程（Process）</td>
+<td style="text-align: center;">单个员工</td>
+<td style="text-align: center;">最小执行单元</td>
+</tr>
+<tr>
+<td style="text-align: center;">进程组（PG）</td>
+<td style="text-align: center;">部门（比如「研发部」）</td>
+<td
+style="text-align: center;">把相关进程归为一组，方便批量管理（如发信号）</td>
+</tr>
+<tr>
+<td style="text-align: center;">会话（Session）</td>
+<td style="text-align: center;">公司（包含多个部门）</td>
+<td
+style="text-align: center;">管理「终端连接」，一个会话对应一个控制终端</td>
+</tr>
+<tr>
+<td style="text-align: center;">控制终端（TTY）</td>
+<td style="text-align: center;">公司的「总机电话」</td>
+<td
+style="text-align: center;">会话内的进程通过终端交互，终端关闭会发信号</td>
+</tr>
+</tbody>
+</table>
+<h3 id="process-group">Process Group</h3>
+<p>进程组（PG）是批量管理进程的最小单位：</p>
+<ul>
+<li>每个进程都属于一个进程组，进程组通过 <code>PGID</code> 标识；</li>
+<li>进程组有一个
+<code>组长进程</code>：PGID等于组长进程的PID，只要组内有一个进程存活，进程组就存在：<strong>即使组长退出</strong>；组长退出的时候，进程组的PGID不变；</li>
+<li>进程创建时，默认继承父进程的进程组；</li>
+<li>可以通过 <code>setpgid()</code> 系统调用修改进程组；</li>
+</ul>
+<p>为什么我们需要进程组：最典型的场景：我们在终端执行
+<code>ls | grep txt | wc -l</code>，这会创建 3
+个进程（ls、grep、wc），它们会被归为<strong>同一个进程组</strong>。</p>
+<ul>
+<li>当我们按 <code>Ctrl+C</code>
+时，内核会向这个进程组的<strong>所有进程</strong>发送
+<code>SIGINT</code> 信号，批量终止它们（而不是只杀一个）；</li>
+<li>如果我们只杀其中一个进程，其他进程不受影响 ——
+进程组的核心价值是「分组管控」。</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ps -eo pid,ppid,pgid,sid,cmd | <span class="built_in">head</span> -5</span><br><span class="line"></span><br><span class="line marked"><span class="comment"># pid：进程ID | ppid：父进程ID | pgid：进程组ID | sid：会话ID | cmd：命令</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#    PID    PPID    PGID     SID CMD</span></span><br><span class="line"><span class="comment">#      1       0       1       1 /usr/lib/systemd/systemd --switched-root --system --deserialize=41</span></span><br><span class="line"><span class="comment">#      2       0       0       0 [kthreadd]</span></span><br><span class="line"><span class="comment">#      3       2       0       0 [pool_workqueue_release]</span></span><br><span class="line"><span class="comment">#      4       2       0       0 [kworker/R-rcu_g]</span></span><br></pre></td></tr></table></figure>
+<h3 id="session">Session</h3>
+<p>会话是管理终端连接的一个更大单位：</p>
+<ul>
+<li>一个会话包含<strong>一个或多个进程组</strong>，会话用「会话
+ID（SID）」标识；</li>
+<li>会话有一个「会话首进程」：SID = 首进程的 PID；</li>
+<li>一个会话最多关联<strong>一个控制终端</strong>（TTY/PTY），终端的「控制进程」是会话首进程（比如我们的
+zsh/bash）；</li>
+<li>可以通过 <code>setsid()</code> 系统调用创建新会话（我们代码里的
+<code>syscall.Setsid()</code> 就是这个作用）。</li>
+</ul>
+<h4 id="会话的核心特性">会话的核心特性</h4>
+<blockquote>
+<p>终端关闭 → 发送 SIGHUP
+信号：当控制终端关闭（比如父进程退出、终端窗口关闭），内核会向会话的「前台进程组」所有进程发送
+<code>SIGHUP</code> 信号（默认行为是终止进程）。</p>
+</blockquote>
+<p>在我们的代码中，当我们在使用detach模式的时候，tty
+设置为false了，所以父进程和子进程在同一个session中。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newParentProcess</span><span class="params">(tty <span class="type">bool</span>, commands []<span class="type">string</span>, env []<span class="type">string</span>)</span></span> *exec.Cmd &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	cmd := exec.Command(constant.UnixProcSelfExe, args...)</span><br><span class="line">	cmd.SysProcAttr = &amp;unix.SysProcAttr&#123;</span><br><span class="line">		Cloneflags: unix.CLONE_NEWUTS |</span><br><span class="line">			unix.CLONE_NEWPID |</span><br><span class="line">			unix.CLONE_NEWNS |</span><br><span class="line">			unix.CLONE_NEWNET |</span><br><span class="line">			unix.CLONE_NEWIPC,</span><br><span class="line">		Unshareflags: unix.CLONE_NEWNS,</span><br><span class="line marked">		Setctty:      tty,</span><br><span class="line marked">		Setsid:       tty,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><strong>新会话创建时不会关联控制终端</strong></p>
+</blockquote>
+<p>如果我们对进程调用 <code>setsid()</code>，那么这个进程会：</p>
+<ol type="1">
+<li>成为新会话的首进程；</li>
+<li>成为新进程组的组长；</li>
+<li><strong>失去原控制终端，且新会话无控制终端</strong>；</li>
+</ol>
+<h4 id="会话的典型场景">会话的典型场景</h4>
+<ul>
+<li>终端启动的所有进程（比如 bash、ls、vim）都属于同一个会话；</li>
+<li>后台守护进程（比如 nginx、redis）会通过 <code>setsid()</code>
+创建独立会话，脱离终端，即使终端关闭也能继续运行。</li>
+</ul>
+<h2 id="会话和终端">会话和终端</h2>
+<p>在 <a href="#会话的核心特性">会话的核心特性</a>
+中提到了<strong>新会话创建时不会关联控制终端</strong>，而这个是一个非常容易碰到的陷阱
+-- 它创建时不会关联控制终端，但是仍然有机会关联控制终端。</p>
+<h3 id="什么是控制终端">什么是控制终端</h3>
+<p>控制终端不是单纯的「输入输出设备」，而是 Linux
+内核给「会话」分配的「专属交互通道」：</p>
+<ul>
+<li>一个<strong>会话</strong>最多只能绑定<strong>一个</strong>控制终端；</li>
+<li>一个<strong>控制终端</strong>最多只能绑定<strong>一个</strong>会话（一对一关系）；</li>
+<li>终端的所有输入 / 输出、信号（如
+<code>Ctrl+C</code>/<code>SIGHUP</code>），都只针对「绑定的会话」生效。</li>
+</ul>
+<h3 id="会话与终端绑定的核心规则">会话与终端绑定的核心规则</h3>
+<p>Linux 内核规定：<strong>只有「会话首进程」才有资格申请 /
+绑定控制终端</strong>，非会话首进程完全没有这个权限。这个规则的设计目的是：避免多个进程争抢同一个终端，导致交互混乱。例如我们在
+<a href="#tty控制权">tty控制权</a>
+中碰到的问题，就是因为多个进程争抢同一个终端引起的。下面是终端绑定的完整流程（<strong>只有会话首进程能触发</strong>）</p>
+<ol type="1">
+<li>会话首进程调用
+<code>open("/dev/tty")</code>（或打开其他终端设备）；</li>
+<li>内核检查该终端是否已绑定其他会话：
+<ul>
+<li>若未绑定：将终端分配给当前会话，成为「控制终端」；</li>
+<li>若已绑定：返回错误（终端已被占用）；</li>
+</ul></li>
+<li>绑定成功后，会话内的「前台进程组」可与终端交互，后台进程组被阻塞。</li>
+</ol>
+<h3 id="setsid的陷阱">setsid()的陷阱</h3>
+<blockquote>
+<ol type="1">
+<li><strong>只有会话首进程才可以申请/绑定控制终端</strong>；</li>
+<li><strong>只有非会话首进程才可以调用 <code>syscall.Setsid()</code>
+创建新会话。</strong></li>
+</ol>
+</blockquote>
+<p>我们在回头思考，我们前面提到的逻辑存在这样一个问题：</p>
+<ol type="1">
+<li>子进程通过
+<code>syscall.Setsid()</code>，通知内核为我们创建一个新的session；</li>
+<li>子进程成为新的session的<strong>会话首进程，但是没有绑定控制终端</strong>；</li>
+<li>子进程在后续的代码中，执行了 <code>open("/dev/tty")</code>
+，此时会触发内核的逻辑，将这个终端绑定到我们新建的这个会话！</li>
+</ol>
+<p><strong>所以，我们需要，调用两次
+<code>setsid()</code>：第一次是为了创建新的会话，第二次是为了确保进程不是会话首进程。这里需要注意的是，第二次调用
+setsid()
+并不会创建新会话，反而会直接失败（返回错误），但这个「失败」恰恰是我们要的效果（剥夺会话首进程身份）。</strong></p>
+<p>我们可以使用下面这个例子，第二次调用 <code>syscall.Setsid()</code>
+时，<strong>内核会直接拒绝创建新会话（返回错误），且不会改变当前会话
+ID，只会剥夺进程的「会话首进程」身份</strong>——
+我们的进程不会成为任何新会话的首进程，最终变成「无首进程身份的普通进程」。这是因为，<code>setsid()</code>
+是 Linux
+系统调用，内核执行它时会先做权限检查，<strong>只有满足「非会话首进程」这个条件，才会创建新会话。</strong></p>
+<p>而Linux 内核禁止「会话首进程」再次调用 <code>setsid()</code>
+创建新会话，本质是为了：</p>
+<ol type="1">
+<li><strong>避免会话嵌套</strong>：一个进程不能同时属于多个会话，否则会导致终端控制、信号传递逻辑混乱；</li>
+<li><strong>保护终端绑定规则</strong>：会话首进程是「终端绑定的唯一入口」，如果允许它反复创建新会话，会破坏「一个终端绑定一个会话」的规则。</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> err <span class="type">error</span></span><br><span class="line">	<span class="keyword">var</span> pid <span class="type">int</span></span><br><span class="line">    <span class="comment">// 创建新会话（setsid）：子进程成为新会话的首进程，脱离原会话</span></span><br><span class="line">	<span class="keyword">if</span> pid, err = syscall.Setsid(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">&quot;first pid: %d, setsid: %v\n&quot;</span>, pid, err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">    <span class="comment">// 第二个 setsid 确保进程不是「控制终端的会话首进程」，彻底脱离终端</span></span><br><span class="line marked">    <span class="comment">// 注意，这个调用并不会创建新的会话，而是直接失败。</span></span><br><span class="line marked">    <span class="comment">// second pid: -1, setsid: operation not permitted</span></span><br><span class="line marked">	<span class="keyword">if</span> pid, err = syscall.Setsid(); err != <span class="literal">nil</span> &#123;</span><br><span class="line marked">		fmt.Printf(<span class="string">&quot;second pid: %d, setsid: %v\n&quot;</span>, pid, err)</span><br><span class="line marked">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="控制进程">控制进程</h2>
+<p>在 Linux 终端与会话的体系里，<strong>控制进程（Controlling
+Process）</strong>
+就是<strong>与终端设备绑定的那个会话的首进程</strong>，它是终端的「管理者」，负责维护终端和会话之间的关联关系。</p>
+<p><strong>注意，控制进程一定是会话首进程，而会话首进程不一定是控制进程</strong>：只有当会话首进程绑定了控制终端时，它才会成为这个终端的控制进程。</p>
+<h3 id="控制进程的核心属性">控制进程的核心属性</h3>
+<p>控制进程一定是某个会话的<strong>会话首进程</strong>，且这个会话必须绑定了一个控制终端（比如
+<code>/dev/pts/0</code>）。简单说：<strong>只有会话首进程才有资格成为终端的控制进程</strong>，普通进程或非会话首进程都不行。</p>
+<h3 id="生命周期关联">生命周期关联</h3>
+<p>控制进程和终端的「生死」强相关：</p>
+<ul>
+<li>如果控制进程退出，内核会认为这个终端「失去了管理者」，进而触发<strong>终端关闭</strong>的逻辑；</li>
+<li>终端关闭时，内核只会向该终端绑定的会话的前台进程组发送
+<code>SIGHUP</code> 信号，和其他会话无关。</li>
+</ul>
+<h3 id="控制权唯一">控制权唯一</h3>
+<p>一个终端设备同一时间只能有一个控制进程，就像一把锁只能配一把钥匙 ——
+终端和控制进程是「一对一」的关系。</p>
+<h2 id="进程和子进程的协同">进程和子进程的协同</h2>
+<p>在我们最开始的实现逻辑中，存在如下代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newParentProcess</span><span class="params">(tty <span class="type">bool</span>, commands []<span class="type">string</span>, env []<span class="type">string</span>)</span></span> *exec.Cmd &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	cmd.SysProcAttr = &amp;unix.SysProcAttr&#123;</span><br><span class="line">		Cloneflags: unix.CLONE_NEWUTS |</span><br><span class="line">			unix.CLONE_NEWPID |</span><br><span class="line">			unix.CLONE_NEWNS |</span><br><span class="line">			unix.CLONE_NEWNET |</span><br><span class="line">			unix.CLONE_NEWIPC,</span><br><span class="line">		Unshareflags: unix.CLONE_NEWNS,</span><br><span class="line marked">		Setctty:      tty,</span><br><span class="line marked">		Setsid:       <span class="literal">true</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	<span class="keyword">if</span> tty &#123;</span><br><span class="line marked">		logrus.Info(<span class="string">&quot;Running new process in tty.&quot;</span>)</span><br><span class="line marked">		cmd.Stdin = os.Stdin</span><br><span class="line marked">		cmd.Stdout = os.Stdout</span><br><span class="line marked">		cmd.Stderr = os.Stderr</span><br><span class="line marked">	&#125;</span><br><span class="line"></span><br><span class="line">	cmd.Dir = conf.GlobalConfig.MergePath()</span><br><span class="line">	cmd.Env = env</span><br><span class="line">	<span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>可以看到，我们的代码中通过 <code>Setsid = true</code>
+设置了在创建子进程的时候，开启了新的session，然而我们可以观察到两个现象：</p>
+<ol type="1">
+<li>当我们设置 <code>Setctty = true</code> 时，按下
+<code>Ctrl + D</code> 会使得父进程和子进程同时退出；</li>
+<li>当我们设置 <code>Setctty = false 和 Setsid = true</code>
+时，即使没有输入
+<code>Ctrl + D</code>，父进程和子进程仍然会同时退出。</li>
+</ol>
+<h3 id="开启tty">开启tty</h3>
+<p>在我们开启tty时，我们的逻辑是这样的：</p>
+<ol type="1">
+<li><code>mini-docker</code>
+初始化子进程（也就是我们的init进程），由于设置了
+<code>Setsid = true</code>，此时init进程会启动一个新的会话；</li>
+<li>init进程被绑定到 <code>stdio</code>；</li>
+<li>从 <code>stdin</code> 输入 <code>Ctrl + D</code>，子进程退出；</li>
+<li><code>mini-docker</code> 进程的 <code>parent.Wait()</code>
+返回，父进程退出；</li>
+</ol>
+<h3 id="不开启tty">不开启tty</h3>
+<p>代码中仅设置
+<code>Setsid: true &amp;&amp; Setctty: false</code>，但缺少两个关键操作，导致子进程仍无法「彻底脱离父进程
+/ 终端」：</p>
+<ul>
+<li>IO 未重定向到 /dev/null
+<ul>
+<li>tty=false 时，子进程的 stdin/stdout/stderr 仍继承父进程的终端
+FD；</li>
+<li>父进程退出后，终端 FD 被关闭 → 子进程尝试读写 FD 时触发
+<code>SIGPIPE</code>/<code>SIGHUP</code> → 子进程退出；</li>
+</ul></li>
+<li>未执行二次 setsid ()
+<ul>
+<li>子进程虽是新会话首进程，但仍有「绑定终端的权限」；</li>
+<li>若容器内进程误操作 <code>open("/dev/tty")</code>，会重新绑定终端 →
+终端关闭时子进程收 SIGHUP；</li>
+</ul></li>
+</ul>
+<p>所以他的逻辑是这样的：</p>
+<ol type="1">
+<li><code>mini-docker</code>
+初始化子进程（也就是我们的init进程），由于设置了
+<code>Setsid = true</code>，init 进程<strong>创建了新会话</strong>，但因
+<code>Setctty = false</code> 未绑定终端；且 IO
+未重定向，子进程仍继承父进程的终端 FD。</li>
+<li>父进程退出，终端FD被关闭，子进程尝试读写 FD 时触发
+<code>SIGPIPE</code>/<code>SIGHUP</code> 导致子进程退出。</li>
+</ol>
+<h2 id="pty和tty">PTY和TTY</h2>
+<blockquote>
+<ol type="1">
+<li>我有个问题是，脱离TTY的是我的daemon进程，我的container进程是从daemon进程中fork出来的，它fork出来后也是没有TTY的对吗？</li>
+</ol>
+</blockquote>
+<h3 id="tty的定义">TTY的定义</h3>
+<p><code>TTY</code> 是 <code>Teletype</code>
+的缩写，原意是「电传打字机」—— 这是早期 Unix/Linux
+与计算机交互的<strong>物理设备</strong>（没有屏幕，靠打字机输入 /
+打印输出）。现代 Linux 中，TTY
+被保留为「<strong>系统原生终端设备</strong>」的统称，核心特征：</p>
+<ul>
+<li>是「硬件 / 内核级」的终端，直接和系统内核绑定；</li>
+<li>每个 TTY
+对应一个独立的「控制台会话」，比如我们在服务器开机后看到的黑白界面；</li>
+<li>进程的 <code>ps -ef</code> 输出中，TTY 列显示
+<code>tty1</code>/<code>tty2</code> 等，就代表该进程运行在「原生 TTY
+终端」中；</li>
+<li>TTY 是「独占式」的：一个 TTY 只能被一个会话使用；</li>
+<li>守护进程（如 mini-dockerd、nginx）会主动「脱离 TTY」：启动时通过
+<code>setsid()</code> 创建新会话，不再关联任何 TTY，因此
+<code>ps -ef</code> 中 TTY 列显示 <code>?</code>；</li>
+<li>无 TTY 的进程，无法直接做「终端交互」（比如我们如果直接给
+mini-dockerd 绑定 <code>-it</code>，会触发 ioctl 错误 —— 因为它没有 TTY
+可以用）。</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">ps -ef</span><br><span class="line"></span><br><span class="line marked"><span class="comment"># ? 代表已经脱离TTY</span></span><br><span class="line"><span class="comment">#UID          PID    PPID  C STIME TTY          TIME CMD</span></span><br><span class="line"><span class="comment">#root           1       0  0  2025 ?        00:01:05 /usr/lib/systemd/systemd --switched-root --system --deserialize=41</span></span><br><span class="line"><span class="comment">#root        1583       1  0  2025 tty1     00:00:00 /sbin/agetty -o -p -- \u --noclear - linux</span></span><br><span class="line"></span><br><span class="line">ps aux | grep /proc/self/exe | grep -v grep</span><br><span class="line"></span><br><span class="line marked"><span class="comment"># 可以看到，我们的 mini-dockerd 进程已经脱离TTY了</span></span><br><span class="line"><span class="comment"># USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND</span></span><br><span class="line"><span class="comment"># root     2355486  0.0  0.0 1599936 7428 ?        Ssl  21:13   0:00 /proc/self/exe init</span></span><br></pre></td></tr></table></figure>
+<h3 id="pty的定义">PTY的定义</h3>
+<p>PTY 是 <code>Pseudo-Terminal</code> 的缩写，即「伪终端」——
+它是<strong>内核模拟出来的终端设备</strong>，核心目的是解决「没有物理
+TTY 但需要终端交互」的问题（比如 SSH 登录、终端模拟器、我们的
+mini-docker <code>-it</code> 模式）。我们可以把 PTY
+理解为：<strong>给「无物理终端的进程」造一个「虚拟的
+TTY」</strong>，让进程以为自己在和真实 TTY 交互，但实际是通过「内存 /
+网络」传输数据。</p>
+<p>PTY 的核心结构包括：Master/Slave（主从设备）：PTY
+不是「单一设备」，而是「一对相互关联的虚拟设备」。一个通用的PTY设备可能如下所示</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+terminal(&quot;用户（SSH/终端模拟器）&quot;)
+master(&quot;PTY Master&quot;)
+slave(&quot;PTY Slave&quot;)
+process(&quot;进程（如容器内的bash）&quot;)
+
+terminal --&gt; master --&gt; slave --&gt; process</code></pre>
+<p>其中：</p>
+<ul>
+<li><strong>PTY Master</strong>：对接「用户交互端」（比如 SSH
+客户端、我们的宿主机终端）；</li>
+<li><strong>PTY Slave</strong>：对接「被控制的进程」（比如容器内的
+<code>/bin/ash</code>）；</li>
+</ul>
+<p>我们可以登录服务器如下操作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">tty</span></span><br><span class="line"><span class="comment"># /dev/pts/1</span></span><br><span class="line marked"><span class="comment"># /dev/pts/1 这个输出表示 pts = pseudo-terminal slave，即 PTY 从设备</span></span><br><span class="line"></span><br><span class="line">ps -ef | grep bash</span><br><span class="line"><span class="comment"># root     1563963 1563939  0 Jan07 pts/0    00:00:00 /bin/bash</span></span><br><span class="line"><span class="comment"># root     2630791 2630768  0  2025 pts/0    00:00:00 /bin/bash</span></span><br><span class="line"><span class="comment"># pts/0 表示bash运行在 PTY 中。</span></span><br></pre></td></tr></table></figure>
+<h3 id="为什么必须使用pty">为什么必须使用PTY？</h3>
+<p>在我们的 <code>-it</code>
+模式下，我们会面临一个问题：<strong>daemon进程主动脱离TTY，container进程继承了daemon进程的特性，但是我们又希望他能通过终端交互。如果不使用PTY，我们在fork()进程时会直接抛出异常：<code>inappropriate ioctl for device</code>
+-- 因为我们没有可用的TTY。</strong></p>
+<p>在这个场景下，我们必须使用PTY：</p>
+<ul>
+<li>即使进程（如 mini-dockerd）没有 TTY，也能通过创建 PTY
+给子进程（容器）模拟终端；</li>
+<li>跨环境兼容：不管是 SSH、守护进程、容器，都能创建 PTY
+实现终端交互；</li>
+<li>我们 <code>pty.Start(cmd)</code>
+本质：就是让库帮我们创建「Master/Slave PTY 对」，并把 Slave
+绑定到容器进程的 stdin/stdout/stderr。</li>
+</ul>
+<h3 id="tty和pty的区别">TTY和PTY的区别</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 36%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">特性</th>
+<th style="text-align: center;">TTY（原生终端）</th>
+<th style="text-align: center;">PTY（伪终端）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">本质</td>
+<td style="text-align: center;">物理 / 内核级原生终端设备</td>
+<td style="text-align: center;">内核模拟的虚拟终端设备</td>
+</tr>
+<tr>
+<td style="text-align: center;">关联方式</td>
+<td style="text-align: center;">直接绑定物理控制台（Alt+F1）</td>
+<td style="text-align: center;">绑定远程 / 虚拟会话（SSH / 容器）</td>
+</tr>
+<tr>
+<td style="text-align: center;">设备路径</td>
+<td
+style="text-align: center;"><code>/dev/tty1</code>/<code>/dev/tty2</code></td>
+<td
+style="text-align: center;"><code>/dev/pts/0</code>/<code>/dev/pts/1</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">进程 TTY 列显示</td>
+<td style="text-align: center;"><code>tty1</code>/<code>tty2</code>
+等</td>
+<td style="text-align: center;"><code>pts/0</code>/<code>pts/1</code>
+等</td>
+</tr>
+<tr>
+<td style="text-align: center;">守护进程能否使用</td>
+<td style="text-align: center;">不能（守护进程脱离 TTY）</td>
+<td style="text-align: center;">能（手动创建即可）</td>
+</tr>
+<tr>
+<td style="text-align: center;">mini-docker 场景</td>
+<td style="text-align: center;">detach 模式：不需要 TTY</td>
+<td style="text-align: center;">-it 模式：必须用 PTY 模拟终端</td>
+</tr>
+</tbody>
+</table>
+<p>总结来说，我们在创建进程的时候会有两个参数：</p>
+<ul>
+<li><code>-it</code> 其实是 <code>-i</code> 和 <code>-t</code>
+两个参数合并：
+<ul>
+<li><code>-i</code>（<code>interactive</code>）：让容器的
+<code>stdin</code>
+保持打开（即使没有终端关联），保证用户输入能传递到容器；</li>
+<li><code>-t</code>（<code>tty</code>）：为容器分配 PTY
+伪终端，让容器内的进程（如
+bash）以为自己运行在真实终端中，支持「命令回显、换行、Ctrl+C 中断、Tab
+补全」等终端特性；</li>
+</ul></li>
+<li><code>-d</code>（<code>detach</code>）表示「后台守护」场景（用户不需要交互）。</li>
+</ul>
+<p>他们是<strong>互斥且互补</strong>的：</p>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 43%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">维度</th>
+<th style="text-align: center;"><code>-it</code> 模式</th>
+<th style="text-align: center;"><code>-d</code> 模式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">运行方式</td>
+<td style="text-align: center;">前台运行（阻塞当前终端）</td>
+<td style="text-align: center;">后台运行（不阻塞终端）</td>
+</tr>
+<tr>
+<td style="text-align: center;">终端依赖</td>
+<td style="text-align: center;">必须分配 PTY 伪终端</td>
+<td style="text-align: center;">禁用所有终端关联</td>
+</tr>
+<tr>
+<td style="text-align: center;">标准流处理</td>
+<td style="text-align: center;">绑定用户终端（stdin/stdout）</td>
+<td style="text-align: center;">重定向到 <code>/dev/null</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">进程退出条件</td>
+<td style="text-align: center;">用户手动 exit / 关闭终端</td>
+<td style="text-align: center;">容器内程序退出 / 被 kill</td>
+</tr>
+<tr>
+<td style="text-align: center;">典型使用场景</td>
+<td style="text-align: center;">调试容器、交互式命令</td>
+<td style="text-align: center;">运行服务（nginx/redis）</td>
+</tr>
+</tbody>
+</table>
+<p>也就是说，这两个参数的使用会存在三个场景：</p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 7%" />
+<col style="width: 16%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">参数组合</th>
+<th style="text-align: center;">是否合法</th>
+<th style="text-align: center;">核心行为</th>
+<th style="text-align: center;">典型应用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td
+style="text-align: center;"><code>-it=true &amp;&amp; -d=false</code></td>
+<td style="text-align: center;">合法</td>
+<td style="text-align: center;">分配 PTY，阻塞终端</td>
+<td
+style="text-align: center;">进入容器执行命令（<code>docker run -it ubuntu bash</code>）、运行交互式程序（python/redis-cli）</td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><code>-it=false &amp;&amp; -d=true</code></td>
+<td style="text-align: center;">合法</td>
+<td style="text-align: center;">禁用 PTY，后台运行</td>
+<td
+style="text-align: center;">运行服务型程序（<code>docker run -d nginx</code>/<code>mini-dockerd</code>）、定时任务、后台脚本</td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><code>-it=false &amp;&amp; -d=false</code></td>
+<td style="text-align: center;">合法</td>
+<td style="text-align: center;">禁用 PTY，阻塞终端</td>
+<td
+style="text-align: center;">运行「一次性、无交互、需要看输出」的程序<br/>例如
+<code>docker run ubuntu ls /</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><code>-it=true &amp;&amp; -d=true</code></td>
+<td style="text-align: center;"><code>非法</code></td>
+<td style="text-align: center;">Docker 直接报错</td>
+<td style="text-align: center;">无（前台交互和后台运行无法共存）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="如何使用">如何使用</h3>
+<h4 id="mini-dockerd-1">mini-dockerd</h4>
+<p><code>mini-dockerd</code> 的使用非常简单，因为他一定是
+<code>-it = false &amp;&amp; -d = true</code> 的。</p>
+<h4 id="container">container</h4>
+<p>我们的 <code>container</code>
+的使用则相对比较复杂，因为他的使用场景根据容器的功能而会发生变化</p>
+<h5 id="it-false--d-true">-it = false &amp;&amp; -d = true</h5>
+<p>这个场景较为简单，我们直接和 <code>mini-dockerd</code>
+一样配置即可；</p>
+<h5 id="it-true--d-false">-it = true &amp;&amp; -d = false</h5>
+<p>这个场景相对于其他的几项来说比较复杂，因为这里涉及到一个问题：</p>
+<ul>
+<li><code>daemon</code> 主动断开了TTY；</li>
+<li><code>container</code> 从 <code>daemon</code> 进程 fork
+得到，他会继承这个特性，我们必须显示的去配置它。</li>
+</ul>
+<p>在这个场景下，我们必须为 <code>container</code> 初始化一个
+<code>PTY</code> 并绑定它。</p>
+<h5 id="it-false--d-false">-it = false &amp;&amp; -d = false</h5>
+<p>这个场景在我们目前的玩具项目中，暂时不考虑支持。</p>
+<h4 id="架构逻辑">架构逻辑</h4>
+<pre><code class="highlight mermaid">flowchart TD
+    A[用户执行：mini-docker run -it ...] --&gt; B[客户端（有TTY，stdio指向用户终端）]
+    B --&gt; C[客户端配置终端原始模式（ioctl有效）]
+    B --&gt; D[客户端通过Socket给daemon发创建容器指令]
+    D --&gt; E[daemon（无TTY，stdio=/dev/null）]
+    E --&gt; F[daemon创建容器进程+绑定PTY（PTY不关联daemon的stdio）]
+    F --&gt; G[daemon启动两个goroutine：PTY ↔ Socket]
+    G --&gt; H[客户端启动两个goroutine：Socket ↔ 自身stdio（用户终端）]
+    H --&gt; I[用户终端 ↔ 客户端stdio ↔ Socket ↔ daemon ↔ 容器PTY ↔ 容器ash]</code></pre>
 
     </div>
 
