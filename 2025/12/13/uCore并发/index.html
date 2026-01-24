@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="uCore并发 sequenceDiagram     title 银行家算法 - 安全场景（sequenceDiagram）     银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available&#x2F;Allocation&#x2F;Need）     数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available&#x3D;&#123;&#125;, Work&#x3D;&#123;&amp;#12">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore并发">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="uCore并发 sequenceDiagram     title 银行家算法 - 安全场景（sequenceDiagram）     银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available&#x2F;Allocation&#x2F;Need）     数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available&#x3D;&#123;&#125;, Work&#x3D;&#123;&amp;#12">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-13T08:00:35.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/","path":"2025/12/13/uCore并发/","title":"uCore并发"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore并发 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucore%E5%B9%B6%E5%8F%91"><span class="nav-number">1.</span> <span class="nav-text">uCore并发</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">引言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%AE%9A%E4%B9%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">线程定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E4%BA%92%E6%96%A5"><span class="nav-number">1.1.2.</span> <span class="nav-text">同步互斥</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%80%81%E7%9A%84%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">内核态的线程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E6%A6%82%E5%BF%B5"><span class="nav-number">1.2.1.</span> <span class="nav-text">线程概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E4%B8%8E%E9%87%8D%E8%A6%81%E7%9A%84%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.2.</span> <span class="nav-text">线程模型与重要的系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%9B%E5%BB%BA%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">线程创建系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E5%AD%90%E7%BA%BF%E7%A8%8B%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">等待子线程系统调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.2.3.</span> <span class="nav-text">应用程序示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%B0%81%E8%A3%85"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">系统调用封装</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F-threads"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">多线程应用程序 – threads</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.4.</span> <span class="nav-text">线程管理的核心数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">线程控制块</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8C%85%E5%90%AB%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">包含线程的进程控制块</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E4%B8%8E%E5%A4%84%E7%90%86%E5%99%A8%E7%AE%A1%E7%90%86%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.4.3.</span> <span class="nav-text">线程与处理器管理结构</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.5.</span> <span class="nav-text">线程管理机制的设计与实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B%E9%80%80%E5%87%BA%E4%B8%8E%E7%AD%89%E5%BE%85%E7%BA%BF%E7%A8%8B%E7%BB%93%E6%9D%9F"><span class="nav-number">1.2.5.1.</span> <span class="nav-text">线程创建、线程退出与等待线程结束</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%9B%E5%BB%BA"><span class="nav-number">1.2.5.1.1.</span> <span class="nav-text">线程创建</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E9%80%80%E5%87%BA"><span class="nav-number">1.2.5.1.2.</span> <span class="nav-text">线程退出</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E7%BA%BF%E7%A8%8B%E7%BB%93%E6%9D%9F"><span class="nav-number">1.2.5.1.3.</span> <span class="nav-text">等待线程结束</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%81%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.</span> <span class="nav-text">锁机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">1.3.1.</span> <span class="nav-text">锁的基本思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%80%81%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%BA%A7%E6%96%B9%E6%B3%95%E5%AE%9E%E7%8E%B0%E9%94%81-mutex-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.3.2.</span> <span class="nav-text">内核态操作系统级方法实现锁
+— mutex 系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-mutex-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">使用 mutex 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mutex-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">mutex 系统调用的实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">信号量机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F%E7%9A%84%E8%B5%B7%E6%BA%90%E5%92%8C%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">1.4.1.</span> <span class="nav-text">信号量的起源和基本思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E4%BF%A1%E5%8F%B7%E9%87%8F"><span class="nav-number">1.4.2.</span> <span class="nav-text">实现信号量</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0-semaphore-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.4.2.1.</span> <span class="nav-text">实现 semaphore 系统调用</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F%E6%9C%BA%E5%88%B6"><span class="nav-number">1.5.</span> <span class="nav-text">条件变量机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">1.5.1.</span> <span class="nav-text">条件变量的基本思路</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F"><span class="nav-number">1.5.1.1.</span> <span class="nav-text">实现条件变量</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.6.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">1.6.1.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E8%AE%BF%E9%97%AE%E4%B8%B4%E7%95%8C%E5%8C%BA"><span class="nav-number">1.6.2.</span> <span class="nav-text">错误访问临界区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E8%B5%84%E6%BA%90%E6%B8%85%E7%90%86"><span class="nav-number">1.6.3.</span> <span class="nav-text">线程资源清理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E9%80%80%E5%87%BA-1"><span class="nav-number">1.6.4.</span> <span class="nav-text">线程退出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trapcontext%E5%92%8Ctaskcontext"><span class="nav-number">1.6.5.</span> <span class="nav-text">TrapContext和TaskContext</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%9C%A8tcb%E4%B8%AD%E6%88%91%E4%BB%AC%E7%9B%B4%E6%8E%A5%E4%BB%A5pa%E7%9A%84%E5%BD%A2%E5%BC%8F%E5%AD%98%E5%82%A8trap_cx_ppn"><span class="nav-number">1.6.6.</span> <span class="nav-text">为什么在TCB中，我们直接以PA的形式存储trap_cx_ppn</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88kstack%E5%92%8Custack%E8%A6%81%E5%88%86%E5%BC%80%E5%AD%98%E5%82%A8"><span class="nav-number">1.6.7.</span> <span class="nav-text">为什么kstack和ustack要分开存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel_stack"><span class="nav-number">1.6.8.</span> <span class="nav-text">kernel_stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trampoline%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%85%B1%E4%BA%AB%E7%9A%84%E5%90%97"><span class="nav-number">1.6.9.</span> <span class="nav-text">trampoline是线程共享的吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E7%BA%BF%E7%A8%8B%E6%98%AF%E4%BB%80%E4%B9%88%E4%BB%96%E5%92%8C%E6%99%AE%E9%80%9A%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%9C%89%E5%8C%BA%E5%88%AB%E5%90%97"><span class="nav-number">1.6.10.</span> <span class="nav-text">主线程是什么？他和普通的线程有区别吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84exit"><span class="nav-number">1.6.11.</span> <span class="nav-text">线程的exit</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore并发 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore并发
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-13 16:00:35" itemprop="dateCreated datePublished" datetime="2025-12-13T16:00:35+08:00">2025-12-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="ucore并发">uCore并发</h1>
+<pre><code class="highlight mermaid">sequenceDiagram
+    title 银行家算法 - 安全场景（sequenceDiagram）
+    银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available/Allocation/Need）
+    数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available=&#123;&#125;, Work=&#123;&#125;, Finish=[F,F]）
+    
+    %% 第一次循环:找满足条件的线程
+    银行家算法 -&gt;&gt; 银行家算法: 遍历线程，检查条件（Need[i][j] ≤ Work[j] 且 Finish[i]=F）
+    银行家算法 -&gt;&gt; 数据结构存储: 查询线程1的Need/Finish
+    数据结构存储--&gt;&gt;银行家算法: 线程1:Need=&#123;200:1&#125;，Finish=F
+    银行家算法 -&gt;&gt; 银行家算法: 线程1:Need &gt; Work → 不满足
+    银行家算法 -&gt;&gt; 数据结构存储: 查询线程2的Need/Finish
+    数据结构存储--&gt;&gt;银行家算法: 线程2:Need=&#123;&#125;，Finish=F
+    银行家算法 -&gt;&gt; 银行家算法: 线程2:Need ≤ Work → 满足
+    
+    %% 模拟线程2释放资源
+    银行家算法 -&gt;&gt; 数据结构存储: 模拟线程2执行完毕，请求更新Work（Work += 线程2的Allocation&#123;200:1&#125;）
+    数据结构存储--&gt;&gt;银行家算法: Work更新成功（Work=&#123;200:1&#125;）
+    银行家算法 -&gt;&gt; 数据结构存储: 请求标记线程2的Finish=true
+    数据结构存储--&gt;&gt;银行家算法: Finish更新成功（Finish=[F,T]）
+    
+    %% 第二次循环:找满足条件的线程
+    银行家算法 -&gt;&gt; 银行家算法: 重新遍历线程（仅线程1未完成）
+    银行家算法 -&gt;&gt; 数据结构存储: 查询线程1的Need/Work
+    数据结构存储--&gt;&gt;银行家算法: 线程1:Need=&#123;200:1&#125;，Work=&#123;200:1&#125;
+    银行家算法 -&gt;&gt; 银行家算法: 线程1:Need ≤ Work → 满足
+    
+    %% 模拟线程1释放资源
+    银行家算法 -&gt;&gt; 数据结构存储: 模拟线程1执行完毕，请求更新Work（Work += 线程1的Allocation&#123;100:1&#125;）
+    数据结构存储--&gt;&gt;银行家算法: Work更新成功（Work=&#123;100:1,200:1&#125;）
+    银行家算法 -&gt;&gt; 数据结构存储: 请求标记线程1的Finish=true
+    数据结构存储--&gt;&gt;银行家算法: Finish更新成功（Finish=[T,T]）
+    
+    %% 判定结果
+    银行家算法 -&gt;&gt; 银行家算法: 检查所有Finish是否为true
+    银行家算法--&gt;&gt;外部: 输出判定结果 → 系统安全（无死锁风险）</code></pre>
+<h2 id="引言">引言</h2>
+<h3 id="线程定义">线程定义</h3>
+<p>简单地说，线程是进程的组成部分，进程可包含1 –
+n个线程，属于同一个进程的线程共享进程的资源， 比如
+<code>地址空间</code>、打开的文件等。基本的线程由线程ID、执行状态、当前指令指针
+(PC)、寄存器集合和栈组成。
+线程是可以被操作系统或用户态调度器独立调度（Scheduling）和分派（Dispatch）的基本单位。<strong>进程是线程的资源容器，
+线程成为了程序的基本执行实体。</strong></p>
+<h3 id="同步互斥">同步互斥</h3>
+<p>当多个线程共享同一进程的地址空间时，
+每个线程都可以访问属于这个进程的数据（全局变量）。如果每个线程使用到的变量都是其他线程不会读取或者修改的话，
+那么就不存在一致性问题。如果变量是只读的，多个线程读取该变量也不会有一致性问题。但是，当一个线程修改变量时，
+其他线程在读取这个变量时，可能会看到一个不一致的值，这就是数据不一致性的问题。</p>
+<p>在我们的ucore的开始阶段使用进程作为基本调度单位时，是很少出现集资源竞争的
+-- 除了一些全局共享的变量如FRAME_ALLOCATOR之类的。
+而引入线程之后，我们需要考虑的会更多，因为线程之间是共享地址空间的。</p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 35%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>以进程为调度单位（ucore 初期）</th>
+<th>以线程为调度单位（引入线程后）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>地址空间</td>
+<td>进程间完全隔离（独立页表）</td>
+<td>线程间共享进程地址空间（同一页表）</td>
+</tr>
+<tr class="even">
+<td>资源竞争场景</td>
+<td>仅全局内核资源（如 FRAME_ALLOCATOR）</td>
+<td>1. 全局内核资源 <br/>2. 用户态进程内全局 / 共享变量</td>
+</tr>
+<tr class="odd">
+<td>数据一致性风险</td>
+<td>极低（仅内核全局资源需同步）</td>
+<td>极高（用户态共享变量 + 内核资源都需同步）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="内核态的线程管理">内核态的线程管理</h2>
+<h3 id="线程概念">线程概念</h3>
+<p>线程是在进程内中的一个新的抽象。在没有线程之前，一个进程在一个时刻只有一个执行点（即程序计数器
+(PC)
+寄存器保存的要执行指令的指针）。但线程的引入把进程内的这个单一执行点给扩展为多个执行点，即在进程中存在多个线程，
+每个线程都有一个执行点。而且这些线程共享进程的地址空间，所以可以不必采用相对比较复杂的
+IPC 机制（一般需要内核的介入），
+而可以很方便地直接访问进程内的数据。</p>
+<p>在线程的运行过程中，我们需要：</p>
+<ol type="1">
+<li><code>PC</code> 因为每个线程有自己的执行点；</li>
+<li>全部的通用寄存器，包括 <code>caller registers</code>，
+<code>callee registers</code>；</li>
+<li><code>栈</code>：
+保存线程执行时的函数调用栈和局部变量。这里需要注意的是：
+<ul>
+<li>无线程的进程模式下：每个进程独占 1 个
+<code>user_stack</code>（用户态函数调用 / 临时变量） + 1 个
+<code>kernel_stack</code>（内核态执行 / 上下文切换）；</li>
+<li>引入线程后：同一进程的每个线程独占 1 个 <code>user_stack</code> + 1
+个 <code>kernel_stack</code>，确保线程间栈上下文完全隔离。</li>
+</ul></li>
+</ol>
+<p>在引入线程之后，<strong>我们通过线程来表示对处理器的虚拟化，使得进程成为了管理线程的容器。</strong>线程之间没有父子关系，他们都是兄弟关系，除了通过
+<code>fork()</code> 创建进程时的第一个线程，他的线程标识符为
+<code>0</code>。</p>
+<h3 id="线程模型与重要的系统调用">线程模型与重要的系统调用</h3>
+<blockquote>
+<p>线程之间共享大部分的资源，除了 <code>栈</code>
+，<code>通用寄存器</code>， <code>PC</code>。</p>
+</blockquote>
+<h4 id="线程创建系统调用">线程创建系统调用</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 功能：当前进程创建一个新的线程</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 参数：</span></span><br><span class="line"><span class="comment">///		- entry 表示线程的入口函数地址</span></span><br><span class="line"><span class="comment">///		- arg：表示线程的一个参数</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_thread_create</span>(entry: <span class="type">usize</span>, arg: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span></span><br></pre></td></tr></table></figure>
+<p>调用 <code>sys_thread_create</code>
+之后，内核会创建一个线程并且为线程分配一个TID，线程之间：</p>
+<ul>
+<li>共享
+<ul>
+<li>地址空间：<code>.text</code>/<code>.rodata</code>/<code>.data</code>/<code>.bss</code>
+等；</li>
+<li>堆</li>
+<li>文件描述符表</li>
+<li>页表</li>
+</ul></li>
+<li>不共享
+<ul>
+<li><code>user_stack</code> 和 <code>kernel_stack</code></li>
+<li><code>TrapContext</code></li>
+</ul></li>
+</ul>
+<h4 id="等待子线程系统调用">等待子线程系统调用</h4>
+<blockquote>
+<p><code>sys_exit</code> 的执行依赖当前线程的
+<code>kernel_stack</code>，因此只能由不依赖该 <code>kernel_stack</code>
+的外部进程 / 主线程通过 <code>waitpid/waittid</code> 来执行
+<code>kernel_stack</code> 的销毁。</p>
+</blockquote>
+<p>线程在执行时，他会持有很多资源，一部分是用户态资源（比如
+<code>user_stack</code>），一部分是内核态资源（比如
+<code>kernel_stack</code>）。<strong>虽然这些都是线程独享的，但是有一个很大的区别：<code>user_stack</code>
+在线程调用 <code>exit</code> 时就会被立即回收，而
+<code>kernel_stack</code> 则不一样，他必须通过进程/主线程调用
+<code>waitpid</code> 来回收</strong>。</p>
+<p>线程执行 <code>exit</code> 是一个<strong>内核态操作</strong>——
+用户态线程触发 <code>exit</code> 系统调用后，CPU
+会切换到内核态，使用该线程的内核栈执行 <code>sys_exit</code> 函数。</p>
+<ul>
+<li>如果在 <code>sys_exit</code> 中直接回收当前线程的内核栈，而
+<code>sys_exit</code> 执行过程中，内核仍依赖当前线程的
+<code>kernel_stack</code> 存储函数栈帧、寄存器临时值；若此时销毁
+<code>kernel_stack</code>，会直接导致 <code>sys_exit</code>
+执行崩溃。<strong>这就是因为一个函数的执行不能销毁它本身依赖的栈，我们必须在另外一个进程/线程中来调用
+-- 因为这个进程/线程对这个栈是没有依赖的</strong>。</li>
+<li>因此，内核栈必须等 <code>exit</code>
+系统调用完全执行完毕、线程彻底退出运行队列后，才能被回收 —— 而这个
+“确认退出” 的动作，需要 <code>waittid</code>
+来触发（主线程确认该线程已终止，此时内核栈已无任何执行依赖）。</li>
+</ul>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 参数：tid表示线程id</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 返回值：如果线程不存在，返回-1；如果线程还没退出，返回-2；其他情况下，返回结束线程的退出码</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_waittid</span>(tid: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">i32</span></span><br></pre></td></tr></table></figure>
+<h3 id="应用程序示例">应用程序示例</h3>
+<h4 id="系统调用封装">系统调用封装</h4>
+<p>下面是对 <code>waittid</code> 的封装，代码里是在 <code>match</code>
+下匹配了 <code>sys_waittid</code> 的状态：</p>
+<ul>
+<li><code>-2</code>
+目标线程还未退出（资源未就绪），我们要等待他完全退出；</li>
+<li><code>exit_code</code> 表示进程已经退出了，可以开始回收
+<code>kernel_stack</code> 等内核资源。</li>
+</ul>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">waittid</span>(tid: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">match</span> <span class="title function_ invoke__">sys_waittid</span>(tid) &#123;</span><br><span class="line">            -<span class="number">2</span> =&gt; &#123;</span><br><span class="line">                <span class="title function_ invoke__">yield_</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            exit_code =&gt; <span class="keyword">return</span> exit_code,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="多线程应用程序-threads">多线程应用程序 – threads</h4>
+<p><strong>多线程应用程序 – threads 开始执行后，先调用
+<code>thread_create</code>
+创建了三个线程，加上进程自带的主线程，其实一共有四个线程。</strong></p>
+<h3 id="线程管理的核心数据结构">线程管理的核心数据结构</h3>
+<p>本节将按照如下顺序来进行介绍：</p>
+<ul>
+<li>任务控制块 TaskControlBlock ：表示线程的核心数据结构。</li>
+<li>任务管理器 TaskManager ：管理线程集合的核心数据结构。</li>
+<li>处理器管理结构 Processor ：用于线程调度，维护线程的处理器状态。</li>
+</ul>
+<h4 id="线程控制块">线程控制块</h4>
+<blockquote>
+<ul>
+<li><a
+href="#为什么kstack和ustack要分开存储">为什么kstack和ustack要分开存储</a></li>
+</ul>
+</blockquote>
+<p><code>TCB</code>
+从内核的角度来说就是一个线程，线程的数据分为两个部分：</p>
+<ol type="1">
+<li>在thread创建之后就不会再改变的：<code>kstack</code>，<code>process</code>；</li>
+<li>以及在运行过程中可能发生变化的元数据：
+UPSafeCell<TaskControlBlockInner> 。 大部分的细节放在
+<code>TaskControlBlockInner</code> 中。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Task control block structure</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="comment">/// immutable</span></span><br><span class="line">    <span class="keyword">pub</span> process: Weak&lt;ProcessControlBlock&gt;,</span><br><span class="line">    <span class="comment">/// Kernel stack corresponding to PID</span></span><br><span class="line">    <span class="keyword">pub</span> kstack: KernelStack,</span><br><span class="line">    <span class="comment">/// mutable</span></span><br><span class="line">    inner: UPSafeCell&lt;TaskControlBlockInner&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskControlBlockInner</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> res: <span class="type">Option</span>&lt;TaskUserRes&gt;,</span><br><span class="line">    <span class="comment">/// The physical page number of the frame where the trap context is placed</span></span><br><span class="line">    <span class="keyword">pub</span> trap_cx_ppn: PhysPageNum,</span><br><span class="line">    <span class="comment">/// Save task context</span></span><br><span class="line">    <span class="keyword">pub</span> task_cx: TaskContext,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Maintain the execution status of the current process</span></span><br><span class="line">    <span class="keyword">pub</span> task_status: TaskStatus,</span><br><span class="line">    <span class="comment">/// It is set when active exit or execution error occurs</span></span><br><span class="line">    <span class="keyword">pub</span> exit_code: <span class="type">Option</span>&lt;<span class="type">i32</span>&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以及我们一些thread才用得到的逻辑：</p>
+<ol type="1">
+<li><code>tid</code> 表示thread唯一ID；</li>
+<li><code>ustack_base</code> 表示线程的栈。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// User Resource for a task</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskUserRes</span> &#123;</span><br><span class="line">    <span class="comment">/// task id</span></span><br><span class="line">    <span class="keyword">pub</span> tid: <span class="type">usize</span>,</span><br><span class="line">    <span class="comment">/// user stack base</span></span><br><span class="line">    <span class="keyword">pub</span> ustack_base: <span class="type">usize</span>,</span><br><span class="line">    <span class="comment">/// process belongs to</span></span><br><span class="line">    <span class="keyword">pub</span> process: Weak&lt;ProcessControlBlock&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="包含线程的进程控制块">包含线程的进程控制块</h4>
+<p>可以看到，在 <code>PCB</code> 中，我们把处理器执行相关的移动到了
+<code>TCB</code>，因为现在进程已经是任务执行的最小单位了。而我们在
+<code>PCB</code> 中包含了一个指向所有线程的 <code>Vec</code>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Process Control Block</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">ProcessControlBlock</span> &#123;</span><br><span class="line">    <span class="comment">/// immutable</span></span><br><span class="line">    <span class="keyword">pub</span> pid: PidHandle,</span><br><span class="line">    <span class="comment">/// mutable</span></span><br><span class="line">    inner: UPSafeCell&lt;ProcessControlBlockInner&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// Inner of Process Control Block</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">ProcessControlBlockInner</span> &#123;</span><br><span class="line">    <span class="comment">/// ...</span></span><br><span class="line">    <span class="comment">/// tasks(also known as threads)</span></span><br><span class="line">    <span class="keyword">pub</span> tasks: <span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;&gt;,</span><br><span class="line">    <span class="comment">/// task resource allocator</span></span><br><span class="line">    <span class="keyword">pub</span> task_res_allocator: RecycleAllocator,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="线程与处理器管理结构">线程与处理器管理结构</h4>
+<p>线程管理器和之前一样，仍然由 <code>TaskManager</code> 和
+<code>Processor</code> 管理。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">///An array of `TaskControlBlock` that is thread-safe</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    ready_queue: VecDeque&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/// The stopping task, leave a reference so that the kernel stack will not be recycled when switching tasks</span></span><br><span class="line">    stop_task: <span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// Processor management structure</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Processor</span> &#123;</span><br><span class="line">    current: <span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line"></span><br><span class="line">    <span class="comment">///The basic control flow of each core, helping to select and switch process</span></span><br><span class="line">    idle_task_cx: TaskContext,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="线程管理机制的设计与实现">线程管理机制的设计与实现</h3>
+<p>本节将分析如何实现线程管理：</p>
+<ul>
+<li>线程创建、线程退出与等待线程结束</li>
+<li>线程执行中的特权级切换</li>
+</ul>
+<h4
+id="线程创建线程退出与等待线程结束">线程创建、线程退出与等待线程结束</h4>
+<h5 id="线程创建">线程创建</h5>
+<p>这里列出支持线程正确运行所需的重要的执行环境要素：</p>
+<ul>
+<li>线程的用户态栈：确保在用户态的线程能正常执行函数调用；</li>
+<li>线程的内核态栈：确保线程陷入内核后能正常执行函数调用；</li>
+<li>线程的跳板页：确保线程能正确的进行用户态&lt;–&gt;内核态切换；</li>
+<li>线程上下文：即线程用到的寄存器信息，用于线程切换。</li>
+</ul>
+<p>下面是整个线程初始化逻辑：</p>
+<ol type="1">
+<li><strong>初始化新线程的独享资源</strong>：
+<ol type="1">
+<li>分配新的tid；</li>
+<li>使用了进程共享的 ustack_base，进程内所有线程共享同一个
+ustack_base（用户栈基址），但每个线程基于 tid
+分配独立的用户栈区间；</li>
+<li>因为 <code>alloc_user_res</code> 为
+true，所以会分配一个新的用户栈区间作为 <code>user_stack</code>
+（基于ustack_base和tid的MapArea）</li>
+<li>因为 <code>alloc_user_res</code> 为 true，所以会分配一个新的
+<code>TrapContext</code>，并初始化对应的 <code>trap_ppn</code>；</li>
+<li>分配了 kstack；</li>
+<li>基于 kstack，我们还可以计算得到 kernel_top，并使用 kernel_top
+来初始化
+TaskContext。这里的TaskContext就是线程在第一次调度时的内核态状态。只包含了
+kstack_top；</li>
+<li>初始化了 task_status 为 Ready。</li>
+</ol></li>
+<li>在父进程中添加新创建的线程相关的信息；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// thread create syscall</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_thread_create</span>(entry: <span class="type">usize</span>, arg: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task</span> = <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process</span> = task.process.<span class="title function_ invoke__">upgrade</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="comment">// 创建一个新的线程，这个方法会做如下操作：</span></span><br><span class="line">    <span class="comment">// 1. 分配新的tid；</span></span><br><span class="line">    <span class="comment">// 2. 使用了进程共享的 ustack_base，进程内所有线程共享同一个 ustack_base（用户栈基址），但每个线程基于 tid 分配独立的用户栈区间；</span></span><br><span class="line">    <span class="comment">// 3. 因为 `alloc_user_res` 为 true，所以会分配一个新的用户栈区间作为 `user_stack` （基于ustack_base和tid的MapArea）</span></span><br><span class="line">    <span class="comment">// 4. 因为 `alloc_user_res` 为 true，所以会分配一个新的 `TrapContext`，并初始化对应的 `trap_ppn`；</span></span><br><span class="line">    <span class="comment">// 5. 分配了 kstack；</span></span><br><span class="line">    <span class="comment">// 6. 基于 kstack，我们还可以计算得到 kernel_top，并使用 kernel_top 来初始化 TaskContext。这里的TaskContext就是线程在第一次调度时的内核态状态。只包含了 kstack_top；</span></span><br><span class="line">    <span class="comment">// 7. 初始化了 task_status 为 Ready。</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_task</span> = Arc::<span class="title function_ invoke__">new</span>(TaskControlBlock::<span class="title function_ invoke__">new</span>(</span><br><span class="line">        Arc::<span class="title function_ invoke__">clone</span>(&amp;process),</span><br><span class="line">        task.<span class="title function_ invoke__">inner_exclusive_access</span>()</span><br><span class="line">            .res</span><br><span class="line">            .<span class="title function_ invoke__">as_ref</span>()</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .ustack_base,</span><br><span class="line">        <span class="literal">true</span>,</span><br><span class="line">    ));</span><br><span class="line">    <span class="comment">// add new task to scheduler</span></span><br><span class="line">    <span class="title function_ invoke__">add_task</span>(Arc::<span class="title function_ invoke__">clone</span>(&amp;new_task));</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_task_inner</span> = new_task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_task_res</span> = new_task_inner.res.<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_task_tid</span> = new_task_res.tid;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">process_inner</span> = process.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// process_inner.tasks 是一个 Vec，而 tid 就是线程在这个 Vec 内的索引</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tasks</span> = &amp;<span class="keyword">mut</span> process_inner.tasks;</span><br><span class="line">    <span class="keyword">while</span> tasks.<span class="title function_ invoke__">len</span>() &lt; new_task_tid + <span class="number">1</span> &#123;</span><br><span class="line">        tasks.<span class="title function_ invoke__">push</span>(<span class="literal">None</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    tasks[new_task_tid] = <span class="title function_ invoke__">Some</span>(Arc::<span class="title function_ invoke__">clone</span>(&amp;new_task));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始化 TrapContext，我们之前只是分配了 TrapContext 的内存并初始化 trap_context 指向这个内存</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_task_trap_cx</span> = new_task_inner.<span class="title function_ invoke__">get_trap_cx</span>();</span><br><span class="line">    *new_task_trap_cx = TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">        entry,</span><br><span class="line">        new_task_res.<span class="title function_ invoke__">ustack_top</span>(),</span><br><span class="line">        <span class="title function_ invoke__">kernel_token</span>(),</span><br><span class="line">        new_task.kstack.<span class="title function_ invoke__">get_top</span>(),</span><br><span class="line">        trap_handler <span class="keyword">as</span> <span class="type">usize</span>,</span><br><span class="line">    );</span><br><span class="line">    <span class="comment">// 按照riscv的ABI约定，arg是entry的输入参数</span></span><br><span class="line">    (*new_task_trap_cx).x[<span class="number">10</span>] = arg;</span><br><span class="line">    new_task_tid <span class="keyword">as</span> <span class="type">isize</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="线程退出">线程退出</h5>
+<ul>
+<li>当一个非主线程的其他线程发出 <code>sys_exit</code>
+系统调用时，内核会调用 <code>exit_current_and_run_next</code>
+函数退出当前线程并切换到下一个线程，但不会导致其所属进程的退出。</li>
+<li>当 <strong>主线程</strong> 即进程发出这个系统调用，
+内核会回收整个进程（这包括了其管理的所有线程）资源，并退出。</li>
+<li>主线程本身不会被立即回收资源，而是延迟回收，我们在
+<strong>再往后一段代码</strong> 解释主线程自己如何退出。</li>
+</ul>
+<p>具体的实现如下：</p>
+<ol type="1">
+<li>对于 <code>tid != 0</code> 的，也就是非主线程：
+<ol type="1">
+<li>设置 <code>exit_code</code>；</li>
+<li>销毁线程用户态的依赖：
+<ul>
+<li><code>dealloc_tid</code>；</li>
+<li><code>dealloc_user_res</code>，这里包括销毁 <code>user_stack</code>
+和 <code>trap_cx</code>；</li>
+<li><code>task_ctx</code>
+不用销毁，这是因为他可以随着进程的退出自动的销毁；具体可以参考 <a
+href="#trapcontext和taskcontext">TrapContext和TaskContext</a></li>
+</ul></li>
+</ol></li>
+<li>对于 <code>tid == 0</code>
+的，也就是主线程，我们需要做的和进程退出一样：
+<ol type="1">
+<li>通过 <code>add_stopping_task</code> 将任务保存在
+<code>TASK_MANAGER</code>，这是因为我们这里需要保留
+<code>kernel_stack</code> 以便于我们的系统调用能继续执行；</li>
+<li>删除 <code>PID2PCB</code> 中对于该进程的缓存；</li>
+<li>使用<code>INITPROC</code>收养该进程所有未退出的子进程；</li>
+<li>清理全部的子线程的
+<code>TaskUserRes</code>，这里很重要，因为如果这里不处理，待会删除
+<code>memory_set</code> 的时候可能会被重复回收；此外，还需要参考 <a
+href="#线程退出">线程退出</a> 查看详细逻辑。</li>
+<li>删除子进程，<code>memory_set</code>，<code>fd_tables</code>，子线程等资源。</li>
+</ol></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Exit the current &#x27;Running&#x27; task and run the next task in task list.</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exit_current_and_run_next</span>(exit_code: <span class="type">i32</span>) &#123;</span><br><span class="line">    trace!(</span><br><span class="line">        <span class="string">&quot;kernel: pid[&#123;&#125;] exit_current_and_run_next&quot;</span>,</span><br><span class="line">        <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>().process.<span class="title function_ invoke__">upgrade</span>().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">getpid</span>()</span><br><span class="line">    );</span><br><span class="line">    <span class="comment">// take from Processor</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task</span> = <span class="title function_ invoke__">take_current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">task_inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process</span> = task.process.<span class="title function_ invoke__">upgrade</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tid</span> = task_inner.res.<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>().tid;</span><br><span class="line">    task_inner.exit_code = <span class="title function_ invoke__">Some</span>(exit_code);</span><br><span class="line">    <span class="comment">// 用户态线程信息可以立即销毁</span></span><br><span class="line">    task_inner.res = <span class="literal">None</span>;</span><br><span class="line">    <span class="comment">// here we do not remove the thread since we are still using the kstack</span></span><br><span class="line">    <span class="comment">// it will be deallocated when sys_waittid is called</span></span><br><span class="line">    <span class="title function_ invoke__">drop</span>(task_inner);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Move the task to stop-wait status, to avoid kernel stack from being freed</span></span><br><span class="line">    <span class="keyword">if</span> tid == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">add_stopping_task</span>(task);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">drop</span>(task);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// however, if this is the main thread of current process</span></span><br><span class="line">    <span class="comment">// the process should terminate at once</span></span><br><span class="line">    <span class="keyword">if</span> tid == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pid</span> = process.<span class="title function_ invoke__">getpid</span>();</span><br><span class="line">        <span class="keyword">if</span> pid == IDLE_PID &#123;</span><br><span class="line">            <span class="built_in">println!</span>(</span><br><span class="line">                <span class="string">&quot;[kernel] Idle process exit with exit_code &#123;&#125; ...&quot;</span>,</span><br><span class="line">                exit_code</span><br><span class="line">            );</span><br><span class="line">            <span class="keyword">if</span> exit_code != <span class="number">0</span> &#123;</span><br><span class="line">                <span class="comment">//crate::sbi::shutdown(255); //255 == -1 for err hint</span></span><br><span class="line">                crate::board::QEMU_EXIT_HANDLE.<span class="title function_ invoke__">exit_failure</span>();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//crate::sbi::shutdown(0); //0 for success hint</span></span><br><span class="line">                crate::board::QEMU_EXIT_HANDLE.<span class="title function_ invoke__">exit_success</span>();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="title function_ invoke__">remove_from_pid2process</span>(pid);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">process_inner</span> = process.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">        <span class="comment">// mark this process as a zombie process</span></span><br><span class="line">        process_inner.is_zombie = <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">// record exit code of main process</span></span><br><span class="line">        process_inner.exit_code = exit_code;</span><br><span class="line"></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// move all child processes under init process</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">initproc_inner</span> = INITPROC.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">            <span class="keyword">for</span> <span class="variable">child</span> <span class="keyword">in</span> process_inner.children.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">                child.<span class="title function_ invoke__">inner_exclusive_access</span>().parent = <span class="title function_ invoke__">Some</span>(Arc::<span class="title function_ invoke__">downgrade</span>(&amp;INITPROC));</span><br><span class="line">                initproc_inner.children.<span class="title function_ invoke__">push</span>(child.<span class="title function_ invoke__">clone</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// deallocate user res (including tid/trap_cx/ustack) of all threads</span></span><br><span class="line">        <span class="comment">// it has to be done before we dealloc the whole memory_set</span></span><br><span class="line">        <span class="comment">// otherwise they will be deallocated twice</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">recycle_res</span> = <span class="type">Vec</span>::&lt;TaskUserRes&gt;::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">task</span> <span class="keyword">in</span> process_inner.tasks.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">filter</span>(|t| t.<span class="title function_ invoke__">is_some</span>()) &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">task</span> = task.<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">            <span class="comment">// if other tasks are Ready in TaskManager or waiting for a timer to be</span></span><br><span class="line">            <span class="comment">// expired, we should remove them.</span></span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="comment">// Mention that we do not need to consider Mutex/Semaphore since they</span></span><br><span class="line">            <span class="comment">// are limited in a single process. Therefore, the blocked tasks are</span></span><br><span class="line">            <span class="comment">// removed when the PCB is deallocated.</span></span><br><span class="line">            trace!(<span class="string">&quot;kernel: exit_current_and_run_next .. remove_inactive_task&quot;</span>);</span><br><span class="line">            <span class="title function_ invoke__">remove_inactive_task</span>(Arc::<span class="title function_ invoke__">clone</span>(&amp;task));</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">task_inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(res) = task_inner.res.<span class="title function_ invoke__">take</span>() &#123;</span><br><span class="line">                recycle_res.<span class="title function_ invoke__">push</span>(res);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// dealloc_tid and dealloc_user_res require access to PCB inner, so we</span></span><br><span class="line">        <span class="comment">// need to collect those user res first, then release process_inner</span></span><br><span class="line">        <span class="comment">// for now to avoid deadlock/double borrow problem.</span></span><br><span class="line">        <span class="title function_ invoke__">drop</span>(process_inner);</span><br><span class="line">        recycle_res.<span class="title function_ invoke__">clear</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">process_inner</span> = process.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">        process_inner.children.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">        <span class="comment">// deallocate other data in user space i.e. program code/data section</span></span><br><span class="line">        process_inner.memory_set.<span class="title function_ invoke__">recycle_data_pages</span>();</span><br><span class="line">        <span class="comment">// drop file descriptors</span></span><br><span class="line">        process_inner.fd_table.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">        <span class="comment">// remove all tasks</span></span><br><span class="line">        process_inner.tasks.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(process);</span><br><span class="line">    <span class="comment">// we do not have to save task context</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">_unused</span> = TaskContext::<span class="title function_ invoke__">zero_init</span>();</span><br><span class="line">    <span class="title function_ invoke__">schedule</span>(&amp;<span class="keyword">mut</span> _unused <span class="keyword">as</span> *<span class="keyword">mut</span> _);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="等待线程结束">等待线程结束</h5>
+<p>参考 <a href="#线程资源清理">线程资源清理</a></p>
+<h2 id="锁机制">锁机制</h2>
+<h3 id="锁的基本思路">锁的基本思路</h3>
+<p>锁的机制是能够设置一种所有线程能看到的标记，
+在一个能进入临界区的线程设置好这个标记后，其他线程都不能再进入临界区了。总体上看，
+对临界区的访问过程分为四个部分：</p>
+<ol type="1">
+<li>尝试取锁:
+查看锁是否可用，即临界区是否可访问（看占用临界区标志是否被设置），如果可以访问，
+则设置占用临界区标志（锁不可用）并转到步骤 2
+，否则线程忙等或被阻塞;</li>
+<li>临界区: 访问临界资源的系列操作</li>
+<li>释放锁:
+清除占用临界区标志（锁可用），如果有线程被阻塞，会唤醒阻塞线程；</li>
+<li>剩余区: 与临界区不相关部分的代码</li>
+</ol>
+<p>根据上面的步骤，可以看到锁机制有两种：让线程忙等的<strong>忙等锁（spin
+lock）</strong>，以及让线程阻塞的<strong>睡眠锁 （sleep
+lock）</strong>。锁的实现大体上基于三类机制：用户态软件、机器指令硬件、内核态操作系统。
+下面我们介绍来 rCore 中基于内核态操作系统级方法实现的支持互斥的锁。</p>
+<p>我们还需要知道如何评价各种锁实现的效果。一般我们需要关注锁的三种属性：</p>
+<ol type="1">
+<li>互斥性（mutual
+exclusion），即锁是否能够有效阻止多个线程进入临界区，这是最基本的属性。</li>
+<li>公平性（fairness），当锁可用时，每个竞争线程是否有公平的机会抢到锁。</li>
+<li>性能（performance），即使用锁的时间开销。</li>
+</ol>
+<h3
+id="内核态操作系统级方法实现锁-mutex-系统调用">内核态操作系统级方法实现锁
+— mutex 系统调用</h3>
+<h4 id="使用-mutex-系统调用">使用 mutex 系统调用</h4>
+<p>我们的代码分别执行：</p>
+<ol type="1">
+<li><code>mutex_create</code> 创建一个锁；</li>
+<li><code>mutex_lock</code> 获取锁；</li>
+<li><code>mutex_unlock</code> 释放锁；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">f</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">t</span> = <span class="number">2usize</span>;</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">_</span> <span class="keyword">in</span> <span class="number">0</span>..PER_THREAD &#123;</span><br><span class="line">        <span class="title function_ invoke__">mutex_lock</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">a</span> = addr_of_mut!(A) <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">usize</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">cur</span> = a.<span class="title function_ invoke__">read_volatile</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">_</span> <span class="keyword">in</span> <span class="number">0</span>..<span class="number">500</span> &#123;</span><br><span class="line">            t = t * t % <span class="number">10007</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        a.<span class="title function_ invoke__">write_volatile</span>(cur + <span class="number">1</span>);</span><br><span class="line">        <span class="title function_ invoke__">mutex_unlock</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(t <span class="keyword">as</span> <span class="type">i32</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">start</span> = <span class="title function_ invoke__">get_time</span>();</span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="title function_ invoke__">mutex_create</span>(), <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">v</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">_</span> <span class="keyword">in</span> <span class="number">0</span>..THREAD_COUNT &#123;</span><br><span class="line">        v.<span class="title function_ invoke__">push</span>(<span class="title function_ invoke__">thread_create</span>(f <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>) <span class="keyword">as</span> <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">time_cost</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">tid</span> <span class="keyword">in</span> v.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">        time_cost.<span class="title function_ invoke__">push</span>(<span class="title function_ invoke__">waittid</span>(*tid));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;time cost is &#123;&#125;ms&quot;</span>, <span class="title function_ invoke__">get_time</span>() - start);</span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="keyword">unsafe</span> &#123; A &#125;, PER_THREAD * THREAD_COUNT);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;race adder using spin mutex test passed!&quot;</span>);</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="mutex-系统调用的实现">mutex 系统调用的实现</h4>
+<p>在线程的眼里， <strong>互斥</strong>
+是一种每个线程能看到的资源，且在一个进程中，可以存在多个不同互斥资源，
+所以我们可以把所有的互斥资源放在一起让进程来管理。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Inner of Process Control Block</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">ProcessControlBlockInner</span> &#123;</span><br><span class="line">    <span class="comment">/// mutex list</span></span><br><span class="line">    <span class="keyword">pub</span> mutex_list: <span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;Arc&lt;<span class="keyword">dyn</span> Mutex&gt;&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里需要注意的是 <code>mutex_list</code> 是一个
+<code>Mutex trait</code> 的向量</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Mutex trait</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Mutex</span>: <span class="built_in">Sync</span> + <span class="built_in">Send</span> &#123;</span><br><span class="line">    <span class="comment">/// Lock the mutex</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">lock</span>(&amp;<span class="keyword">self</span>);</span><br><span class="line">    <span class="comment">/// Unlock the mutex</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">unlock</span>(&amp;<span class="keyword">self</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>MutexBlocking</code> 是会实现 <code>Mutex</code> trait
+的内核数据结构，它就是我们提到的 <strong>互斥资源</strong> 即
+<strong>互斥锁</strong> 。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Blocking Mutex struct</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MutexBlocking</span> &#123;</span><br><span class="line">    inner: UPSafeCell&lt;MutexBlockingInner&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此外，操作系统需要显式地施加某种控制，来确定当一个线程释放锁时，等待的线程谁将能抢到锁。
+为了做到这一点，操作系统需要有一个等待队列来保存等待锁的线程</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MutexBlockingInner</span> &#123;</span><br><span class="line">    locked: <span class="type">bool</span>,</span><br><span class="line">    wait_queue: VecDeque&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面是创建锁的系统调用的实现：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// mutex create syscall</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_mutex_create</span>(blocking: <span class="type">bool</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process</span> = <span class="title function_ invoke__">current_process</span>();</span><br><span class="line">    <span class="comment">// 根据参数创建 MutexSpin（自旋锁）或 MutexBlocking（阻塞锁）</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">mutex</span>: <span class="type">Option</span>&lt;Arc&lt;<span class="keyword">dyn</span> Mutex&gt;&gt; = <span class="keyword">if</span> !blocking &#123;</span><br><span class="line">        <span class="title function_ invoke__">Some</span>(Arc::<span class="title function_ invoke__">new</span>(MutexSpin::<span class="title function_ invoke__">new</span>()))</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">Some</span>(Arc::<span class="title function_ invoke__">new</span>(MutexBlocking::<span class="title function_ invoke__">new</span>()))</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 为当前进程分配互斥锁的索引并存储锁：</span></span><br><span class="line">    <span class="comment">// 1. 优先查找 mutex_list 中第一个值为 None 的空位，将锁存入该位置并返回对应索引；</span></span><br><span class="line">    <span class="comment">// 2. 若无空位，则将锁追加到 mutex_list 末尾，返回新的索引（列表长度-1）。</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">process_inner</span> = process.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(id) = process_inner</span><br><span class="line">        .mutex_list</span><br><span class="line">        .<span class="title function_ invoke__">iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">enumerate</span>()</span><br><span class="line">        .<span class="title function_ invoke__">find</span>(|(_, item)| item.<span class="title function_ invoke__">is_none</span>())</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|(id, _)| id)</span><br><span class="line">    &#123;</span><br><span class="line">        process_inner.mutex_list[id] = mutex;</span><br><span class="line">        id <span class="keyword">as</span> <span class="type">isize</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        process_inner.mutex_list.<span class="title function_ invoke__">push</span>(mutex);</span><br><span class="line">        process_inner.mutex_list.<span class="title function_ invoke__">len</span>() <span class="keyword">as</span> <span class="type">isize</span> - <span class="number">1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在获取到锁之后，我们就要开始实际的使用我们的锁，首先我们看看获取锁的使用：</p>
+<ol type="1">
+<li>我们在 <code>sys_mutex_lock</code> 里手动的 <code>drop()</code>
+这是为了避免死锁，因为 mutex.lock()
+有可能会获取不到锁从而发生阻塞，假设有如下场景：
+<ol type="1">
+<li><code>a</code> 执行 <code>sys_mutex_lock</code>
+获取到锁，在函数<code>sys_mutex_lock</code> 执行完毕后释放
+<code>process_inner</code> 和 <code>process</code>；</li>
+<li><code>b</code> 获取 <code>process_inner</code> 和
+<code>process</code> 的锁，随后执行 <code>sys_mutex_lock</code>
+获取锁失败并进入阻塞；</li>
+<li><code>a</code> 使用锁完毕，尝试释放锁，但是需要获取
+<code>process_inner</code> 和 <code>process</code> 的锁；</li>
+<li>进入死锁。</li>
+</ol></li>
+<li><code>lock</code> 中判断是否已经有人持有锁：
+<ol type="1">
+<li>如果有则将自己加入等待队列，并且阻塞等待；</li>
+<li>如果没有，则获取锁并进入临界区。</li>
+</ol></li>
+<li>这段代码，并不会存在竞争问题，因为 <code>mutex_inner.locked</code>
+本身是线程安全的，我们这里只是出于教学的简单目的，在实现锁的过程中依赖了另外一个锁。如果不依赖
+<code>mutex_inner.locked</code> 的情况可以参考 <a
+href="#错误访问临界区">错误访问临界区</a> 的解释。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Mutex</span> <span class="keyword">for</span> <span class="title class_">MutexBlocking</span> &#123;</span><br><span class="line">    <span class="comment">/// lock the blocking mutex</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">lock</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: MutexBlocking::lock&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">mutex_inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        <span class="keyword">if</span> mutex_inner.locked &#123;</span><br><span class="line">            mutex_inner.wait_queue.<span class="title function_ invoke__">push_back</span>(<span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">            <span class="title function_ invoke__">drop</span>(mutex_inner);</span><br><span class="line">            <span class="title function_ invoke__">block_current_and_run_next</span>();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            mutex_inner.locked = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// mutex lock syscall</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_mutex_lock</span>(mutex_id: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process</span> = <span class="title function_ invoke__">current_process</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process_inner</span> = process.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">mutex</span> = Arc::<span class="title function_ invoke__">clone</span>(process_inner.mutex_list[mutex_id].<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">    <span class="comment">// 这里必须手动的drop</span></span><br><span class="line">    <span class="title function_ invoke__">drop</span>(process_inner);</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(process);</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后是我们 <code>unlock</code> 的实现，逻辑也非常简单：</p>
+<ol type="1">
+<li>根据 <code>mutex_id</code> 从PCB获取到锁，随后释放
+<code>process_inner</code> 和 <code>process</code>；</li>
+<li>解锁：
+<ol type="1">
+<li>从 等待锁的队列中找到第一个等待锁的线程；</li>
+<li>将线程的状态修改为 <code>Ready</code> 等待调度。</li>
+</ol></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// mutex unlock syscall</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_mutex_unlock</span>(mutex_id: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process</span> = <span class="title function_ invoke__">current_process</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">process_inner</span> = process.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">mutex</span> = Arc::<span class="title function_ invoke__">clone</span>(process_inner.mutex_list[mutex_id].<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(process_inner);</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(process);</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Mutex</span> <span class="keyword">for</span> <span class="title class_">MutexBlocking</span> &#123;</span><br><span class="line">    <span class="comment">/// unlock the blocking mutex</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">unlock</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: MutexBlocking::unlock&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">mutex_inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        <span class="built_in">assert!</span>(mutex_inner.locked);</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(waking_task) = mutex_inner.wait_queue.<span class="title function_ invoke__">pop_front</span>() &#123;</span><br><span class="line">            <span class="title function_ invoke__">wakeup_task</span>(waking_task);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            mutex_inner.locked = <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// Wake up a task</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">wakeup_task</span>(task: Arc&lt;TaskControlBlock&gt;) &#123;</span><br><span class="line">    trace!(<span class="string">&quot;kernel: TaskManager::wakeup_task&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">task_inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    task_inner.task_status = TaskStatus::Ready;</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(task_inner);</span><br><span class="line">    <span class="title function_ invoke__">add_task</span>(task);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="信号量机制">信号量机制</h2>
+<h3 id="信号量的起源和基本思路">信号量的起源和基本思路</h3>
+<p>信号量是对互斥锁的一种巧妙的扩展。上一节中的互斥锁的初始值一般设置为
+1 的整型变量， 表示临界区还没有被某个线程占用。互斥锁用 0
+表示临界区已经被占用了，用 1 表示临界区为空，再通过
+<code>lock/unlock</code>
+操作来协调多个线程轮流独占临界区执行。<strong>而信号量的初始值可设置为 N
+的整数变量, 如果 N 大于 0， 表示最多可以有 N 个线程进入临界区执行，如果
+N 小于等于 0 ，表示不能有线程进入临界区了</strong>，
+必须在后续操作中让信号量的值加 1 ，才能唤醒某个等待的线程。</p>
+<p>如果信号量是一个任意的整数，通常被称为计数信号量（Counting
+Semaphore），或一般信号量（General
+Semaphore）；如果信号量只有0或1的取值，则称为二值信号量（Binary
+Semaphore）。可以看出， 互斥锁是信号量的一种特例 —
+二值信号量，信号量很好地解决了最多允许 N 个线程访问临界资源的情况。</p>
+<p>信号量可以分为两个操作，<strong>注意，<code>P</code> 和
+<code>V</code> 都是原子操作</strong>：</p>
+<ol type="1">
+<li><code>P（Proberen（荷兰语），尝试</code>：
+<ol type="1">
+<li><code>P</code> 检查信号量是否大于0；</li>
+<li>如果大于0，则将信号量减一并进入临界区；</li>
+<li>如果小于等于0，则进入休眠</li>
+</ol></li>
+<li><code>V（Verhogen（荷兰语），增加）</code>：
+<ol type="1">
+<li><code>V</code> 将信号量加一；
+<ol type="1">
+<li>如果还有其他的线程在等待信号量，则唤醒该线程；</li>
+<li>如果没有则直接返回。</li>
+</ol></li>
+</ol></li>
+</ol>
+<blockquote>
+<p>信号量的另一种用途是用于实现同步（synchronization）。</p>
+</blockquote>
+<ol type="1">
+<li>我们初始化一个初始化值为0的信号量；</li>
+<li>此时线程 <code>A</code> 会执行 <code>P</code>，而线程 <code>B</code>
+会执行 <code>V</code>；</li>
+<li>不管线程的执行顺序如何，我们都可以保证，<code>A</code> 线程在执行
+<code>P</code> 之后的代码时，<code>B</code> 线程已经把 <code>V</code>
+之前的代码执行完成。</li>
+</ol>
+<p>例如，假设有如下代码</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">thread_a</span>() &#123;</span><br><span class="line">	<span class="title function_ invoke__">pre_p</span>();</span><br><span class="line">    <span class="title function_ invoke__">p</span>();</span><br><span class="line">    <span class="title function_ invoke__">after_p</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">thread_b</span>() &#123;</span><br><span class="line">    <span class="title function_ invoke__">pre_v</span>();</span><br><span class="line">    <span class="title function_ invoke__">v</span>();</span><br><span class="line">    <span class="title function_ invoke__">after_v</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>那么它的实际执行顺序保证：当 <code>after_p()</code>
+执行的时候 <code>pre_v()</code> 一定已经执行完成。</strong></p>
+<h3 id="实现信号量">实现信号量</h3>
+<h4 id="实现-semaphore-系统调用">实现 semaphore 系统调用</h4>
+<p><code>semaphore_list</code> 一个 <code>Semaphore</code> 的向量；</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Inner of Process Control Block</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">ProcessControlBlockInner</span> &#123;</span><br><span class="line">    <span class="comment">/// semaphore list</span></span><br><span class="line">    <span class="keyword">pub</span> semaphore_list: <span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;Arc&lt;Semaphore&gt;&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Semaphore</code> 的结构和 <code>MutexBlocking</code>
+类似，唯一的区别是 <code>locked: bool</code> 被修改唯
+<code>count: isize</code>；</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// semaphore structure</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Semaphore</span> &#123;</span><br><span class="line">    <span class="comment">/// semaphore inner</span></span><br><span class="line">    <span class="keyword">pub</span> inner: UPSafeCell&lt;SemaphoreInner&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">SemaphoreInner</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> count: <span class="type">isize</span>,</span><br><span class="line">    <span class="keyword">pub</span> wait_queue: VecDeque&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以，<code>Semaphore</code>
+的实现逻辑也相当简单，这里唯一需要注意的是：<strong><code>count</code>
+的语义不是剩余资源量的直接映射。</strong></p>
+<ol type="1">
+<li><code>count &gt;= 0</code> 表示有 <code>count</code>
+个空闲资源，无线程阻塞；</li>
+<li><code>count &lt; 0</code> 表示无空闲资源，有 <code>|count|</code>
+个线程阻塞；</li>
+</ol>
+<p>所以，当我们在调用 <code>up()</code> 时，我们应该立即将
+<code>count</code>
+加一，并且立即从阻塞的线程中取出一个加入到线程调度。<strong>这里关键在于，在调用
+<code>down()</code> 的时候，即使线程被阻塞，仍然会将 <code>count</code>
+减一</strong>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Semaphore</span> &#123;</span><br><span class="line">    <span class="comment">/// Create a new semaphore</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(res_count: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Semaphore::new&quot;</span>);</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            inner: <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                UPSafeCell::<span class="title function_ invoke__">new</span>(SemaphoreInner &#123;</span><br><span class="line">                    count: res_count <span class="keyword">as</span> <span class="type">isize</span>,</span><br><span class="line">                    wait_queue: VecDeque::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">                &#125;)</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// up operation of semaphore</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">up</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Semaphore::up&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        inner.count += <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> inner.count &lt;= <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(task) = inner.wait_queue.<span class="title function_ invoke__">pop_front</span>() &#123;</span><br><span class="line">                <span class="title function_ invoke__">wakeup_task</span>(task);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// down operation of semaphore</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">down</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Semaphore::down&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        inner.count -= <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> inner.count &lt; <span class="number">0</span> &#123;</span><br><span class="line">            inner.wait_queue.<span class="title function_ invoke__">push_back</span>(<span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">            <span class="title function_ invoke__">drop</span>(inner);</span><br><span class="line">            <span class="title function_ invoke__">block_current_and_run_next</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>这里，我们可以使用 <code>count</code>
+表示当前可用资源数作为语义，那么我们可以得到如下代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Semaphore</span> &#123;</span><br><span class="line">    <span class="comment">/// Create a new semaphore</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(res_count: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Semaphore::new&quot;</span>);</span><br><span class="line">        <span class="built_in">assert!</span>(res_count &gt;= <span class="number">1</span>, <span class="string">&quot;res count need larger than zero&quot;</span>);</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            inner: <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                UPSafeCell::<span class="title function_ invoke__">new</span>(SemaphoreInner &#123;</span><br><span class="line">                    count: res_count <span class="keyword">as</span> <span class="type">isize</span>,</span><br><span class="line">                    wait_queue: VecDeque::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">                &#125;)</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// up operation of semaphore</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">up</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Semaphore::up&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        inner.count += <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> inner.count &lt;= <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(task) = inner.wait_queue.<span class="title function_ invoke__">pop_front</span>() &#123;</span><br><span class="line">                <span class="title function_ invoke__">wakeup_task</span>(task);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// down operation of semaphore</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">down</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Semaphore::down&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        inner.count -= <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> inner.count &lt; <span class="number">0</span> &#123;</span><br><span class="line">            inner.wait_queue.<span class="title function_ invoke__">push_back</span>(<span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">            <span class="title function_ invoke__">drop</span>(inner);</span><br><span class="line">            <span class="title function_ invoke__">block_current_and_run_next</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="条件变量机制">条件变量机制</h2>
+<h3 id="条件变量的基本思路">条件变量的基本思路</h3>
+<p>管程有一个很重要的特性，即任一时刻只能有一个活跃线程调用管程中的过程，
+这一特性使线程在调用执行管程中过程时能保证互斥，这样线程就可以放心地访问共享变量。
+管程是编程语言的组成部分，编译器知道其特殊性，因此可以采用与其他过程调用不同的方法来处理对管程的调用.
+因为是由编译器而非程序员来生成互斥相关的代码，所以出错的可能性要小。</p>
+<p>管程虽然借助编译器提供了一种实现互斥的简便途径，但这还不够，还需要一种线程间的沟通机制。</p>
+<ul>
+<li>首先是等待机制：由于线程在调用管程中某个过程时，发现某个条件不满足，那就在无法继续运行而被阻塞。</li>
+<li>其次是唤醒机制：另外一个线程可以在调用管程的过程中，把某个条件设置为真，并且还需要有一种机制，
+及时唤醒等待条件为真的阻塞线程。</li>
+</ul>
+<p>为了避免管程中同时有两个活跃线程，
+我们需要一定的规则来约定线程发出唤醒操作的行为。目前有三种典型的规则方案：</p>
+<ul>
+<li>Hoare
+语义：线程发出唤醒操作后，马上阻塞自己，让新被唤醒的线程运行。注：此时唤醒线程的执行位置还在管程中。</li>
+<li>Hansen
+语义：是执行唤醒操作的线程必须立即退出管程，即唤醒操作只可能作为一个管程过程的最后一条语句。
+注：此时唤醒线程的执行位置离开了管程。</li>
+<li>Mesa
+语义：唤醒线程在发出行唤醒操作后继续运行，并且只有它退出管程之后，才允许等待的线程开始运行。
+注：此时唤醒线程的执行位置还在管程中。</li>
+</ul>
+<p>简单来说就是，我们可以通过如下方式来等待条件变量：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">mut</span> A: <span class="type">usize</span> = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">first</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    A=<span class="number">1</span>;</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">second</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    <span class="keyword">while</span> A==<span class="number">0</span> &#123;</span><br><span class="line">        mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">        <span class="comment">// give other thread a chance to lock</span></span><br><span class="line">        mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    &#125;;</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    <span class="comment">// 继续执行相关事务</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是这个显然是一个忙等待，于是我们做出了一些优化，但是在这个例子中，我们面临一个问题就是
+<code>wait()</code> 并没有管理好我们的锁：</p>
+<p>如果 <code>second</code> 获取锁后调用 <code>wait()</code>
+线程将直接进入死锁，<strong>所以，我们需要 <code>condvar</code>
+提供一种机制来为我们管理锁</strong>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">mut</span> A: <span class="type">usize</span> = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">first</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    A=<span class="number">1</span>;</span><br><span class="line">    <span class="title function_ invoke__">wakup</span>(second);</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">second</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    <span class="keyword">while</span> A==<span class="number">0</span> &#123;</span><br><span class="line">       <span class="title function_ invoke__">wait</span>();</span><br><span class="line">    &#125;;</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    <span class="comment">//继续执行相关事务</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后，我们的代码如下，但是这里我们显然需要在 <code>wakeup</code> 和
+<code>wait</code> 中管理我们的锁，</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">mut</span> A: <span class="type">usize</span> = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">first</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    A=<span class="number">1</span>;</span><br><span class="line">    condvar.<span class="title function_ invoke__">wakup</span>();</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">second</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    <span class="keyword">while</span> A==<span class="number">0</span> &#123;</span><br><span class="line">       condvar.<span class="title function_ invoke__">wait</span>(mutex); <span class="comment">//在睡眠等待之前，需要释放mutex</span></span><br><span class="line">    &#125;;</span><br><span class="line">    mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">    <span class="comment">//继续执行相关事务</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="实现条件变量">实现条件变量</h4>
+<p>有了上面的逻辑，我们的实现就比较简单了：</p>
+<ul>
+<li><code>wait</code> 在wait中，我们先
+<code>unlock()</code>，再等待，被唤醒后再次 <code>lock()</code>；</li>
+<li><code>signal</code>
+<code>signal</code>无需其他处理，只需要找到等待中的线程并调度即可。</li>
+</ul>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Condvar</span> &#123;</span><br><span class="line">    <span class="comment">/// Create a new condition variable</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Condvar::new&quot;</span>);</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            inner: <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                UPSafeCell::<span class="title function_ invoke__">new</span>(CondvarInner &#123;</span><br><span class="line">                    wait_queue: VecDeque::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">                &#125;)</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Signal a task waiting on the condition variable</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">signal</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(task) = inner.wait_queue.<span class="title function_ invoke__">pop_front</span>() &#123;</span><br><span class="line">            <span class="title function_ invoke__">wakeup_task</span>(task);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// blocking current task, let it wait on the condition variable</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">wait</span>(&amp;<span class="keyword">self</span>, mutex: Arc&lt;<span class="keyword">dyn</span> Mutex&gt;) &#123;</span><br><span class="line">        trace!(<span class="string">&quot;kernel: Condvar::wait_with_mutex&quot;</span>);</span><br><span class="line">        mutex.<span class="title function_ invoke__">unlock</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        inner.wait_queue.<span class="title function_ invoke__">push_back</span>(<span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">        <span class="title function_ invoke__">drop</span>(inner);</span><br><span class="line">        <span class="title function_ invoke__">block_current_and_run_next</span>();</span><br><span class="line">        mutex.<span class="title function_ invoke__">lock</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们的使用代码如下：我们的执行流程可能如下：</p>
+<ol type="1">
+<li><code>first</code> 先获取 <code>mutex_lock</code>，此时
+<code>first</code> 进入临界区会被阻塞直到
+<code>mutex_unlock</code>；<code>second</code>
+开始执行并且顺利的执行到结束；</li>
+<li><code>second</code> 先获取 <code>mutex_lock</code>：
+<ol type="1">
+<li><code>while A == 0</code> 判断失败，在 <code>condvar_wait</code> 中
+<code>unlock()</code>
+，将线程加入等待队列，<code>block_current_and_run_next</code>；</li>
+<li><code>first()</code> 获取锁 <code>lock()</code>，修改 A，并且执行
+<code>signal</code> 唤醒 <code>second</code>，此时可能有两种情况：
+<ol type="1">
+<li><code>first()</code> 继续执行，直到释放锁；</li>
+<li><code>second()</code> 被调度执行，尝试去
+<code>lock()</code>，但是此时 <code>first()</code> 仍然持有锁，所以
+<code>second</code> 会被挂起；</li>
+</ol></li>
+<li>基于 <code>&lt;2&gt;</code> 的描述， <code>first()</code> 会先执行完
+<code>unlock()</code>，随后才 <code>second()</code>
+才会获取到锁并执行后续逻辑；</li>
+<li><code>second()</code> 退出之后 <code>unlock()</code>。</li>
+</ol></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">first</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="title function_ invoke__">sleep_blocking</span>(<span class="number">10</span>);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;First work, Change A --&gt; 1 and wakeup Second&quot;</span>);</span><br><span class="line">    <span class="title function_ invoke__">mutex_lock</span>(MUTEX_ID);</span><br><span class="line">    A = <span class="number">1</span>;</span><br><span class="line">    <span class="title function_ invoke__">condvar_signal</span>(CONDVAR_ID);</span><br><span class="line">    <span class="title function_ invoke__">mutex_unlock</span>(MUTEX_ID);</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="number">0</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">second</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Second want to continue,but need to wait A=1&quot;</span>);</span><br><span class="line">    <span class="title function_ invoke__">mutex_lock</span>(MUTEX_ID);</span><br><span class="line">    <span class="keyword">while</span> A == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Second: A is &#123;&#125;&quot;</span>, A);</span><br><span class="line">        <span class="title function_ invoke__">condvar_wait</span>(CONDVAR_ID, MUTEX_ID);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">mutex_unlock</span>(MUTEX_ID);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;A is &#123;&#125;, Second can work now&quot;</span>, A);</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="number">0</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="comment">// create condvar &amp; mutex</span></span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="title function_ invoke__">condvar_create</span>() <span class="keyword">as</span> <span class="type">usize</span>, CONDVAR_ID);</span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="title function_ invoke__">mutex_blocking_create</span>() <span class="keyword">as</span> <span class="type">usize</span>, MUTEX_ID);</span><br><span class="line">    <span class="comment">// create threads</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">threads</span> = <span class="built_in">vec!</span>[</span><br><span class="line">        <span class="title function_ invoke__">thread_create</span>(first <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>),</span><br><span class="line">        <span class="title function_ invoke__">thread_create</span>(second <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>),</span><br><span class="line">    ];</span><br><span class="line">    <span class="comment">// wait for all threads to complete</span></span><br><span class="line">    <span class="keyword">for</span> <span class="variable">thread</span> <span class="keyword">in</span> threads.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">        <span class="title function_ invoke__">waittid</span>(*thread <span class="keyword">as</span> <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;test_condvar passed!&quot;</span>);</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>整体执行逻辑如图所示：</p>
+<pre><code class="highlight mermaid">sequenceDiagram
+    participant second线程
+    participant first线程
+    participant 内核调度器
+    participant 互斥锁(MUTEX)
+    participant 条件变量(CONDVAR)
+    note over second线程,first线程: 前提：A初始值=0，MUTEX/CONDVAR已初始化
+
+    %% ========== second线程先执行 ==========
+    second线程-&gt;&gt;second线程: 打印 &quot;Second want to continue,but need to wait A=1&quot;
+    second线程-&gt;&gt;互斥锁(MUTEX): mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)--&gt;&gt;second线程: 成功获取锁，进入临界区
+    second线程-&gt;&gt;second线程: 检查 while A==0（A=0，条件成立）
+    second线程-&gt;&gt;second线程: 打印 &quot;Second: A is 0&quot;
+    second线程-&gt;&gt;条件变量(CONDVAR): condvar_wait(CONDVAR_ID, MUTEX_ID)
+    note over second线程: condvar_wait内部逻辑
+    second线程-&gt;&gt;互斥锁(MUTEX): unlock() 释放锁
+    second线程-&gt;&gt;条件变量(CONDVAR): 加入等待队列
+    second线程-&gt;&gt;内核调度器: block_current_and_run_next() 阻塞
+    内核调度器-&gt;&gt;first线程: 调度first线程执行
+
+    %% ========== first线程执行 ==========
+    first线程-&gt;&gt;first线程: sleep_blocking(10) 休眠结束
+    first线程-&gt;&gt;first线程: 打印 &quot;First work, Change A --&gt; 1 and wakeup Second&quot;
+    first线程-&gt;&gt;互斥锁(MUTEX): mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)--&gt;&gt;first线程: 成功获取锁（second已释放）
+    first线程-&gt;&gt;first线程: 修改 A = 1
+    first线程-&gt;&gt;条件变量(CONDVAR): condvar_signal(CONDVAR_ID) 唤醒second
+    条件变量(CONDVAR)-&gt;&gt;内核调度器: 将second从阻塞态→就绪态（加入调度队列）
+    note over first线程: 仍持有锁，second就绪但无法执行
+    first线程-&gt;&gt;互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
+    first线程-&gt;&gt;first线程: exit(0) 线程退出
+
+    %% ========== second线程被唤醒后执行 ==========
+    内核调度器-&gt;&gt;second线程: 调度就绪的second线程执行
+    second线程-&gt;&gt;条件变量(CONDVAR): 退出等待队列
+    second线程-&gt;&gt;互斥锁(MUTEX): condvar_wait内部执行mutex_lock(MUTEX_ID)
+    互斥锁(MUTEX)--&gt;&gt;second线程: 成功获取锁（first已释放）
+    second线程-&gt;&gt;second线程: 重新检查 while A==0（A=1，条件不成立）
+    second线程-&gt;&gt;互斥锁(MUTEX): mutex_unlock(MUTEX_ID) 释放锁
+    second线程-&gt;&gt;second线程: 打印 &quot;A is 1, Second can work now&quot;
+    second线程-&gt;&gt;second线程: exit(0) 线程退出</code></pre>
+<h2 id="qa">QA</h2>
+<h3 id="代码">代码</h3>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">➜  2025a-rcore-0x822a5b87 git:(ch8) cloc os easy-fs</span><br><span class="line"><span class="code">     306 text files.</span></span><br><span class="line"><span class="code">     166 unique files.</span></span><br><span class="line"><span class="code">     349 files ignored.</span></span><br><span class="line"></span><br><span class="line"><span class="section">github.com/AlDanial/cloc v 2.06  T=0.12 s (1358.1 files/s, 59444.4 lines/s)</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">Language                     files          blank        comment           code</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line">Rust                            51            357            928           4613</span><br><span class="line">D                               42            117              0            631</span><br><span class="line">Assembly                         4             30             29            303</span><br><span class="line">make                             1             22              7             70</span><br><span class="line">JSON                            64              0              0             64</span><br><span class="line">Linker Script                    1              7              0             46</span><br><span class="line"><span class="section">TOML                             3              7              2             33</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">SUM:                           166            540            966           5760</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br></pre></td></tr></table></figure>
+<h3 id="错误访问临界区">错误访问临界区</h3>
+<p>假设我们存在如下代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">lock</span>() &#123;</span><br><span class="line">    <span class="keyword">if</span> locked &#123;</span><br><span class="line">        <span class="title function_ invoke__">block_current_and_run_next</span>();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        locked = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么它的汇编代码可能是这样的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 伪汇编逻辑</span><br><span class="line"># block：锁已被占用时跳转到的分支（比如阻塞/自旋）</span><br><span class="line"></span><br><span class="line">bez locked, 1, block         # 若 locked != 1（未锁定），不跳转；若 locked == 1（已锁定），跳转到 block</span><br><span class="line">li  locker, 1                # 将 locked 设为 1（标记为已锁定）</span><br></pre></td></tr></table></figure>
+<p>那么实际执行可能是这样的：</p>
+<table>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 40%" />
+<col style="width: 40%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>时间片</th>
+<th>Task A 执行操作</th>
+<th>Task B 执行操作</th>
+<th><code>locked</code> 内存值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>T1</td>
+<td>执行 <code>bez</code>，读取 <code>locked=0</code>，判定
+“不跳转”</td>
+<td>——（未被调度）</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>T2</td>
+<td>——（被切走，未执行 <code>li</code>）</td>
+<td>执行 <code>bez</code>，读取 <code>locked=0</code>，判定
+“不跳转”</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>T3</td>
+<td>执行 <code>li</code>，将 <code>locked</code> 设为 1</td>
+<td>——（未被调度）</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>T4</td>
+<td>进入临界区</td>
+<td>执行 <code>li</code>，将 <code>locked</code> 设为 1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>T5</td>
+<td>——（临界区执行中）</td>
+<td>进入临界区</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="线程资源清理">线程资源清理</h3>
+<p>线程资源的清理需要 <code>exit_current_and_run_next</code> 和
+<code>waittid</code>
+合作来清理，下面列出了这两个方法中关于资源回收的代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Exit the current &#x27;Running&#x27; task and run the next task in task list.</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exit_current_and_run_next</span>(exit_code: <span class="type">i32</span>) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="comment">// 用户态线程信息可以立即销毁</span></span><br><span class="line">    task_inner.res = <span class="literal">None</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Move the task to stop-wait status, to avoid kernel stack from being freed</span></span><br><span class="line">    <span class="keyword">if</span> tid == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">add_stopping_task</span>(task);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">drop</span>(task);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> tid == <span class="number">0</span> &#123;</span><br><span class="line">        process_inner.tasks.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_waittid</span>(tid: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(exit_code) = exit_code &#123;</span><br><span class="line">        <span class="comment">// dealloc the exited thread</span></span><br><span class="line">        process_inner.tasks[tid] = <span class="literal">None</span>;</span><br><span class="line">        exit_code</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// waited thread has not exited</span></span><br><span class="line">        -<span class="number">2</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>整体的逻辑划分为两个大的模块：</p>
+<ol type="1">
+<li>普通线程退出时的主动回收
+<ol type="1">
+<li>普通线程退出时，先回收用户态的资源，这个是完全没有任何风险的；</li>
+<li>随后 <code>drop(task)</code>，这里很容易误解，我们做一个详细解释：
+<ul>
+<li>这里的 <code>task</code> 是从 <code>PROCESSOR</code>
+中取出的当前运行线程引用，<code>drop</code> 仅释放
+<code>PROCESSOR</code> 持有的这一引用；</li>
+<li>进程的 <code>tasks</code> 列表中仍持有该线程 TCB 的 <code>Arc</code>
+引用 → <code>Arc</code>
+计数≠0，线程内核态资源（kstack、task_ctx）不会被回收；</li>
+<li>显式调用 <code>drop(task)</code> 是为了配合后续
+<code>schedule</code> 调度（避免调度时仍持有无效引用）；</li>
+</ul></li>
+<li>内核资源的回收有两个场景
+<ul>
+<li>在 <code>waitpid</code> 中，通过
+<code>process_inner.tasks[tid] = None</code> 将 <code>Arc</code> 置为
+0，线程内核态资源被回收。</li>
+<li>若普通线程未等到 <code>waittid</code> 执行，主线程退出时会执行
+<code>process_inner.tasks.clear()</code>，现成内核态资源被回收；</li>
+</ul></li>
+</ol></li>
+<li>主线程退出时的批量回收
+<ol type="1">
+<li>主线程退出时，也是回收用户态的资源；</li>
+<li>执行 <code>add_stopping_task(task)</code> 将主线程 TCB 存入
+<code>TASK_MANAGER</code> 的 <code>stop_task</code>：
+<ul>
+<li>目的是保留 Arc 引用（避免 process_inner.tasks.clear() 时 Arc 归
+0，导致 kstack 被提前回收 —— 因 sys_exit 仍在主线程 kstack
+上执行）；</li>
+</ul></li>
+<li>执行 <code>process_inner.tasks.clear()</code>
+回收所有的可以回收的线程：
+<ul>
+<li><code>tasks</code> 中引用被释放，但 <code>stop_task</code>
+仍持有引用，所以主线程的 <code>TCB</code> 不会被立即回收；</li>
+<li>其他线程可以被安全回收，因为主线程对这些线程的内核态资源没有依赖，这里同时也会回收那些还没有退出（例如还没有等到waittid执行或者没有执行完毕）的线程的内核态资源</li>
+</ul></li>
+<li>此时，我们还剩下未回收的资源就是主线程的 <code>TCB</code> 了，因为
+<code>add_stopping_task</code> 仍然持有对主线程 TCB
+的引用：当另一个进程的主线程退出时，会调用
+<code>add_stopping_task(new_task)</code> → <code>new_task</code> 覆盖
+<code>stop_task</code> 中旧的主线程 TCB → 旧主线程的 <code>Arc</code>
+引用被释放（计数归 0）→ 内核态资源回收；</li>
+</ol></li>
+</ol>
+<h3 id="线程退出-1">线程退出</h3>
+<p>在我们的线程退出中有两块代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exit_current_and_run_next</span>(exit_code: <span class="type">i32</span>) &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">    task_inner.res = <span class="literal">None</span>;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">if</span> (tid == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// deallocate user res (including tid/trap_cx/ustack) of all threads</span></span><br><span class="line">        <span class="comment">// it has to be done before we dealloc the whole memory_set</span></span><br><span class="line">        <span class="comment">// otherwise they will be deallocated twice</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">recycle_res</span> = <span class="type">Vec</span>::&lt;TaskUserRes&gt;::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">task</span> <span class="keyword">in</span> process_inner.tasks.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">filter</span>(|t| t.<span class="title function_ invoke__">is_some</span>()) &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">task</span> = task.<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">            <span class="comment">// if other tasks are Ready in TaskManager or waiting for a timer to be</span></span><br><span class="line">            <span class="comment">// expired, we should remove them.</span></span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="comment">// Mention that we do not need to consider Mutex/Semaphore since they</span></span><br><span class="line">            <span class="comment">// are limited in a single process. Therefore, the blocked tasks are</span></span><br><span class="line">            <span class="comment">// removed when the PCB is deallocated.</span></span><br><span class="line">            trace!(<span class="string">&quot;kernel: exit_current_and_run_next .. remove_inactive_task&quot;</span>);</span><br><span class="line">            <span class="title function_ invoke__">remove_inactive_task</span>(Arc::<span class="title function_ invoke__">clone</span>(&amp;task));</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">task_inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(res) = task_inner.res.<span class="title function_ invoke__">take</span>() &#123;</span><br><span class="line">                recycle_res.<span class="title function_ invoke__">push</span>(res);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// dealloc_tid and dealloc_user_res require access to PCB inner, so we</span></span><br><span class="line">        <span class="comment">// need to collect those user res first, then release process_inner</span></span><br><span class="line">        <span class="comment">// for now to avoid deadlock/double borrow problem.</span></span><br><span class="line">        <span class="title function_ invoke__">drop</span>(process_inner);</span><br><span class="line">        recycle_res.<span class="title function_ invoke__">clear</span>();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里看起来像是对 <code>ref</code>
+做了两次回收，其实这是<strong>线程主动退出</strong>和<strong>线程被动回收</strong>的问题：</p>
+<ol type="1">
+<li><code>task_inner.res = None;</code> <strong>当前执行 sys_exit
+的线程</strong>（可能是主线程 / 非主线程）</li>
+<li><code>遍历process_inner.tasks取 res</code>
+<strong>进程内所有其他线程</strong>（包括未主动退出的子线程、阻塞 /
+就绪态线程）。</li>
+</ol>
+<p>这同样也是，为什么 task_inner.res = None;
+可以直接回收，而循环中回收却必须先使用 Vec 收集起来，在回收之前必须
+drop(process_inner) 的原因。
+最开始的回收，只是针对于线程的操作，此时还没有获取 process 的锁，而
+<code>dealloc_tid()</code> 和 <code>dealloc_user_res</code> 中都会使用到
+<code>process</code> 的锁。</p>
+<h3 id="trapcontext和taskcontext">TrapContext和TaskContext</h3>
+<ul>
+<li><code>TrapContext</code>
+是用于陷入内核态的<strong>寄存器快照载体</strong>，在由用户态陷入到内核态的时候会把TrapContext的地址传递给内核态，而内核态为了能访问这个地址，他需要和用户态共用一个虚拟地址；</li>
+<li><code>TaskContext</code> 是 <code>TCB</code>
+中的一个普通变量，仅仅存放于内核态，用户态不需要知道
+<code>TaskContext</code>
+的任何信息，在进程初始化时初始化，在进程退出时销毁。</li>
+<li><code>trampoline</code> 是固定共享虚拟地址的跳转代码段，他会操作
+<code>TrapContext</code> 来实现对 trap 的处理。</li>
+</ul>
+<h3
+id="为什么在tcb中我们直接以pa的形式存储trap_cx_ppn">为什么在TCB中，我们直接以PA的形式存储trap_cx_ppn</h3>
+<ol type="1">
+<li>TrapContext
+的使用太频繁，如果我们直接每次都从PageTable获取，那么性能会比较差，尤其是极端情况下可能因为TLB不命中产生更大的开销；
+<ul>
+<li>线程每次触发 Trap（中断 / 异常 / 系统调用）、切换上下文时，都要读写
+TrapContext</li>
+<li>若存储虚拟地址：每次访问 TrapContext
+都需要通过页表（多级页表）将虚拟地址转换为物理地址，极端情况下 TLB
+不命中（需走慢路径查页表），会多消耗数十个时钟周期；</li>
+<li>若存储 PPN：可直接通过 <code>PPN + 偏移量</code> 计算出 TrapContext
+字段的物理地址，完全绕开页表转换和 TLB 依赖，访问延迟降到最低；</li>
+</ul></li>
+<li>TrapContext 在线程中属于是和 .text/.data
+一样的常驻资源，它不会被回收，永远在固定的物理地址。
+<ul>
+<li>TrapContext 分配在独立的物理页中，且<strong>从线程创建到 TCB
+彻底销毁前，该物理页不会被回收、不会迁移</strong>（和
+<code>.text/.data</code> 段一样属于 “常驻内存资源”）—— 这意味着 PPN
+一旦确定，终身不变，无需担心 “物理地址变化导致 PPN 失效”；</li>
+<li>若存储虚拟地址：需依赖页表映射的有效性，而用户态虚拟地址可能因页交换（swap）、页表修改失效，内核态虚拟地址也可能因内核页表更新变化；</li>
+<li>若存储 PPN：物理地址是硬件层面的
+“绝对地址”，不受页表映射影响，即使虚拟地址失效，也能通过 PPN 找回
+TrapContext；</li>
+<li>内核态拥有直接访问物理地址的权限。</li>
+</ul></li>
+</ol>
+<p>基于条件 <code>&lt;1&gt;</code>，缓存 <code>TrapContext</code>
+的地址是非常有必要的，基于条件 <code>&lt;2&gt;</code>，我们确定直接缓存
+<code>PPN</code> 是可行的。</p>
+<h3
+id="为什么kstack和ustack要分开存储">为什么kstack和ustack要分开存储</h3>
+<p>核心原因是<strong>二者的 “生命周期”“访问权限”“管理维度”
+完全不同</strong>—— 这种拆分是内核数据结构设计中
+“按职责分层、按权限隔离” 的典型实践。</p>
+<p><code>kstack</code> 和 <code>ustack_base</code> 虽然都
+“基本不变”，但前者是 “内核态核心资源”，后者是
+“用户态资源的元信息”，职责边界完全不同，因此必须拆分。</p>
+<ul>
+<li><code>kstack</code>
+是线程的内核态资源，在线程退出时不能立即清理，需要等到 <code>exit</code>
+函数执行完之后，由主线程的 <code>waitpid</code> 来进行清理；</li>
+<li><code>ustack_base</code>
+是用户态的资源，当他退出时可以立即清理。</li>
+</ul>
+<h3 id="kernel_stack">kernel_stack</h3>
+<blockquote>
+<p>线程的内核栈（<code>kernel_stack</code>）是<strong>线程在内核态执行时的专属栈</strong>，所有内核态操作都依赖它。</p>
+<p>核心场景是：<strong>当用户态程序因为中断或异常</strong>，此时会通过
+<code>__alltraps</code> 进入内核态。<code>__alltraps</code> 函数此时会将
+<code>kernle_stack</code>
+加载到寄存器，随后进入异常/中断处理。此时才真正的开始使用使用到
+<code>kernel_stack</code>。</p>
+</blockquote>
+<ol type="1">
+<li><code>kernel_stack</code>
+支撑用户态程序通过系统调用切换到内核态后的执行：内核态函数调用栈帧、局部变量、临时计算结果均存储在
+<code>kernel_stack</code> 上；</li>
+<li><code>kernel_stack</code> 支撑系统中断和异常处理：系统调用属于
+“自陷异常（ecall）”，是异常的一个子类型，因此中断 /
+异常处理（含系统调用）的执行均依赖 <code>kernel_stack</code>；</li>
+<li>内核自身的执行（如内核线程、调度器逻辑）依赖
+<code>kernel_stack</code>：纯内核线程无
+<code>user_stack</code>，<code>kernel_stack</code>
+是其唯一的栈资源；</li>
+</ol>
+<p><strong>指的注意的是，由于有 <code>TrapContext</code>
+的存在，Trap并不需要 kernel_stack 的介入：</strong></p>
+<ol type="1">
+<li><code>user_stack</code> 与 <code>TrapContext</code>
+协同支撑线程上下文切换：每个线程有独立的 <code>TrapContext</code>
+页（存储 PC、寄存器、<code>sp</code> 等核心上下文），而我们的
+<code>sscratch</code> 指向 <code>TrapContext</code>，切换时流程为：
+<ol type="1">
+<li><code>__alltraps</code>：
+<ol type="1">
+<li>将当前的上下文保存通用寄存器到 <code>TrapContext</code>，而
+<code>TrapContext</code> 的值是保存在 <code>sscratch</code> 下；</li>
+<li>将 <code>sstatus</code>，<code>sepc</code>
+，<code>sscratch（此时指向user_stack）</code> 通过通用寄存器保存到
+<code>TrapContext</code>，这里必须先保存通用寄存器，保存完后才能使用。</li>
+<li>从 <code>TrapContext</code> 加载 <code>kernel_satp</code>，
+<code>trap_handler</code>， <code>kernel_sp</code>
+等内核态异常处理函数需要的寄存器；</li>
+<li>进入内核态异常处理。</li>
+</ol></li>
+<li><code>__restore</code>：从 <code>TrapContext</code>
+中加载用户态程序的必要寄存器。</li>
+</ol></li>
+</ol>
+<p>可以注意到，在整个过程中，有一部分内核态才会用到的，例如
+<code>satp</code>，<code>trap_handler</code>，<code>kernel_sp</code> 在
+<code>TrapContext</code>
+中是一直不变的。他们只是用作从用户态切换到内核态的跳板。</p>
+<h3 id="trampoline是线程共享的吗">trampoline是线程共享的吗？</h3>
+<p><code>trampoline</code>
+是内核态和用户态转换的跳板，他是一个固定的代码块，在链接的时候被链接到代码的
+<code>.text</code> 段。</p>
+<p>随后，所有的进程/线程/内核都映射一个固定的虚拟地址到
+<code>trampoline</code>，所以答案是肯定的，所有线程共享 trampoline。</p>
+<h3
+id="主线程是什么他和普通的线程有区别吗">主线程是什么？他和普通的线程有区别吗？</h3>
+<p>主线程是在进程执行 <code>fork()</code> 时创建的线程，由进程的
+<code>task_res_allocator</code> 分配：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">RecycleAllocator</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">alloc</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(id) = <span class="keyword">self</span>.recycled.<span class="title function_ invoke__">pop</span>() &#123;</span><br><span class="line">            id</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">self</span>.current += <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">self</span>.current - <span class="number">1</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以，主线程的 <code>tid</code> 始终为 <code>1</code>。</p>
+<p>主线程是一个比较特殊的线程，虽然他在调度时候和其他的线程是完全一样的优先级。但是主线程相比于其他的线程有如下特性：</p>
+<ol type="1">
+<li>主线程需要负责进程内其他线程的兜底数据管理策略。通常来说，线程退出时需要通过
+<code>waittid()</code>
+来回收线程的内核态资源；但是假设线程没有正常退出（例如没有调用
+<code>waittid</code>，没有被调度执行就退出等），那么主线程在退出的时候需要负责回收所有的当前进程里所有其他线程的内核态资源；</li>
+<li>主线程退出的时候，所有的线程都会被退出并清理；</li>
+<li>主线程需要负责进程的退出逻辑 --
+例如进程的页表，memory_set等资源的清理；</li>
+</ol>
+<h3 id="线程的exit">线程的exit</h3>
+<p>关于进程的退出，我们可以参考我们之前的分析 <a
+href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1">进程的退出</a>。</p>
+<p>我们通过将进程代码的入口链接到 <code>_start</code> 中，而
+<code>_start</code> 中通过 <code>exit(main(argc, v.as_slice()))</code>
+来实现了对进程 <code>exit()</code> 方法的自动调用；</p>
+<p>而线程不一样，在我们的实现中，<code>ucore</code> 在
+<code>thread_create()</code> 时将程序的 <code>PC</code>
+指向了我们的入口函数，这意味着我们必须手动的去调用
+<code>exit()</code>，观察我们线上的代码确实也符合我们的预想。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ch8_threads.rs</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">thread_c</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">t</span> = <span class="number">2i32</span>;</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">_</span> <span class="keyword">in</span> <span class="number">0</span>..<span class="number">1000</span> &#123;</span><br><span class="line">        <span class="built_in">print!</span>(<span class="string">&quot;c&quot;</span>);</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">__</span> <span class="keyword">in</span> <span class="number">0</span>..<span class="number">5000</span> &#123;</span><br><span class="line">            t = t * t % <span class="number">10007</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, t);</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="number">3</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/" rel="prev" title="uCore进程间通信">
+                  <i class="fa fa-angle-left"></i> uCore进程间通信
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/12/18/build-my-own-docker-from-scratch/" rel="next" title="build my own docker from scratch">
+                  build my own docker from scratch <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

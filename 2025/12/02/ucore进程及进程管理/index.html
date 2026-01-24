@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  flowchart LR     subgraph i">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore进程及进程管理">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="uCore：进程及进程管理  我们将开发一个用户 终端 (Terminal) 或 命令行 (Command Line Application, 俗称 Shell ) ， 形成用户与操作系统进行交互的命令行界面 (Command Line Interface)。 为此，我们要对任务建立新的抽象： 进程 ，并实现若干基于 进程 的强大系统调用。  flowchart LR     subgraph i">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251121/kernel-as-high.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251203/base_size.png">
+<meta property="article:published_time" content="2025-12-02T03:09:36.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251121/kernel-as-high.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/","path":"2025/12/02/ucore进程及进程管理/","title":"uCore进程及进程管理"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore进程及进程管理 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">uCore：进程及进程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E8%BF%9B%E7%A8%8B%E6%9C%89%E5%85%B3%E7%9A%84%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">与进程有关的重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.</span> <span class="nav-text">重要系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">fork 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">exec 系统调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#waitpid-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">waitpid 系统调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.1.2.</span> <span class="nav-text">应用程序示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%88%9D%E5%A7%8B%E7%A8%8B%E5%BA%8F-initproc"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">用户初始程序-initproc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#shell%E7%A8%8B%E5%BA%8F-user_shell"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">shell程序-user_shell</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">进程管理的核心数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%BA%94%E7%94%A8%E5%90%8D%E7%9A%84%E5%BA%94%E7%94%A8%E9%93%BE%E6%8E%A5%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">基于应用名的应用链接&#x2F;加载器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6%E5%92%8C%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.2.2.</span> <span class="nav-text">进程标识符和内核栈</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">进程标识符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">内核栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-number">1.2.3.</span> <span class="nav-text">进程控制块</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#pcb"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">PCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tcb"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">TCB</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.3.3.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">1.2.4.</span> <span class="nav-text">任务管理器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%80%81%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">老版本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">新版本</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.</span> <span class="nav-text">进程管理机制的设计实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">1.3.1.</span> <span class="nav-text">初始进程的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.2.</span> <span class="nav-text">进程调度机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E6%88%90%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.3.</span> <span class="nav-text">进程的生成机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">fork 系统调用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#memorysetfrom_existed_user"><span class="nav-number">1.3.3.1.1.</span> <span class="nav-text">MemorySet#from_existed_user</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mapareafrom_another"><span class="nav-number">1.3.3.1.2.</span> <span class="nav-text">MapArea#from_another</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sys_fork%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.3.</span> <span class="nav-text">sys_fork的实现</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">exec 系统调用的实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%90%8E%E9%87%8D%E6%96%B0%E8%8E%B7%E5%8F%96-trap-%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">系统调用后重新获取 Trap
+上下文</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">进程资源回收机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA"><span class="nav-number">1.4.1.</span> <span class="nav-text">进程的退出</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E8%BF%9B%E7%A8%8B%E5%9B%9E%E6%94%B6%E5%AD%90%E8%BF%9B%E7%A8%8B%E8%B5%84%E6%BA%90"><span class="nav-number">1.4.2.</span> <span class="nav-text">父进程回收子进程资源</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#user_stack%E5%92%8Ckernel_stack"><span class="nav-number">1.5.1.</span> <span class="nav-text">user_stack和kernel_stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1"><span class="nav-number">1.5.2.</span> <span class="nav-text">进程的退出</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#config.toml"><span class="nav-number">1.5.2.1.</span> <span class="nav-text">config.toml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#makefile"><span class="nav-number">1.5.2.2.</span> <span class="nav-text">Makefile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.5.2.3.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#start"><span class="nav-number">1.5.2.4.</span> <span class="nav-text">_start</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81"><span class="nav-number">1.5.2.5.</span> <span class="nav-text">汇编代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">1.5.3.</span> <span class="nav-text">进程状态机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernelstack"><span class="nav-number">1.5.4.</span> <span class="nav-text">KernelStack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kstack_allocator"><span class="nav-number">1.5.5.</span> <span class="nav-text">KSTACK_ALLOCATOR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.</span> <span class="nav-text">内存对齐</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90%E7%9A%84%E6%A0%B9%E6%9C%AC%E4%BD%9C%E7%94%A8"><span class="nav-number">1.5.6.1.</span> <span class="nav-text">内存对齐的根本作用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-cpu-%E8%A6%81%E6%B1%82%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90"><span class="nav-number">1.5.6.2.</span> <span class="nav-text">为什么 CPU 要求内存对齐</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%9C%BA%E6%99%AF%E7%9A%84%E5%AF%B9%E9%BD%90%E7%AD%96%E7%95%A5"><span class="nav-number">1.5.6.3.</span> <span class="nav-text">内核场景的对齐策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%9C%A8%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E5%92%8C%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E4%B8%AD%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.5.7.</span> <span class="nav-text">对象在物理地址和虚拟地址中的转换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory_set%E4%B8%AD%E7%9A%84trampoline%E5%92%8Ctrap_cx"><span class="nav-number">1.5.8.</span> <span class="nav-text">memory_set中的trampoline和trap_cx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#children%E5%92%8Cparent"><span class="nav-number">1.5.9.</span> <span class="nav-text">children和parent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E8%A7%A3%E6%9E%90"><span class="nav-number">1.5.10.</span> <span class="nav-text">elf解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.11.</span> <span class="nav-text">进程的内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.5.12.</span> <span class="nav-text">应用进程内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#base_size"><span class="nav-number">1.5.12.1.</span> <span class="nav-text">base_size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heap_bottom"><span class="nav-number">1.5.12.2.</span> <span class="nav-text">heap_bottom</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#program_brk"><span class="nav-number">1.5.12.3.</span> <span class="nav-text">program_brk</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.12.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%A0%86"><span class="nav-number">1.5.13.</span> <span class="nav-text">内核堆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.5.14.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exec"><span class="nav-number">1.5.15.</span> <span class="nav-text">exec</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%BB%E5%9D%80%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.1.</span> <span class="nav-text">寻址逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E9%80%BB%E8%BE%91"><span class="nav-number">1.5.15.2.</span> <span class="nav-text">执行逻辑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E5%9B%9E%E6%94%B6"><span class="nav-number">1.5.16.</span> <span class="nav-text">进程的资源回收</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1"><span class="nav-number">1.6.</span> <span class="nav-text">代码统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.7.</span> <span class="nav-text">代码树</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore进程及进程管理 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore进程及进程管理
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-02 11:09:36" itemprop="dateCreated datePublished" datetime="2025-12-02T11:09:36+08:00">2025-12-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="ucore进程及进程管理">uCore：进程及进程管理</h1>
+<blockquote>
+<p>我们将开发一个用户 <strong>终端</strong> (Terminal) 或
+<strong>命令行</strong> (Command Line Application, 俗称
+<strong>Shell</strong> ) ， 形成用户与操作系统进行交互的命令行界面
+(Command Line Interface)。</p>
+<p>为此，我们要对任务建立新的抽象： <strong>进程</strong>
+，并实现若干基于 <strong>进程</strong> 的强大系统调用。</p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart LR
+    subgraph init[&quot;初始化阶段：无用户任务&quot;]
+        direction LR
+        registers_0(&quot;registers.cx: idle运行状态&quot;):::pink
+        current_0(&quot;current: None&quot;):::purple
+        idle_task_cx_0(&quot;idle_task_cx: zero.ctx（占位）&quot;):::green
+    end
+
+    subgraph stage_1[&quot;阶段1：fetch_task&quot;]
+        direction LR
+        registers_1(&quot;registers.cx: task.cx（用户任务状态）&quot;):::pink
+        current_1(&quot;current: Some(task)&quot;):::purple
+        idle_task_cx_1(&quot;idle_task_cx: 原registers.cx（idle休眠状态）&quot;):::green
+    end
+
+    subgraph stage_2[&quot;阶段2：suspend&quot;]
+        direction LR
+        registers_2(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_2(&quot;current: None&quot;):::purple
+        idle_task_cx_2(&quot;idle_task_cx: 原registers_1（用户任务挂起状态）&quot;):::green
+    end
+
+    subgraph stage_3[&quot;阶段3：exit→用户任务退出&quot;]
+        direction LR
+        registers_3(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_3(&quot;current: None&quot;):::purple
+        idle_task_cx_3(&quot;idle_task_cx: 原idle_task_cx_1（无变化）&quot;):::green
+    end
+
+    subgraph TaskManager[&quot;TaskManager：就绪队列&quot;]
+        t_task(&quot;task.cx: 用户任务挂起状态（仅suspend后存在）&quot;):::coral
+    end
+
+    %% 流转逻辑（补充关键动作标注）
+    init --&gt;|init| stage_1
+    stage_1 --&gt;|suspend| stage_2
+    stage_1 --&gt;|exit| stage_3
+
+    %% 状态转移细节
+    current_1 --&gt;|take_current后add_task，共享task所有权| TaskManager
+    registers_1 --&gt;|__switch保存用户任务状态到task.cx| t_task
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_2
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_3
+
+    %% 样式定义（沿用你的设计）
+    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;
+    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h2 id="与进程有关的重要系统调用">与进程有关的重要系统调用</h2>
+<h3 id="重要系统调用">重要系统调用</h3>
+<h4 id="fork-系统调用">fork 系统调用</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 功能：由当前进程 fork 出一个子进程。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 返回值：</span></span><br><span class="line"><span class="comment">/// - 对于子进程返回 0，对于当前进程则返回子进程的 PID 。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// syscall ID：220</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_fork</span>() <span class="punctuation">-&gt;</span> <span class="type">isize</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="exec-系统调用">exec 系统调用</h4>
+<blockquote>
+<p>关于 <code>exec</code> 指令的详细说明，请参考 <a
+href="#exec">exec</a></p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 功能：将当前进程的地址空间清空并加载一个特定的可执行文件，返回用户态后开始它的执行。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 参数：</span></span><br><span class="line"><span class="comment">/// - 字符串 path 给出了要加载的可执行文件的名字；</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 返回值：</span></span><br><span class="line"><span class="comment">/// - 如果出错的话（如找不到名字相符的可执行文件）则返回 -1，否则不应该返回。</span></span><br><span class="line"><span class="comment">/// - 注意：path 必须以 &quot;\0&quot; 结尾，否则内核将无法确定其长度</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// syscall ID：221</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_exec</span>(path: &amp;<span class="type">str</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span>;</span><br></pre></td></tr></table></figure>
+<p>利用 <code>fork</code> 和 <code>exec</code>
+的组合，我们能让创建一个子进程，并令其执行特定的可执行文件。</p>
+<h4 id="waitpid-系统调用">waitpid 系统调用</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 功能：当前进程等待一个子进程变为僵尸进程，回收其全部资源并收集其返回值。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 参数：</span></span><br><span class="line"><span class="comment">/// - pid 表示要等待的子进程的进程 ID，如果为 -1 的话表示等待任意一个子进程；</span></span><br><span class="line"><span class="comment">/// - exit_code 表示保存子进程返回值的地址，如果这个地址为 0 的话表示不必保存。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 返回值：</span></span><br><span class="line"><span class="comment">/// - 如果要等待的子进程不存在则返回 -1；否则如果要等待的子进程均未结束则返回 -2；</span></span><br><span class="line"><span class="comment">/// - 否则返回结束的子进程的进程 ID。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// syscall ID：260</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_waitpid</span>(pid: <span class="type">isize</span>, exit_code: *<span class="keyword">mut</span> <span class="type">i32</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span>;</span><br></pre></td></tr></table></figure>
+<p><code>sys_waitpid</code> 在用户库中被封装成两个不同的 API，
+<code>wait(exit_code: &amp;mut i32)</code> 和
+<code>waitpid(pid: usize, exit_code: &amp;mut i32)</code>，
+前者用于等待任意一个子进程，后者用于等待特定子进程。它们实现的策略是如果子进程还未结束，就以
+yield 让出时间片：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">// user/src/lib.rs</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">wait</span>(exit_code: &amp;<span class="keyword">mut</span> <span class="type">i32</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">match</span> <span class="title function_ invoke__">sys_waitpid</span>(-<span class="number">1</span>, exit_code <span class="keyword">as</span> *<span class="keyword">mut</span> _) &#123;</span><br><span class="line">            -<span class="number">2</span> =&gt; &#123; <span class="title function_ invoke__">sys_yield</span>(); &#125;</span><br><span class="line">            n =&gt; &#123; <span class="keyword">return</span> n; &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="应用程序示例">应用程序示例</h3>
+<p><code>initproc</code> 和 <code>user_shell</code>
+两个程序，他们分别是内核的初始进程以及初始进程启动的一个
+<code>shell</code> 进程：</p>
+<ol type="1">
+<li><code>initproc</code> 是 <code>pid == 0</code>
+的进程，它负责处理内核中的 <code>zombie</code> 和 <code>orphan</code>
+进程；</li>
+<li><code>user_shell</code>
+从命令行读取命令，并启动一个子进程执行该命令。</li>
+</ol>
+<h4 id="用户初始程序-initproc">用户初始程序-initproc</h4>
+<p>在内核初始化完毕后创建的第一个进程，是 <strong>用户初始进程</strong>
+(Initial Process) ，它将通过 <code>fork+exec</code> 创建
+<code>user_shell</code> 子进程，并将被用于回收僵尸进程。</p>
+<p>下面的程序有几个指的注意的点：</p>
+<ol type="1">
+<li><code>pid == -1</code> 表示
+<strong>要等待的子进程不存在</strong>（符合 rCore 定义）：比如
+<code>fork()</code>
+后父进程先执行，子进程还未完成创建（此时父进程无有效子进程），或后续无任何子进程时，<code>wait</code>
+会返回 <code>-1</code>；</li>
+<li><code>wait()</code> 的阻塞性由 OS 实现决定：代码中父进程在
+<code>pid == -1</code> 时主动调用 <code>yield_()</code>，说明 rCore 的
+<code>sys_waitpid</code> 是 <strong>非阻塞式</strong>
+的（无符合条件的僵尸进程时立即返回 <code>-1</code> 或
+<code>-2</code>，不挂起父进程），这与 Linux 默认阻塞的
+<code>waitpid</code> 形成差异；</li>
+<li>代码中，显示的处理了 <code>pid == -1</code> 以及隐式的处理了
+<code>pid &gt; 0</code> 的所有情况，但是未处理 <code>pid == -2</code>
+的情况：
+<ol type="1">
+<li>对于 <code>pid == -1</code>
+的子进程，此时子进程尚未创建成功，无需任何处理，我们直接continue继续循环；</li>
+<li>对于 <code>pid &gt; 0</code>（子进程终止，成功回收僵尸进程）：会执行
+<code>println!</code> 打印回收日志，之后继续循环；</li>
+<li>未显式处理 <code>pid == -2</code>（子进程存在但均未结束）：会跳过
+<code>pid == -1</code> 分支，直接重新进入循环调用
+<code>wait</code>（因无 <code>yield_()</code>，会高频空转）；</li>
+</ol></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![no_std]</span></span><br><span class="line"><span class="meta">#![no_main]</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#[macro_use]</span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">crate</span> user_lib;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> user_lib::&#123;exec, fork, wait, yield_&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="comment">/// fork() 创建一个进程</span></span><br><span class="line">    <span class="keyword">if</span> fork() == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="comment">/// 返回值为0，说明是子进程，我们在进程里启动shell程序</span></span><br><span class="line">        <span class="title function_ invoke__">exec</span>(<span class="string">&quot;ch5b_user_shell\0&quot;</span>, &amp;[<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>]);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="comment">/// 0 指定不保存子进程返回值的地址</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">exit_code</span>: <span class="type">i32</span> = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">pid</span> = <span class="title function_ invoke__">wait</span>(&amp;<span class="keyword">mut</span> exit_code);</span><br><span class="line">            <span class="comment">/// pid == -1 表示返回的进程不存在，因为在fork()之后，父进程的可能先执行</span></span><br><span class="line">            <span class="comment">/// 此时子进程的创建尚未完成。</span></span><br><span class="line">            <span class="keyword">if</span> pid == -<span class="number">1</span> &#123;</span><br><span class="line">                <span class="title function_ invoke__">yield_</span>();</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">/// 这里我们只处理了-1（进程未创建），而没有处理-2（进程尚未结束）</span></span><br><span class="line">            <span class="built_in">println!</span>(</span><br><span class="line">                <span class="string">&quot;[initproc] Released a zombie process, pid=&#123;&#125;, exit_code=&#123;&#125;&quot;</span>,</span><br><span class="line">                pid, exit_code,</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="shell程序-user_shell">shell程序-user_shell</h4>
+<p>user_shell
+需要捕获用户输入并进行解析处理，为此添加一个能获取用户输入的系统调用：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 功能：从文件中读取一段内容到缓冲区。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 参数：fd 是待读取文件的文件描述符，切片 buffer 则给出缓冲区。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// 返回值：如果出现了错误则返回 -1，否则返回实际读到的字节数。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// syscall ID：63</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_read</span>(fd: <span class="type">usize</span>, buffer: &amp;<span class="keyword">mut</span> [<span class="type">u8</span>]) <span class="punctuation">-&gt;</span> <span class="type">isize</span>;</span><br></pre></td></tr></table></figure>
+<p>实际调用时，我们必须要同时向内核提供缓冲区的起始地址及长度：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// user/src/syscall.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_read</span>(fd: <span class="type">usize</span>, buffer: &amp;<span class="keyword">mut</span> [<span class="type">u8</span>]) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="title function_ invoke__">syscall</span>(SYSCALL_READ, [fd, buffer.<span class="title function_ invoke__">as_mut_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, buffer.<span class="title function_ invoke__">len</span>()])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面是在 <code>initproc</code> 中启动的一个 <code>shell</code>
+程序，<strong>该程序从命令行输入指令并创建子进程，在子进程中执行输入的指令</strong>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![no_std]</span></span><br><span class="line"><span class="meta">#![no_main]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">crate</span> alloc;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[macro_use]</span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">crate</span> user_lib;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> LF: <span class="type">u8</span> = <span class="number">0x0au8</span>;          <span class="comment">/// Line Feed</span></span><br><span class="line"><span class="keyword">const</span> CR: <span class="type">u8</span> = <span class="number">0x0du8</span>;          <span class="comment">/// Carriage Return</span></span><br><span class="line"><span class="keyword">const</span> DL: <span class="type">u8</span> = <span class="number">0x7fu8</span>;          <span class="comment">/// Delete</span></span><br><span class="line"><span class="keyword">const</span> BS: <span class="type">u8</span> = <span class="number">0x08u8</span>;          <span class="comment">/// Backspace</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> alloc::string::<span class="type">String</span>;</span><br><span class="line"><span class="keyword">use</span> user_lib::console::getchar;</span><br><span class="line"><span class="keyword">use</span> user_lib::&#123;exec, flush, fork, waitpid&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Rust user shell&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">line</span>: <span class="type">String</span> = <span class="type">String</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="built_in">print!</span>(<span class="string">&quot;&gt;&gt; &quot;</span>);</span><br><span class="line">    <span class="title function_ invoke__">flush</span>();</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">c</span> = <span class="title function_ invoke__">getchar</span>();</span><br><span class="line">        <span class="keyword">match</span> c &#123;</span><br><span class="line">            <span class="comment">// 如果读到一个换行符，我们就执行当前行的命令</span></span><br><span class="line">            LF | CR =&gt; &#123;</span><br><span class="line">                <span class="built_in">print!</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">                <span class="keyword">if</span> !line.<span class="title function_ invoke__">is_empty</span>() &#123;</span><br><span class="line">                    <span class="keyword">if</span> line.<span class="title function_ invoke__">eq</span>(<span class="string">&quot;exit&quot;</span>) &#123;</span><br><span class="line">                        <span class="keyword">break</span> <span class="number">1</span>;</span><br><span class="line">                    &#125;;</span><br><span class="line">                    <span class="comment">// 前面提到的， exec 需要一个以 &#x27;\0&#x27; 结尾的字符串</span></span><br><span class="line">                    line.<span class="title function_ invoke__">push</span>(<span class="string">&#x27;<span class="char escape_">\0</span>&#x27;</span>);</span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">pid</span> = fork();</span><br><span class="line">                    <span class="keyword">if</span> pid == <span class="number">0</span> &#123;</span><br><span class="line">                        <span class="comment">/// 子进程逻辑</span></span><br><span class="line">                        <span class="keyword">if</span> <span class="title function_ invoke__">exec</span>(line.<span class="title function_ invoke__">as_str</span>(), &amp;[<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>]) == -<span class="number">1</span> &#123;</span><br><span class="line">                            <span class="built_in">println!</span>(<span class="string">&quot;Error when executing!&quot;</span>);</span><br><span class="line">                            <span class="keyword">return</span> -<span class="number">4</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="built_in">unreachable!</span>();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="comment">// 父进程逻辑等待子进程结束</span></span><br><span class="line">                        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">exit_code</span>: <span class="type">i32</span> = <span class="number">0</span>;</span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">exit_pid</span> = <span class="title function_ invoke__">waitpid</span>(pid <span class="keyword">as</span> <span class="type">usize</span>, &amp;<span class="keyword">mut</span> exit_code);</span><br><span class="line">                        <span class="built_in">assert_eq!</span>(pid, exit_pid);</span><br><span class="line">                        <span class="built_in">println!</span>(<span class="string">&quot;Shell: Process &#123;&#125; exited with code &#123;&#125;&quot;</span>, pid, exit_code);</span><br><span class="line">                    &#125;</span><br><span class="line">                    line.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="built_in">print!</span>(<span class="string">&quot;&gt;&gt; &quot;</span>);</span><br><span class="line">                <span class="title function_ invoke__">flush</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 如果读到一个退格符或删除符</span></span><br><span class="line">            BS | DL =&gt; &#123;</span><br><span class="line">                <span class="keyword">if</span> !line.<span class="title function_ invoke__">is_empty</span>() &#123;</span><br><span class="line">                    <span class="built_in">print!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, BS <span class="keyword">as</span> <span class="type">char</span>);</span><br><span class="line">                    <span class="built_in">print!</span>(<span class="string">&quot; &quot;</span>);</span><br><span class="line">                    <span class="built_in">print!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, BS <span class="keyword">as</span> <span class="type">char</span>);</span><br><span class="line">                    <span class="title function_ invoke__">flush</span>();</span><br><span class="line">                    line.<span class="title function_ invoke__">pop</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            _ =&gt; &#123;</span><br><span class="line">                <span class="built_in">print!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, c <span class="keyword">as</span> <span class="type">char</span>);</span><br><span class="line">                <span class="title function_ invoke__">flush</span>();</span><br><span class="line">                line.<span class="title function_ invoke__">push</span>(c <span class="keyword">as</span> <span class="type">char</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="进程管理的核心数据结构">进程管理的核心数据结构</h2>
+<ul>
+<li>基于应用名的应用链接/加载器</li>
+<li>进程标识符 <code>PidHandle</code> 以及内核栈
+<code>KernelStack</code></li>
+<li>任务控制块 <code>TaskControlBlock</code></li>
+<li>任务管理器 <code>TaskManager</code></li>
+<li>处理器管理结构 <code>Processor</code></li>
+</ul>
+<h3 id="基于应用名的应用链接加载器">基于应用名的应用链接/加载器</h3>
+<p><strong>基于应用名的应用链接/加载器</strong>
+和之前的加载器并无本质区别：</p>
+<ul>
+<li><p>除了老的加载器中生成的指针 <code>_num_app</code>
+用来解析<strong>app数量和函数地址</strong>之外；</p></li>
+<li><p>新的加载器会额外的生成一个指针
+<code>_app_names</code>，用来解析线上全部的应用名 。</p></li>
+<li><p>两个指针的区别在于：</p>
+<ul>
+<li><code>_num_app</code> 会用来解析 <code>_num_app + 2</code>
+个元素，<code>_app_names</code> 会用来解析 <code>_num_app</code>
+个元素；</li>
+<li><code>_num_app</code> 指向的第一个元素为app数量，后面的
+<code>[ptr + 1, ptr + _num_app + 1]</code> 总共
+<code>_num_app + 1</code> 个元素表示的是函数地址；</li>
+<li><code>_app_names</code> 指向的 <code>[0, _num_app - 1]</code>
+个元素都是应用名；</li>
+</ul></li>
+</ul>
+<p>最终生成的文件格式如下：唯一需要注意的是
+<code>.string "ch2b_bad_address"</code> 会自动的在 <code>.string</code>
+后面增加 <code>\0</code> 作为结尾，<strong>但是这个和 exec 的参数必须以
+'\0' 没有关系，可以参考 <a href="#exec">exec</a></strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">    .global _num_app</span><br><span class="line">_num_app:</span><br><span class="line">    .quad 19</span><br><span class="line">    .quad app_0_start</span><br><span class="line">	# 省略17个元素</span><br><span class="line">    .quad app_18_start</span><br><span class="line">    .quad app_18_end</span><br><span class="line"></span><br><span class="line">    .global _app_names</span><br><span class="line">_app_names:</span><br><span class="line">    .string &quot;ch2b_bad_address&quot;</span><br><span class="line">	# 省略17个元素</span><br><span class="line">    .string &quot;ch5b_usertest&quot;</span><br><span class="line"></span><br><span class="line">    .section .data</span><br><span class="line">    .global app_0_start</span><br><span class="line">    .global app_0_end</span><br><span class="line">    .align 3</span><br><span class="line">app_0_start:</span><br><span class="line">    .incbin &quot;../user/build/elf/ch2b_bad_address.elf&quot;</span><br><span class="line">app_0_end:</span><br></pre></td></tr></table></figure>
+<h3 id="进程标识符和内核栈">进程标识符和内核栈</h3>
+<h4 id="进程标识符">进程标识符</h4>
+<p>涉及进程有关的struct和对象有三个：</p>
+<ol type="1">
+<li><code>PidHandle</code> 表示进程时生成的唯一标识符；</li>
+<li><code>PidAllocator</code> 用于管理 <code>pid</code> --
+负责为新创建的进程分配 <code>pid</code>，在进程退出时回收
+<code>pid</code>；</li>
+<li><code>PID_ALLOCATOR</code> 全局的唯一 <code>PidAllocator</code>
+实例；</li>
+</ol>
+<pre><code class="highlight mermaid">flowchart LR
+
+PidHandler(&quot;PidHandler&quot;)
+
+PidAllocator(&quot;PidAllocator&quot;)
+PID_ALLOCATOR(&quot;PID_ALLOCATOR&quot;)
+
+
+PidAllocator --o|延迟加载唯一实例| PID_ALLOCATOR
+
+
+Kernel(&quot;Kernel&quot;) -.-&gt;|请求分配PID| PID_ALLOCATOR
+PID_ALLOCATOR -.-&gt;|分配PID| PidHandler 
+
+Kernel --&gt; Process(&quot;Process&quot;)
+PidHandler --&gt; Process</code></pre>
+<h4 id="内核栈">内核栈</h4>
+<figure>
+<img src="/images/20251121/kernel-as-high.png" alt="kernel-as-high" />
+<figcaption aria-hidden="true">kernel-as-high</figcaption>
+</figure>
+<h3 id="进程控制块">进程控制块</h3>
+<h4 id="pcb">PCB</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> pid: PidHandle,</span><br><span class="line">    <span class="keyword">pub</span> kernel_stack: KernelStack,</span><br><span class="line">    inner: UPSafeCell&lt;TaskControlBlockInner&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskControlBlockInner</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> trap_cx_ppn: PhysPageNum,</span><br><span class="line">    <span class="keyword">pub</span> base_size: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> task_cx: TaskContext,</span><br><span class="line">    <span class="keyword">pub</span> task_status: TaskStatus,</span><br><span class="line">    <span class="keyword">pub</span> memory_set: MemorySet,</span><br><span class="line">    <span class="keyword">pub</span> heap_bottom: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> program_brk: <span class="type">usize</span>,</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> parent: <span class="type">Option</span>&lt;Weak&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">    <span class="keyword">pub</span> children: <span class="type">Vec</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">    <span class="keyword">pub</span> exit_code: <span class="type">i32</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="tcb">TCB</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> trap_cx_ppn: PhysPageNum,</span><br><span class="line">    <span class="keyword">pub</span> base_size: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> task_cx: TaskContext,</span><br><span class="line">    <span class="keyword">pub</span> task_status: TaskStatus,</span><br><span class="line">    <span class="keyword">pub</span> memory_set: MemorySet,</span><br><span class="line">    <span class="keyword">pub</span> heap_bottom: <span class="type">usize</span>,</span><br><span class="line">    <span class="keyword">pub</span> program_brk: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="实现">实现</h4>
+<blockquote>
+<p>对比一下 <code>PCB</code> （虽然名字还是 TaskControlBlock） 和
+<code>TCB</code> 的实现，我们可以总结以下几点：</p>
+<ol type="1">
+<li>新的 <code>PCB</code> 新增了四个</li>
+<li><code>base_size</code>, <code>heap_bottom</code>,
+<code>program_brk</code> 的解析请参考 <a
+href="#应用进程内存模型">应用进程内存模型</a></li>
+</ol>
+</blockquote>
+<h3 id="任务管理器">任务管理器</h3>
+<h4 id="老版本">老版本</h4>
+<p>在老版本的 <code>TaskManager</code> 中，它需要负责的功能很杂：</p>
+<ol type="1">
+<li>执行任务；</li>
+<li>调度任务；</li>
+<li>查询任务元数据；</li>
+<li>代理当前任务的堆调整操作；</li>
+</ol>
+<pre><code class="highlight mermaid">flowchart LR
+
+TaskManager(&quot;TaskManager&quot;):::pink
+
+run(&quot;执行任务&quot;):::purple
+schedule(&quot;调度任务&quot;):::purple
+meta(&quot;查询任务元数据&quot;):::purple
+heap(&quot;堆调整操作&quot;):::purple
+
+run_first_task(&quot;run_first_task&quot;):::green
+run_next_task(&quot;run_next_task&quot;):::green
+find_next_task(&quot;find_next_task&quot;):::green
+mark_current_suspended(&quot;mark_current_suspended&quot;):::green
+mark_current_exited(&quot;mark_current_exited&quot;):::green
+get_current_token(&quot;get_current_token&quot;):::green
+get_current_trap_cx(&quot;get_current_trap_cx&quot;):::green
+change_current_program_brk(&quot;change_current_program_brk&quot;):::green
+
+TaskManager --&gt; run
+run --&gt;|执行首个任务| run_first_task
+run --&gt;|执行下一个任务| run_next_task
+
+TaskManager --&gt; schedule
+schedule --&gt;|查找下一个待执行任务| find_next_task
+schedule --&gt;|标记当前任务挂起| mark_current_suspended
+schedule --&gt;|标记当前任务退出| mark_current_exited
+
+TaskManager --&gt; meta
+meta --&gt;|获取当前任务分页访问信息| get_current_token
+meta --&gt;|获取当前陷阱上下文| get_current_trap_cx
+
+TaskManager --&gt; heap --&gt;|调整当前程序堆指针| change_current_program_brk
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    num_app: <span class="type">usize</span>,</span><br><span class="line">    inner: UPSafeCell&lt;TaskManagerInner&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">TaskManagerInner</span> &#123;</span><br><span class="line">    tasks: <span class="type">Vec</span>&lt;TaskControlBlock&gt;,</span><br><span class="line">    current_task: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">run_first_task</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> ! &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">run_next_task</span>(&amp;<span class="keyword">self</span>) &#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">find_next_task</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">usize</span>&gt; &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">mark_current_suspended</span>(&amp;<span class="keyword">self</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">mark_current_exited</span>(&amp;<span class="keyword">self</span>) &#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">get_current_token</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">get_current_trap_cx</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> TrapContext &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">change_current_program_brk</span>(&amp;<span class="keyword">self</span>, size: <span class="type">i32</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">usize</span>&gt; &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="新版本">新版本</h4>
+<p>在新的版本中，我们将它拆分为了 <code>TaskManager</code> 和
+<code>Processor</code> 两个独立的结构：</p>
+<ul>
+<li><code>TaskManager</code> 负责管理所有 <code>TaskStatus::Ready</code>
+的结构，只包含了两个方法：
+<ul>
+<li><code>add</code> 添加一个 <code>TaskStatus::Ready</code> 的
+Task；</li>
+<li><code>fetch</code> 使用先进先出的顺序，获取一个可执行的 Task；</li>
+</ul></li>
+<li><code>Processor</code> 只负责 <code>Task</code> 的执行：
+<ul>
+<li>内部包含两个变量：
+<ul>
+<li><code>current</code> 包含了当前执行的Task的
+<code>TCB</code>，这里值得注意的是，<code>TCB</code> 对象被包在
+<code>Arc</code> 中，可能为None；</li>
+<li><code>idle_task_cx</code> 用于中转逻辑；</li>
+</ul></li>
+<li>内部提供了三个方法：
+<ul>
+<li><code>get_idle_task_cx_ptr</code> 返回内部持有的 TaskContext</li>
+<li><code>take_current</code> move <code>TCB</code>，在
+<code>suspend</code> 和 <code>exit</code>
+这两个会放弃执行时间片的情况下才调用；</li>
+<li><code>current</code> 共享 <code>TCB</code>，用于查询
+<code>TCB</code> 信息时的调用。</li>
+</ul></li>
+</ul></li>
+</ul>
+<pre><code class="highlight mermaid">flowchart LR
+    subgraph init[&quot;初始化阶段：无用户任务&quot;]
+        direction LR
+        registers_0(&quot;registers.cx: idle运行状态&quot;):::pink
+        current_0(&quot;current: None&quot;):::purple
+        idle_task_cx_0(&quot;idle_task_cx: zero.ctx（占位）&quot;):::green
+    end
+
+    subgraph stage_1[&quot;阶段1：fetch_task&quot;]
+        direction LR
+        registers_1(&quot;registers.cx: task.cx（用户任务状态）&quot;):::pink
+        current_1(&quot;current: Some(task)&quot;):::purple
+        idle_task_cx_1(&quot;idle_task_cx: 原registers.cx（idle休眠状态）&quot;):::green
+    end
+
+    subgraph stage_2[&quot;阶段2：suspend&quot;]
+        direction LR
+        registers_2(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_2(&quot;current: None&quot;):::purple
+        idle_task_cx_2(&quot;idle_task_cx: 原registers_1（用户任务挂起状态）&quot;):::green
+    end
+
+    subgraph stage_3[&quot;阶段3：exit→用户任务退出&quot;]
+        direction LR
+        registers_3(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_3(&quot;current: None&quot;):::purple
+        idle_task_cx_3(&quot;idle_task_cx: 原idle_task_cx_1（无变化）&quot;):::green
+    end
+
+    subgraph TaskManager[&quot;TaskManager：就绪队列&quot;]
+        t_task(&quot;task.cx: 用户任务挂起状态（仅suspend后存在）&quot;):::coral
+    end
+
+    %% 流转逻辑（补充关键动作标注）
+    init --&gt;|init| stage_1
+    stage_1 --&gt;|suspend| stage_2
+    stage_1 --&gt;|exit| stage_3
+
+    %% 状态转移细节
+    current_1 --&gt;|take_current后add_task，共享task所有权| TaskManager
+    registers_1 --&gt;|__switch保存用户任务状态到task.cx| t_task
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_2
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_3
+
+    %% 样式定义（沿用你的设计）
+    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;
+    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<blockquote>
+<p>整体可以总结为：</p>
+<ol type="1">
+<li>当由内核态（idle）切换到用户态时，利用 <code>idle_task_cx</code>
+保存内核上下文，从 <code>task.task_cx</code> 加载用户上下文；</li>
+<li>当由用户态切换回内核态（idle）时，根据是否需要继续执行，决定是否将
+<code>task_cx</code> 保存到 <code>PCB</code>；
+<ol type="1">
+<li><code>suspend</code> 要复用上下文 → 存到 <code>PCB</code>；</li>
+<li><code>exit</code> 不复用 → 存到临时变量丢弃。</li>
+</ol></li>
+</ol>
+</blockquote>
+<p>假设存在以下状态：</p>
+<ul>
+<li><code>kernel_cx</code>：内核态上下文（如 <code>idle_task</code>
+运行时的上下文，包含合法的 <code>ra</code>/<code>sp</code>，不是
+<code>zero_init</code>）；</li>
+<li><code>zero_init</code>：仅用于 “临时占位”
+的全零值，仅在初始化或任务退出时出现，不会被 CPU 执行；</li>
+<li><code>task.cx</code>：用户任务的合法上下文（已初始化，可被 CPU
+执行）。</li>
+</ul>
+<p>整个的执行流程可以如下描述：</p>
+<ol type="1">
+<li><p><strong>初始化 <code>Processor</code></strong>：</p>
+<ul>
+<li><code>current = None</code>（无用户任务）；</li>
+<li><code>idle_task_cx = zero_init</code>（占位用，无实际执行意义）；</li>
+<li><code>registers = kernel_cx</code>（CPU 运行
+<code>idle_task</code>，寄存器是 <code>idle</code>
+的合法内核态上下文）；</li>
+</ul></li>
+<li><p><strong><code>fetch_task</code>（首次调度用户任务）</strong>：</p>
+<ul>
+<li><code>current = Some(task)</code>（绑定当前用户任务）；</li>
+<li><code>idle_task_cx = kernel_cx</code>（通过 <code>__switch</code>
+保存之前 <code>idle_task</code> 的内核态上下文，覆盖初始的
+<code>zero_init</code>）；</li>
+<li><code>registers = task.cx</code>（通过 <code>__switch</code>
+加载用户任务上下文，CPU 开始执行用户任务）；</li>
+</ul></li>
+<li><p><strong>分叉场景</strong>：</p>
+<p>3.1 <strong><code>suspend</code>（挂起当前任务）</strong>：</p>
+<ul>
+<li><code>current = None</code>（<code>take_current_task</code> 移动
+<code>task</code> 所有权）；</li>
+<li><code>idle_task_cx = task.cx</code>（通过 <code>__switch</code>
+保存用户任务的运行状态）；</li>
+<li><code>registers = kernel_cx</code>（通过 <code>__switch</code> 加载
+<code>idle_task</code> 的内核态上下文，CPU 切回
+<code>idle</code>）；</li>
+<li>额外：<code>TaskManager</code> 中添加
+<code>task</code>（<code>task.cx</code>
+保留用户任务状态，后续可恢复）；</li>
+</ul>
+<p>3.2 <strong><code>exit</code>（当前任务退出）</strong>：</p>
+<ul>
+<li><code>current = None</code>（<code>take_current_task</code> 移动
+<code>task</code> 所有权，后续 <code>drop(task)</code> 释放 TCB）；</li>
+<li><code>idle_task_cx = kernel_cx</code>（保持不变，仍为
+<code>idle_task</code> 的内核态上下文）；</li>
+<li><code>registers = kernel_cx</code>（通过 <code>__switch</code> 加载
+<code>idle_task</code> 的内核态上下文，CPU 切回
+<code>idle</code>）；</li>
+<li>额外：用 <code>zero_init</code>
+临时变量接收退出任务的状态（会被丢弃，不影响 <code>idle_task_cx</code>
+和寄存器）；</li>
+</ul></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    ready_queue: VecDeque&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskManager</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;&#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">add</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, task: Arc&lt;TaskControlBlock&gt;) &#123;&#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">fetch</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt; &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Processor</span> &#123;</span><br><span class="line">    current: <span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">    idle_task_cx: TaskContext,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Processor</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;&#125;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">get_idle_task_cx_ptr</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> *<span class="keyword">mut</span> TaskContext &#123;&#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">take_current</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt; &#123;&#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">current</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt; &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="进程管理机制的设计实现">进程管理机制的设计实现</h2>
+<h3 id="初始进程的创建">初始进程的创建</h3>
+<blockquote>
+<p>关于 <code>elf</code> 解析可以参考 <a href="#elf解析">elf解析</a></p>
+</blockquote>
+<blockquote>
+<p>与老版本一致的逻辑</p>
+</blockquote>
+<ol type="1">
+<li>解析 <code>elf</code> 并初始化内存模型：<code>.data</code>,
+<code>.rodata</code>, <code>trampoline</code>, <code>trap_context</code>
+等；</li>
+<li>初始化必要信息，例如 <code>trap_cx_ppn</code>，内核栈等；</li>
+<li>为用户态 <code>TrapContext</code> 赋值；</li>
+</ol>
+<blockquote>
+<p>与老版本不一致的逻辑</p>
+</blockquote>
+<ol type="1">
+<li>需要为每个task生成一个唯一的 pid；</li>
+<li>使用 <code>kstack_alloc()</code> 代替了
+<code>KERNEL_SPACE</code>；具体的逻辑请参考 <a
+href="#进程的内存模型">进程的内存模型</a>；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="comment">/// Create a new process</span></span><br><span class="line">    <span class="comment">///</span></span><br><span class="line">    <span class="comment">/// At present, it is only used for the creation of initproc</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(elf_data: &amp;[<span class="type">u8</span>]) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="comment">// memory_set with elf program headers/trampoline/trap context/user stack</span></span><br><span class="line">        <span class="keyword">let</span> (memory_set, user_sp, entry_point) = MemorySet::<span class="title function_ invoke__">from_elf</span>(elf_data);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx_ppn</span> = memory_set</span><br><span class="line">            .<span class="title function_ invoke__">translate</span>(VirtAddr::<span class="title function_ invoke__">from</span>(TRAP_CONTEXT_BASE).<span class="title function_ invoke__">into</span>())</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .<span class="title function_ invoke__">ppn</span>();</span><br><span class="line">        <span class="comment">// alloc a pid and a kernel stack in kernel space</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pid_handle</span> = <span class="title function_ invoke__">pid_alloc</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kernel_stack</span> = <span class="title function_ invoke__">kstack_alloc</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kernel_stack_top</span> = kernel_stack.<span class="title function_ invoke__">get_top</span>();</span><br><span class="line">        <span class="comment">// push a task context which goes to trap_return to the top of kernel stack</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">task_control_block</span> = <span class="keyword">Self</span> &#123;</span><br><span class="line">            pid: pid_handle,</span><br><span class="line">            kernel_stack,</span><br><span class="line">            inner: <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                UPSafeCell::<span class="title function_ invoke__">new</span>(TaskControlBlockInner &#123;</span><br><span class="line">                    trap_cx_ppn,</span><br><span class="line">                    base_size: user_sp,</span><br><span class="line">                    task_cx: TaskContext::<span class="title function_ invoke__">goto_trap_return</span>(kernel_stack_top),</span><br><span class="line">                    task_status: TaskStatus::Ready,</span><br><span class="line">                    memory_set,</span><br><span class="line">                    parent: <span class="literal">None</span>,</span><br><span class="line">                    children: <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">                    exit_code: <span class="number">0</span>,</span><br><span class="line">                    heap_bottom: user_sp,</span><br><span class="line">                    program_brk: user_sp,</span><br><span class="line">                &#125;)</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// prepare TrapContext in user space</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx</span> = task_control_block.<span class="title function_ invoke__">inner_exclusive_access</span>().<span class="title function_ invoke__">get_trap_cx</span>();</span><br><span class="line">        *trap_cx = TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">            entry_point,</span><br><span class="line">            user_sp,</span><br><span class="line">            KERNEL_SPACE.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">token</span>(),</span><br><span class="line">            kernel_stack_top,</span><br><span class="line">            trap_handler <span class="keyword">as</span> <span class="type">usize</span>,</span><br><span class="line">        );</span><br><span class="line">        task_control_block</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="进程调度机制">进程调度机制</h3>
+<p>进程的调度主要通过 <code>suspend_current_and_run_next</code>
+来实现，该函数在执行时通常会包含如下三个重要状态：</p>
+<ol type="1">
+<li><code>registers</code> 是当前执行的 task 的 <code>cx</code>；</li>
+<li><code>TaskControlBlock#task_cx</code>
+它的当前状态不重要，因为我们要用他来存储目前 <code>registers</code>
+的状态，这样在下次调度的时候可以加载到当前状态；</li>
+<li><code>Processor#idle_task_cx</code> 保存了上次从 <code>内核态</code>
+切换到 <code>用户态</code> 的时候的 <code>registers</code>；</li>
+</ol>
+<p>当我们执行
+<code>__switch(TaskControlBlock#task_cx, Processor#idle_task_cx)</code>，实际是将当前状态存储到
+<code>TCB</code>，并且恢复到内核态。</p>
+<p>具体的内部状态流转可以参考 <a href="#任务管理器">任务管理器</a>
+的说明。</p>
+<h3 id="进程的生成机制">进程的生成机制</h3>
+<h4 id="fork-系统调用的实现">fork 系统调用的实现</h4>
+<p><code>fork</code> 系统调用的实现存在两个需要注意的地方：</p>
+<ol type="1">
+<li>修改用户进程的信息：为子进程生成一个接近一模一样的内存空间和布局（包括堆和栈）。需注意：这里未实现
+COW（写时复制），所有 MapArea
+都重新分配了物理内存；实现逻辑不复杂，直接将原进程的地址空间 MemorySet
+复制到新进程即可。其中有两个特殊的 MapArea 需要单独处理：
+<ol type="1">
+<li><code>trampoline</code>：全局共享的物理页，属于
+“特殊映射”（固定虚拟地址、仅可执行权限、全进程共享物理页），不会被包含在普通
+MapArea 的遍历复制中，因此无法通过 for 循环完成 VA→PA 映射，需额外调用
+<code>map_trampoline</code>（无需重新分配物理页，仅复用全局共享页完成映射）；</li>
+<li><code>trap_ctx</code>：完整复制父进程的 <code>trap_ctx</code>
+内容，仅需修改 <code>kernel_sp</code>
+字段（指向子进程新分配的内核栈顶，这个是内核态才会用到的），其余字段保持不变。</li>
+</ol></li>
+<li><strong>修改PCB信息</strong>：
+<ol type="1">
+<li>重新分配了 <code>pid</code>；</li>
+<li>重新分配了 <code>kernel_stack</code>，这里是基于我们新实现的
+<code>KSTACK_ALLOCATOR</code> 分配的；</li>
+<li>因为重新分配了 <code>kernel_stack</code>，所以
+<code>kernel_stack_top</code> 也改变了；</li>
+<li>初始化
+<code>task_cx</code>，**这里非常重要，因为当该进程初始化完毕被调度的时候，会直接将
+<code>task_cx</code> 作为第一次的上下文；所以它的
+<code>ra = trap_return</code>，<code>sp = kernel_stack_top</code>* *
+<ul>
+<li><code>ra = trap_return</code>：表示子进程首次执行时，会先跳转到
+<code>trap_return</code> 函数（完成内核态→用户态的切换）；</li>
+<li><code>sp = kernel_stack_top</code>：表示子进程的内核栈指针指向新分配的内核栈顶，这也体现了我们的栈从上往下扩展的特性；</li>
+</ul></li>
+<li><strong>隐式的修改 <code>sepc</code>，父进程在执行完
+<code>fork()</code> 之后CPU 会自动将 sepc 设置为 ecall
+下一条指令的地址（在riscv中是 sepc = sepc +
+4），而我们完整的复制了全部的
+<code>trap_cx</code>，也就是相当于隐式的修改了
+<code>sepc</code>，这样才保证子进程在第一次被调度的时候不会陷入死循环</strong>。</li>
+<li>修改父进程和子进程的其他关联信息；</li>
+</ol></li>
+</ol>
+<h5 id="memorysetfrom_existed_user">MemorySet#from_existed_user</h5>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">from_existed_user</span>(user_space: &amp;<span class="keyword">Self</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">memory_set</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">new_bare</span>();</span><br><span class="line">        <span class="comment">// map trampoline</span></span><br><span class="line">        memory_set.<span class="title function_ invoke__">map_trampoline</span>();</span><br><span class="line">        <span class="comment">// copy data sections/trap_context/user_stack</span></span><br><span class="line">        <span class="keyword">for</span> <span class="variable">area</span> <span class="keyword">in</span> user_space.areas.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">new_area</span> = MapArea::<span class="title function_ invoke__">from_another</span>(area);</span><br><span class="line">            memory_set.<span class="title function_ invoke__">push</span>(new_area, <span class="literal">None</span>);</span><br><span class="line">            <span class="comment">// copy data from another space</span></span><br><span class="line">            <span class="keyword">for</span> <span class="variable">vpn</span> <span class="keyword">in</span> area.vpn_range &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">src_ppn</span> = user_space.<span class="title function_ invoke__">translate</span>(vpn).<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">ppn</span>();</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">dst_ppn</span> = memory_set.<span class="title function_ invoke__">translate</span>(vpn).<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">ppn</span>();</span><br><span class="line">                dst_ppn</span><br><span class="line">                    .<span class="title function_ invoke__">get_bytes_array</span>()</span><br><span class="line">                    .<span class="title function_ invoke__">copy_from_slice</span>(src_ppn.<span class="title function_ invoke__">get_bytes_array</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        memory_set</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="mapareafrom_another">MapArea#from_another</h5>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MapArea</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">from_another</span>(another: &amp;<span class="keyword">Self</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            vpn_range: VPNRange::<span class="title function_ invoke__">new</span>(another.vpn_range.<span class="title function_ invoke__">get_start</span>(), another.vpn_range.<span class="title function_ invoke__">get_end</span>()),</span><br><span class="line">            data_frames: BTreeMap::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">            map_type: another.map_type,</span><br><span class="line">            map_perm: another.map_perm,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="sys_fork的实现">sys_fork的实现</h5>
+<p>随后，我们还有一点需要注意的是：<code>sys_fork</code>
+进程会存在两个返回值：</p>
+<ol type="1">
+<li>对于父进程会返回子进程的 <code>pid</code>；</li>
+<li>对于子进程会返回 <code>0</code>。</li>
+</ol>
+<p>这里我们的实现逻辑是：</p>
+<ol type="1">
+<li>对于父进程，我们直接返回 <code>pid</code>；</li>
+<li>对于子进程，我们修改它的 <code>trap_cx</code> 中的
+<code>x10</code>，也就是 <code>trap_cx.x[10]</code>；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_fork</span>() <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    trace!(<span class="string">&quot;kernel:pid[&#123;&#125;] sys_fork&quot;</span>, <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>().pid.<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">current_task</span> = <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_task</span> = current_task.fork();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">new_pid</span> = new_task.pid.<span class="number">0</span>;</span><br><span class="line">    <span class="comment">// modify trap context of new_task, because it returns immediately after switching</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">trap_cx</span> = new_task.<span class="title function_ invoke__">inner_exclusive_access</span>().<span class="title function_ invoke__">get_trap_cx</span>();</span><br><span class="line">    <span class="comment">// we do not have to move to next instruction since we have done it before</span></span><br><span class="line">    <span class="comment">// for child process, fork returns 0</span></span><br><span class="line">    trap_cx.x[<span class="number">10</span>] = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// add new task to scheduler</span></span><br><span class="line">    <span class="title function_ invoke__">add_task</span>(new_task);</span><br><span class="line">    new_pid <span class="keyword">as</span> <span class="type">isize</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="exec-系统调用的实现">exec 系统调用的实现</h4>
+<blockquote>
+<p>这里注意，我们前面提到的：</p>
+<ol type="1">
+<li>如果出错的话（如找不到名字相符的可执行文件）则返回 -1</li>
+<li>否则不应该返回。</li>
+</ol>
+<p>这里在执行不出错的时候，<code>exec</code>
+函数会直接用新的应用的内存空间去覆盖老的应用的内存空间。</p>
+</blockquote>
+<p><code>exec</code> 方法的实现会比 <code>fork</code>
+要简单很多，我们需要如下操作：</p>
+<ol type="1">
+<li><p>从 <code>elf</code> 中读取新的 <code>memory_set</code>；</p></li>
+<li><p><strong>修改 <code>PCB</code>
+中加载前和加载后发生变化的变量</strong>，参考下面的模型图很容易得出：</p>
+<ol type="1">
+<li>发生了变化的包括：
+<ol type="1">
+<li><code>memory_set</code> 发生了变化；</li>
+<li>由于新应用中的 <code>.text/.rodata/.data/.bss</code>
+和原应用的长度变化，所以 <code>user_stack_top</code> 发生了变化；</li>
+<li><code>base_size</code>，<code>heap_bottom</code>，<code>program_brk</code>
+这几个值初始和 <code>user_stack_top</code> 一直，所以也需要变化；</li>
+<li><code>trap_cx_ppn</code> 重新分配了物理页；</li>
+<li><code>task_ctx</code></li>
+</ol></li>
+<li>未发生变化的：
+<ol type="1">
+<li><code>parent</code></li>
+<li><code>children</code></li>
+</ol></li>
+</ol>
+<p>可以明显看到，和 <code>fork</code>
+的最大区别就是，fork完全继承了父进程的memory_set。</p></li>
+</ol>
+<pre><code class="highlight mermaid">block-beta
+    columns 3
+        block
+            columns 1
+            space:6
+            user_stack_top(&quot;user_stack_top&quot;)
+            base_size(&quot;base_size&quot;)
+            heap_bottom(&quot;heap_bottom&quot;)
+            program_brk(&quot;program_brk&quot;)
+            space:5
+        end
+        block
+            columns 1
+            space:8
+            eUserStack(&quot;User Stack End&quot;)
+            mUserStack(&quot;...&quot;)
+            sUserStack(&quot;User Stack Start&quot;)
+            sGuardPage(&quot;Guard Page&quot;)
+            sbss(&quot;.bss&quot;)
+            sdata(&quot;.data&quot;)
+            srodata(&quot;.rodata&quot;)
+            stext(&quot;.text&quot;)
+        end
+
+    block:group4:1
+        columns 1
+        trampoline(&quot;Trampoline&quot;)
+        TrapContext(&quot;TrapContext&quot;)
+        space:14
+    end
+
+    user_stack_top --&gt; eUserStack
+    base_size --&gt; eUserStack
+    heap_bottom --&gt; eUserStack
+    program_brk --&gt; eUserStack
+    
+    style user_stack_top fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style base_size fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style heap_bottom fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+    style program_brk fill:linear-gradient(to top, #fff7e6, #fff3e0),stroke:#ff7a45,stroke-width:3px,color:#d4380d,padding:8px,font-weight:bold,border-radius:4px 4px 0 0
+
+    style eUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+    style mUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+    style sUserStack fill:linear-gradient(to bottom, #e6f7ff, #f0f8ff),stroke:#1890ff,stroke-width:3px,color:#0047ab,padding:8px,border-radius:0 0 4px 4px
+
+    style sbss fill:linear-gradient(to bottom, #f0fff4, #f5fffa),stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style sdata fill:linear-gradient(to bottom, #fffbe6, #fffdf2),stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style srodata fill:linear-gradient(to bottom, #f9f0ff, #fcf1ff),stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style stext fill:linear-gradient(to bottom, #f5f5f5, #fafafa),stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+
+    style sGuardPage fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
+
+
+    style trampoline fill:#f0f0f0,stroke:#666666,stroke-width:2px,stroke-dasharray:5,5,color:#333333,padding:8px,font-weight:bold
+    style TrapContext fill:#e8e8e8,stroke:#555555,stroke-width:2px,stroke-dasharray:5,5,color:#222222,padding:8px,font-weight:bold</code></pre>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span></span><br><span class="line">    <span class="comment">/// Load a new elf to replace the original application address space and start execution</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exec</span>(&amp;<span class="keyword">self</span>, elf_data: &amp;[<span class="type">u8</span>]) &#123;</span><br><span class="line">        <span class="comment">// memory_set with elf program headers/trampoline/trap context/user stack</span></span><br><span class="line">        <span class="keyword">let</span> (memory_set, user_sp, entry_point) = MemorySet::<span class="title function_ invoke__">from_elf</span>(elf_data);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx_ppn</span> = memory_set</span><br><span class="line">            .<span class="title function_ invoke__">translate</span>(VirtAddr::<span class="title function_ invoke__">from</span>(TRAP_CONTEXT_BASE).<span class="title function_ invoke__">into</span>())</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .<span class="title function_ invoke__">ppn</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// **** access current TCB exclusively</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">        <span class="comment">// substitute memory_set</span></span><br><span class="line">        inner.memory_set = memory_set;</span><br><span class="line">        <span class="comment">// update trap_cx ppn</span></span><br><span class="line">        inner.trap_cx_ppn = trap_cx_ppn;</span><br><span class="line">        <span class="comment">// initialize base_size</span></span><br><span class="line">        inner.base_size = user_sp;</span><br><span class="line">        <span class="comment">// initialize trap_cx</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx</span> = inner.<span class="title function_ invoke__">get_trap_cx</span>();</span><br><span class="line">        *trap_cx = TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">            entry_point,</span><br><span class="line">            user_sp,</span><br><span class="line">            KERNEL_SPACE.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">token</span>(),</span><br><span class="line">            <span class="keyword">self</span>.kernel_stack.<span class="title function_ invoke__">get_top</span>(),</span><br><span class="line">            trap_handler <span class="keyword">as</span> <span class="type">usize</span>,</span><br><span class="line">        );</span><br><span class="line">        <span class="comment">// **** release inner automatically</span></span><br><span class="line">    &#125;</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<h4 id="系统调用后重新获取-trap-上下文">系统调用后重新获取 Trap
+上下文</h4>
+<figure class="highlight rust"><figcaption><span>&#123;16&#125;</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/trap/mod.rs</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">trap_handler</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="title function_ invoke__">set_kernel_trap_entry</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">scause</span> = scause::<span class="title function_ invoke__">read</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">stval</span> = stval::<span class="title function_ invoke__">read</span>();</span><br><span class="line">    <span class="keyword">match</span> scause.<span class="title function_ invoke__">cause</span>() &#123;</span><br><span class="line">        Trap::<span class="title function_ invoke__">Exception</span>(Exception::UserEnvCall) =&gt; &#123;</span><br><span class="line">            <span class="comment">// jump to next instruction anyway</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cx</span> = <span class="title function_ invoke__">current_trap_cx</span>();</span><br><span class="line">            cx.sepc += <span class="number">4</span>;</span><br><span class="line">            <span class="comment">// get system call return value</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">result</span> = <span class="title function_ invoke__">syscall</span>(cx.x[<span class="number">17</span>], [cx.x[<span class="number">10</span>], cx.x[<span class="number">11</span>], cx.x[<span class="number">12</span>]]);</span><br><span class="line">            <span class="comment">// cx is changed during sys_exec, so we have to call it again</span></span><br><span class="line">            cx = <span class="title function_ invoke__">current_trap_cx</span>();</span><br><span class="line">            cx.x[<span class="number">10</span>] = result <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">trap_return</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在执行 <code>exec</code> 之后，<code>trap_cx</code>
+已经失效了，所以执行完之后需要重新获取 <code>trap_cx</code>。
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">             let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);</span><br><span class="line"><span class="addition">+            // cx is changed during sys_exec, so we have to call it again</span></span><br><span class="line"><span class="addition">+            cx = current_trap_cx();</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="进程资源回收机制">进程资源回收机制</h2>
+<h4 id="进程的退出">进程的退出</h4>
+<p>进程的退出通过 <code>exit_current_and_run_next</code>
+函数来执行：</p>
+<ol type="1">
+<li><code>take_current_task()</code> 获取当前 Processor 中 current
+对象的所有权，以便于 <code>PCB</code>
+能被正常的回收；这里需要注意的是：<code>current</code> 是一个
+<code>Option&lt;Arc&lt;TaskControlBlock&gt;&gt;</code>
+对象，它可能会被其他的 <code>PCB</code> 引用。例如，他的父线程的
+<code>child</code> 和他子线程的 <code>parent</code>
+都会有对他的引用；</li>
+<li>修改 <code>PCB</code> 的状态 <strong>task_status</strong> 为
+<code>TaskStatus::Zombie</code>，设置
+<code>exit_code</code>；这里设置状态为 <code>zombie</code>
+的目的是，为了让父进程在执行 <code>wait</code>
+的时候能够返回对应的信息。</li>
+<li>在退出之前，将它内部所有的 <code>child</code> 的父进程修改为
+<code>INITPROC</code>，避免资源泄露；</li>
+<li>清空 <code>children</code> 和
+<code>map_area</code>，其实理论上来说，这里不清空理论上也是可以的。但是存在其他引用一直引用到
+<code>self</code>
+导致自身不能被正确回收，从而导致这些引用也无法被回收的风险；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Exit the current &#x27;Running&#x27; task and run the next task in task list.</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exit_current_and_run_next</span>(exit_code: <span class="type">i32</span>) &#123;</span><br><span class="line">    <span class="comment">// take from Processor</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task</span> = <span class="title function_ invoke__">take_current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="comment">// **** access current TCB exclusively</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="comment">// Change status to Zombie</span></span><br><span class="line">    inner.task_status = TaskStatus::Zombie;</span><br><span class="line">    <span class="comment">// Record exit code</span></span><br><span class="line">    inner.exit_code = exit_code;</span><br><span class="line">    <span class="comment">// do not move to its parent but under initproc</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ++++++ access initproc TCB exclusively</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">initproc_inner</span> = INITPROC.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">child</span> <span class="keyword">in</span> inner.children.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">            child.<span class="title function_ invoke__">inner_exclusive_access</span>().parent = <span class="title function_ invoke__">Some</span>(Arc::<span class="title function_ invoke__">downgrade</span>(&amp;INITPROC));</span><br><span class="line">            initproc_inner.children.<span class="title function_ invoke__">push</span>(child.<span class="title function_ invoke__">clone</span>());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ++++++ release parent PCB</span></span><br><span class="line"></span><br><span class="line">    inner.children.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">    <span class="comment">// deallocate user space</span></span><br><span class="line">    inner.memory_set.<span class="title function_ invoke__">recycle_data_pages</span>();</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(inner);</span><br><span class="line">    <span class="comment">// **** release current PCB</span></span><br><span class="line">    <span class="comment">// drop task manually to maintain rc correctly</span></span><br><span class="line">    <span class="title function_ invoke__">drop</span>(task);</span><br><span class="line">    <span class="comment">// we do not have to save task context</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">_unused</span> = TaskContext::<span class="title function_ invoke__">zero_init</span>();</span><br><span class="line">    <span class="title function_ invoke__">schedule</span>(&amp;<span class="keyword">mut</span> _unused <span class="keyword">as</span> *<span class="keyword">mut</span> _);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="父进程回收子进程资源">父进程回收子进程资源</h4>
+<p>父进程对子进程的资源回收，是通过 <code>sys_waitpid</code>
+来实现的：</p>
+<ol type="1">
+<li>查找是否存在目标进程：目标进程与输入参数 <code>pid</code>
+有关，如果不存在任何目标进程返回 <code>-1</code>：
+<ol type="1">
+<li><code>pid == -1</code> 匹配任意一个进程；</li>
+<li><code>pid != -1</code> 匹配与 <code>pid</code> 一致的进程；</li>
+</ol></li>
+<li>查找是否存在<strong>已经结束（task_status ==
+TaskStatus::Zombie）</strong>的目标进程，如果不存在则返回
+<code>-2</code>：
+<ol type="1">
+<li><code>pid == -1</code> 匹配任意一个进程；</li>
+<li><code>pid != -1</code> 匹配与 <code>pid</code> 一致的进程；</li>
+</ol></li>
+<li>找到目标进程，我们开始回收子进程资源：
+<ol type="1">
+<li>从 <code>children</code> 中移除当前子进程；</li>
+<li>保证当前 <code>child</code>
+只有一个强引用，这个位置的设计很有意思可以参考 <a
+href="#children和parent">children和parent</a>；</li>
+<li>设置 <code>exit_code</code> 并写入 <code>exit_code_ptr</code>
+指针指向的位置，这个是在系统调用时给用户态应用返回的；</li>
+<li>函数返回 <code>pid</code>，这个是内核态自己函数调用的返回值。</li>
+</ol></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// If there is not a child process whose pid is same as given, return -1.</span></span><br><span class="line"><span class="comment">/// Else if there is a child process but it is still running, return -2.</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_waitpid</span>(pid: <span class="type">isize</span>, exit_code_ptr: *<span class="keyword">mut</span> <span class="type">i32</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    trace!(<span class="string">&quot;kernel::pid[&#123;&#125;] sys_waitpid [&#123;&#125;]&quot;</span>, <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>().pid.<span class="number">0</span>, pid);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task</span> = <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="comment">// find a child process</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- access current PCB exclusively</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">if</span> !inner</span><br><span class="line">        .children</span><br><span class="line">        .<span class="title function_ invoke__">iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">any</span>(|p| pid == -<span class="number">1</span> || pid <span class="keyword">as</span> <span class="type">usize</span> == p.<span class="title function_ invoke__">getpid</span>())</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        <span class="comment">// ---- release current PCB</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">pair</span> = inner.children.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">enumerate</span>().<span class="title function_ invoke__">find</span>(|(_, p)| &#123;</span><br><span class="line">        <span class="comment">// ++++ temporarily access child PCB exclusively</span></span><br><span class="line">        p.<span class="title function_ invoke__">inner_exclusive_access</span>().<span class="title function_ invoke__">is_zombie</span>() &amp;&amp; (pid == -<span class="number">1</span> || pid <span class="keyword">as</span> <span class="type">usize</span> == p.<span class="title function_ invoke__">getpid</span>())</span><br><span class="line">        <span class="comment">// ++++ release child PCB</span></span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>((idx, _)) = pair &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">child</span> = inner.children.<span class="title function_ invoke__">remove</span>(idx);</span><br><span class="line">        <span class="comment">// confirm that child will be deallocated after being removed from children list</span></span><br><span class="line">        <span class="built_in">assert_eq!</span>(Arc::<span class="title function_ invoke__">strong_count</span>(&amp;child), <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">found_pid</span> = child.<span class="title function_ invoke__">getpid</span>();</span><br><span class="line">        <span class="comment">// ++++ temporarily access child PCB exclusively</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">exit_code</span> = child.<span class="title function_ invoke__">inner_exclusive_access</span>().exit_code;</span><br><span class="line">        <span class="comment">// ++++ release child PCB</span></span><br><span class="line">        *<span class="title function_ invoke__">translated_refmut</span>(inner.memory_set.<span class="title function_ invoke__">token</span>(), exit_code_ptr) = exit_code;</span><br><span class="line">        found_pid <span class="keyword">as</span> <span class="type">isize</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        -<span class="number">2</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ---- release current PCB automatically</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="qa">QA</h2>
+<h3 id="user_stack和kernel_stack">user_stack和kernel_stack</h3>
+<p><code>user_stack</code> 和 <code>kernel_stack</code>
+都是与进程绑定的栈，每一个进程都会有唯一的 <code>user_stack</code> 和
+<code>kernel_stack</code>，分别负责他们在用户态和内核态的函数执行时的栈操作，区别在于：</p>
+<ol type="1">
+<li><code>user_stack</code> 映射在用户内存空间，而
+<code>kernel_stack</code> 映射在内核内存空间；</li>
+<li>用户程序可以操作 <code>user_stack</code> 的指针，但是不能操作
+<code>kernel_stack</code> 的指针；</li>
+<li>当用户通过 <code>trap</code> 或 <code>exception</code>
+切换到内核态时，由 <code>__alltraps</code> 负责将 <code>sp</code>
+切换到指向 <code>kernel_stack</code>；当从内核态切换回用户态时，由
+<code>__restore</code> 负责将 <code>sp</code> 切换到指向
+<code>user_stack</code>。</li>
+</ol>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 43%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>特性</th>
+<th>user_stack（用户栈）</th>
+<th>kernel_stack（内核栈）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>内存空间</td>
+<td>用户虚拟地址空间（如 0x0~0x7FFFFFFF）</td>
+<td>内核虚拟地址空间（如 0x80000000~0xFFFFFFFF）</td>
+</tr>
+<tr class="even">
+<td>访问权限</td>
+<td>进程可读写（用户态直接操作 <code>sp</code>）</td>
+<td>进程不可访问（仅内核态可操作）</td>
+</tr>
+<tr class="odd">
+<td>作用</td>
+<td>支撑用户态函数调用（如
+<code>main</code>/<code>clear_bss</code>）</td>
+<td>支撑内核态逻辑（如 <code>sys_exit</code>/ 异常处理）</td>
+</tr>
+<tr class="even">
+<td>生命周期</td>
+<td>随进程创建而分配，进程退出而释放</td>
+<td>同进程生命周期（和用户栈绑定）</td>
+</tr>
+<tr class="odd">
+<td>栈指针控制权</td>
+<td>用户程序可修改 <code>sp</code>（如
+<code>addi sp,sp,-16</code>）</td>
+<td>用户程序无法修改，仅内核通过汇编切换</td>
+</tr>
+</tbody>
+</table>
+<h3 id="进程的退出-1">进程的退出</h3>
+<blockquote>
+<p>仔细观察我们的 <code>sys_exit</code>
+函数，我们很多的程序并没有显示的调用该系统调用，那他们会正常的退出吗？</p>
+</blockquote>
+<p>答案是肯定！每个进程都会退出，但是他们是怎么退出的？先说结论：进程的退出，可能是多种情况。例如：显示的调用
+<code>eixt</code>，预见未捕获的异常（例如除零异常），发起
+<code>SIGKILL</code>
+信号。但是如果我们以上操作都没有发生进程会怎么退出呢？答案是：</p>
+<ol type="1">
+<li>在 <code>_start</code> 函数的结尾，我们通过
+<code>exit(main(argc, v.as_slice()))</code> 来获取 <code>main</code>
+函数的返回值并作为进程的退出码；</li>
+<li>但是，如果我们在 <code>main</code> 中显示的调用
+<code>exit()</code>，那么程序将直接结束而不会进入到
+<code>exit(main(argc, v.as_slice()))</code> 这里；</li>
+</ol>
+<p>但是这是如何实现的呢？</p>
+<h4 id="config.toml">config.toml</h4>
+<p>在 <code>config.tml</code> 中，我们定义了编译参数为
+<strong>-Clink-args=-Tsrc/linker.ld</strong></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[build]</span><br><span class="line">target = <span class="string">&quot;riscv64gc-unknown-none-elf&quot;</span></span><br><span class="line"></span><br><span class="line">[target.riscv64gc-unknown-none-elf]</span><br><span class="line">rustflags = [</span><br><span class="line">    <span class="string">&quot;-Clink-args=-Tsrc/linker.ld&quot;</span>,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<h4 id="makefile">Makefile</h4>
+<p>在 <code>Makefile</code>
+编译文件的过程中，将会使用前面提到的参数来指定链接文件。</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">binary:</span></span><br><span class="line">	@echo <span class="variable">$(ELFS)</span></span><br><span class="line">	@if [ $&#123;CHAPTER&#125; -gt 3 ]; then \</span><br><span class="line">		cargo build <span class="variable">$(MODE_ARG)</span> ;\</span><br><span class="line">	<span class="keyword">else</span> \</span><br><span class="line">		CHAPTER=<span class="variable">$(CHAPTER)</span> python3 build.py ;\</span><br><span class="line">	fi</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> elf, <span class="variable">$(ELFS)</span>, \</span></span><br><span class="line"><span class="variable">		<span class="variable">$(OBJCOPY)</span> <span class="variable">$(elf)</span> -O binary $(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.bin, <span class="variable">$(elf)</span>)</span>; \</span><br><span class="line">		cp <span class="variable">$(elf)</span> <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.elf, <span class="variable">$(elf)</span>)</span>;)</span><br></pre></td></tr></table></figure>
+<h4 id="linker.ld">linker.ld</h4>
+<p>在 <code>linker.ld</code> 中，我们指定的入口函数为
+<code>_start</code>。注意，这里我们将 <code>*(.text.entry)</code>
+加入到了 <code>.text</code>，否则我们的程序将无法正常执行。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line"></span><br><span class="line">BASE_ADDRESS = 0x0;</span><br><span class="line"></span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    . = BASE_ADDRESS;</span><br><span class="line">    .text : &#123;</span><br><span class="line">        *(.text.entry)</span><br><span class="line">        *(.text .text.*)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="start">_start</h4>
+<p>最后，我们在 <code>lib.rs</code> 下定义了 <code>_start</code>：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="meta">#[link_section = <span class="string">&quot;.text.entry&quot;</span>]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="keyword">fn</span> <span class="title function_">_start</span>(argc: <span class="type">usize</span>, argv: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="title function_ invoke__">clear_bss</span>();</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        HEAP.<span class="title function_ invoke__">lock</span>()</span><br><span class="line">            .<span class="title function_ invoke__">init</span>(HEAP_SPACE.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, USER_HEAP_SIZE);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">v</span>: <span class="type">Vec</span>&lt;&amp;<span class="symbol">&#x27;static</span> <span class="type">str</span>&gt; = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..argc &#123;</span><br><span class="line">		<span class="comment">// process args</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="title function_ invoke__">main</span>(argc, v.<span class="title function_ invoke__">as_slice</span>()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样，我们就将用户态程序的入口通过 <code>_start</code> 引导到了
+<code>main</code> 函数，并且在 <code>main</code> 函数不调用
+<code>exit()</code> 的情况下，保证程序可以正常的退出。</p>
+<h4 id="汇编代码">汇编代码</h4>
+<p>我们先需要删除 <code>Makefile</code> 中的 <code>--strip-all</code>
+来保留 <code>elf</code> 文件中的符号表：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">binary:</span><br><span class="line">	@echo $(ELFS)</span><br><span class="line">	@if [ $&#123;CHAPTER&#125; -gt 3 ]; then \</span><br><span class="line">		cargo build $(MODE_ARG) ;\</span><br><span class="line">	else \</span><br><span class="line">		CHAPTER=$(CHAPTER) python3 build.py ;\</span><br><span class="line">	fi</span><br><span class="line">	@$(foreach elf, $(ELFS), \</span><br><span class="line">		$(OBJCOPY) $(elf) -O binary $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.bin, $(elf)); \</span><br><span class="line">		cp $(elf) $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.elf, $(elf));)</span><br></pre></td></tr></table></figure>
+<p>随后，使用 <code>riscv64-unknown-elf-objdump</code> 和
+<code>rustfilt</code> 对elf文件进行反汇编：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">riscv64-unknown-elf-objdump -d ../user/build/elf/ch5b_getpid.elf --disassemble=_start | rustfilt</span><br></pre></td></tr></table></figure>
+<p>我们可以得到实际的 <code>_start</code> 函数如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">../user/build/elf/ch5b_getpid.elf:     file format elf64-littleriscv</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disassembly of section .text:</span><br><span class="line"></span><br><span class="line">0000000000000000 &lt;_start&gt;:</span><br><span class="line">       0:	7165                	addi	sp,sp,-400</span><br><span class="line">       # ...</span><br><span class="line">       c:	00002097          	auipc	ra,0x2</span><br><span class="line">      10:	b7e080e7          	jalr	-1154(ra) # 1b8a &lt;user_lib::clear_bss&gt;</span><br><span class="line">      </span><br><span class="line">000000000000009a &lt;.Lpcrel_hi6&gt;:</span><br><span class="line">	   #: ...</span><br><span class="line">     112:	ae8080e7          	jalr	-1304(ra) # 1bf6 &lt;user_lib::exit&gt;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到，<code>exit()</code> 的兜底调用是在这里实现的。</p>
+<h3 id="进程状态机">进程状态机</h3>
+<pre><code class="highlight mermaid">flowchart LR
+
+Ready(&quot;Ready&quot;):::green
+Running(&quot;Running&quot;):::purple
+Zombie(&quot;Zombie&quot;):::error
+
+
+Running --&gt;|suspend_current_and_run_next| Ready
+Running --&gt;|fork| Ready
+
+Ready --&gt;|run_tasks| Running
+
+Running --&gt;|exit_current_and_run_next| Zombie
+
+
+
+    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;
+    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
+<h3 id="kernelstack">KernelStack</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Kernel stack for a process(task)</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">KernelStack</span>(<span class="keyword">pub</span> <span class="type">usize</span>);</span><br></pre></td></tr></table></figure>
+<p><code>KernelStack</code> 是进程管理中，用于在<strong>Kernel Adress
+Space(High)</strong>分配用户的应用内核栈的数据结构。</p>
+<p>简单来说就是，在一个os中，每个函数的调用都必须有自己的函数栈，不论是在
+<code>S</code> 模式还是在 <code>U</code> 模式，而
+<code>KernelStack</code> 就是在 <code>S</code> 模式下的函数栈指针。</p>
+<p>该指针的生命周期如下描述：</p>
+<ol type="1">
+<li>进程在初始化时会映射虚拟地址 <code>TRAP_CONTEXT_BASE</code> 用于存储
+<code>TrapContext</code>；</li>
+<li>随后初始化 <code>KernelStack</code>，可能有以下三种情况：
+<ol type="1">
+<li><code>INITPROC</code> 在初始化时通过
+<code>TaskControlBlock::new()</code> 初始化，并通过
+<code>TaskManager::add()</code> 加入等待调度；</li>
+<li>在系统调用 <code>TaskControlBlock::exec()</code> 中通过
+<code>TrapContext::app_init_context()</code> 初始化；</li>
+<li>在系统调用 <code>TaskControlBlock::fork()</code> 中复制父进程的
+<code>TrapContext</code> 并修改初始化；</li>
+</ol></li>
+<li>三种情况在初始化完成之后的调度略微有一些区别：
+<ol type="1">
+<li><code>INITPORC</code> 的是直接将自身加入
+<code>TASK_MANAGER</code>，等待内核调度；</li>
+<li><code>exec()</code> 本身是系统调度，在初始化完成之后通过
+<code>__restore</code> 来返回用户态；</li>
+<li><code>fork()</code> 父进程的状态不变，子进程在 <code>fork()</code>
+完得到子进程的地址空间后通过 <code>TaskManager::add()</code> 加入
+<code>TASK_MANAGER</code> 等待调度。</li>
+</ol></li>
+<li>不管是任何情况，当发生 <code>trap</code> 时，内核通过
+<code>__alltraps</code> 加载 <code>TrapContext</code> -- 而
+<code>KernelStack</code> 也是 其中的一部分，随后内核态的所有函数调用的
+<code>sp</code> 都是用 <code>KernelStack</code>
+作为指针来操作自己的函数栈。</li>
+</ol>
+<pre><code class="highlight mermaid">graph TD
+    %% 样式定义：按流程阶段区分，突出逻辑层级
+    classDef init fill:#e8f4f8, stroke:#2563eb, rounded:8px, font-weight:600;
+    classDef branch fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-weight:600;
+    classDef runtime fill:#e8f5e8, stroke:#2e7d32, rounded:8px, font-weight:600;
+    classDef exit fill:#fef2f8, stroke:#f43f5e, rounded:8px, font-weight:600;
+    classDef arrow stroke:#64748b, stroke-width:1.2px;
+
+    %% 节点定义：特殊字符用双引号包裹，[]改为()
+    A(&quot;进程初始化&quot;):::init
+    B&#123;&quot;初始化场景&quot;&#125;:::branch
+    B1(&quot;INITPROC new()&quot;):::branch
+    B2(&quot;exec() 系统调用&quot;):::branch
+    B3(&quot;fork() 系统调用&quot;):::branch
+    C(&quot;分配内核栈，初始化 TrapContext（记录内核栈指针）&quot;):::init
+    D&#123;&quot;进程运行&quot;&#125;:::runtime
+    D1(&quot;Trap 发生：__alltraps 切换到内核栈执行&quot;):::runtime
+    D2(&quot;进程调度：保存内核栈 sp 到 TrapContext，切换到其他进程&quot;):::runtime
+    E(&quot;进程退出（exit()）&quot;):::exit
+    F(&quot;释放内核栈占用的物理页，回收 TrapContext 映射&quot;):::exit
+
+    %% 逻辑连接：添加样式，保持原有流程
+    A --&gt; B:::arrow
+    B --&gt; B1:::arrow
+    B --&gt; B2:::arrow
+    B --&gt; B3:::arrow
+    B1 &amp; B2 &amp; B3 --&gt; C:::arrow
+    C --&gt; D:::arrow
+    D --&gt; D1:::arrow
+    D --&gt; D2:::arrow
+    D1 &amp; D2 --&gt; E:::arrow
+    E --&gt; F:::arrow</code></pre>
+<h3 id="kstack_allocator">KSTACK_ALLOCATOR</h3>
+<p><code>KSTACK_ALLOCATOR</code> 是负责 <a
+href="#KernelStack">KernelStack</a>
+的分配和回收的模块：这里非常值得注意的是，每一个
+<code>KernelStack</code>
+会分配固定大小的物理地址空间，而这个空间需要在进程退出的时候销毁，我们通过
+RAII 实现：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">KernelStack</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> (kernel_stack_bottom, _) = <span class="title function_ invoke__">kernel_stack_position</span>(<span class="keyword">self</span>.<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kernel_stack_bottom_va</span>: VirtAddr = kernel_stack_bottom.<span class="title function_ invoke__">into</span>();</span><br><span class="line">        KERNEL_SPACE</span><br><span class="line">            .<span class="title function_ invoke__">exclusive_access</span>()</span><br><span class="line">            .<span class="title function_ invoke__">remove_area_with_start_vpn</span>(kernel_stack_bottom_va.<span class="title function_ invoke__">into</span>());</span><br><span class="line">        KSTACK_ALLOCATOR.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">dealloc</span>(<span class="keyword">self</span>.<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="内存对齐">内存对齐</h3>
+<blockquote>
+<p>内存对齐的本质是<strong>适配 CPU
+硬件的访存规则，平衡内存访问效率、硬件兼容性和内存空间利用率</strong>，核心作用有三：</p>
+</blockquote>
+<h4 id="内存对齐的根本作用">内存对齐的根本作用</h4>
+<ol type="1">
+<li>避免 CPU 访问内存时的硬件异常（比如 RISC-V 的对齐故障）；</li>
+<li>最大化内存访问效率（CPU 按 “对齐块” 批量读写，而非拆分操作）；</li>
+<li>保证硬件 / 编译器的兼容性（比如 DMA、结构体布局跨平台一致）。</li>
+</ol>
+<h4 id="为什么-cpu-要求内存对齐">为什么 CPU 要求内存对齐</h4>
+<p>现代 CPU 的内存访问不是 “字节级” 的，而是按<strong>数据总线宽度 /
+缓存行大小</strong>（比如 64 位 CPU 总线宽度 8 字节，缓存行 64
+字节）批量读取，对齐的核心是适配这种 “批量访存” 规则：</p>
+<ul>
+<li>CPU 访存时，会把内存划分为固定大小的 “对齐块”（比如 8 字节、16
+字节）；</li>
+<li>若数据起始地址是对齐块大小的整数倍（比如 8 字节对齐→地址是 8
+的倍数），CPU 只需 1 次访存就能读取完整数据；</li>
+<li>若未对齐，CPU 需要 2
+次访存，再拼接数据（甚至直接触发硬件异常）。</li>
+</ul>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 17%" />
+<col style="width: 7%" />
+<col style="width: 57%" />
+<col style="width: 3%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>场景</th>
+<th>地址</th>
+<th>对齐状态</th>
+<th>CPU 操作</th>
+<th>效率</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>对齐（8 字节）</td>
+<td>0x1000（8 的倍数）</td>
+<td>是</td>
+<td>1 次访存：读取 0x1000~0x1007，直接拿到完整的 8 字节数据</td>
+<td>高</td>
+</tr>
+<tr class="even">
+<td>未对齐</td>
+<td>0x1001</td>
+<td>否</td>
+<td>2 次访存：先读 0x1000~0x1007（取后 7 字节），再读
+0x1008~0x100F（取前 1 字节），拼接后得到 8 字节</td>
+<td>低</td>
+</tr>
+</tbody>
+</table>
+<h4 id="内核场景的对齐策略">内核场景的对齐策略</h4>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 16%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>数据类型</th>
+<th>对齐值</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>基础类型（u8/u16/u32/u64）</td>
+<td>自身大小</td>
+<td>适配 CPU 访存宽度</td>
+</tr>
+<tr class="even">
+<td>指针（*mut T）</td>
+<td>8 字节（64 位）</td>
+<td>64 位 CPU 的地址总线宽度是 8 字节</td>
+</tr>
+<tr class="odd">
+<td>普通结构体（FileDescriptor）</td>
+<td>最大成员对齐值</td>
+<td>平衡效率与空间（比如包含 u64 的结构体 8 字节对齐）</td>
+</tr>
+<tr class="even">
+<td>核心结构体（TCB / 页表）</td>
+<td>4KB（页对齐）</td>
+<td>适配物理页分配，简化内存管理，避免跨页访问</td>
+</tr>
+<tr class="odd">
+<td>DMA 缓冲区</td>
+<td>64/128 字节</td>
+<td>适配外设的批量传输规则</td>
+</tr>
+</tbody>
+</table>
+<p>举个例子，假设存在如下结构体，那么它的对齐逻辑应该是：</p>
+<ol type="1">
+<li><code>data</code> 自身是一个数组，他的内部按照二字节对齐；同时
+<code>data</code> 的大小是 <code>14</code> 字节，会被填充 <code>2</code>
+字节后扩充到 <code>16</code> 字节；</li>
+<li><code>big_number</code> 按照 <code>8</code> 字节对齐；</li>
+<li><code>small_number</code> 自身按照 <code>4</code>
+字节对齐，但因结构体整体对齐值为 <code>8</code> 字节，最终会填充
+<code>4</code> 字节让总大小满足 8 的倍数</li>
+<li>整个结构体的大小为 <code>32</code> 字节。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">AlignedStruct</span> &#123;</span><br><span class="line">    d: [<span class="type">u16</span>; <span class="number">7</span>],</span><br><span class="line">    big_number: <span class="type">u64</span>,</span><br><span class="line">    small_number: <span class="type">u32</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3
+id="对象在物理地址和虚拟地址中的转换">对象在物理地址和虚拟地址中的转换</h3>
+<p>转换的核心其实在于：</p>
+<p>当从Vec&lt;&amp;'static mut [u8]&gt;读取数据到对象时：</p>
+<ol type="1">
+<li>通过vec中包含的数据长度和对象的实际长度对比，判断vec中数据的合法性；</li>
+<li>通过VA得到 mut 指针，在这一步，CPU的MMU会帮我们做VA到PA的转换；</li>
+<li>判断内存是否对齐。</li>
+</ol>
+<p>当反过来从对象写入到Vec&lt;&amp;'static mut
+[u8]&gt;时，我们才需要分段式的处理它。</p>
+<p>总结就是，由物理内存到虚拟内存不需要分段处理，因为我们使用的虚拟内存是连续的，CPU的MMU会帮我们做这个VA到PA的转换。而虚拟内存到物理内存需要分段处理，因为我们此时要写的物理内存是不连续的。</p>
+<blockquote>
+<p><code>(tcb_ptr as usize) % align_of::&lt;Self&gt;() == 0</code>
+这行代码是<strong>强制校验 TCB
+结构体的起始虚拟地址是否满足「内存对齐要求」</strong>，是避免 CPU
+访问错误、内存布局错乱的 “保命检查”。</p>
+<ul>
+<li>每个数据类型（尤其是结构体）都有「最小对齐值」（<code>align_of::&lt;T&gt;()</code>
+返回的值），比如：
+<ul>
+<li><code>u8</code>：对齐值 1（任意地址都可）；</li>
+<li><code>u64</code>/<code>usize</code>（64 位）：对齐值 8（地址必须是 8
+的倍数）；</li>
+<li>你的 <code>TCB</code>
+结构体（<code>#[repr(C, align(4096))]</code>）：对齐值 4096（地址必须是
+4KB 页大小的倍数）；</li>
+</ul></li>
+<li>CPU 访问内存时，要求数据的起始地址必须是其对齐值的整数倍 ——
+这是硬件设计决定的（为了提升访存效率，或避免部分架构直接报错）。</li>
+</ul>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="comment">/// 从分散的物理内存切片（Vec&lt;&amp;&#x27;static mut [u8]&gt;）转换为TCB引用</span></span><br><span class="line">    <span class="comment">/// 前提：切片拼接后能覆盖整个TCB的内存，且虚拟地址连续</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">from_phys_slices</span>(slices: &amp;<span class="keyword">mut</span> <span class="type">Vec</span>&lt;&amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> [<span class="type">u8</span>]&gt;) <span class="punctuation">-&gt;</span> &amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="comment">// 步骤1：校验长度和对齐</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tcb_size</span> = size_of::&lt;<span class="keyword">Self</span>&gt;();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">total_len</span>: <span class="type">usize</span> = slices.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">map</span>(|s| s.<span class="title function_ invoke__">len</span>()).<span class="title function_ invoke__">sum</span>();</span><br><span class="line">        <span class="built_in">assert!</span>(total_len &gt;= tcb_size, <span class="string">&quot;物理内存切片长度不足&quot;</span>);</span><br><span class="line">        <span class="built_in">assert!</span>(align_of::&lt;<span class="keyword">Self</span>&gt;() &lt;= PAGE_SIZE, <span class="string">&quot;TCB对齐要求超过页大小&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 步骤2：获取第一个切片的起始虚拟地址（作为TCB的基地址）</span></span><br><span class="line">        <span class="comment">// 内核中：所有物理页已映射为连续的内核虚拟地址</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">first_slice_ptr</span> = slices[<span class="number">0</span>].<span class="title function_ invoke__">as_mut_ptr</span>();</span><br><span class="line">        <span class="built_in">assert!</span>(!first_slice_ptr.<span class="title function_ invoke__">is_null</span>(), <span class="string">&quot;空指针&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 步骤3：强转为TCB引用（关键：unsafe，需保证内存布局匹配）</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tcb_ptr</span> = first_slice_ptr <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="keyword">Self</span>;</span><br><span class="line">        <span class="comment">// 校验地址对齐（必做！否则会触发未定义行为）</span></span><br><span class="line">        <span class="built_in">assert!</span>(</span><br><span class="line">            (tcb_ptr <span class="keyword">as</span> <span class="type">usize</span>) % align_of::&lt;<span class="keyword">Self</span>&gt;() == <span class="number">0</span>,</span><br><span class="line">            <span class="string">&quot;TCB地址未对齐&quot;</span></span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        &amp;<span class="keyword">mut</span> *tcb_ptr</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 把TCB转换为分散的物理内存切片（Vec&lt;&amp;&#x27;static mut [u8]&gt;）</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">to_phys_slices</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Vec</span>&lt;&amp;<span class="symbol">&#x27;static</span> <span class="keyword">mut</span> [<span class="type">u8</span>]&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">slices</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tcb_ptr</span> = <span class="keyword">self</span> <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="keyword">Self</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tcb_size</span> = size_of::&lt;<span class="keyword">Self</span>&gt;();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tcb_base</span> = tcb_ptr <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 步骤1：遍历TCB占用的所有物理页</span></span><br><span class="line">        <span class="keyword">for</span> <span class="variable">offset</span> <span class="keyword">in</span> (<span class="number">0</span>..tcb_size).<span class="title function_ invoke__">step_by</span>(PAGE_SIZE) &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">current_va</span> = tcb_base + offset;</span><br><span class="line">            <span class="comment">// 步骤2：虚拟地址 → 物理页号（内核页表查询）</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">ppn</span> = <span class="title function_ invoke__">va_to_ppn</span>(current_va); <span class="comment">// 需实现：虚拟地址转物理页号</span></span><br><span class="line">            <span class="comment">// 步骤3：物理页号 → 字节切片</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">slice</span> = <span class="title function_ invoke__">phys_page_to_slice</span>(ppn);</span><br><span class="line">            slices.<span class="title function_ invoke__">push</span>(slice);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        slices</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3
+id="memory_set中的trampoline和trap_cx">memory_set中的trampoline和trap_cx</h3>
+<h3 id="children和parent">children和parent</h3>
+<p>在 <code>PCB</code> 中，我们的 <code>children</code> 和
+<code>parent</code> 的定义如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">impl</span> <span class="title class_">TaskControlBlockInner</span> &#123;</span><br><span class="line">    <span class="comment">/// Parent process of the current process.</span></span><br><span class="line">    <span class="comment">/// Weak will not affect the reference count of the parent</span></span><br><span class="line">    <span class="keyword">pub</span> parent: <span class="type">Option</span>&lt;Weak&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// A vector containing TCBs of all child processes of the current process</span></span><br><span class="line">    <span class="keyword">pub</span> children: <span class="type">Vec</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，我们的 <code>parent</code> 和 <code>children</code>
+被分别定义为 <code>Arc</code> 和
+<code>Weak</code>。首先，我们需要知道为什么需要这么设计：</p>
+<ul>
+<li>父进程的 <code>children</code> 字段需要引用子进程的
+TCB（保证子进程运行时不被销毁）；</li>
+<li>子进程的 <code>parent</code> 字段需要引用父进程的
+TCB（方便子进程查询父进程信息）。</li>
+</ul>
+<p>所以，他们之间形成了一个引用依赖的关系，如果双方都用 <code>Arc</code>
+来进行引用，那么会发生如下情况：</p>
+<ol type="1">
+<li>父进程退出，但是由于子进程仍然持有他的引用。在这种情况下，只有等待子进程退出之后才能回收父进程的资源；</li>
+<li>子进程退出，但是由于父进程仍然持有他的引用。在这种情况下，只有等待父进程退出之后才能回收子进程的资源；</li>
+</ol>
+<p>引入弱引用就是为了打破这个循环依赖关系，那问题在于，弱引用是如何在保证PCB的生命周期的呢？</p>
+<ol type="1">
+<li>一个进程，他对他父进程的引用是<strong>弱引用</strong>，而对他的子进程是
+<strong>强引用</strong>；</li>
+<li>当子进程先于父进程退出的时候，父进程正常的回收子进程的资源，这个逻辑很简单；</li>
+<li><strong>当父进程先于子进程退出的时候，父进程会将自身所有的子进程的父进程设置为
+<code>INITPROC</code>，并且将他们添加到<code>INITPROC</code>的子进程列表。这保证了在任意时刻，一个进程不会因为缺少强引用而被错误的回收</strong>。</li>
+</ol>
+<h3 id="elf解析">elf解析</h3>
+<ol type="1">
+<li>解析 ELF；</li>
+<li>映射虚拟内存高256GiB；
+<ol type="1">
+<li>map tramploine；</li>
+<li>map TrapContext；</li>
+</ol></li>
+<li>映射虚拟内存低256GiB；
+<ol type="1">
+<li>map elf（包括
+.text/.rodata/.data/.bss），这里值得注意的是，我们在映射的过程需要将elf中的数据复制到映射的目标虚拟内存；</li>
+<li>map user stack；</li>
+<li>map program break；</li>
+</ol></li>
+<li>返回用户地址集，<code>user_stack_top</code>，以及入口地址；<code>user_stack_top</code>
+的作用很多，可以参考 <a href="#应用进程内存模型">应用进程内存模型</a>
+的解析。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MemorySet</span> &#123;</span><br><span class="line">    <span class="comment">/// Include sections in elf and trampoline and TrapContext and user stack,</span></span><br><span class="line">    <span class="comment">/// also returns user_sp_base and entry point.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">from_elf</span>(elf_data: &amp;[<span class="type">u8</span>]) <span class="punctuation">-&gt;</span> (<span class="keyword">Self</span>, <span class="type">usize</span>, <span class="type">usize</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">memory_set</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">new_bare</span>();</span><br><span class="line">        <span class="comment">// map program headers of elf, with U flag</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">elf</span> = xmas_elf::ElfFile::<span class="title function_ invoke__">new</span>(elf_data).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">map_higher_addr</span>(&amp;<span class="keyword">mut</span> memory_set);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">user_stack_top</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">map_lower_addr</span>(&amp;<span class="keyword">mut</span> memory_set, &amp;elf);</span><br><span class="line"></span><br><span class="line">        (</span><br><span class="line">            memory_set,</span><br><span class="line">            user_stack_top,</span><br><span class="line">            elf.header.pt2.<span class="title function_ invoke__">entry_point</span>() <span class="keyword">as</span> <span class="type">usize</span>,</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="进程的内存模型">进程的内存模型</h3>
+<ol type="1">
+<li><code>KernelStack</code></li>
+<li><code>KERNEL_SPACE</code></li>
+<li><code>UserStack</code> 在老版本的代码下，的确存在一个
+<code>UserStack</code>，但是在实现虚拟内存 之后，UserStack
+已经被抽象为一段 MapArea，同时记录了 <code>user_stack_top</code> 作为
+<code>sp</code>。</li>
+</ol>
+<h3 id="应用进程内存模型">应用进程内存模型</h3>
+<h4 id="base_size">base_size</h4>
+<blockquote>
+<p><code>base_size</code> <strong>直接存储 “<code>user_stack</code>
+高地址边界” 的地址常量</strong>，这也是 <code>base_size</code>
+这个名字的来源，他指向 <code>user_stack</code>
+的高地址边界，因为栈是从高地址向低地址增长的。</p>
+</blockquote>
+<p>在操作系统中，<code>user_stack</code>
+是用户态程序的虚拟地址的一个指针，指向了用户栈。</p>
+<p>用户的虚拟地址中，一般按照 .text -&gt; .rodata -&gt; .data -&gt; .bss
+-&gt; guard page -&gt; user_stack
+的顺序<strong>从低到高递增</strong>。</p>
+<p>假设 <code>user_stack</code> 的地址范围是
+<code>[user_stack_bottom, user_stack_bottom + USER_STACK_SIZE)</code>，这里
+user_stack_bottom + USER_STACK_SIZE 是用户进程的
+<code>base_size</code>，那么用户程序的所有数据都只能出现在 base_size
+之下。</p>
+<ul>
+<li><code>user_stack_bottom</code>：栈的
+<strong>低地址边界</strong>（栈的起始地址）；</li>
+<li><code>user_stack_bottom + USER_STACK_SIZE</code>：栈的
+<strong>高地址边界</strong>（也就是 <code>base_size</code>）；</li>
+<li>栈的增长方向：<strong>从高地址向低地址增长</strong>（栈顶指针
+<code>sp</code> 初始指向 <code>base_size</code>，每次压栈
+<code>sp--</code>，出栈 <code>sp++</code>）。</li>
+</ul>
+<figure>
+<img src="/images/20251203/base_size.png" alt="base_size" />
+<figcaption aria-hidden="true">base_size</figcaption>
+</figure>
+<h4 id="heap_bottom">heap_bottom</h4>
+<p><code>heap_bottom</code> 是用户堆（<code>heap</code>）的
+<strong>低地址边界</strong>（堆从低地址向高地址增长，这个地址是堆的
+“起始起点”）；初始值和 <code>base_size</code> 完全相同。</p>
+<h4 id="program_brk">program_brk</h4>
+<p><code>program_brk</code>
+是堆的<strong>当前高地址</strong>（<code>brk</code>
+系统调用可修改，用于扩展 / 收缩堆）；</p>
+<h4 id="总结">总结</h4>
+<blockquote>
+<p>刚初始化时，<code>base_size</code>/<code>heap_bottom</code>/<code>program_brk</code>
+都指向 <strong>End of User Stack</strong></p>
+</blockquote>
+<pre><code class="highlight mermaid">block-beta
+    block:1
+        columns 1
+        space:2
+        eUserStack(&quot;End of User Stack&quot;)
+        sUserStack(&quot;Start of User Stack&quot;)
+        eGuardPage(&quot;End of Guard Page&quot;)
+        sGuardPage(&quot;Start of Guard Page&quot;)
+        ebss(&quot;ebss&quot;)
+        sbss(&quot;sbss&quot;)
+        edata(&quot;edata&quot;)
+        sdata(&quot;sdata&quot;)
+        erodata(&quot;erodata&quot;)
+        srodata(&quot;srodata&quot;)
+        etext(&quot;etext&quot;)
+        stext(&quot;stext&quot;)
+    end
+
+    block 
+        columns 1
+        space:2
+        init(&quot;user_stack_top/base_size/heap_bottom/program_brk&quot;)
+    end
+    eUserStack --&gt; init
+
+    style eUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
+    style sUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
+    style eGuardPage fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style sGuardPage fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style ebss fill:#f0fff4,stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style sbss fill:#f0fff4,stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style edata fill:#fffbe6,stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style sdata fill:#fffbe6,stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style erodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style srodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style etext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+    style stext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold
+</code></pre>
+<blockquote>
+<p>第一次分配堆，我们需要增加
+<code>program_brk</code>，为我们的堆分配空间，此时
+<code>program_brk</code> 和其他两个参数分离了，这里 <code>EOUS</code>
+代表 <code>End of User Stack</code>，<code>SOH</code> 代表
+<code>Start Of Heap</code></p>
+</blockquote>
+<pre><code class="highlight mermaid">block-beta
+    block:1
+        columns 1
+        space:2
+        eHeap(&quot;End Of Heap&quot;)
+        eUserStack(&quot;EOUS/SOH&quot;)
+        sUserStack(&quot;Start of User Stack&quot;)
+        eGuardPage(&quot;End of Guard Page&quot;)
+        sGuardPage(&quot;Start of Guard Page&quot;)
+        ebss(&quot;ebss&quot;)
+        sbss(&quot;sbss&quot;)
+        edata(&quot;edata&quot;)
+        sdata(&quot;sdata&quot;)
+        erodata(&quot;erodata&quot;)
+        srodata(&quot;srodata&quot;)
+        etext(&quot;etext&quot;)
+        stext(&quot;stext&quot;)
+    end
+
+    block 
+        columns 1
+        space:2
+        program_brk(&quot;program_brk&quot;)
+        init(&quot;base_size/heap_bottom&quot;)
+    end
+
+    eHeap --&gt; program_brk
+    eUserStack --&gt; init
+
+    style eUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
+    style sUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
+    style eGuardPage fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style sGuardPage fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style ebss fill:#f0fff4,stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style sbss fill:#f0fff4,stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style edata fill:#fffbe6,stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style sdata fill:#fffbe6,stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style erodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style srodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style etext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+    style stext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold
+</code></pre>
+<blockquote>
+<p>既然 <code>base_size</code> 和 <code>heap_bottom</code>
+一直是一样的，为什么我们不直接合并这两个参数呢？因为我们可能在后续的扩展中会分离这两个变量。例如，我们可能希望在
+<code>Heap</code> 和 <code>Stack</code> 之间插入一个
+<code>Guard Page</code>。</p>
+</blockquote>
+<pre><code class="highlight mermaid">block-beta
+    block:1
+        columns 1
+        space:2
+        eHeap(&quot;End Of Heap&quot;)
+        sHeap(&quot;Start Of Heap&quot;)
+        eGuardPage1(&quot;End of Guard Page&quot;)
+        sGuardPage1(&quot;Start of Guard Page&quot;)
+        eUserStack(&quot;End of User Stack&quot;)
+        sUserStack(&quot;Start of User Stack&quot;)
+        eGuardPage(&quot;End of Guard Page&quot;)
+        sGuardPage(&quot;Start of Guard Page&quot;)
+        ebss(&quot;ebss&quot;)
+        sbss(&quot;sbss&quot;)
+        edata(&quot;edata&quot;)
+        sdata(&quot;sdata&quot;)
+        erodata(&quot;erodata&quot;)
+        srodata(&quot;srodata&quot;)
+        etext(&quot;etext&quot;)
+        stext(&quot;stext&quot;)
+    end
+
+    block 
+        columns 1
+        space:2
+        program_brk(&quot;program_brk&quot;)
+        heap_bottom(&quot;heap_bottom&quot;)
+        space:2
+        init(&quot;base_size&quot;)
+        space:11
+    end
+
+    eHeap --&gt; program_brk
+    sHeap --&gt; heap_bottom
+    eUserStack --&gt; init
+
+    style eUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
+    style sUserStack fill:#e6f7ff,stroke:#1890ff,stroke-width:2px,color:#0047ab,padding:8px
+    style eGuardPage fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style eGuardPage1 fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style sGuardPage fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style sGuardPage1 fill:#fff2f0,stroke:#ff4d4f,stroke-width:2px,color:#c5001a,padding:8px
+    style ebss fill:#f0fff4,stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style sbss fill:#f0fff4,stroke:#52c41a,stroke-width:2px,color:#237804,padding:8px
+    style edata fill:#fffbe6,stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style sdata fill:#fffbe6,stroke:#faad14,stroke-width:2px,color:#aa5800,padding:8px
+    style erodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style srodata fill:#f9f0ff,stroke:#722ed1,stroke-width:2px,color:#531dab,padding:8px
+    style etext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+    style stext fill:#f5f5f5,stroke:#8c8c8c,stroke-width:2px,color:#333333,padding:8px
+    style init fill:#fff7e6,stroke:#ff7a45,stroke-width:2px,color:#d4380d,padding:8px,font-weight:bold
+</code></pre>
+<h3 id="内核堆">内核堆</h3>
+<blockquote>
+<p>关于内核堆的分配可以参考之前的解析：<a
+href="https://0x822a5b87.github.io/2025/11/21/uCore%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%9F%BA%E4%BA%8ERust%E7%9A%84%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%AE%9E%E7%8E%B0%EF%BC%884%EF%BC%89/#%E5%A0%86%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96">堆的初始化</a></p>
+</blockquote>
+<h3 id="link_app.s">link_app.S</h3>
+<ol type="1">
+<li><code>link_app.S</code> 由 <code>build.rs</code> 生成；</li>
+<li>在 <code>main.rs</code> 中由
+<code>global_asm!(include_str!("link_app.S"));</code>
+引入后被加载到内核空间中的 <code>.text</code> 段；</li>
+<li><code>MemorySet#new_kernel</code> 中，将 <code>.text</code> 段通过
+<code>MapType::Identical</code>
+加载到内核内存空间，此后我们可以使用虚拟地址来访问这个地址了 --
+只不过因为是恒等映射，所以 VA = PA。</li>
+</ol>
+<h3 id="exec">exec</h3>
+<h4 id="寻址逻辑">寻址逻辑</h4>
+<blockquote>
+<p>具体 <code>app_name</code> 的生成请参考 <a
+href="#基于应用名的应用链接/加载器">基于应用名的应用链接/加载器</a>。</p>
+</blockquote>
+<ol type="1">
+<li><code>load.rs</code> 下的 <code>APP_NAMES</code> 会加载
+<code>link_app.S</code> 中的全部 <code>_app_names</code></li>
+<li>通过 <code>APP_NAMES</code> 可以查找到对应的
+<code>index</code>；</li>
+<li>通过 <code>index</code> 可以在 <code>_num_app</code> 下找到代码段的
+<code>start</code> 和 <code>end</code>；</li>
+<li>通过 <code>start</code> 和 <code>end</code> 直接从
+<code>.text</code> 段读取到数据。</li>
+</ol>
+<h4 id="执行逻辑">执行逻辑</h4>
+<p><code>exec</code> 指令的调用如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">exec</span>(<span class="string">&quot;ch5b_user_shell\0&quot;</span>, &amp;[<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>]);</span><br></pre></td></tr></table></figure>
+<p>输入必须以 <code>'\0'</code> 结尾，这是因为 <code>exec</code>
+函数的参数是 <code>&amp;str</code>，<strong>Rust 的
+<code>&amp;str</code> 类型本身不会在字符串末尾自动添加
+<code>\0</code>（null 终止符）</strong>：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exec</span>(path: &amp;<span class="type">str</span>, args: &amp;[*<span class="keyword">const</span> <span class="type">u8</span>]) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="title function_ invoke__">sys_exec</span>(path, args)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_exec</span>(path: &amp;<span class="type">str</span>, args: &amp;[*<span class="keyword">const</span> <span class="type">u8</span>]) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="title function_ invoke__">syscall</span>(</span><br><span class="line">        SYSCALL_EXEC,</span><br><span class="line">        [path.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, args.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>],</span><br><span class="line">    )</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而 <code>sys_exec</code> 中，将 <code>path.as_ptr()</code>
+转换为一个字符串指针并以该指针作为参数传递给kernel，内核收到数据后，如果没有
+<code>'\0'</code> 是无法正确结束循环的。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Translate&amp;Copy a ptr[u8] array end with `\0` to a `String` Vec through page table</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">translated_str</span>(token: <span class="type">usize</span>, ptr: *<span class="keyword">const</span> <span class="type">u8</span>) <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">page_table</span> = PageTable::<span class="title function_ invoke__">from_token</span>(token);</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">string</span> = <span class="type">String</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">va</span> = ptr <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">ch</span>: <span class="type">u8</span> = *(page_table</span><br><span class="line">            .<span class="title function_ invoke__">translate_va</span>(VirtAddr::<span class="title function_ invoke__">from</span>(va))</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .<span class="title function_ invoke__">get_mut</span>());</span><br><span class="line">        <span class="comment">// 读到 &#x27;\0&#x27; 退出</span></span><br><span class="line">        <span class="keyword">if</span> ch == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            string.<span class="title function_ invoke__">push</span>(ch <span class="keyword">as</span> <span class="type">char</span>);</span><br><span class="line">            va += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    string</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="进程的资源回收">进程的资源回收</h3>
+<blockquote>
+<p>本描述仅针对于 <code>linux</code></p>
+</blockquote>
+<p>需要先了解的一点是，<code>linux</code> 下的 <code>waitpid</code> 和
+<code>rCore</code> 下的资源回收存在区别：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">wait</span><span class="params">(<span class="type">int</span> *status)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">waitpid</span><span class="params">(<span class="type">pid_t</span> pid, <span class="type">int</span> *status, <span class="type">int</span> options)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">waitid</span><span class="params">(<span class="type">idtype_t</span> idtype, <span class="type">id_t</span> id, <span class="type">siginfo_t</span> *infop, <span class="type">int</span> options)</span>;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>The <strong>wait</strong>() system call <code>suspends</code>
+execution of the calling process until one of its children terminates.
+The call <em>wait(&amp;status)</em> is equivalent to:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">waitpid(<span class="number">-1</span>, &amp;status, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+<p>The <strong>waitpid</strong>() system call suspends execution of the
+calling process until a child specified by <em>pid</em> argument has
+changed state. By default, <strong>waitpid</strong>() waits only for
+terminated children, but this behavior is modifiable via the
+<em>options</em> argument, as described below.</p>
+<ul>
+<li>The value of <em>pid</em> can be:
+<ul>
+<li><code>&lt; -1</code> meaning wait for any child process whose
+process group ID is equal to the absolute value of <em>pid</em>.</li>
+<li><code>-1</code> meaning wait for any child process.</li>
+<li><code>0</code> meaning wait for any child process whose process
+group ID is equal to that of the calling process.</li>
+<li><code>&gt; 0</code> meaning wait for the child whose process ID is
+equal to the value of <em>pid</em>.</li>
+</ul></li>
+</ul>
+</blockquote>
+<p>主要区别有两点：</p>
+<ol type="1">
+<li><code>linux</code> 下的 waitpid 是阻塞式的；</li>
+<li>它的返回值除了可能是 <code>pid</code> 或者其他状态之外，还有可能是
+<code>pid_group</code>。</li>
+</ol>
+<p>在 <code>os</code>
+中，父进程在创建子进程时，内核会为子进程分配一些运行必要的信息 -
+<code>pid</code>，<code>TCB</code>（进程控制块）等，父进程必须通过
+<code>wait</code> 来查询子进程状态，这是因为
+“父进程是否需要子进程的这些信息（如退出码、终止原因）”
+这个条件内核是不知道的。对于内核来讲，它需要负责把子进程的状态变化消息交给父进程。</p>
+<p>这个过程可能出现几种不同的情况：</p>
+<ol type="1">
+<li>父进程正常调用
+<code>wait</code>/<code>waitpid</code>，拿到退出子进程的状态信息（如退出码），此时内核会彻底回收子进程的
+<code>pid</code>、<code>TCB</code>（仅保留的关键字段）等资源，子进程正常退出；</li>
+<li>在子进程退出前，父进程未调用 <code>wait</code>
+就提前退出（因为异常或代码 BUG），此时子进程的状态变为
+<code>Orphan（孤儿进程）</code>，内核维护的 <code>initproc</code>
+进程（PID=1）会负责收养这些孤儿进程，待其终止后回收相关资源 ——
+因为父进程已退出，内核明确知道子进程的状态信息无需再交给父进程，可由
+init 进程统一回收；</li>
+<li>在子进程退出后，父进程未调用 <code>wait</code>，此时子进程的状态变为
+<code>Zombie（僵尸进程）</code>。内核仅保留 <code>TCB</code>
+中的关键字段（如 PID、退出码），不会回收这些信息 ——
+因为内核无法判断父进程是 “代码中未调用 <code>wait</code>” 还是
+“已调用但未执行到 <code>wait</code> 指令”，只能一直保留，直到父进程调用
+<code>wait</code>（主动回收）或父进程退出（子进程变孤儿，由 init
+回收）。</li>
+</ol>
+<h2 id="代码统计">代码统计</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">➜  2025a-rcore-0x822a5b87 git:(ch5) ✗ cloc os</span><br><span class="line">     264 text files.</span><br><span class="line">     137 unique files.</span><br><span class="line">     435 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 2.06  T=0.06 s (2231.6 files/s, 70042.7 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Rust                            32            232            493           2335</span><br><span class="line">D                               39            108              0            598</span><br><span class="line">Assembly                         4             24             26            265</span><br><span class="line">make                             1             20              7             59</span><br><span class="line">JSON                            58              0              0             58</span><br><span class="line">Linker Script                    1              7              0             46</span><br><span class="line">TOML                             2              3              1             18</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                           137            394            527           3379</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h2 id="代码树">代码树</h2>
+<p>本章中主要新增的几个模块为：</p>
+<ol type="1">
+<li><code>fs.rs</code> 新增了 <code>sys_read</code>；</li>
+<li><code>process.rs</code> 新增了
+<code>sys_getpid</code>/<code>fork</code>/<code>exec</code>/<code>waitpid</code>；</li>
+<li><code>manager.rs</code> 新增任务管理器；</li>
+<li><code>pid.rs</code> 新增标志符和内核栈的rust抽象；</li>
+<li><code>processor.rs</code> 新增处理器管理结构
+<code>Processor</code></li>
+</ol>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">├── os</span><br><span class="line">   ├── build<span class="selector-class">.rs</span>(修改：基于应用名的应用构建器)</span><br><span class="line">   ├── ...</span><br><span class="line">   └── <span class="attribute">src</span></span><br><span class="line">       ├── ...</span><br><span class="line">       ├── loader<span class="selector-class">.rs</span>(修改：基于应用名的应用加载器)</span><br><span class="line">       ├── <span class="selector-tag">main</span><span class="selector-class">.rs</span>(修改)</span><br><span class="line">       ├── <span class="built_in">mm</span>(修改：为了支持本章的系统调用对此模块做若干增强)</span><br><span class="line">       │   ├── <span class="selector-tag">address</span><span class="selector-class">.rs</span></span><br><span class="line">       │   ├── frame_allocator<span class="selector-class">.rs</span></span><br><span class="line">       │   ├── heap_allocator<span class="selector-class">.rs</span></span><br><span class="line">       │   ├── memory_set<span class="selector-class">.rs</span></span><br><span class="line">       │   ├── mod<span class="selector-class">.rs</span></span><br><span class="line">       │   └── page_table<span class="selector-class">.rs</span></span><br><span class="line">       ├── syscall</span><br><span class="line">       │   ├── fs<span class="selector-class">.rs</span>(修改：新增 sys_read)</span><br><span class="line">       │   ├── mod<span class="selector-class">.rs</span>(修改：新的系统调用的分发处理)</span><br><span class="line">       │   └── process.rs（修改：新增 sys_getpid/fork/exec/waitpid）</span><br><span class="line">       ├── task</span><br><span class="line">       │   ├── context<span class="selector-class">.rs</span></span><br><span class="line">       │   ├── manager<span class="selector-class">.rs</span>(新增：任务管理器，为上一章任务管理器功能的一部分)</span><br><span class="line">       │   ├── mod<span class="selector-class">.rs</span>(修改：调整原来的接口实现以支持进程)</span><br><span class="line">       │   ├── pid<span class="selector-class">.rs</span>(新增：进程标识符和内核栈的 Rust 抽象)</span><br><span class="line">       │   ├── processor<span class="selector-class">.rs</span>(新增：处理器管理结构 ``Processor`` ，为上一章任务管理器功能的一部分)</span><br><span class="line">       │   ├── <span class="selector-tag">switch</span><span class="selector-class">.rs</span></span><br><span class="line">       │   ├── <span class="selector-tag">switch</span><span class="selector-class">.S</span></span><br><span class="line">       │   └── task<span class="selector-class">.rs</span>(修改：支持进程机制的任务控制块)</span><br><span class="line">       └── trap</span><br><span class="line">           ├── context<span class="selector-class">.rs</span></span><br><span class="line">           ├── mod<span class="selector-class">.rs</span>(修改：对于系统调用的实现进行修改以支持进程系统调用)</span><br><span class="line">           └── trap.S</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/" rel="prev" title="uCore地址空间">
+                  <i class="fa fa-angle-left"></i> uCore地址空间
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="next" title="uCore文件系统">
+                  uCore文件系统 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

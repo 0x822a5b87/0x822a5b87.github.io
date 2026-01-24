@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="The Crate Package and Moudle in Rust References Defining Modules to Control Scope and Privacy test rust crate Declaring modules">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The Crate, Package, and Moudle in Rust">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/10/14/The-Crate-Package-and-Moudle-in-Rust/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="The Crate Package and Moudle in Rust References Defining Modules to Control Scope and Privacy test rust crate Declaring modules">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-14T06:32:53.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="Cargo">
+<meta property="article:tag" content="Rust">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/10/14/The-Crate-Package-and-Moudle-in-Rust/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/10/14/The-Crate-Package-and-Moudle-in-Rust/","path":"2024/10/14/The-Crate-Package-and-Moudle-in-Rust/","title":"The Crate, Package, and Moudle in Rust"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>The Crate, Package, and Moudle in Rust | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#the-crate-package-and-moudle-in-rust"><span class="nav-number">1.</span> <span class="nav-text">The Crate Package and
+Moudle in Rust</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#references"><span class="nav-number">1.1.</span> <span class="nav-text">References</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#declaring-modules"><span class="nav-number">1.2.</span> <span class="nav-text">Declaring modules</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#modules-cheat-sheet"><span class="nav-number">1.2.1.</span> <span class="nav-text">Modules Cheat Sheet</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#illustration"><span class="nav-number">1.2.2.</span> <span class="nav-text">Illustration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#inline"><span class="nav-number">1.2.3.</span> <span class="nav-text">Inline</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#in-the-file-srcgarden.rs"><span class="nav-number">1.2.4.</span> <span class="nav-text">In the file src&#x2F;garden.rs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#in-the-file-srcgardenmod.rs"><span class="nav-number">1.2.5.</span> <span class="nav-text">In the file src&#x2F;garden&#x2F;mod.rs</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/10/14/The-Crate-Package-and-Moudle-in-Rust/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="The Crate, Package, and Moudle in Rust | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          The Crate, Package, and Moudle in Rust
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-10-14 14:32:53" itemprop="dateCreated datePublished" datetime="2024-10-14T14:32:53+08:00">2024-10-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="the-crate-package-and-moudle-in-rust">The Crate Package and
+Moudle in Rust</h1>
+<h2 id="references">References</h2>
+<p><a
+target="_blank" rel="noopener" href="https://doc.rust-lang.org/stable/book/ch07-02-defining-modules-to-control-scope-and-privacy.html">Defining
+Modules to Control Scope and Privacy</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-rust-crate">test rust
+crate</a></p>
+<h2 id="declaring-modules">Declaring modules</h2>
+<h3 id="modules-cheat-sheet">Modules Cheat Sheet</h3>
+<ul>
+<li><strong>Start from the crate root</strong>: When compiling a crate,
+the compiler first looks in the crate root file (usually
+<em>src/lib.rs</em> for a library crate or <em>src/main.rs</em> for a
+binary crate) for code to compile.</li>
+<li><strong>Declaring modules</strong>: In the crate root file, you can
+declare new modules; say you declare a “garden” module with
+<code>mod garden;</code>. The compiler will look for the module’s code
+in these places:
+<ul>
+<li>Inline, within curly brackets that replace the semicolon following
+<code>mod garden</code></li>
+<li>In the file <em>src/garden.rs</em></li>
+<li>In the file <em>src/garden/mod.rs</em></li>
+</ul></li>
+<li><strong>Declaring submodules</strong>: In any file other than the
+crate root, you can declare submodules. For example, you might declare
+<code>mod vegetables;</code> in <em>src/garden.rs</em>. The compiler
+will look for the submodule’s code within the directory named for the
+parent module in these places:
+<ul>
+<li>Inline, directly following <code>mod vegetables</code>, within curly
+brackets instead of the semicolon</li>
+<li>In the file <em>src/garden/vegetables.rs</em></li>
+<li>In the file <em>src/garden/vegetables/mod.rs</em></li>
+</ul></li>
+</ul>
+<blockquote>
+<p>According to the preceding description, there are 3 types of approach
+to define a modules like this:
+<code>garden::vegetables::Asparagus</code>.</p>
+</blockquote>
+<h3 id="illustration">Illustration</h3>
+<pre><code class="highlight mermaid">---
+title: Crates and Modules
+---
+flowchart TD
+	Crate --&gt; main.rs --&gt; DeclaringModules
+	Crate --&gt; lib.rs --&gt; DeclaringModules
+	
+	DeclaringModules[&quot;mod garden&quot;]:::mod
+
+	DeclaringModules --&gt; declaretion
+	
+subgraph declaretion
+	direction LR
+	inline
+	garden.rs
+	garden/mod.rs
+end
+
+declaretion --&gt;|recursion| DeclaringModules
+	
+classDef mod fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
+<h3 id="inline">Inline</h3>
+<p>Here, we create a lib crate named backyard. The crate's directory,
+also named backyard, contains these files and directories:</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">backyard</span><br><span class="line">├── Cargo<span class="selector-class">.lock</span></span><br><span class="line">├── Cargo<span class="selector-class">.toml</span></span><br><span class="line">└── <span class="attribute">src</span></span><br><span class="line">    └── lib.rs</span><br></pre></td></tr></table></figure>
+<p>Filename : <code>src/lib.rs</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">plant</span> = garden::vegetables::Asparagus &#123;&#125;;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;I&#x27;m growing &#123;plant:?&#125;!&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">mod</span> garden &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">mod</span> vegetables&#123;</span><br><span class="line">        <span class="meta">#[derive(Debug)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Asparagus</span> &#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="in-the-file-srcgarden.rs">In the file src/garden.rs</h3>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">backyard</span><br><span class="line">├── Cargo<span class="selector-class">.lock</span></span><br><span class="line">├── Cargo<span class="selector-class">.toml</span></span><br><span class="line">└── <span class="attribute">src</span></span><br><span class="line">    └── lib<span class="selector-class">.rs</span></span><br><span class="line">    └── garden.rs</span><br></pre></td></tr></table></figure>
+<p>Filename : <code>src/lib.rs</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">mod</span> garden;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">plant</span> = garden::vegetables::Asparagus &#123;&#125;;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;I&#x27;m growing &#123;plant:?&#125;!&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Filename : <code>src/garden.rs</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> vegetables &#123;</span><br><span class="line">    <span class="meta">#[derive(Debug)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Asparagus</span> &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="in-the-file-srcgardenmod.rs">In the file src/garden/mod.rs</h3>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">backyard</span><br><span class="line">├── Cargo<span class="selector-class">.lock</span></span><br><span class="line">├── Cargo<span class="selector-class">.toml</span></span><br><span class="line">└── <span class="attribute">src</span></span><br><span class="line">    ├── garden</span><br><span class="line">    │   └── vegetables<span class="selector-class">.rs</span></span><br><span class="line">    ├── garden<span class="selector-class">.rs</span></span><br><span class="line">    └── <span class="selector-tag">main</span>.rs</span><br></pre></td></tr></table></figure>
+<p>Filename : <code>src/lib.rs</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">mod</span> garden;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">plant</span> = garden::vegetables::Asparagus &#123;&#125;;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;I&#x27;m growing &#123;plant:?&#125;!&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Filename: src/garden.rs</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> vegetables;</span><br></pre></td></tr></table></figure>
+<p>Here, <code>pub mod vegetables;</code> means the code in
+<em>src/garden/vegetables.rs</em> is included too. That code is:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Asparagus</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/Cargo/" rel="tag"># Cargo</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/08/23/Strategies-Of-Evaluate-Infix-Operator/" rel="prev" title="Strategies Of Evaluate Infix Operator">
+                  <i class="fa fa-angle-left"></i> Strategies Of Evaluate Infix Operator
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/" rel="next" title="A simple conclusion for ownership in Rust">
+                  A simple conclusion for ownership in Rust <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

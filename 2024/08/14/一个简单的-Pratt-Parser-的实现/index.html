@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="使用本文记录学习 Pratt Parser 的过程，全部代码实现基于 go version go1.20.14 darwin&#x2F;arm64 实现，代码地址位于：0x822a5b87&#x2F;test-pratt-parsing  什么是 Pratt Parser 在语法解析器（Parser）的工作过程中，我们通常会将一个字符串转换为一个抽象语法树（Abstract Syntax Tree）： --- ti">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个简单的 Pratt Parser 的实现">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/08/14/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84-Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="使用本文记录学习 Pratt Parser 的过程，全部代码实现基于 go version go1.20.14 darwin&#x2F;arm64 实现，代码地址位于：0x822a5b87&#x2F;test-pratt-parsing  什么是 Pratt Parser 在语法解析器（Parser）的工作过程中，我们通常会将一个字符串转换为一个抽象语法树（Abstract Syntax Tree）： --- ti">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-14T10:34:02.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="compliler">
+<meta property="article:tag" content="go">
+<meta property="article:tag" content="parser">
+<meta property="article:tag" content="pratt parser">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/08/14/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84-Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/08/14/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84-Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0/","path":"2024/08/14/一个简单的-Pratt-Parser-的实现/","title":"一个简单的 Pratt Parser 的实现"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一个简单的 Pratt Parser 的实现 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-pratt-parser"><span class="nav-number">1.</span> <span class="nav-text">什么是 Pratt Parser</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">2.</span> <span class="nav-text">一个简单的例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bnf%E5%92%8Chand-writeing-the-parser"><span class="nav-number">3.</span> <span class="nav-text">BNF和hand-writeing the
+parser</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#recursive-descent-and-left-recursion"><span class="nav-number">3.1.</span> <span class="nav-text">Recursive descent and
+left-recursion</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pratt-parser-%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">Pratt Parser 的基本原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pratt-parser-%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91%E7%AE%80%E8%BF%B0"><span class="nav-number">5.</span> <span class="nav-text">Pratt Parser 实现逻辑简述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pratt-parser-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.</span> <span class="nav-text">Pratt Parser 的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E6%B3%95%E5%AE%9A%E4%B9%89"><span class="nav-number">6.1.</span> <span class="nav-text">文法定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89token"><span class="nav-number">6.2.</span> <span class="nav-text">定义token</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ast"><span class="nav-number">6.3.</span> <span class="nav-text">AST</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parser"><span class="nav-number">6.4.</span> <span class="nav-text">parser</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%85%8Dprecedence"><span class="nav-number">6.4.1.</span> <span class="nav-text">分配precedence</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E8%A7%A3%E6%9E%90%E5%87%BD%E6%95%B0"><span class="nav-number">6.4.2.</span> <span class="nav-text">定义解析函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B"><span class="nav-number">6.4.3.</span> <span class="nav-text">真正的解析流程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">7.</span> <span class="nav-text">解析流程详解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#references"><span class="nav-number">8.</span> <span class="nav-text">references</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/08/14/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84-Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一个简单的 Pratt Parser 的实现 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一个简单的 Pratt Parser 的实现
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-08-14 18:34:02" itemprop="dateCreated datePublished" datetime="2024-08-14T18:34:02+08:00">2024-08-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>使用本文记录学习 <code>Pratt Parser</code> 的过程，全部代码实现基于
+<code>go version go1.20.14 darwin/arm64</code> 实现，代码地址位于：<a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-pratt-parsing">0x822a5b87/test-pratt-parsing</a></p>
+</blockquote>
+<h2 id="什么是-pratt-parser">什么是 Pratt Parser</h2>
+<p>在<strong>语法解析器（Parser）</strong>的工作过程中，我们通常会将一个字符串转换为一个<strong>抽象语法树（Abstract
+Syntax Tree）</strong>：</p>
+<pre><code class="highlight mermaid">---
+title: The workflow of Paser
+---
+flowchart LR
+	Input[&quot;0 + 1 + 2! * -3&quot;] --&gt;|Parser| AST
+	
+	subgraph AST
+		Add --&gt; Add2[Add]
+		Add2 --&gt; 0
+		Add2 --&gt; 1
+		Add --&gt; Mul
+		Mul --&gt; ! --&gt; 2w
+		Mul --&gt; - --&gt; 3
+	end</code></pre>
+<p>在这个解析过程中，我们会碰到许多问题：</p>
+<ol type="1">
+<li>操作符的结合律（<code>associative</code>），例如
+<code>0 + 1 + 2!</code> 的对应的语法树是 <code>(0 + 1) + 2</code> 还是
+<code>0 + (1 + 2!)</code>？</li>
+<li>哪个运算应该先计算？<code>1 + 2!</code> 先出现，但是我们却应该先计算
+<code>2! * -3</code>；</li>
+<li>前缀和后缀应该如何计算？<code>1 + 2!</code> 是 <code>1 + (2!)</code>
+还是 <code>(1 + 2)!</code></li>
+</ol>
+<p>这些基本都是由于运算符（<code>Operator</code>）存在不同的优先级（<code>Precedence</code>），而
+Pratt Parser就是为了解决这个运算符优先级而发明的一个算法，这个算法由
+<strong>Vaughan R. Pratt</strong> 在论文 <a
+target="_blank" rel="noopener" href="https://tdop.github.io/">Top Down Operator Precedence</a>
+中提出。</p>
+<h2 id="一个简单的例子">一个简单的例子</h2>
+<p>在我们了解Pratt Parser之前，我们可以思考一个简单的例子以便于对Pratt
+Parser有一些最基本的直觉和了解，我们可以看看这个例子：</p>
+<pre><code class="highlight mermaid">---
+title: 一个简单的例子
+---
+flowchart LR
+	1 --&gt; operator1:::op --&gt; 2 --&gt; operator2:::op --&gt; 3
+	
+classDef op fill:#ff6347,stroke:#333,stroke-width:4px;</code></pre>
+<p>他的AST可能是这样构造的：</p>
+<pre><code class="highlight mermaid">---
+title: 语法树
+---
+flowchart TD
+
+subgraph condition1[&quot;operaor1 &gt;= operator2&quot;]
+	operator1:::high --&gt; operand1[&quot;1&quot;]
+	operator1 --&gt; operand2[&quot;2&quot;]
+	
+	operator2 --&gt; operand3[&quot;3&quot;]
+	operator2:::low --&gt; operator1
+end
+
+subgraph condition2[&quot;operaor1 &lt; operator2&quot;]
+	op3[&quot;operator1&quot;]:::low
+	op4[&quot;operator2&quot;]:::high
+	operand4[&quot;1&quot;]
+	operand5[&quot;2&quot;]
+	operand6[&quot;3&quot;]
+
+	op3 --&gt; operand4
+	op4 --&gt; operand5
+	op4 --&gt; operand6
+	op3 --&gt; op4
+end
+
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px;</code></pre>
+<blockquote>
+<p>我们可以先做一个比较武断的总结：影响我们的AST构造的最重要的部分，就是
+operator1 和 operator2
+的优先级大小关系，谁的优先级更大，谁连接的表达式就在AST的更底层，因为我们在执行AST时通常是深度优先遍历的。</p>
+<p>所以，在我们构造树的过程中可以遵循这个原则，对于从左到右的两个operator1和operator2，将优先级较高的那个节点作为另外一个节点的左子节点或右子节点，具体是左子节点还是右子节点取决于优先级较高的节点出现的位置。</p>
+</blockquote>
+<p>再细化一点来说，存在如下表达式：</p>
+<pre><code class="highlight mermaid">---
+title: 一个简单的例子
+---
+flowchart LR
+	leftOp[&quot;leftOp&quot;]:::op --&gt; operand --&gt; rightOp[&quot;rightOp&quot;]:::op
+	
+classDef op fill:#ff6347,stroke:#333,stroke-width:4px;</code></pre>
+<ol type="1">
+<li>如果 Precedence(leftOp) &gt;= Precedence(rightOp)，那么 operand 作为
+leftOp 的右子节点，leftOp 作为 rightOp 的左子节点；</li>
+<li>如果 Precedence(leftOp) &lt; Precedence(rightOp)，那么 operand 作为
+rightOp 的左字节点，rightOp 作为 leftOp 的右子节点；</li>
+</ol>
+<p>这个就是 Pratt Parser 中提到的一个概念：<strong>绑定强度（binding
+power）</strong>，可以理解为operad会被绑定到他的左右operator中，binding
+power更强的那个operator。</p>
+<h2 id="bnf和hand-writeing-the-parser">BNF和hand-writeing the
+parser</h2>
+<p>在我们实现一个Parser的过程中，我们往往可以选择两个方式来生成我们的AST：</p>
+<ol type="1">
+<li>使用一个DSL来声明语言的语法，通常是基于BNF/EBNF语法，比较常用的有
+<code>antlr4</code>, <code>javacc</code> 等；</li>
+<li>手写解析器，通常是基于递归下降（Recursive descent）来实现；</li>
+</ol>
+<h3 id="recursive-descent-and-left-recursion">Recursive descent and
+left-recursion</h3>
+<p>如果我们现在通过BNF/EBNF语法声明一个sum运算，他的语法可能是这样的：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sum = </span><br><span class="line">  sum <span class="string">&#x27;+&#x27;</span> int </span><br><span class="line">  | int</span><br></pre></td></tr></table></figure>
+<p>等同于如下代码</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Parser <span class="keyword">struct</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> ParseSum() &#123;</span><br><span class="line">  <span class="comment">// immediately recursive loop and overflow the stack </span></span><br><span class="line">	p.ParseSum()</span><br><span class="line">	p.expected(<span class="string">&quot;+&quot;</span>)</span><br><span class="line">	p.ParseInt()</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// if that fails, try the second</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也就是我们碰到了<code>左递归</code>（left-recursion），一个常用的方法是重写BNF<code>消除左递归</code>（eliminate
+the left recursion）</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sum = </span><br><span class="line">  int <span class="string">&#x27;+&#x27;</span> sum</span><br><span class="line">  | int</span><br></pre></td></tr></table></figure>
+<p>等同于</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Parser <span class="keyword">struct</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> ParseSum() &#123;</span><br><span class="line">	p.ParseInt()</span><br><span class="line">  <span class="keyword">if</span> p.expected(<span class="string">&quot;+&quot;</span>) &#123;</span><br><span class="line">    p.nextToken()</span><br><span class="line">  &#125;</span><br><span class="line">	p.ParseSum()</span><br><span class="line">	</span><br><span class="line">  <span class="comment">// if that fails, try the second</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="pratt-parser-的基本原理">Pratt Parser 的基本原理</h2>
+<blockquote>
+<p>Pratt Parser
+的基本原理非常简单，<strong>找到当前优先级最高的操作符，并按照操作符从高到低的方式创建AST。</strong></p>
+</blockquote>
+<blockquote>
+<p>什么是优先级最高的节点？如何找到它？</p>
+</blockquote>
+<p>从当前节点开始，通过 peek()
+获取下一个operator，当下一个operator小于当前operator时，当前operator就是我们的最高优先级操作符。</p>
+<p>例如，假设存在输入 <code>1 + 2 * 3 + 4</code>:</p>
+<ol type="1">
+<li><p>到达operator <code>+</code>，peek() 得到operator
+<code>*</code>，我们继续往前找；</p></li>
+<li><p>到达 <code>*</code>，peek() 得到operator <code>+</code>，此时我们
+<code>*</code> 就是我们要找到最高优先级操作符；</p></li>
+<li><p>我们通过 <code>parseMul()</code> 构造一个AST，root节点为
+<code>*</code>，lhs 和 rhs 分别是 <code>2</code> 和
+<code>3</code>；</p></li>
+<li><p>我们通过 <code>parseAdd()</code> 构造一个 AST，root节点为
+<code>+</code>，lhs 和 rhs 分别是 <code>1</code> 和
+<code>&lt;3&gt;</code> 得到的节点；</p></li>
+<li><p>继续向后，当到最后一个 <code>+</code> 时，peek() 得到
+EOF，我们再次构造一个AST。</p></li>
+</ol>
+<p>此时解析完毕，我们得到了如下AST：</p>
+<pre><code class="highlight mermaid">---
+title: 1 + 2 * 3 + 4
+---
+flowchart TD  
+    add0[&quot;+&quot;] --&gt; operand1[&quot;1&quot;]  
+    add0 --&gt; mul  
+    mul[*] --&gt; operand2[&quot;2&quot;]
+    mul --&gt; operand3[&quot;3&quot;]
+    add1[&quot;+&quot;] --&gt; add0
+    add1 --&gt; operand4[&quot;4&quot;]</code></pre>
+<blockquote>
+<p>在解析的过程中，我们向前peek()并跳到下一个token时，如何保存路径上的token节点信息呢？</p>
+</blockquote>
+<p>我们可以通过递归，或者引入一个额外的栈来保存节点信息。为了保持我们的实现足够简洁，我们通过递归来实现。</p>
+<h2 id="pratt-parser-实现逻辑简述">Pratt Parser 实现逻辑简述</h2>
+<p>参考文章 <a
+target="_blank" rel="noopener" href="https://www.oilshell.org/blog/2016/11/01.html">Pratt Parsing and
+Precedence Climbing Are the Same Algorithm</a></p>
+<blockquote>
+<ol type="1">
+<li>You can assign each operator token a precedence, or binding power in
+Pratt's terminology.</li>
+<li>You have a recursive function that parses expressions, consuming
+tokens to the right, until it reaches an operator of precedence less
+than or equal to the previous operator -- or just less than if it's a
+right-associative operator.</li>
+<li>In Pratt parsing, tokens can be used in the null and/or left
+position, based on whether they take an expression on the left or not
+(nud or led in Pratt's terminology). Examples of left operators are
+infix +, postfix ++, or the pseudo-infix a[0] (with operator [).
+Examples of null operators are unary minus -, and grouping parentheses
+(.</li>
+</ol>
+</blockquote>
+<ol type="1">
+<li>首先，为expression中的所有 <code>operator token</code>
+分配一个优先级（precedence），或者绑定强度（binding power）；</li>
+<li>将 token 分为三类，分别是 <code>前缀运算符</code> 和
+<code>中缀运算符</code>。
+<ol type="1">
+<li>前缀运算符，比如负数；</li>
+<li>中缀运算符，比如加减乘除；</li>
+<li>后缀运算符，可以当做一个特殊的中缀运算符，例如阶乘。通过这种方式我们可以极大的简化我们的算法。</li>
+</ol></li>
+<li>会每个token关联一个解析函数：
+<ol type="1">
+<li><code>prefixParseFns map[token.TokenType]prefixParseFn</code>
+解析token类型对应的前缀表达式；</li>
+<li><code>infixParseFns  map[token.TokenType]infixParseFn</code>
+解析token类型对应的中缀表达式，而后缀表达式可以认为是一种特殊的中缀表达式。</li>
+</ol></li>
+<li>进入解析逻辑，根据当前的tokenType获取对应的解析函数。此时，我们碰到的必然是一个<strong>前缀表达式</strong>
+。这是为什么？原因如下：
+<ol type="1">
+<li>当我们进入到解析逻辑时，第一个token解析过程如下：
+<ol type="1">
+<li>一个前缀表达式的operator，例如 <code>-x</code> 中的
+<code>-</code>，对于这种情况，我们直接将该operator作为 PrefixExpression
+的 operator，随后跳过该
+operator，并将右边的解析结果作为PrefixExpression的<code>rhs</code>。<strong>并且把operator和rhs作为一个PrefixExpression返回</strong>。</li>
+<li>一个可以解析的对象，可能是bool，integer，identifier
+等，此时我们直接将对应类型的解析对应的Expression返回；</li>
+<li>前缀表达式opertor的优先级非常高，仅仅有 <code>(</code>
+对应的优先级高于前缀表达式opertor，而我们可以把 <code>(</code>
+当成一个特殊的中缀操作符处理；</li>
+</ol></li>
+<li>经过&lt;1&gt;，我们会得到一个Expression，此时我们再往前执行，必然是一个
+<code>InfixExpressionOperator</code>；</li>
+</ol></li>
+<li>开始遍历整个表达式：
+<ol type="1">
+<li>如果 <code>currPrecedence</code> &lt;
+<code>peekPrecedence</code>，说明后续还有优先级更高的operator，我们将当前解析到的数据压入栈中（一般是通过递归）；</li>
+<li>如果 <code>currPrecedence</code> &gt;=
+<code>peekPrecedence</code>，阶段性解析结束，因为此时我们已经找到了优先级最高的operator。我们将
+<code>&lt;1&gt;</code> 中栈弹出，并按照对应的token逻辑来进行解析。</li>
+</ol></li>
+</ol>
+<p>整体来说，我们通过 <code>PrefixParser</code> 和
+<code>InfixParser</code> 将一个表达式，从如下形式：</p>
+<pre><code class="highlight mermaid">---
+title: Expression
+---
+flowchart LR
+	前缀operator0[&quot;前缀operator?&quot;] --&gt; operand0:::necessay --&gt; 后缀operator0[&quot;后缀operator?&quot;]
+	后缀operator0 --&gt; InfixOperator0[&quot;InfixOperator&quot;]:::necessay --&gt; 
+	前缀operator1[&quot;前缀operator?&quot;] --&gt; operand1:::necessay --&gt; 后缀operator1[&quot;后缀operator?&quot;]
+	
+classDef necessay fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
+<p>转换为一个更简洁的形式并通过先查找局部最高优先级并解析的方式解析。：</p>
+<pre><code class="highlight mermaid">---
+title: A More Concise Expression
+---
+flowchart LR
+	operand0:::necessay --&gt; InfixOperator0 --&gt; operand1:::necessay
+
+classDef necessay fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
+<p>例如，我们的整体表达式肯定是一个如下的结构：</p>
+<pre><code class="highlight mermaid">---
+title: Normal Expression Structure
+---
+flowchart LR
+	o0 --&gt; LowPreOp:::low --&gt; o1 --&gt; HighPreOp:::high --&gt; o2
+	
+	o2 --&gt; LowPreOp2[&quot;LowPreOp&quot;]:::low --&gt; o3 --&gt; HighPreOp2[&quot;HighPreOp&quot;]:::high --&gt; o4
+
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px;</code></pre>
+<p>他们可以被分块解析，左边解析得到的AST，就是右边的InfixOperator的
+lhs。</p>
+<pre><code class="highlight mermaid">---
+title: Normal Expression Structure
+---
+flowchart LR
+
+	subgraph left
+		o0 --&gt; LowPreOp:::low --&gt; o1 --&gt; HighPreOp:::high --&gt; o2
+	end
+	o2 --&gt; LowPreOp2[&quot;LowPreOp&quot;]:::low --&gt; o3
+	o3 --&gt; HighPreOp2[&quot;HighPreOp&quot;]:::high --&gt; o4
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px;</code></pre>
+<h2 id="pratt-parser-的实现">Pratt Parser 的实现</h2>
+<h3 id="文法定义">文法定义</h3>
+<p>首先，我们定义的是一个支持以下特性的表达式：</p>
+<ol type="1">
+<li>负数 <code>-10</code>（前缀表达式）；</li>
+<li>加减乘除四则运算（中缀表达式）；</li>
+<li>阶乘 <code>10!</code>（后缀表达式）；</li>
+<li>仅支持整数；</li>
+</ol>
+<blockquote>
+<p>对应的antrl4定义如下：这里值得注意的一点是，我们这里的语法看起来像是存在一个左递归，但是实际这个语法却可以编译运行，这是因为
+<code>antlr4</code> 通过一些方式来支持了 <strong>直接左递归（direct
+left-recursion）</strong>。</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">grammar <span class="title class_">Expression</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 解析入口</span></span><br><span class="line"><span class="attr">expr</span>:   expr op=(<span class="string">&#x27;*&#x27;</span>|<span class="string">&#x27;/&#x27;</span>) expr   # <span class="title class_">MulDivExpr</span></span><br><span class="line">    |   expr op=(<span class="string">&#x27;+&#x27;</span>|<span class="string">&#x27;-&#x27;</span>) expr   # <span class="title class_">AddSubExpr</span></span><br><span class="line">    |   <span class="string">&#x27;-&#x27;</span> expr                 # <span class="title class_">NegateExpr</span></span><br><span class="line">    |   expr <span class="string">&#x27;!&#x27;</span>                 # <span class="title class_">FactorialExpr</span></span><br><span class="line">    |   <span class="variable constant_">INT</span>                      # <span class="title class_">IntExpr</span></span><br><span class="line">    |   <span class="string">&#x27;(&#x27;</span> expr <span class="string">&#x27;)&#x27;</span>             # <span class="title class_">ParenExpr</span></span><br><span class="line">    ;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 词法规则</span></span><br><span class="line"><span class="attr">INT</span>:    [<span class="number">0</span>-<span class="number">9</span>]+ ;</span><br><span class="line"><span class="attr">WS</span>:     [ \t\r\n]+ -&gt; skip ;</span><br></pre></td></tr></table></figure>
+<h3 id="定义token">定义token</h3>
+<blockquote>
+<p>token 的解析我们直接使用了这个库 <a
+target="_blank" rel="noopener" href="https://github.com/bzick/tokenizer">bzick/tokenizer</a>，我们也可以使用数组的方式来mock实际的token解析，但是这样不够灵活，加上tokenizer的库使用也很简单，我们最终决定直接使用tokenizer库为我们提供token解析能力。</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> token</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;github.com/bzick/tokenizer&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	_ = <span class="literal">iota</span></span><br><span class="line">	TypePlus</span><br><span class="line">	TypeMinus</span><br><span class="line">	TypeAsterisk</span><br><span class="line">	TypeSlash</span><br><span class="line">	TypeExclamation</span><br><span class="line">	TypeCaret</span><br><span class="line">	TypeLPa</span><br><span class="line">	TypeRPa</span><br><span class="line">	TypeSemicolon</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewTokenizer</span><span class="params">()</span></span> *tokenizer.Tokenizer &#123;</span><br><span class="line">	<span class="comment">// configure tokenizer</span></span><br><span class="line">	tokenizers := tokenizer.New()</span><br><span class="line">	tokenizers.DefineTokens(TypePlus, []<span class="type">string</span>&#123;<span class="string">&quot;+&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeMinus, []<span class="type">string</span>&#123;<span class="string">&quot;-&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeAsterisk, []<span class="type">string</span>&#123;<span class="string">&quot;*&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeSlash, []<span class="type">string</span>&#123;<span class="string">&quot;/&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeExclamation, []<span class="type">string</span>&#123;<span class="string">&quot;!&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeCaret, []<span class="type">string</span>&#123;<span class="string">&quot;^&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeLPa, []<span class="type">string</span>&#123;<span class="string">&quot;(&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeRPa, []<span class="type">string</span>&#123;<span class="string">&quot;)&quot;</span>&#125;)</span><br><span class="line">	tokenizers.DefineTokens(TypeSemicolon, []<span class="type">string</span>&#123;<span class="string">&quot;;&quot;</span>&#125;)</span><br><span class="line">	<span class="keyword">return</span> tokenizers</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="ast">AST</h3>
+<p>为了构建我们的语法树，我们还需要一些AST结构体：</p>
+<pre><code class="highlight mermaid">---
+title: Definition of Abstract Syntax Tree
+---
+classDiagram
+
+class ExprNode&#123;
+	+String ToString()
+&#125;
+&lt;&lt;interface&gt;&gt; ExprNode
+
+class ValueNode &#123;
+	Value string
+&#125;
+
+class PrefixOperatorNode &#123;
+	Operator string
+	Rhs      ExprNode
+&#125;
+
+class InfixOperatorNode &#123;
+	Lhs      ExprNode
+	Operator string
+	Rhs      ExprNode
+&#125;
+
+ExprNode &lt;|-- ValueNode
+ExprNode &lt;|-- PrefixOperatorNode
+ExprNode &lt;|-- InfixOperatorNode</code></pre>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> ExprNode <span class="keyword">interface</span> &#123;</span><br><span class="line">	ToString() <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> ValueNode <span class="keyword">struct</span> &#123;</span><br><span class="line">	Value <span class="type">int64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v *ValueNode)</span></span> ToString() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> strconv.FormatInt(v.Value, <span class="number">10</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> PrefixOperatorNode <span class="keyword">struct</span> &#123;</span><br><span class="line">	Operator <span class="type">string</span></span><br><span class="line">	Rhs      ExprNode</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *PrefixOperatorNode)</span></span> ToString() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> fmt.Sprintf(<span class="string">&quot;%s%s&quot;</span>, p.Operator, p.Rhs.ToString())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> InfixOperatorNode <span class="keyword">struct</span> &#123;</span><br><span class="line">	Lhs      ExprNode</span><br><span class="line">	Operator <span class="type">string</span></span><br><span class="line">	Rhs      ExprNode</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(i *InfixOperatorNode)</span></span> ToString() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="comment">// we treat suffix expression as infix expression, so we must handle a nullable situation</span></span><br><span class="line">	<span class="keyword">if</span> i.Rhs != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> fmt.Sprintf(<span class="string">&quot;(%s %s %s)&quot;</span>, i.Lhs.ToString(), i.Operator, i.Rhs.ToString())</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> fmt.Sprintf(<span class="string">&quot;(%s%s)&quot;</span>, i.Lhs.ToString(), i.Operator)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="parser">parser</h3>
+<h4 id="分配precedence">分配precedence</h4>
+<p>我们为所有的token单独的分配一个优先级，这个优先级将会决定我们递归解析的退出条件</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Precedence <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	Number  Precedence = <span class="number">10</span> <span class="comment">// Number integer,number,identifier...</span></span><br><span class="line">	Sum     Precedence = <span class="number">20</span> <span class="comment">// +</span></span><br><span class="line">	Product Precedence = <span class="number">30</span> <span class="comment">// *</span></span><br><span class="line">	Prefix  Precedence = <span class="number">40</span> <span class="comment">// -X or !X</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> precedences = <span class="keyword">map</span>[tokenizer.TokenKey]Precedence&#123;</span><br><span class="line">	tokenizer.TokenInteger: Number,</span><br><span class="line">	token.TypePlus:         Sum,</span><br><span class="line">	token.TypeAsterisk:     Product,</span><br><span class="line">	token.TypeExclamation:  Prefix,</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="定义解析函数">定义解析函数</h4>
+<p>为每个token都绑定对应的解析函数</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// prefixParseFn parse prefix operator</span></span><br><span class="line"><span class="keyword">type</span> prefixParseFn <span class="function"><span class="keyword">func</span><span class="params">()</span></span> ast.ExprNode</span><br><span class="line"></span><br><span class="line"><span class="comment">// infixParseFn parse infix operator</span></span><br><span class="line"><span class="keyword">type</span> infixParseFn <span class="function"><span class="keyword">func</span><span class="params">(lhs ast.ExprNode)</span></span> ast.ExprNode</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Parser <span class="keyword">struct</span> &#123;</span><br><span class="line">	stream         *tokenizer.Stream</span><br><span class="line">	prefixParseFns <span class="keyword">map</span>[tokenizer.TokenKey]prefixParseFn</span><br><span class="line">	infixParseFns  <span class="keyword">map</span>[tokenizer.TokenKey]infixParseFn</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewParser</span><span class="params">(input <span class="type">string</span>)</span></span> *Parser &#123;</span><br><span class="line">	tk := token.NewTokenizer()</span><br><span class="line">	p := Parser&#123;</span><br><span class="line">		stream:         tk.ParseString(input),</span><br><span class="line">		prefixParseFns: <span class="built_in">make</span>(<span class="keyword">map</span>[tokenizer.TokenKey]prefixParseFn),</span><br><span class="line">		infixParseFns:  <span class="built_in">make</span>(<span class="keyword">map</span>[tokenizer.TokenKey]infixParseFn),</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	p.registerPrefixParseFn(tokenizer.TokenInteger, p.parseInteger)</span><br><span class="line">	p.registerPrefixParseFn(token.TypeMinus, p.parsePrefixOperator)</span><br><span class="line"></span><br><span class="line">	p.registerInfixParseFn(token.TypePlus, p.parseInfixOperator)</span><br><span class="line">	p.registerInfixParseFn(token.TypeAsterisk, p.parseInfixOperator)</span><br><span class="line">	p.registerInfixParseFn(token.TypeExclamation, p.parseSuffixOperator)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> &amp;p</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> registerPrefixParseFn(tokenType tokenizer.TokenKey, fn prefixParseFn) &#123;</span><br><span class="line">	p.prefixParseFns[tokenType] = fn</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> registerInfixParseFn(tokenType tokenizer.TokenKey, fn infixParseFn) &#123;</span><br><span class="line">	p.infixParseFns[tokenType] = fn</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="真正的解析流程">真正的解析流程</h4>
+<p><code>ParseExpression</code> 是解析程序的入口，在 ParseExpression
+中：</p>
+<ol type="1">
+<li>我们先解析当前token；</li>
+<li>比较当前precedence和下一个token的precedence，并根据条件进行选择策略；</li>
+</ol>
+<blockquote>
+<p>如果我们没有达到stream的结束为止，并且 peekPrecedence &gt;
+currentPrecedence，</p>
+</blockquote>
+<p>则先解析 peekToken。由于 peekToken
+一定是一个中缀表达式（后缀表达式我们可以把它当成一个rhs为nil的中缀表达式），此时得到的节点应该是这样：</p>
+<pre><code class="highlight mermaid">---
+title: Parse Expression -- Infix Parser
+---
+flowchart TD
+	InfixOperatorNode --&gt; Prev[&quot;result of previous parsing&quot;]
+	InfixOperatorNode --&gt; CurrentTokenAsOperator:::low
+	InfixOperatorNode --&gt; Rhs[&quot;parse right expression by infix parser&quot;]:::high
+	
+classDef low fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef high fill:#ff6347,stroke:#333,stroke-width:4px</code></pre>
+<p>中缀节点的三个节点分别是：</p>
+<ol type="1">
+<li>左边表达式的parse结果；</li>
+<li>当前token转换为的operator；</li>
+<li>右侧表达式递归的解析
+<code>p.ParseExpression(precedence)</code>，注意，这里我们修改了当前优先级；</li>
+</ol>
+<blockquote>
+<p>如果stream流结束，或者 peekPrecedence &lt;=
+currentPrecedence，我们已经找到了当前能找到的最高precedence节点。</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> ParseExpression(precedence Precedence) ast.ExprNode &#123;</span><br><span class="line">	prefixFn := p.getPrefixParseFn(p.currentTokenType())</span><br><span class="line">	<span class="comment">// the left-hand side</span></span><br><span class="line">	lhs := prefixFn()</span><br><span class="line">	<span class="comment">// if we don&#x27;t reach the end of stream and the precedence of the peek token is greater than the current token</span></span><br><span class="line">	<span class="comment">// then we must parse peek token first, and the parsing result of the current token</span></span><br><span class="line">	<span class="comment">// should be lhs of the peek token</span></span><br><span class="line">	<span class="keyword">for</span> p.currentTokenIsValid() &amp;&amp; precedence &lt; p.peekPrecedence() &#123;</span><br><span class="line">		infixFn := p.getInfixParseFn(p.currentTokenType())</span><br><span class="line">		lhs = infixFn(lhs)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> lhs</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> parsePrefixOperator() ast.ExprNode &#123;</span><br><span class="line">	node := ast.PrefixOperatorNode&#123;</span><br><span class="line">		Operator: p.currentTokenStringValue(),</span><br><span class="line">	&#125;</span><br><span class="line">	p.goNext()</span><br><span class="line">	node.Rhs = p.ParseExpression(Prefix)</span><br><span class="line">	<span class="keyword">return</span> &amp;node</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// the previous parsing result will the lhs of current token</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> parseInfixOperator(lhs ast.ExprNode) ast.ExprNode &#123;</span><br><span class="line">	node := ast.InfixOperatorNode&#123;</span><br><span class="line">		Lhs:      lhs,</span><br><span class="line">		Operator: p.stream.CurrentToken().ValueString(),</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	precedence := precedences[p.currentTokenType()]</span><br><span class="line">	p.goNext()</span><br><span class="line"> </span><br><span class="line">  <span class="comment">// handle suffix operator for </span></span><br><span class="line">	<span class="keyword">if</span> p.currentTokenIsValid() &#123;</span><br><span class="line">		node.Rhs = p.ParseExpression(precedence)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> &amp;node</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// parseSuffixOperator handle suffix operator</span></span><br><span class="line"><span class="comment">// the main difference between infix operators and suffix operators is that</span></span><br><span class="line"><span class="comment">// infix operators is followed by number/bool/identifier, whereas suffix operators is followed by an infix operator</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Parser)</span></span> parseSuffixOperator(lhs ast.ExprNode) ast.ExprNode &#123;</span><br><span class="line">	node := ast.InfixOperatorNode&#123;</span><br><span class="line">		Lhs:      lhs,</span><br><span class="line">		Operator: p.stream.CurrentToken().ValueString(),</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	p.goNext()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> p.currentTokenIsValid() &#123;</span><br><span class="line">		infixFn := p.getInfixParseFn(p.currentTokenType())</span><br><span class="line">		<span class="keyword">return</span> infixFn(&amp;node)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> &amp;node</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="解析流程详解">解析流程详解</h2>
+<blockquote>
+<p>该章节暂未完成，等待补充</p>
+</blockquote>
+<p>假设存在如下的表达式：</p>
+<pre><code class="highlight mermaid">flowchart TD
+	root[&quot;1 + 2 * 3&quot;]
+	root --&gt; 1
+	root --&gt; +
+	root --&gt; 2
+	root --&gt; *
+	root --&gt; 3</code></pre>
+<p>整体执行过程可以用如下图表表示：</p>
+<table>
+<colgroup>
+<col style="width: 4%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 49%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>id</th>
+<th>当前运算符</th>
+<th>当前优先级</th>
+<th>剩余运算符</th>
+<th>描述</th>
+<th>局部AST栈</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td></td>
+<td>0</td>
+<td>1 + 2 * 3</td>
+<td>由最低优先级开始解析</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>+ 2 * 3</td>
+<td>解析得到第一个节点 1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>+</td>
+<td>2</td>
+<td>2 * 3</td>
+<td>+ 运算符优先级高于数字，执行加号的关联函数</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="references">references</h2>
+<ul>
+<li><p><a
+target="_blank" rel="noopener" href="https://langdev.stackexchange.com/questions/3254/what-exactly-is-pratt-parsing-used-for-and-how-does-it-work">What
+exactly is Pratt parsing used for and how does it work?</a></p></li>
+<li><p><a
+target="_blank" rel="noopener" href="https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html">Simple
+but Powerful Pratt Parsing</a></p></li>
+<li><p><a target="_blank" rel="noopener" href="https://www.oilshell.org/blog/2017/03/31.html">Pratt
+Parsing Index and Updates</a></p></li>
+<li><p><a
+target="_blank" rel="noopener" href="https://www.less-bug.com/posts/pratt-parsing-introduction-and-implementation-in-typescript/">Pratt
+Parsing 算法介绍及实现</a></p></li>
+<li><p><a target="_blank" rel="noopener" href="https://www.oilshell.org/blog/2016/11/01.html">Pratt
+Parsing and Precedence Climbing Are the Same Algorithm</a></p></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/compliler/" rel="tag"># compliler</a>
+              <a href="/tags/parser/" rel="tag"># parser</a>
+              <a href="/tags/pratt-parser/" rel="tag"># pratt parser</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/07/26/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" rel="prev" title="关于golang的类型推导、隐式类型转换的一些思考">
+                  <i class="fa fa-angle-left"></i> 关于golang的类型推导、隐式类型转换的一些思考
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/08/21/Strategies-Of-Evaluation/" rel="next" title="Strategies Of Evaluation">
+                  Strategies Of Evaluation <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

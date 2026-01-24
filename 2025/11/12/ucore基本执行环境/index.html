@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="项目的全部代码在这里：ardi  整体逻辑图解 我们的项目包含以下文件，各模块功能如下：  *.rs 文件：Rust 源代码文件，定义了程序的核心执行逻辑； linker.ld：链接脚本（Linker Script），用于告知链接器如何合并目标文件、编排内存布局，最终生成符合要求的二进制文件； entry.asm：启动引导文件（汇编编写），负责初始化基础执行环境，引导 CPU 定位并跳转到 Ru">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore基本执行环境">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="项目的全部代码在这里：ardi  整体逻辑图解 我们的项目包含以下文件，各模块功能如下：  *.rs 文件：Rust 源代码文件，定义了程序的核心执行逻辑； linker.ld：链接脚本（Linker Script），用于告知链接器如何合并目标文件、编排内存布局，最终生成符合要求的二进制文件； entry.asm：启动引导文件（汇编编写），负责初始化基础执行环境，引导 CPU 定位并跳转到 Ru">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-12T03:29:13.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="os">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/","path":"2025/11/12/ucore基本执行环境/","title":"uCore基本执行环境"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore基本执行环境 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E9%80%BB%E8%BE%91%E5%9B%BE%E8%A7%A3"><span class="nav-number">1.</span> <span class="nav-text">整体逻辑图解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#makefile"><span class="nav-number">2.</span> <span class="nav-text">Makefile</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E9%87%8F%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">变量定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E7%BC%96%E8%AF%91"><span class="nav-number">2.2.</span> <span class="nav-text">依赖初始化和编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%89%A7%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="nav-number">2.3.</span> <span class="nav-text">加载，执行，调试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#link-and-bootloader"><span class="nav-number">3.</span> <span class="nav-text">link and bootloader</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">3.1.</span> <span class="nav-text">linker.ld</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#entry.asm"><span class="nav-number">3.2.</span> <span class="nav-text">entry.asm</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#code"><span class="nav-number">4.</span> <span class="nav-text">code</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sbi.rs"><span class="nav-number">4.1.</span> <span class="nav-text">sbi.rs</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFrust%E7%9A%84%E7%9B%AE%E6%A0%87%E4%B8%89%E5%85%83%E7%BB%84"><span class="nav-number">5.1.</span> <span class="nav-text">什么是rust的目标三元组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFsbiuefibios"><span class="nav-number">5.2.</span> <span class="nav-text">什么是SBI&#x2F;UEFI&#x2F;BIOS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFabi"><span class="nav-number">5.3.</span> <span class="nav-text">什么是ABI</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#os.elf-%E5%92%8C-os.bin-%E5%88%86%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">5.4.</span> <span class="nav-text">os.elf 和 os.bin 分别是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sbi%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83"><span class="nav-number">5.5.</span> <span class="nav-text">SBI调用规范</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E5%88%AB%E5%90%8D"><span class="nav-number">5.6.</span> <span class="nav-text">寄存器别名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.7.</span> <span class="nav-text">项目结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.8.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">引用</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore基本执行环境 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore基本执行环境
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-12 11:29:13" itemprop="dateCreated datePublished" datetime="2025-11-12T11:29:13+08:00">2025-11-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>项目的全部代码在这里：<a
+target="_blank" rel="noopener" href="https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch8">ardi</a></p>
+</blockquote>
+<h2 id="整体逻辑图解">整体逻辑图解</h2>
+<p>我们的项目包含以下文件，各模块功能如下：</p>
+<ol type="1">
+<li><code>*.rs</code> 文件：Rust
+源代码文件，定义了程序的核心执行逻辑；</li>
+<li><code>linker.ld</code>：链接脚本（Linker
+Script），用于告知链接器如何合并目标文件、编排内存布局，最终生成符合要求的二进制文件；</li>
+<li><code>entry.asm</code>：启动引导文件（汇编编写），负责初始化基础执行环境，引导
+CPU 定位并跳转到 Rust 程序的入口地址；</li>
+<li><code>rustsbi-qemu.bin</code> ：SBI（Supervisor Binary
+Interface）固件文件，作为内核与硬件的隔离层 /
+抽象层，为内核提供硬件相关的基础服务（详见 <a href="#什么是sbi">什么是
+SBI</a>）；</li>
+<li><code>Makefile</code> :
+构建脚本，通过声明编译目标（target）、依赖关系及执行命令，简化程序的编译、运行、加载等流程管理。</li>
+</ol>
+<pre><code class="highlight mermaid">flowchart LR
+
+rustsbi(rustsbi-qemu.bin):::coral
+linker(&quot;linker.ld&quot;):::green
+entry(&quot;entry.asm&quot;):::green
+rust(&quot;*.rs&quot;):::green
+qemu(&quot;qemu&quot;):::error
+
+cargo(&quot;cargo&quot;):::error
+
+linker --&gt; cargo
+entry --&gt; cargo
+rust --&gt; cargo
+
+cargo --&gt; elf --&gt;|rust-objcopy| binary
+
+subgraph elf
+    direction TB
+    os_comment(&quot;elf格式的二进制文件&quot;) -.-&gt; os(&quot;os&quot;):::pink
+end
+
+subgraph binary
+    direction TB
+    os_bin_comment(&quot;二进制文件&quot;) -.-&gt; os_bin(&quot;os.bin&quot;):::pink
+end
+
+binary --&gt; rustsbi --&gt; qemu
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h2 id="makefile">Makefile</h2>
+<h3 id="变量定义">变量定义</h3>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 指定目标平台，模式</span></span><br><span class="line">TARGET := riscv64gc-unknown-none-elf</span><br><span class="line">MODE := release</span><br><span class="line"></span><br><span class="line"><span class="comment"># 声明target的elf，bin，汇编的输出目录</span></span><br><span class="line">KERNEL_ELF := target/<span class="variable">$(TARGET)</span>/<span class="variable">$(MODE)</span>/os</span><br><span class="line">KERNEL_BIN := <span class="variable">$(KERNEL_ELF)</span>.bin</span><br><span class="line">DISASM_TMP := target/<span class="variable">$(TARGET)</span>/<span class="variable">$(MODE)</span>/asm</span><br><span class="line"></span><br><span class="line"><span class="comment"># Building mode argument</span></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(MODE)</span>, release)</span><br><span class="line">	MODE_ARG := --release</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># BOARD</span></span><br><span class="line">BOARD := qemu</span><br><span class="line">SBI ?= rustsbi</span><br><span class="line">BOOTLOADER := ../bootloader/<span class="variable">$(SBI)</span>-<span class="variable">$(BOARD)</span>.bin</span><br><span class="line"></span><br><span class="line"><span class="comment"># 内核的物理入口地址（PA = Physical Address），必须与链接脚本（linker.ld）中定义的代码段（.text）起始地址完全一致</span></span><br><span class="line"><span class="comment"># 裸机环境中，CPU 上电后从指定物理地址开始执行，QEMU 通过该地址加载内核二进制并跳转到入口</span></span><br><span class="line"><span class="comment"># 若地址不匹配，会导致内核执行错乱（如跳转到无效指令）</span></span><br><span class="line">KERNEL_ENTRY_PA := 0x80200000</span><br><span class="line"></span><br><span class="line"><span class="comment"># Binutils</span></span><br><span class="line">OBJDUMP := rust-objdump --arch-name=riscv64</span><br><span class="line">OBJCOPY := rust-objcopy --binary-architecture=riscv64</span><br><span class="line"></span><br><span class="line"><span class="comment"># Disassembly</span></span><br><span class="line">DISASM ?= -x</span><br></pre></td></tr></table></figure>
+<h3 id="依赖初始化和编译">依赖初始化和编译</h3>
+<p>这里，makefile主要实现了以下几个功能：</p>
+<ol type="1">
+<li>通过 <code>env</code> 初始化rust编译所需的所有依赖；</li>
+<li>通过 <code>kernel</code>
+目标将rust源码编译为elf格式的二进制文件；</li>
+<li>通过 <code>$(KERNEL_BIN)</code>
+目标，将elf格式的二进制文件转换为逻辑可执行的bare metal app；</li>
+<li>通过 <code>build</code> 编译得到bare metal app。</li>
+</ol>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 指定build的依赖</span></span><br><span class="line"><span class="section">build: env <span class="variable">$(KERNEL_BIN)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化rust编译所需的所有组件，指定target</span></span><br><span class="line"><span class="section">env:</span></span><br><span class="line">	(rustup target list | grep <span class="string">&quot;riscv64gc-unknown-none-elf (installed)&quot;</span>) || rustup target add <span class="variable">$(TARGET)</span></span><br><span class="line">	cargo install cargo-binutils</span><br><span class="line">	rustup component add rust-src</span><br><span class="line">	rustup component add llvm-tools-preview</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 rust-objcopy，rust-objcopy 它将某个特定的二进制格式，转换为另外一个特定的二进制格式。</span></span><br><span class="line"><span class="comment"># 例如，我们在linux下通过cargo build得到了elf格式的文件，我们可以通过rust-objcopy转换为一个纯二进制的文件。</span></span><br><span class="line"><span class="comment"># 这样我们就从一个linux可以识别的二进制文件变成了一个裸机上可以运行的bare metal app。</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># --strip-all : 剥离 ELF 中的所有符号表、调试信息（即使 release 模式有残留元数据也会移除）；</span></span><br><span class="line"><span class="comment"># -O binary：指定输出格式为「纯二进制」；</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># $@ 是一个自动变量（automatic variable），指代当前规则中的目标</span></span><br><span class="line"><span class="comment"># $^ 指代当前规则的「所有依赖」</span></span><br><span class="line"><span class="comment"># $&lt; 指代当前规则的「第一个依赖」</span></span><br><span class="line"><span class="comment"># $* 指代目标文件名的「无后缀部分」</span></span><br><span class="line"><span class="variable">$(KERNEL_BIN)</span>: kernel</span><br><span class="line">	@<span class="variable">$(OBJCOPY)</span> <span class="variable">$(KERNEL_ELF)</span> --strip-all -O binary <span class="variable">$@</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译rust内核输出到 target/riscv64gc-unknown-none-elf/release/os</span></span><br><span class="line"><span class="comment"># 整体由 “基础目录/目标架构目录/构建模式目录/文件名” 组成</span></span><br><span class="line"><span class="comment"># 基础目录    target，是rust默认的输出路径</span></span><br><span class="line"><span class="comment"># 目标架构目录 riscv64gc-unknown-none-elf 来自于TARGET变量</span></span><br><span class="line"><span class="comment"># 构建模式目录 MODE := release，cargo build --release 会把编译产物放在 release 下</span></span><br><span class="line"><span class="section">kernel:</span></span><br><span class="line">	@echo Platform: <span class="variable">$(BOARD)</span></span><br><span class="line">	@cargo build <span class="variable">$(MODE_ARG)</span></span><br></pre></td></tr></table></figure>
+<h3 id="加载执行调试">加载，执行，调试</h3>
+<p>这里只列出了关键的几个target。</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># rust-objdump 与 rust-objcopy 同属 cargo-binutils 工具集，是 Rust 对 LLVM 工具的封装（底层依赖 LLVM 工具链）</span></span><br><span class="line"><span class="comment"># 核心作用是「解析二进制文件（如 ELF）并以人类可读形式输出」（不修改原文件），包括：</span></span><br><span class="line"><span class="comment"># - 反汇编：将机器码转换为 RISC-V 汇编指令；</span></span><br><span class="line"><span class="comment"># - 结构分析：显示 ELF 头信息、段表、符号表等；</span></span><br><span class="line"><span class="comment"># 区别于 rust-objcopy（格式转换工具），rust-objdump 仅用于分析，不改变文件格式</span></span><br><span class="line"><span class="section">disasm: kernel</span></span><br><span class="line">	@<span class="variable">$(OBJDUMP)</span> <span class="variable">$(DISASM)</span> <span class="variable">$(KERNEL_ELF)</span> | less</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将我们编译得到的bin文件加载到qemu执行</span></span><br><span class="line"><span class="comment"># qemu-system-riscv64 指定了平台为riscv64</span></span><br><span class="line"><span class="comment"># -machine virt</span></span><br><span class="line"><span class="comment"># -nographic 关闭图像化输出，并将I/O重定向到console</span></span><br><span class="line"><span class="comment"># -bios $(BOOTLOADER) 指定BIOS，其实这里因为我们这里使用的是riscv，所以这里应该是SBI</span></span><br><span class="line"><span class="comment"># -device 指定driver：</span></span><br><span class="line"><span class="comment">#		loader 指定了 Generic Loader</span></span><br><span class="line"><span class="comment">#		file 指定 driver image</span></span><br><span class="line"><span class="comment">#		addr 指定了程序进入的时候执行的代码基址</span></span><br><span class="line"><span class="section">run: run-inner</span></span><br><span class="line"><span class="section">run-inner: build</span></span><br><span class="line">	@qemu-system-riscv64 \</span><br><span class="line">		-machine virt \</span><br><span class="line">		-nographic \</span><br><span class="line">		-bios <span class="variable">$(BOOTLOADER)</span> \</span><br><span class="line">		-device loader,file=<span class="variable">$(KERNEL_BIN)</span>,addr=<span class="variable">$(KERNEL_ENTRY_PA)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 tmux 中启动调试环境：QEMU 作为 GDB 服务器运行内核，GDB 客户端加载 ELF 符号表进行调试</span></span><br><span class="line"><span class="comment"># QEMU 参数说明：</span></span><br><span class="line"><span class="comment"># -s：默认在 1234 端口启动 GDB 服务器（等价于 -gdb tcp::1234）；</span></span><br><span class="line"><span class="comment"># -S：启动后暂停 CPU，等待 GDB 客户端连接并发送继续执行命令（避免内核提前运行）；</span></span><br><span class="line"><span class="comment"># 依赖 ELF 文件的符号表（KERNEL_ELF），GDB 才能关联源码和内存地址</span></span><br><span class="line"><span class="section">debug: build</span></span><br><span class="line">	@tmux new-session -d \</span><br><span class="line">		<span class="string">&quot;qemu-system-riscv64 -machine virt -nographic -bios <span class="variable">$(BOOTLOADER)</span> -device loader,file=<span class="variable">$(KERNEL_BIN)</span>,addr=<span class="variable">$(KERNEL_ENTRY_PA)</span> -s -S&quot;</span> &amp;&amp; \</span><br><span class="line">		tmux split-window -h <span class="string">&quot;riscv64-unknown-elf-gdb -ex &#x27;file <span class="variable">$(KERNEL_ELF)</span>&#x27; -ex &#x27;set arch riscv:rv64&#x27; -ex &#x27;target remote localhost:1234&#x27;&quot;</span> &amp;&amp; \</span><br><span class="line">		tmux -2 attach-session -d</span><br></pre></td></tr></table></figure>
+<h2 id="link-and-bootloader">link and bootloader</h2>
+<h3 id="linker.ld">linker.ld</h3>
+<p><code>linker.ld</code>
+指定了内存的组织方式，这里我只保留了一些重要信息：</p>
+<ol type="1">
+<li>指定了入口函数为 <code>_start</code>；</li>
+<li>指定了 <code>.text</code> 的起始地址为
+<code>0x80200000</code>，这个地址要和 qemu 的启动命令中的地址一致；</li>
+</ol>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line"><span class="keyword">BASE_ADDRESS </span>= <span class="number">0x80200000</span>;</span><br><span class="line"></span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    . = <span class="keyword">BASE_ADDRESS;</span></span><br><span class="line"><span class="keyword"></span>    skernel = .;</span><br><span class="line"></span><br><span class="line">    stext = .;</span><br><span class="line">    <span class="meta">.text</span> : &#123;</span><br><span class="line">        *(<span class="meta">.text</span>.entry)</span><br><span class="line">        *(<span class="meta">.text</span> <span class="meta">.text</span>.*)</span><br><span class="line">    &#125; </span><br><span class="line"></span><br><span class="line">    .<span class="keyword">bss </span>: &#123;</span><br><span class="line">        *(.<span class="keyword">bss.stack)</span></span><br><span class="line"><span class="keyword"></span>        <span class="keyword">sbss </span>= .;</span><br><span class="line">        *(.<span class="keyword">bss </span>.<span class="keyword">bss.*)</span></span><br><span class="line"><span class="keyword"></span>        *(.<span class="keyword">sbss </span>.<span class="keyword">sbss.*)</span></span><br><span class="line"><span class="keyword"></span>    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="entry.asm">entry.asm</h3>
+<blockquote>
+<p>它主要的目的是初始化并引导CPU找到入口代码地址。</p>
+</blockquote>
+<ol type="1">
+<li><strong>可以留意到，汇编程序中并没有任何位置信息，因为他代码的位置并不取决于自身，而是取决于链接文件中声明。</strong></li>
+<li>文件定义了自定义段 <code>.text.entry</code> 和
+<code>.bss.stack</code>，他们将会在链接文件中被引入；</li>
+<li>boot_stack_lower_bound 是栈的起始标签（栈底），真正分配 64KB
+内存的是 .space 4096 * 16 指令：这段指令会在 .bss.stack 段中预留 64KB
+连续内存空间。</li>
+<li>boot_stack_top
+是栈的结束标签（栈顶）：由于汇编中标签会指向其定义处的内存地址，且
+.space 会在 boot_stack_lower_bound 之后占用 64KB 空间，因此
+boot_stack_top 的地址 = boot_stack_lower_bound 的地址 + 64KB</li>
+<li><code>la sp, boot_stack_top</code>
+的作用：将栈顶地址（boot_stack_top）加载到栈指针 sp
+寄存器，本质是初始化栈指针的 “初始位置”，而这 64KB
+连续内存就是操作系统（启动阶段 + Rust 内核初期）的栈空间 —— 栈会从
+boot_stack_top 地址开始 “向下生长”（RISC-V
+架构栈默认向下生长），可用范围就是 boot_stack_lower_bound 到
+boot_stack_top 之间的 64KB。</li>
+<li>.bss 段专门用于存储 “未初始化的全局 /
+静态数据”，链接器会为其分配连续内存，且加载到内存后会自动清零（避免栈中残留硬件初始化后的脏数据，导致程序运行异常）；</li>
+<li><code>boot_stack_lower_bound</code> 是栈的
+“下界保护标记”：如果程序运行时栈溢出（sp 地址低于
+boot_stack_lower_bound），就会访问到非法内存，触发硬件异常（方便调试栈溢出问题）；需要注意的是，既是没有这个标签，硬件依然会保护用户不会访问到非法内存，只不过缺少这个标签可能就比较难定位问题了。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">    // 声明 .text.entry 段</span><br><span class="line">    .section .text.entry</span><br><span class="line">    .globl _start</span><br><span class="line">_start:</span><br><span class="line">    // 初始化栈指针</span><br><span class="line">    la sp, boot_stack_top</span><br><span class="line">    // 跳转rust的main函数</span><br><span class="line">    call rust_main</span><br><span class="line"></span><br><span class="line">    // 声明 .bss.stack 段</span><br><span class="line">    .section .bss.stack</span><br><span class="line">    .globl boot_stack_lower_bound</span><br><span class="line">boot_stack_lower_bound:</span><br><span class="line">    // 填充空间 64k</span><br><span class="line">    .space 4096 * 16</span><br><span class="line"></span><br><span class="line">    .globl boot_stack_top</span><br><span class="line">boot_stack_top:</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="code">code</h2>
+<blockquote>
+<p><code>rust</code>
+代码是我们的主业务逻辑，在第一章中，我们只是简单的通过 entry.asm
+引导CPU跳转到了rust的main函数，并向标准输出输出了一个字符。整体包含了如下几个模块：</p>
+<ol type="1">
+<li><code>main.rs</code> 初始化内存区域，例如 <code>bss</code>,
+<code>text</code>, <code>rodata</code>
+以及内核的栈内存等；并调用封装好的SBI发送字符到标准输出；</li>
+<li><code>qemu.rs</code>
+调用qemu相关的接口，确保在执行之后退出，如果有异常则进行异常处理并输出异常；</li>
+<li><code>sbi.rs</code> 封装SBI
+function，提供将字符输出到标准输出的能力；</li>
+<li><code>console.rs</code> 封装sbi.rs，提供输出 <code>&amp;str</code>
+到标准输出的能力；</li>
+<li><code>logging.rs</code> 初始化rust标准库的log用于输出信息，并使用
+<code>console.rs</code> 中封装好的函数输出字符串到标准输出；</li>
+<li><code>lang_items.rs</code> 异常处理。</li>
+</ol>
+</blockquote>
+<h3 id="sbi.rs">sbi.rs</h3>
+<blockquote>
+<p>具体 SBI function 的调用规范，请查看 <a
+href="#SBI调用规范">SBI调用规范</a></p>
+</blockquote>
+<p>封装 SBI
+function，提供了输出字符到标准输出的能力，这里值得注意的的点有几个：</p>
+<ol type="1">
+<li><code>x16</code>
+设置扩展ID，它标志了功能大类（如「基础扩展」「定时器扩展」「系统扩展」），<strong>这里需要注意的是，它的设置必须在ecall之前，虽然这里先调用ecall再设置x16程序依然正常工作，但是这可能和x16的默认值正好为0有关（另外的可能性是我们使用的并非官方的SBI，这个SBI中并未遵循规定），这是一个不可靠的未定义行为</strong>。</li>
+<li>ecall 先陷入到supervisor mode，这是系统调用的条件；</li>
+<li>inlateout 表明 x10
+同时作为输入和输出，并且指定输入是arg0，输出存储到ret中；</li>
+<li>x11 和 x12 是SBI的arg1和arg2；</li>
+<li>x17 是调用的SBI function ID，而 x16 是调用SBI extension ID；这是
+RISC-V SBI 规范（特别是 SBI v0.2
+及以上版本）要求的「双参数标识」：<strong>x17 存功能 ID（Function
+ID），x16 存扩展 ID（Extension ID）</strong>，两者结合才能让 SBI
+固件（如 RustSBI）明确要执行的具体功能。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SBI function IDs</span></span><br><span class="line"><span class="keyword">const</span> SBI_CONSOLE_PUTCHAR: <span class="type">usize</span> = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// general sbi call</span></span><br><span class="line"><span class="meta">#[inline(always)]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">sbi_call</span>(which: <span class="type">usize</span>, arg0: <span class="type">usize</span>, arg1: <span class="type">usize</span>, arg2: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">ret</span>;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        asm!(</span><br><span class="line">            <span class="string">&quot;li x16, 0&quot;</span>,                        <span class="comment">// set SBI extension ID to 0</span></span><br><span class="line">            <span class="string">&quot;ecall&quot;</span>,                            <span class="comment">// trap into supervisor mode</span></span><br><span class="line">            <span class="title function_ invoke__">inlateout</span>(<span class="string">&quot;x10&quot;</span>) arg0 =&gt; ret,       <span class="comment">// x10 is both input and output: arg0 and return value</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;x11&quot;</span>) arg1,                     <span class="comment">// x11: arg1</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;x12&quot;</span>) arg2,                     <span class="comment">// x12: arg2</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;x17&quot;</span>) which,                    <span class="comment">// x17: SBI function ID</span></span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">    ret</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// use sbi call to putchar in console (qemu uart handler)</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">console_putchar</span>(c: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="title function_ invoke__">sbi_call</span>(SBI_CONSOLE_PUTCHAR, c, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="qa">QA</h1>
+<h2 id="什么是rust的目标三元组">什么是rust的目标三元组</h2>
+<p>Rust 的目标三元组格式是
+<code>arch</code>-<code>vendor</code>-<code>os</code>-<code>abi</code>，例如：<code>riscv64gc-unknown-none-elf</code></p>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 16%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>字段</th>
+<th>取值</th>
+<th>含义详解</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>arch（架构）</td>
+<td>riscv64gc</td>
+<td>核心架构信息：riscv=RISC-V 架构，64=64 位，g= 通用扩展，c=
+压缩指令扩展</td>
+</tr>
+<tr class="even">
+<td>vendor（厂商）</td>
+<td>unknown</td>
+<td>硬件厂商未知 / 通用（不绑定特定芯片厂商，如三星、Intel、StarFive
+等）</td>
+</tr>
+<tr class="odd">
+<td>os（操作系统）</td>
+<td>none</td>
+<td>无操作系统（裸机环境，对应 #[no_std]，不依赖任何 OS 的系统调用 /
+库）</td>
+</tr>
+<tr class="even">
+<td>abi（应用二进制接口）</td>
+<td>elf</td>
+<td>二进制接口遵循 ELF 标准（指定编译产物的格式规范，确保与加载器 /
+RISC-V 兼容）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="什么是sbiuefibios">什么是SBI/UEFI/BIOS</h2>
+<p>现代计算机最常用的体系主要包括了
+<code>x86</code>，<code>arm</code>，<code>riscv</code>
+等架构，在相同的体系下，其实硬件实现可能完全不同。</p>
+<p>在这种情况下，操作系统内核需要了解硬件的全部实现细节，并且为同一个体系下的每一个硬件实现提供相应的接口。这个明显是不合理的。</p>
+<p>为此，x86提供了 <code>BIOS</code>，而riscv提供了
+<code>SBI</code>，而各个硬件厂商也是联合起来推出了 <code>UEFI</code>
+作为一个跨多硬件平台的协议。</p>
+<p>他们作为中间层，约定了内核到硬件的调用协议，这样内核只需要按照中间层的声明去调用而可以忽略硬件实现的细节。</p>
+<ul>
+<li><code>SBI</code> 的全称是
+<code>Supervisor Binary Interface</code>，是 RISC-V
+体系架构下的<strong>硬件抽象层标准</strong>，它向上为操作系统内核（Supervisor
+模式）提供统一的硬件访问接口，向下屏蔽底层硬件的具体实现细节，从而实现内核与硬件的解耦隔离。</li>
+<li><code>BIOS</code> 的全程是
+<code>Basic Input/Output System</code>，是 x86
+架构下的传统固件，核心负责系统启动时的硬件自检、初始化与系统引导，同时屏蔽底层硬件细节以适配上层引导程序；</li>
+<li><code>UEFI</code> 的全称是
+<code>Unified Extensible Firmware Interface</code>
+跨架构（x86、ARM、RISC-V
+等均支持），它是UEFI论坛主导、多个厂商联合遵循的跨架构固件标准，厂商可基于该标准开发
+UEFI 固件，适配多类架构的启动与硬件交互需求；</li>
+</ul>
+<p><strong>这里值得注意的是，<code>SBI</code>是riscv体系下独有的固件。对于x86体系，他对应的是
+<code>UEFI/BIOS</code></strong>。</p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 56%" />
+<col style="width: 10%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>组件</th>
+<th>核心职责</th>
+<th>工作阶段</th>
+<th>类比角色</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>BIOS/UEFI</td>
+<td>启动阶段初始化基础硬件（CPU、内存、硬盘）、传递硬件信息、引导内核 /
+SBI</td>
+<td>仅启动阶段</td>
+<td>「开机初始化助手」（启动后退场）</td>
+</tr>
+<tr class="even">
+<td>SBI</td>
+<td>为 RISC-V
+内核提供特权级硬件操作的标准化接口（如中断、时钟、电源管理），隔离内核与底层硬件</td>
+<td>启动后持续工作</td>
+<td>「内核与硬件之间的安全网关」</td>
+</tr>
+<tr class="odd">
+<td>驱动程序</td>
+<td>操作具体硬件（如网卡、显卡、硬盘）的专属逻辑（如数据传输、寄存器配置）</td>
+<td>启动后持续工作</td>
+<td>「特定硬件的专属翻译官」</td>
+</tr>
+</tbody>
+</table>
+<h2 id="什么是abi">什么是ABI</h2>
+<p><code>ABI</code> 的全程是
+<code>Application Binary Interface</code>，是不同二进制模块之间的
+“通信协议” -- ——
+它定义了二进制层面（如汇编指令、内存布局、函数调用规则）的交互标准，确保编译后的二进制文件（如库、内核、应用）能跨编译器、跨语言、跨平台正确协作。</p>
+<p>最简单的例子是，<code>rust</code> 和 <code>go</code> 都可以调用
+<code>c</code> 语言的接口，但我们不可能在编译的时候让 <code>rust</code>
+的编译器去编译c语言的代码。所以整体的编译逻辑是：</p>
+<ol type="1">
+<li>rust编译器编译rust代码得到rust的目标文件；</li>
+<li>c编译器编译c代码得到c的目标文件；</li>
+<li>按照ABI的约定，通过链接器进行链接来实现rust调用c语言。</li>
+</ol>
+<pre><code class="highlight mermaid">flowchart LR
+
+rust(&quot;main.rs&quot;):::green
+c(&quot;hello.c&quot;):::purple
+
+rust_obj(&quot;rust目标文件&quot;):::green
+c_obj(&quot;c目标文件&quot;):::purple
+
+rust --&gt;|rust编译器| rust_obj
+c --&gt;|c编译器| c_obj
+
+linker(&quot;链接器&quot;):::pink
+        
+rust_obj --&gt;|遵循ABI调用规范| linker
+c_obj --&gt;|遵循ABI调用规范| linker
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h2 id="os.elf-和-os.bin-分别是什么">os.elf 和 os.bin 分别是什么？</h2>
+<ul>
+<li><code>os.elf</code> 是 rust 编译后得到的 elf 文件，linux
+下的可执行文件普遍是 elf 格式。</li>
+<li><code>os.bin</code> 是 elf 文件通过 <code>rust-objcopy</code>
+得到的可以在逻辑上执行的二进制文件。</li>
+</ul>
+<h2 id="sbi调用规范">SBI调用规范</h2>
+<p>SBI（Supervisor Binary Interface）是「内核（Supervisor
+模式）」与「引导程序（Machine 模式，如
+RustSBI/OpenSBI）」的通信接口。为了支持更多功能扩展（如定时器、系统关机、IPI
+中断、调试等），SBI 规范定义了 <strong>「扩展 ID + 功能
+ID」的双标识机制</strong>：</p>
+<ul>
+<li><strong>扩展 ID（Extension
+ID）</strong>：区分不同的功能大类（如「基础扩展」「定时器扩展」「系统扩展」）；</li>
+<li><strong>功能 ID（Function
+ID）</strong>：区分同一扩展下的具体功能（如「定时器扩展」下的「设置定时器」「获取当前时间」）。</li>
+</ul>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 17%" />
+<col style="width: 35%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>寄存器</th>
+<th>寄存器别名</th>
+<th>用途</th>
+<th>对应代码中的参数</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>x16</td>
+<td><code>a6</code></td>
+<td>扩展 ID（Extension ID）</td>
+<td><code>li x16, 0</code> → 0</td>
+</tr>
+<tr class="even">
+<td>x17</td>
+<td><code>a7</code></td>
+<td>功能 ID（Function ID）</td>
+<td>代码中的 <code>which</code> 参数</td>
+</tr>
+<tr class="odd">
+<td>x10 ~ x15</td>
+<td><code>a0</code> ~ <code>a5</code></td>
+<td>调用参数</td>
+<td><code>arg0</code> ~ <code>arg5</code></td>
+</tr>
+<tr class="even">
+<td>x10</td>
+<td><code>a0</code></td>
+<td>返回值</td>
+<td><code>ret</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="寄存器别名">寄存器别名</h2>
+<p>我们可以观察到一个有趣的现象，将sbi_call的代码修改为如下仍然可以正常执行并工作：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// general sbi call</span></span><br><span class="line"><span class="meta">#[inline(always)]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">sbi_call</span>(which: <span class="type">usize</span>, arg0: <span class="type">usize</span>, arg1: <span class="type">usize</span>, arg2: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">ret</span>;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        asm!(</span><br><span class="line">            <span class="string">&quot;li a6, 0&quot;</span>,                        <span class="comment">// set SBI extension ID to 0</span></span><br><span class="line">            <span class="string">&quot;ecall&quot;</span>,                            <span class="comment">// trap into supervisor mode</span></span><br><span class="line">            <span class="title function_ invoke__">inlateout</span>(<span class="string">&quot;a0&quot;</span>) arg0 =&gt; ret,       <span class="comment">// x10 is both input and output: arg0 and return value</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a1&quot;</span>) arg1,                     <span class="comment">// x11: arg1</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a2&quot;</span>) arg2,                     <span class="comment">// x12: arg2</span></span><br><span class="line">            <span class="title function_ invoke__">in</span>(<span class="string">&quot;a7&quot;</span>) which,                    <span class="comment">// x17: SBI function ID</span></span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">    ret</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是因为，<code>a0</code> ~ <code>a7</code> 其实是寄存器
+<code>a10</code> ~ <code>a17</code> 的别名，为什么需要别名呢？</p>
+<ol type="1">
+<li><strong>明确功能定位</strong>：寄存器编号（<code>x0</code>-<code>x31</code>）仅表示硬件层面的寄存器标识，而别名（如<code>a0</code>-<code>a7</code>、<code>s0</code>-<code>s11</code>等）则直接反映了寄存器的<strong>约定用途</strong>。例如：
+<ul>
+<li><code>a0</code>-<code>a7</code>（<code>x10</code>-<code>x17</code>）明确标记为
+“函数参数与返回值寄存器”，开发者看到<code>a0</code>就知道它用于传递第一个参数或返回结果；</li>
+<li>类似地，<code>s0</code>-<code>s11</code>表示
+“保存寄存器”（需在函数调用中保留值），<code>t0</code>-<code>t6</code>表示
+“临时寄存器”（无需保留）。</li>
+</ul></li>
+<li><strong>统一调用规范</strong> 编译器、操作系统、固件（如
+SBI）等不同软件组件需遵循同一套寄存器使用规则才能协同工作。例如：
+<ul>
+<li>编译器生成函数调用代码时，会自动将参数放入<code>a0</code>-<code>a7</code>；</li>
+<li>SBI 规范规定用a7（x17）传递功能号、a6（x16）传递扩展号，确保内核与
+SBI 固件的交互一致。
+别名让这种规范更直观，降低跨组件协作的出错概率。</li>
+</ul></li>
+<li><strong>抽象硬件细节</strong>：对于开发者而言，无需关心
+“<code>x10</code>是第 11 个寄存器”
+这种硬件细节，只需关注<code>a0</code>的 “参数 / 返回值” 语义。</li>
+</ol>
+<h2 id="项目结构">项目结构</h2>
+<p>整体项目结构如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── target</span><br><span class="line">│   └── riscv64gc-unknown-none-elf/release/os</span><br><span class="line">│   └── riscv64gc-unknown-none-elf/release/os.bin</span><br><span class="line">├── bootloader</span><br><span class="line">│   └── rustsbi-qemu.bin</span><br><span class="line">├── os</span><br><span class="line">│   ├── src</span><br><span class="line">│   │   ├── boards</span><br><span class="line">│   │   │   └── qemu.rs</span><br><span class="line">│   │   ├── console.rs</span><br><span class="line">│   │   ├── entry.asm</span><br><span class="line">│   │   ├── lang_items.rs</span><br><span class="line">│   │   ├── linker.ld</span><br><span class="line">│   │   ├── logging.rs</span><br><span class="line">│   │   ├── main.rs</span><br><span class="line">│   │   └── sbi.rs</span><br><span class="line">│   ├── Cargo.toml</span><br><span class="line">│   └── Makefile</span><br><span class="line">└── Makefile</span><br></pre></td></tr></table></figure>
+<p>下面我们来拆解项目他们的功能，流程以及他们是如何被组织成为一个可执行文件，也就是我们的
+<code>os</code> 和 <code>os.bin</code>。</p>
+<p>这里，<code>os</code> 是我们从rust源码编译得到的
+<strong>elf格式</strong> 的二进制文件，而 <code>os.bin</code>
+是一个裸机可执行的二进制文件。我们通过 <code>rust-objcopy</code>
+来实现这个这个转换；</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+os(&quot;os&quot;):::green
+os_bin(&quot;os.bin&quot;):::purple
+
+os --&gt; os_bin
+
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h2 id="总结">总结</h2>
+<p><code>uCore</code> 是由清华大学推出的一个基于 <code>rust</code> 和
+<code>riscv</code> 实现的操作系统，实现难度适中，核心代码量约为
+<code>5000</code>
+行，这里使用本文记录在学习过程中的一些思考和疑问，在完成这个项目之后，我们可以：</p>
+<ol type="1">
+<li>阅读简单的 Makefile 文件；</li>
+<li>阅读简单的 RISC-V 汇编代码；</li>
+<li>git 的基本功能，解决 git merge 冲突的办法；</li>
+<li>Rust 基本语法和一些进阶语法，包括 Cargo
+项目结构、Trait、函数式编程、Unsafe Rust、错误处理等；</li>
+<li>粗浅的了解操作系统的实现逻辑。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">➜  ~/code/2025a-rcore-0x822a5b87 git:(ch8) cloc --include-ext=rs,s,S,asm .</span><br><span class="line">     262 text files.</span><br><span class="line">     216 unique files.                                          </span><br><span class="line">     232 files ignored.</span><br><span class="line"></span><br><span class="line">github.com/AlDanial/cloc v 1.82  T=0.02 s (2738.4 files/s, 303633.3 lines/s)</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Language                     files          blank        comment           code</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Rust                            55            391            967           4941</span><br><span class="line">Assembly                         3              6             29             97</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">SUM:                            58            397            996           5038</span><br><span class="line">-------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h1 id="引用">引用</h1>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/LearningOS/rustling-classroom-2025a-rustling-rustling-25A-template">rustlings
+- rust的示例</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/LearningOS/os-rcore-classroom-2025a-rcore-rCore-Tutorial-Code">os-rcore-classroom-2025a-rcore-rCore-Tutorial-Code</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://learningos.cn/rCore-Tutorial-Guide/index.html">rCore-Tutorial-Guide</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter0/1what-is-os.html">rCore-Tutorial-Book-v3
+3.6.0-alpha.1 文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.qemu.org/">qemu</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/" rel="prev" title="C99中关于char的一个未定义行为">
+                  <i class="fa fa-angle-left"></i> C99中关于char的一个未定义行为
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/" rel="next" title="uCore批处理系统">
+                  uCore批处理系统 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

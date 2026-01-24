@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="发现问题 最近在尝试实现一个简单的 docker，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口 subsystem，但是对于不同的类型的文件他的结构完全不一样：  对于 cgroup.procs，他的文件中存储的是一个以 \n 分割的 pid 数组； 对于 cpu.max，他的文件中存储的是以空格分隔的两个数字；  12345cat &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go&#x2F;Rust&#x2F;CPP的Covariance&#x2F;Contravariance&#x2F;Invariance">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="发现问题 最近在尝试实现一个简单的 docker，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口 subsystem，但是对于不同的类型的文件他的结构完全不一样：  对于 cgroup.procs，他的文件中存储的是一个以 \n 分割的 pid 数组； 对于 cpu.max，他的文件中存储的是以空格分隔的两个数字；  12345cat &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;s">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251223/01.png">
+<meta property="article:published_time" content="2025-12-23T02:40:04.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="c++">
+<meta property="article:tag" content="go">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251223/01.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/","path":"2025/12/23/Go-Rust-CPP的Covariance-Contravariance-Invariance/","title":"Go/Rust/CPP的Covariance/Contravariance/Invariance"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Go/Rust/CPP的Covariance/Contravariance/Invariance | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%91%E7%8E%B0%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">发现问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E9%97%AE%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">解决问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#covariance"><span class="nav-number">2.1.</span> <span class="nav-text">Covariance</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%95%E5%BC%80%E9%99%90%E5%88%B6"><span class="nav-number">2.2.</span> <span class="nav-text">绕开限制</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8B%93%E5%B1%95"><span class="nav-number">3.</span> <span class="nav-text">拓展</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Go&#x2F;Rust&#x2F;CPP的Covariance&#x2F;Contravariance&#x2F;Invariance | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Go/Rust/CPP的Covariance/Contravariance/Invariance
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-23 10:40:04" itemprop="dateCreated datePublished" datetime="2025-12-23T10:40:04+08:00">2025-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="发现问题">发现问题</h1>
+<p>最近在尝试实现一个简单的 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-docker/tree/main">docker</a>，在实现的过程中我试图将对linux的cgroup文件操作抽象为一个独立的接口
+<code>subsystem</code>，但是对于不同的类型的文件他的结构完全不一样：</p>
+<ul>
+<li>对于 <code>cgroup.procs</code>，他的文件中存储的是一个以
+<code>\n</code> 分割的 <code>pid</code> 数组；</li>
+<li>对于
+<code>cpu.max</code>，他的文件中存储的是以空格分隔的两个数字；</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cat /sys/fs/cgroup/system.slice/docker-0a7f5c9459f832ac7bb539e6e61dac51a4a4f66c5dbc1bbb963d0ec3f01d31ae.scope/cgroup.procs</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">1435205</span></span><br><span class="line"></span><br><span class="line">cat /sys/fs/cgroup/system.slice/docker-0a7f5c9459f832ac7bb539e6e61dac51a4a4f66c5dbc1bbb963d0ec3f01d31ae.scope/cpu.max</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">max 100000</span></span><br></pre></td></tr></table></figure>
+<p>所以，我尝试直接将他做出如下抽象：</p>
+<ul>
+<li>文件内容的实际数据为 <code>string</code>，但是对外暴露为
+<code>Item</code> 和 <code>Value</code> 两个类型，其中
+<code>Value</code> 需要提供 <code>string -&gt; Value</code> 和
+<code>Value -&gt; string</code> 的接口；</li>
+<li>对文件内容的查询抽象为
+<code>Subsystem</code>，它不直接操作文件，而是通过和前面的
+<code>Item</code> 以及 <code>Value</code> 交互。</li>
+</ul>
+<p>在这种情况下，我们上层的业务逻辑可以完全的隔离对文件的操作逻辑，那么整体的代码可以被抽象为：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Item any</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Value <span class="keyword">interface</span> &#123;</span><br><span class="line">	From(<span class="type">string</span>) <span class="type">error</span></span><br><span class="line">	Into() <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> BaseSubsystem <span class="keyword">interface</span> &#123;</span><br><span class="line">	Name() <span class="type">string</span></span><br><span class="line">	Empty() <span class="type">bool</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Subsystem[I Item, V Value] <span class="keyword">interface</span> &#123;</span><br><span class="line">	BaseSubsystem</span><br><span class="line">	Get() (V, <span class="type">error</span>)</span><br><span class="line">	Set(I) <span class="type">error</span></span><br><span class="line">	Del(I) <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> AnySubsystem Subsystem[Item, Value]</span><br></pre></td></tr></table></figure>
+<figure>
+<img src="/images/20251223/01.png" alt="01" />
+<figcaption aria-hidden="true">01</figcaption>
+</figure>
+<p>这个逻辑本来看上去相当的合理，然而在实现时发现：**go语言的泛型并不支持<a
+href="#Covariance">Covariance</a>。于是，我们的如下代码将直接抛出异常。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这一段代码的编译是通过的</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *CgroupFileSystem)</span></span> Write(ss subsystem.AnySubsystem) <span class="type">error</span> &#123;</span><br><span class="line">	cgroupPath, err := subsystem.GetCgroupPath(ss, f.Path, f.AutoCreate)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	value, err := ss.Get()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := os.WriteFile(cgroupPath, []<span class="type">byte</span>(value.Into()), <span class="number">0644</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *CgroupFileSystem)</span></span> Sync(pid <span class="type">int</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line marked">	procsSubsystem := cgroup.NewProcsValueSubsystem(value)</span><br><span class="line marked">	<span class="comment">// Cannot use procsSubsystem as the tye Subsystem</span></span><br><span class="line marked">	f.Write(procsSubsystem)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="解决问题">解决问题</h1>
+<h2 id="covariance">Covariance</h2>
+<p>要解决这个问题，我们就必须先了解什么叫
+<code>Covariance</code>：通俗来说，<strong>协变</strong>是类型系统中的一个概念，描述的是：<strong>若类型
+<code>Sub</code> 是类型 <code>Base</code> 的子类型（或实现了
+<code>Base</code> 接口），则基于 <code>Sub</code> 的泛型类型（如
+<code>Container[Sub]</code>）可视为基于 <code>Base</code> 的泛型类型（如
+<code>Container[Base]</code>）的子类型</strong>—— 简单说就是 “子类的容器
+≈ 父类的容器”。</p>
+<p>如果要举一个例子就是：</p>
+<ul>
+<li><strong>苹果是水果的子类型，那么对于一个返回水果的接口，他返回一个苹果是可以接受的，这也是泛型存在的意义；</strong></li>
+<li><strong>而Covariance指的是，一个装苹果的篮子是否可以匹配一个装水果的篮子？</strong></li>
+</ul>
+<p>这里给出一个最简单的例子：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Base <span class="keyword">interface</span> &#123;</span><br><span class="line">	BaseMethod()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> BaseImpl <span class="keyword">struct</span> &#123;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b BaseImpl)</span></span> BaseMethod() &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Container[T Base] <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BaseAsParams</span><span class="params">(container Container[Base])</span></span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> baseContainer Container[Base]</span><br><span class="line">	BaseAsParams(baseContainer)</span><br><span class="line">	<span class="keyword">var</span> baseImplContainer Container[BaseImpl]</span><br><span class="line">	BaseAsParams(baseImplContainer)</span><br><span class="line">    <span class="comment">// Cannot use &#x27;baseImplContainer&#x27; (type Container[BaseImpl]) as the type Container[Base]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<table>
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 22%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>代码元素</th>
+<th>比喻中的概念</th>
+<th>核心关系</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Base</code></td>
+<td>水果（接口）</td>
+<td>顶层抽象</td>
+</tr>
+<tr class="even">
+<td><code>BaseImpl</code></td>
+<td>苹果（实现）</td>
+<td><code>BaseImpl</code> 实现了 <code>Base</code></td>
+</tr>
+<tr class="odd">
+<td><code>Container[T Base]</code></td>
+<td>装水果 / 苹果的篮子</td>
+<td>泛型容器（约束 T 为 Base）</td>
+</tr>
+<tr class="even">
+<td><code>BaseAsParams(Container[Base])</code></td>
+<td>接收 “装水果的篮子”</td>
+<td>函数期望的参数类型</td>
+</tr>
+<tr class="odd">
+<td><code>Container[BaseImpl]</code></td>
+<td>装苹果的篮子</td>
+<td>试图传递给接收 “装水果篮子” 的函数</td>
+</tr>
+</tbody>
+</table>
+<h2 id="绕开限制">绕开限制</h2>
+<p>现在我们知道 <code>Covariance</code> 对我们的限制是：</p>
+<ol type="1">
+<li><strong>装苹果的篮子不能匹配装水果的篮子</strong>。</li>
+<li><strong>苹果可以匹配水果</strong>。</li>
+</ol>
+<p>那么很自然的，我们可以将前面的一个<strong>接受泛型参数的函数</strong>修改为<strong>一个接受泛型参数的泛型函数</strong>
+--
+让编译器去为我们特化<strong>篮子</strong>和<strong>水果</strong>，也就得到了这个函数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Write</span>[<span class="title">I</span> <span class="title">subsystem</span>.<span class="title">Item</span>, <span class="title">V</span> <span class="title">subsystem</span>.<span class="title">Value</span>]<span class="params">(f *CgroupFileSystem, ss subsystem.Subsystem[I, V])</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	cgroupPath, err := subsystem.GetCgroupPath(ss, f.Path, f.AutoCreate)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	value, err := ss.Get()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := os.WriteFile(cgroupPath, []<span class="type">byte</span>(value.Into()), <span class="number">0644</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *CgroupFileSystem)</span></span> Sync(pid <span class="type">int</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	procsSubsystem := cgroup.NewProcsValueSubsystem(value)</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">	err = Write(f, procsSubsystem)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个 <code>Write</code>
+泛型函数能编译运行，本质就是<strong>编译器为每个不同的泛型参数组合生成专属的
+“特化版本”</strong>，彻底绕开了协变的限制。</p>
+<table>
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 29%" />
+<col style="width: 33%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>原问题（协变限制）</th>
+<th>泛型函数解法（编译器特化）</th>
+<th>本质变化</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>函数参数</td>
+<td>固定 <code>Container[水果]</code></td>
+<td>泛型 <code>Container[T 水果]</code></td>
+<td>从 “要求篮子必须装水果”→“适配装任意水果的篮子”</td>
+</tr>
+<tr class="even">
+<td>编译器行为</td>
+<td>检查类型是否严格等于 <code>Container[水果]</code></td>
+<td>为 <code>Container[苹果]</code>/<code>Container[香蕉]</code>
+生成独立代码</td>
+<td>从 “类型匹配”→“代码生成”</td>
+</tr>
+<tr class="odd">
+<td>协变依赖</td>
+<td>试图让 <code>Container[苹果]</code> ≈
+<code>Container[水果]</code></td>
+<td>无需协变，直接为 <code>Container[苹果]</code> 生成专属逻辑</td>
+<td>绕开协变，而非突破协变</td>
+</tr>
+</tbody>
+</table>
+<h1 id="拓展">拓展</h1>
+<p><strong><code>Covariance</code>（协变）是
+<code>Variance</code>（方差）的一个子集</strong>——<code>Variance</code>
+是泛型类型系统描述 “泛型参数的子类型关系是否能传递到泛型容器”
+的总概念，而 <code>Covariance</code> 是其中最常见的一种 “传递规则”。</p>
+<table>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 20%" />
+<col style="width: 41%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>类型</th>
+<th>英文</th>
+<th>例子</th>
+<th>代码场景对应</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>协变</td>
+<td>Covariance</td>
+<td>装苹果的篮子 &lt;: 装水果的篮子</td>
+<td>Go 代码中试图做的事</td>
+</tr>
+<tr class="even">
+<td>逆变</td>
+<td>Contravariance</td>
+<td>装水果的篮子 &lt;: 装苹果的篮子</td>
+<td>函数参数的子类型传递</td>
+</tr>
+<tr class="odd">
+<td>不变</td>
+<td>Invariance</td>
+<td>装苹果的篮子 ≠ 装水果的篮子</td>
+<td>Go/Rust 默认的泛型规则</td>
+</tr>
+</tbody>
+</table>
+<p>我们之前的 Go 代码报错，本质是 Go
+对泛型容器<strong>强制使用「不变（Invariance）」</strong>，完全禁止协变；而
+Rust 虽支持协变，但仅在有限场景（如
+<code>Box&lt;T&gt;</code>/<code>&amp;T</code>）生效，自定义泛型结构体仍默认
+“不变”。</p>
+<p>为什么主流语言都
+“限制协变”？本质是协变会引入<strong>类型安全漏洞</strong>—— 哪怕容器是
+“只读” 的，语言也会默认假设
+“容器可能有写入行为”：下面的代码中，<code>AppleImpl</code> 和
+<code>BananaImpl</code> 都会被当做
+<code>Base</code>，从而导致类型异常</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 假设 Go 支持协变</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">addBanana</span><span class="params">(c Container[Base])</span></span> &#123;</span><br><span class="line">    <span class="comment">// c 实际是 Container[BaseImpl]，但被当成 Container[Base]</span></span><br><span class="line">    c.Set(BananaImpl&#123;&#125;) <span class="comment">// 编译通过，运行时崩溃（往苹果篮子里塞香蕉）</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> appleBasket Container[BaseImpl]</span><br><span class="line">addBanana(appleBasket) <span class="comment">// 协变允许此调用，导致类型安全问题</span></span><br></pre></td></tr></table></figure>
+<p>最后，我们总结一下各个语言对Covariance的支持：</p>
+<ul>
+<li>Go 直接 “一刀切禁止协变”，用不变规则杜绝风险；</li>
+<li>Rust 仅允许 “只读类型（如 &amp;T/Box<T>）”
+协变，可写容器仍强制不变；</li>
+<li>Java/C# 需显式声明 ? extends/out
+才能开启协变，且开启后禁止写入。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/c/" rel="tag"># c++</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/12/18/build-my-own-docker-from-scratch/" rel="prev" title="build my own docker from scratch">
+                  <i class="fa fa-angle-left"></i> build my own docker from scratch
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/01/14/build-my-own-docker-from-scratch-network/" rel="next" title="build my own docker from scratch: network">
+                  build my own docker from scratch: network <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

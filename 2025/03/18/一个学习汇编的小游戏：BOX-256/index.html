@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="BOX-256 前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 dis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个学习汇编的小游戏：BOX-256">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="BOX-256 前言 最近在学习 RISC-V，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准 RISC-V，但是可以作为学习路上的一个参考工具，下面是 BOX-256 的一些描述：  BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16 color 16x16 dis">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE-NEW.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CHECKBOARD.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CHECKBOARD-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/FOURE-SQUARES.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/FOUR-SQUARES-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CARPET.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/CARPET-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/DRAWING-A-TRIANGLE.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/SIERPINSKI-TRIANGLE.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/SIERPINSKI-TRIANGLE-II.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/SMILEY-FACE.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20250319/MARIO.png">
+<meta property="article:published_time" content="2025-03-18T06:58:57.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="OS">
+<meta property="article:tag" content="assembly">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20250319/BIG-SQUARE.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/","path":"2025/03/18/一个学习汇编的小游戏：BOX-256/","title":"一个学习汇编的小游戏：BOX-256"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一个学习汇编的小游戏：BOX-256 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#box-256"><span class="nav-number">1.</span> <span class="nav-text">BOX-256</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#program-counter"><span class="nav-number">1.1.1.</span> <span class="nav-text">Program Counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multithreading"><span class="nav-number">1.1.2.</span> <span class="nav-text">Multithreading</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#vector-launched-threads"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">Vector Launched Threads</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#sierpinski-triangle"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">SIERPINSKI
+TRIANGLE</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#memory-addressing"><span class="nav-number">1.1.3.</span> <span class="nav-text">Memory Addressing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#instructions"><span class="nav-number">1.1.4.</span> <span class="nav-text">Instructions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#instruction-examples"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">Instruction Examples</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#opcodes"><span class="nav-number">1.1.5.</span> <span class="nav-text">Opcodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level"><span class="nav-number">1.2.</span> <span class="nav-text">Level</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#big-square"><span class="nav-number">1.2.1.</span> <span class="nav-text">BIG SQUARE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#add-80-c0-80"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">ADD @80 *C0 @80</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E6%9B%B4%E7%9B%B4%E8%A7%82%E7%9A%84%E5%9B%BE%E7%A4%BA"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">一个更直观的图示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#big-square-ii"><span class="nav-number">1.2.2.</span> <span class="nav-text">BIG SQUARE II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-1"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#outputs"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">Outputs</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#checkboard"><span class="nav-number">1.2.3.</span> <span class="nav-text">CHECKBOARD</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-2"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#checkboard-ii"><span class="nav-number">1.2.4.</span> <span class="nav-text">CHECKBOARD II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-3"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-1"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#four-squares"><span class="nav-number">1.2.5.</span> <span class="nav-text">FOUR SQUARES</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-4"><span class="nav-number">1.2.5.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-2"><span class="nav-number">1.2.5.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#four-squares-ii"><span class="nav-number">1.2.6.</span> <span class="nav-text">FOUR SQUARES II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-5"><span class="nav-number">1.2.6.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-3"><span class="nav-number">1.2.6.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#carpet"><span class="nav-number">1.2.7.</span> <span class="nav-text">CARPET</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-6"><span class="nav-number">1.2.7.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-4"><span class="nav-number">1.2.7.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#carpet-ii"><span class="nav-number">1.2.8.</span> <span class="nav-text">CARPET-II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-7"><span class="nav-number">1.2.8.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-5"><span class="nav-number">1.2.8.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sierpinski"><span class="nav-number">1.2.9.</span> <span class="nav-text">SIERPINSKI</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-for-drawing-a-triangle"><span class="nav-number">1.2.9.1.</span> <span class="nav-text">Code for drawing a triangle</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-for-drawing-a-triangle"><span class="nav-number">1.2.9.2.</span> <span class="nav-text">Result for drawing a
+triangle</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#code-for-sierpinski-triangle"><span class="nav-number">1.2.9.3.</span> <span class="nav-text">Code for Sierpinski triangle</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#code-for-sierpinski-trianglemini-version"><span class="nav-number">1.2.9.4.</span> <span class="nav-text">Code for Sierpinski
+triangle(mini version)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-6"><span class="nav-number">1.2.9.5.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sierpinski-ii"><span class="nav-number">1.2.10.</span> <span class="nav-text">SIERPINSKI II</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-8"><span class="nav-number">1.2.10.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-7"><span class="nav-number">1.2.10.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#smiley-face"><span class="nav-number">1.2.11.</span> <span class="nav-text">SMILEY FACE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#code-9"><span class="nav-number">1.2.11.1.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#result-8"><span class="nav-number">1.2.11.2.</span> <span class="nav-text">Result</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mario"><span class="nav-number">1.2.12.</span> <span class="nav-text">MARIO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#result-9"><span class="nav-number">1.2.12.1.</span> <span class="nav-text">Result</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">1.3.</span> <span class="nav-text">引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.</span> <span class="nav-text">问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%9B%E5%BB%BA%E7%AE%97%E6%B3%95"><span class="nav-number">1.4.1.</span> <span class="nav-text">线程创建算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#si%C3%A9rpinski-triangle-%E7%9A%84%E7%82%B9%E7%BB%98%E5%88%B6%E7%AE%97%E6%B3%95"><span class="nav-number">1.4.2.</span> <span class="nav-text">Siérpinski Triangle
+的点绘制算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">1.4.3.</span> <span class="nav-text">其他</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一个学习汇编的小游戏：BOX-256 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一个学习汇编的小游戏：BOX-256
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-03-18 14:58:57" itemprop="dateCreated datePublished" datetime="2025-03-18T14:58:57+08:00">2025-03-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="box-256">BOX-256</h1>
+<h2 id="前言">前言</h2>
+<p>最近在学习 <a
+target="_blank" rel="noopener" href="https://drive.google.com/file/d/1uviu1nH-tScFfgrovvFCrj7Omv8tFtkp/view">RISC-V</a>，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准
+RISC-V，但是可以作为学习路上的一个参考工具，下面是 <a
+target="_blank" rel="noopener" href="http://box-256.com/">BOX-256</a> 的一些描述：</p>
+<blockquote>
+<p>BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16
+color 16x16 display. It is also a programming game, where the player
+tries to pass the graphics tests and optimize the code to perfection.
+The ultimate goal is to use as few CPU cycles or lines of code as
+possible, by employing multithreading and other optimization tricks.</p>
+</blockquote>
+<p>此外，文档里提到了一些比较重要的细节这里也稍微列举一下：</p>
+<h3 id="program-counter"><strong>Program Counter</strong></h3>
+<blockquote>
+<p>When the execution starts, the last memory slot (FF) is used as a
+program counter (PC). If a second thread is started, the additional PC
+will be in FE, the third will be in FD and so on. Since there is no
+memory protection, it is possible to write into PC directly and cause
+execution to jump. The behaviour is identical to using JMP
+instruction.</p>
+</blockquote>
+<p>这里有一个点比较容易误解的是：<code>FF</code>, <code>FE</code>,
+这些地址。我们前面提到BOX-256 -- <strong>...with 256 bytes of
+memory...</strong>。所以，其实我们的 <code>FF</code>，<code>FE</code>
+就是我们在内存从后往前的索引。也就是说，当我们执行一个多线程的程序时，他的
+PC 分别存放在内存的倒数第一个字节，倒数第二个字节，依次类推。</p>
+<h3 id="multithreading"><strong>Multithreading</strong></h3>
+<blockquote>
+<p>Because of cached reads, it is generally not possible for one thread
+to communicate with other thread simultaneously. HOWEVER two exceptions
+remains: An earlier thread can write to memory address later executed by
+later thread. So self-modifying code is possible. An earlier thread can
+also write to program counter (PC) owned by a later thread to cause an
+immediate jump.</p>
+</blockquote>
+<h4 id="vector-launched-threads">Vector Launched Threads</h4>
+<blockquote>
+<p>参考 <a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/threads.htm">BOX-256
+Threads</a></p>
+</blockquote>
+<p>线性启动线程是基于 box-256 thread
+的特性实现的，可以批量的启动线程的一个技术，这个技术是基于 box-256
+的一个重要特性：当我们执行 <code>THR A</code>
+指令时，会生成两个伪线程：</p>
+<ol type="1">
+<li>一个在 <code>THR A</code> 执行完之后的下一条指令；</li>
+<li>一个在 <code>THR A</code> 中的 <code>A</code> 指定的位置；</li>
+</ol>
+<p>例如，对于下面这段代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">THR 010 000 000 ; 创建线程</span><br><span class="line">MOV FFF @20 000 ; #1</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">MOV FFF @21 000 ; #2</span><br></pre></td></tr></table></figure>
+<p>在创建线程语句执行结束之后，会同时开始执行 <code>#1</code> 和
+<code>#2</code> 两个语句；</p>
+<p>利用这个特性，我们可以使用一些特殊的方式来创建线程，例如下面的例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">; THR A 指令的作用是，在地址A启动一个线程并将被创建的线程的PC设置为A</span><br><span class="line">; 这里值得注意的是，文档中并没有写清楚，这里可能是有三种情况：</span><br><span class="line">; - THR 004 000 000</span><br><span class="line">; - THR @04 000 000</span><br><span class="line">; - THR *04 000 000</span><br><span class="line">; 其中 @04 和 *04 都是绝对地址，而 004 则是跳转到当前指令的相对地址，也就是往下移动一个指令</span><br><span class="line">; 所以下面的指令：</span><br><span class="line">; 000 - THR 004 000 000</span><br><span class="line">; 004 - MOV @00 @04 004</span><br><span class="line">; 的作用就是：</span><br><span class="line">; 1. 在 04 位置启动一个PC为A的线程；</span><br><span class="line">; 2. 移动当前线程的PC到004</span><br><span class="line">; 也就是，通过这个指令，我们创建了两个PC为004的线程</span><br><span class="line"></span><br><span class="line">; 在相对偏移量004的位置启动一个线程</span><br><span class="line">THR 004 000 000</span><br><span class="line"></span><br><span class="line">; 因为box256是定长指令集，每条指令的长度是四个字节，所以它的作用就是复制 @00 位置的指令到 @04</span><br><span class="line">; 这里利用了一个box256的一个特性，代码共享内存空间，所以当第一条指令执行后，后续的线程就变成了创建线程指令</span><br><span class="line">MOV @00 @04 004</span><br><span class="line"></span><br><span class="line">; 在相对偏移量004的位置启动一个线程</span><br><span class="line">THR 004 000 000</span><br><span class="line"></span><br><span class="line">; 在相对偏移量004的位置启动一个线程</span><br><span class="line">THR 004 000 000</span><br><span class="line"></span><br><span class="line">; 此时，我们总共拥有 (((1 * 2) * 2 - 1) * 2 * 2) * 2 - 1 = 23 个线程</span><br><span class="line">MOV @00 @10 004</span><br></pre></td></tr></table></figure>
+<h4 id="sierpinski-triangle"><a id = "SIERPINSKI-TRIANGLE">SIERPINSKI
+TRIANGLE</a></h4>
+<blockquote>
+<p>原文中关于线程的绘制给出了一个示例，使用多线程绘制
+<code>sierpinski triangle</code>。</p>
+</blockquote>
+<p>原文档中给出了一个使用多线程绘制 <strong>SIERPINSKI TRIANGLE</strong>
+的实例，实现相当精巧，咋一看比较难以理解，但是整体思路是：使用多线程对像素点进行上色，区别在于，通过线程的合理调配来实现<strong>对于目标色块上色
+<code>008</code>， 对于非目标色块上色
+<code>000</code>，而这个颜色也正是我们的背景色，所以从视觉效果上来讲，我们看到的是CPU空转了一次。</strong></p>
+<p>而对于box256的线程来讲，他是一个非随机的伪线程，每个线程是有一个固定的执行顺序：线程的PC从
+<code>0xFF</code>, <code>0xFE</code> ... 逆序执行。</p>
+<p>而我们这里的 <strong>MOV <span class="citation"
+data-cites="10">@10</span> <span class="citation"
+data-cites="FB">@FB</span>
+005</strong>，就是为我们的生成的五个线程进行PC赋值的指令：</p>
+<ol type="1">
+<li><code>PC == 00C</code> 为我们的五个线程持续的设置 <code>PC</code>
+地址，这里值得注意的是，我们线程一先执行，设置五个线程的PC分别为
+<strong>24, 20, 1C, 18,
+0C</strong>，但是在线程一执行完毕之后，其他四个线程执行会修改自己的PC地址，所以我们在内存里看到的实际值是
+<strong>28, 24, 20, 1C, 0C</strong>；</li>
+<li><code>PC == 018</code> 使用颜色 <code>@29</code>
+对像素点进行上色，这里有一个很容易误解的点是原始代码中是
+<code>PIX 000 @28 000</code>，看起来像素点的索引是常数，实际上我们在线程五中一直在修改这个值。理论上来说，这里这样写会更直观
+<code>PIX @19 @28 000</code>，而这里 <code>@19</code>
+就指向了他自身的位置；</li>
+<li><code>PC == 01C</code> 这个位置，使用了一个非常巧妙的策略，我们将
+<span class="math inline">\([29, 39)\)</span> 这个区间的数据移动到 <span
+class="math inline">\([28,
+38)\)</span>，也就是我们将所有的数据往前移动一位；而 <code>@38</code>
+这个位置的值，则在线程四中进行计算；</li>
+<li><code>PC == 020</code>
+这个线程用于生成当前色块实际对应的色块值；</li>
+<li><code>PC == 024</code> 修改
+<code>@19</code>，也就是我们当前绘制的像素块；</li>
+</ol>
+<p>现在存在的一个最大的问题是，<code>1C</code> 和 <code>20</code>
+这两行指令是如何来生成我们实际的颜色绘制结果的呢？这里必须要提到我们的点绘制算法：</p>
+<blockquote>
+<p>一个像素点是否需要绘制，假设：</p>
+<ul>
+<li>当前节点的位置可以表示为 <code>memory[row][col]</code>；</li>
+<li><span class="math inline">\(row &gt; 0\)</span>；</li>
+<li>使用 <code>1</code> 表示该点上色，使用 <code>0</code>
+表示该点不上色；</li>
+</ul>
+<p>那么当且仅当 <code>memory[row - 1][col]</code> 和
+<code>memory[row - 1][col - 1]</code> 一个是
+<code>1</code>，并且另外一个为 <code>0</code> 时，该点的结果为
+<code>1</code>。</p>
+</blockquote>
+<p>在我们的实现中，我们使用 <span class="math inline">\([28,
+38]\)</span> 这个区间来表示：</p>
+<ol type="1">
+<li><code>28</code> 当前节点的前面一个节点；</li>
+<li><code>29</code> 当前节点；</li>
+<li><span class="math inline">\([2A, 38]\)</span>，当前计算节点之后的
+<code>0xF</code> 个节点；</li>
+</ol>
+<p>并递归的计算最终的结果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">00 - THR 004 000 000 ;</span><br><span class="line">04 - MOV @00 @04 004 ; create 5 parallel threads</span><br><span class="line">08 - MOV @04 @08 004 ; </span><br><span class="line"></span><br><span class="line">0C - MOV @10 @FB 005 ; copy an array of 5 addresses over the PCs</span><br><span class="line"></span><br><span class="line">10 - 024 020 01C 018</span><br><span class="line">14 - 00C 000 000 000 ; 1st thread jumps back to execute the MOV at 0x0Ch</span><br><span class="line"></span><br><span class="line">18 - PIX 000 @29 000 ; 2nd thread</span><br><span class="line">1C - MOV @29 @28 010 ; 3rd thread</span><br><span class="line">20 - ADD @29 @28 @38 ; 4th thread</span><br><span class="line">24 - ADD 001 @19 @19 ; 5th thread</span><br><span class="line"></span><br><span class="line">28 - 000 008 000 000 ; seed data for Siérpinski triangle</span><br></pre></td></tr></table></figure>
+<h3 id="memory-addressing"><strong>Memory Addressing</strong></h3>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span> = Constant value</span><br><span class="line">@ = <span class="keyword">Address </span>in memory</span><br><span class="line">* = <span class="keyword">Address </span>pointed <span class="keyword">by </span>another <span class="keyword">address </span>(a.k.a pointer)</span><br></pre></td></tr></table></figure>
+<p>Examples:</p>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Address:<span class="number"> 00 </span>01<span class="number"> 02 </span>03<span class="number"> 04 </span>05<span class="number"> 06 </span>07<span class="number"> 08 </span>09 0A 0B ...</span><br><span class="line">Value:  <span class="number"> 00 </span>1A<span class="number"> 22 </span>2A 5B<span class="number"> 23 </span>4A<span class="number"> 28 </span>00<span class="number"> 03 </span>BB CA ...</span><br><span class="line"></span><br><span class="line">009 evaluates to 09</span><br><span class="line">@09 evaluates to 03</span><br><span class="line">*09 evaluates to 2A</span><br></pre></td></tr></table></figure>
+<h3 id="instructions">Instructions</h3>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 78%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">INSTRUCTION</th>
+<th style="text-align: center;">DESCIPTION</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">MOVE <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Sets the value A into address B</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">JMP <code>A</code></td>
+<td style="text-align: center;">Jumps the execution into A</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">PIX <code>A</code> <code>B</code></td>
+<td style="text-align: center;">Outputs a pixel into index
+<code>A</code> with color <code>B</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">JEQ <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">If <code>A</code> equals <code>B</code>,
+the execution jumps to <code>C</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">JNQ <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">If <code>A</code> not equals
+<code>B</code>, the execution jumps to <code>C</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">JGR <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">If <code>A</code> is greater than
+<code>B</code>, the execution jumps to <code>C</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">FLP <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Flips the values between memory address
+<code>A</code> and memory address <code>B</code>.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">THR <code>A</code></td>
+<td style="text-align: center;">Starts a new thread from memory address
+<code>A</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">ADD <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Adds values <code>A</code> and
+<code>B</code> together and stores the result in <code>C</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">SUB <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Subtracts <code>B</code> from
+<code>A</code> and stores the result in <code>C</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">MUL <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Multiplies values <code>A</code> and
+<code>B</code> and stores the results in <code>C</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">DIV <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Division <code>A</code> with
+<code>B</code> and stores the result in <code>C</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">MOD <code>A</code> <code>B</code>
+<code>C</code></td>
+<td style="text-align: center;">Take modulo of <code>A</code> and
+<code>B</code> and place the result in <code>C</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="instruction-examples">Instruction Examples</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FLP @10 @20 004 // Flip four (4) values between memory spaces starting from @10 and @20</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li>Takes 4 values from memory that starts from address
+<code>10</code>;</li>
+<li>Takes 4 values from memory that starts from address
+<code>20</code>;</li>
+<li>Flips the values:
+<ol type="1">
+<li>Flips the values between memory address <code>10</code> and memory
+address <code>20</code>;</li>
+<li>Flips the values between memory address <code>11</code> and memory
+address <code>21</code>;</li>
+<li>...</li>
+</ol></li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JGR 020 @30 -04 // if value in @30 is smaller or equal to 20, jump forward 4 steps (16 bytes).</span><br></pre></td></tr></table></figure>
+<p>Note that you can prefix the C with minus '-' to get negative
+values.</p>
+<h3 id="opcodes">Opcodes</h3>
+<blockquote>
+<p>Most of the opcodes are permutations of the same instruction. For
+example the ADD instruction has 8 different opcodes, depending on the
+'memory depth' of the parameters.</p>
+</blockquote>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">OPCODE</th>
+<th>Instruction</th>
+<th>P1</th>
+<th>P2</th>
+<th>P3</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">13</td>
+<td>ADD</td>
+<td>@</td>
+<td>0</td>
+<td>@</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> 002 <span
+class="citation" data-cites="03">@03</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">14</td>
+<td>ADD</td>
+<td>*</td>
+<td>0</td>
+<td>@</td>
+<td>ADD *01 002 <span class="citation" data-cites="03">@03</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">15</td>
+<td>ADD</td>
+<td>@</td>
+<td>@</td>
+<td>@</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> <span
+class="citation" data-cites="02">@02</span> <span class="citation"
+data-cites="03">@03</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">16</td>
+<td>ADD</td>
+<td>*</td>
+<td>@</td>
+<td>@</td>
+<td>ADD *01 <span class="citation" data-cites="02">@02</span> <span
+class="citation" data-cites="03">@03</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">17</td>
+<td>ADD</td>
+<td>@</td>
+<td>*</td>
+<td>@</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> *02 <span
+class="citation" data-cites="03">@03</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">18</td>
+<td>ADD</td>
+<td>*</td>
+<td>0</td>
+<td>*</td>
+<td>ADD <em>01 002 </em>03</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">19</td>
+<td>ADD</td>
+<td>@</td>
+<td>0</td>
+<td>*</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> 002 *03</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">1A</td>
+<td>ADD</td>
+<td>*</td>
+<td>@</td>
+<td>*</td>
+<td>ADD <em>01 <span class="citation" data-cites="02">@02</span>
+</em>03</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">1B</td>
+<td>ADD</td>
+<td>@</td>
+<td>@</td>
+<td>*</td>
+<td>ADD <span class="citation" data-cites="01">@01</span> <span
+class="citation" data-cites="02">@02</span> *03</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">1C</td>
+<td>ADD</td>
+<td>*</td>
+<td>*</td>
+<td>*</td>
+<td>ADD <em>01 </em>02 *03</td>
+</tr>
+</tbody>
+</table>
+<h2 id="level">Level</h2>
+<h3 id="big-square">BIG SQUARE</h3>
+<figure>
+<img src="/images/20250319/BIG-SQUARE.png" alt="BIG SQUARE" />
+<figcaption aria-hidden="true">BIG SQUARE</figcaption>
+</figure>
+<h4 id="code">Code</h4>
+<blockquote>
+<p>这一题是游戏给出的示例，相对来说难度并不大，整体的思路就是：我们在内存的
+<code>@30</code>, <code>@31</code>, <code>@32</code>, <code>@33</code>
+定义四个常量，分别是 <code>1</code>, <code>10</code>, <code>-1</code>,
+<code>-10</code>。而这个常量则是我们在循环的过程中控制像素点指针移动的变量。</p>
+<ul>
+<li>1 表示向右移动</li>
+<li>10 表示向下移动</li>
+<li>-1 表示向左移动</li>
+<li>-10 表示向上移动</li>
+</ul>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000        // set the starting pixel index for the graph we are about to draw</span><br><span class="line">MOV 030 @C0 000        // set a pointer with a constant value of 30, to which the offset&#x27;s constant value in the loop.</span><br><span class="line"></span><br><span class="line"># Here is where the loop start</span><br><span class="line">PIX @80 001 000        // draw a pixel with a fixed colour</span><br><span class="line">ADD @80 *C0 @80        // move the horizontal pixel index</span><br><span class="line">ADD @81 001 @81        // store the total movements count</span><br><span class="line">JGR 00B @81 -0C        // jump back if it&#x27;s not done</span><br><span class="line">MOV 000 @81 000        // reset the movements count</span><br><span class="line">ADD @C0 001 @C0        // move the offset value in the loop</span><br><span class="line">JMP @08 000 000        // return to the begining of the loop</span><br><span class="line"></span><br><span class="line"># ...</span><br><span class="line"></span><br><span class="line"># Here is where the .data section begins</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="add-80-c0-80">ADD <span class="citation"
+data-cites="80">@80</span> *C0 <span class="citation"
+data-cites="80">@80</span></h4>
+<p><code>ADD @80 *C0 @80</code> 这里我们对 <code>@80</code> 和
+<code>*C0</code> 进行求和，并将求和的结果存入
+<code>@80</code>，初看这条命令其实会让人有一些疑惑，因为这里用到了
+<code>*C0</code>，而 <code>*C0</code> 在前面的指令
+<code>MOV 030 @C0 000</code> 中，指向了一个 <strong>constant
+value</strong> <code>30</code>。</p>
+<p>这里，其实我们是在初始化内存的时候，将内存地址的一部分存放了我们需要的操作数，例如：</p>
+<ul>
+<li><code>@30</code> == 001</li>
+<li><code>@31</code> == 010</li>
+<li><code>@32</code> == -01</li>
+<li><code>@33</code> == -10</li>
+</ul>
+<p>所以，当我们在调用指令 <code>ADD @80 *C0 @80</code> 时，其实相当于是
+<code>num = num + 1;</code> 这条语句。</p>
+<p>正如我们在很多地方会提到的，可执行程序会包含所谓的 <code>.data</code>
+和 <code>.text</code>，这里的 <code>[@30, @33]</code>
+这个区间就可以认为是我们的 <code>.data</code>，而
+<code>[@00, @23]</code> 这个区域，则可以认为是我们的 <code>.text</code>,
+而 <code>[@80, ..)</code> 这个区间，则是我们的堆栈区间。</p>
+<h4 id="一个更直观的图示">一个更直观的图示</h4>
+<p>在绘制这个简单的<strong>BIG
+SQUARE</strong>的过程中，我们其实把他拆分为了绘制四条边，每条边包含了11个像素点。然后通过
+<code>*C0</code> 指向的一个constant
+value来控制我们像素点的移动。如果我们修改一下我们的源码，我们可以非常清楚的看到我们像素点的绘制流程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">MOV 022 @80 000</span><br><span class="line">MOV 038 @C0 000</span><br><span class="line">MOV 001 @82 000        // 我们在这里，使用了一个变量来作为 PIX 的参数</span><br><span class="line"></span><br><span class="line">PIX @80 @82 000</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR 00B @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">ADD @82 001 @82        // 当我们画完一条边的时候，我们修改 PIX 参数的值，也就是像素点的颜色</span><br><span class="line">JMP @0C 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">001 010 -01 -10</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+<p>这样我们最后得到的图像结果如下：</p>
+<figure>
+<img src="/images/20250319/BIG-SQUARE-NEW.png" alt="BIG SQUARE NEW" />
+<figcaption aria-hidden="true">BIG SQUARE NEW</figcaption>
+</figure>
+<h3 id="big-square-ii">BIG SQUARE II</h3>
+<h4 id="code-1">Code</h4>
+<p>第二题是画两个正方形，我们的思路是一样的：将一个正方形拆解为四条边，每次画一条边，并通过一个常量值来控制像素点的上下左右移动。区别在于，这次我们需要一个个额外的变量：<strong>the
+total count of pixels per
+line</strong>，这个变量用于控制我们循环输出时每条边包含的像素点数量；具体的代码实现如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># .text</span><br><span class="line">MOV 011 @80 000</span><br><span class="line">MOV 03C @C0 000</span><br><span class="line">MOV 00D @82 000        // 初始化每条边的长度，这里其实可以省略，因为我通过对点的重复着色，可以避免去进行长度调整</span><br><span class="line">PIX @80 002 000</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR @82 @81 -0C</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">ADD @80 *C0 @80</span><br><span class="line">ADD @C0 001 @C0</span><br><span class="line">JMP @0C 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line">000 000 000 000</span><br><span class="line"></span><br><span class="line"># .data</span><br><span class="line"># 保存了变量，其中 001, 010, -01, -10 基本是用于控制光标上下左右移动</span><br><span class="line"># 其余的变量是在画完一条边之后，将pixel移动到我们要绘制的直线的起点</span><br><span class="line">001 000 010 000</span><br><span class="line">-01 000 -10 011</span><br><span class="line">001 -02 010 -20</span><br><span class="line">-01 002 -10 000</span><br><span class="line">000 000 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="outputs">Outputs</h4>
+<figure>
+<img src="/images/20250319/BIG-SQUARE-II.png" alt="BIG-SQUARE-II" />
+<figcaption aria-hidden="true">BIG-SQUARE-II</figcaption>
+</figure>
+<h3 id="checkboard">CHECKBOARD</h3>
+<blockquote>
+<p>这个问题也不难，思路就是使用FLP指令翻转色彩，但是需要注意的是，我们需要记录移动的次数，因为在换行时我们需要额外翻转一次。</p>
+</blockquote>
+<h4 id="code-2">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># @80 = first color</span><br><span class="line"># @81 = second color</span><br><span class="line"># @82 = pixel index</span><br><span class="line"># @83 = loop count</span><br><span class="line"></span><br><span class="line">MOV 002 @80 000</span><br><span class="line">MOV 003 @81 000</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">PIX @82 @80 000</span><br><span class="line">FLP @80 @81 000</span><br><span class="line">ADD @82 001 @82</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">JGR @83 00F 008</span><br><span class="line">JMP -14 000 000</span><br><span class="line">FLP @80 @81 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">JMP -20 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result">Result</h4>
+<figure>
+<img src="/images/20250319/CHECKBOARD.png" alt="CHECKBOARD" />
+<figcaption aria-hidden="true">CHECKBOARD</figcaption>
+</figure>
+<h3 id="checkboard-ii">CHECKBOARD II</h3>
+<blockquote>
+<p>同样的，这个题我们会使用到 <code>001</code> 和 <code>00C</code>
+两个颜色，并且，我们可以注意到：</p>
+<p>假设横坐标和纵坐标分别为 i 和 j，整个图形可以看做是
+<code>0 &lt;= i &lt; 4 &amp;&amp; 0 &lt;= j &lt; 4</code>
+这个图形的递归输出，那么 <code>board[i][j]</code> 的颜色为:</p>
+<ul>
+<li><code>i % 4 &lt;= 1</code> &amp;&amp;
+<code>j % 4 &lt;= 1</code>，则颜色是 <code>001</code>；</li>
+<li><code>i % 4 &gt;= 2</code> &amp;&amp;
+<code>j % 4 &lt;= 1</code>，则颜色是 <code>00C</code>；</li>
+<li><code>i % 4 &lt;= 1</code> &amp;&amp;
+<code>j % 4 &gt;= 2</code>，则颜色是 <code>001</code>；</li>
+<li><code>i % 4 &gt;= 1</code> &amp;&amp;
+<code>j % 4 &lt;= 1</code>，则颜色是 <code>00C</code>；</li>
+</ul>
+<p>也就是说，我们可以使用一个 <code>4 * 4</code>
+的二维数组来计算当前像素点的颜色并着色。</p>
+<p>此外，如果我们把每个同颜色 <code>2 * 2</code>
+色块作为一个整体来看，那么每次当我们来到左上的顶点时，我们可以将改区域的全部节点上色，也就是：</p>
+<ul>
+<li>PIX x color</li>
+<li>PIX (x + 1) color</li>
+<li>PIX (x + 10) color</li>
+<li>PIX (x + 11) color</li>
+</ul>
+<p>更进一步，在这种情况下，我们可以利用我们在 CHECKBOARD 中使用到的
+<code>FLP</code> 指令来对颜色进行翻转，可以直接省略掉这个 4 * 4
+的二维数组</p>
+</blockquote>
+<h4 id="code-3">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">MOV 001 @80 000 // @80 = current color</span><br><span class="line">MOV 00C @81 000 // @81 = next color</span><br><span class="line">MOV 000 @82 000 // @82 = loop count</span><br><span class="line">MOV 000 @83 000 // @83 = pixel index</span><br><span class="line"></span><br><span class="line">PIX @83 @80 000 // 画该区域内的四个色块</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 010 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 -01 @83</span><br><span class="line">PIX @83 @80 000</span><br><span class="line">ADD @83 -0E @83 // 跳转到下一个色块</span><br><span class="line">ADD @82 001 @82    // loop + 1</span><br><span class="line"></span><br><span class="line">JGR @82 007 00C // 跳转#1</span><br><span class="line"></span><br><span class="line">FLP @80 @81 000</span><br><span class="line">JMP -2C 000 000</span><br><span class="line"></span><br><span class="line">MOD @82 008 @82 // #1 重置loop count</span><br><span class="line">ADD @83 010 @83 // 移动 pixel index</span><br><span class="line">JMP -38 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-1">Result</h4>
+<figure>
+<img src="/images/20250319/CHECKBOARD-II.png" alt="CHECKBOARD-II" />
+<figcaption aria-hidden="true">CHECKBOARD-II</figcaption>
+</figure>
+<h3 id="four-squares">FOUR SQUARES</h3>
+<blockquote>
+<p>这题用到了四种不同的颜色：<code>008</code>, <code>009</code>,
+<code>00A</code>,
+<code>00B</code>，所以我们可以预先定义一个变量表示当前颜色，在每次循环结束时递增颜色，整个执行过程可以描述为：</p>
+<ol type="1">
+<li>初始化参数：
+<ol type="1">
+<li>初始化 pixel index 为 <code>0</code>；</li>
+<li>初始化 direction index 为 <code>0</code>，控制 pixel index
+移动方向；</li>
+<li>初始化 color 到 <code>008</code>；</li>
+</ol></li>
+<li>画上面的横边，画完后修改索引控制 pixel index 向下移动；</li>
+<li>画右边的竖边，画完后修改索引控制 pixel index 向左移动；</li>
+<li>画下面的横边，画完后修改索引控制 pixel index 向上移动；</li>
+<li>准备画下一个正方形：
+<ol type="1">
+<li>移动 pixel index 到下一个正方形的起始点；</li>
+<li>Reset direction index；</li>
+<li>color++；</li>
+</ol></li>
+</ol>
+</blockquote>
+<h4 id="code-4">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">MOV 000 @80 000 // @80 pixel index</span><br><span class="line">MOV 000 @81 000 // @81 loop count of drawing verticals of square</span><br><span class="line">MOV 000 @82 000 // @82 loop count of drawing dots of vertical</span><br><span class="line">MOV 008 @83 000 // @83 current color</span><br><span class="line">MOV 085 @84 000 // @84 direction index</span><br><span class="line">MOV 001 @85 000 // @85 move cursor right</span><br><span class="line">MOV 010 @86 000 // @86 move cursor down</span><br><span class="line">MOV -01 @87 000 // @87 move cursor left</span><br><span class="line">MOV -10 @88 000 // @88 move cursor up</span><br><span class="line"></span><br><span class="line">PIX @80 @83 000 // pixel a point</span><br><span class="line">ADD @82 001 @82</span><br><span class="line">ADD @80 *84 @80</span><br><span class="line">JGR 003 @82 -0C // jump if done drawing a vertical</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">JGR @81 003 010 // jump if done drawing a square</span><br><span class="line">ADD @84 001 @84</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">JMP -20 000 000 // jump to draw next vertical</span><br><span class="line"></span><br><span class="line">// reset all propertries for drawing the next square</span><br><span class="line">ADD @80 044 @80</span><br><span class="line">MOV 000 @81 000</span><br><span class="line">MOV 000 @82 000</span><br><span class="line">ADD @83 001 @83</span><br><span class="line">MOV 085 @84 000</span><br><span class="line">JMP -48 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-2">Result</h4>
+<figure>
+<img src="/images/20250319/FOURE-SQUARES.png" alt="FOUR-SQUARE" />
+<figcaption aria-hidden="true">FOUR-SQUARE</figcaption>
+</figure>
+<h3 id="four-squares-ii">FOUR SQUARES II</h3>
+<blockquote>
+<p>这一题，其实还是在画正方形，区别在于，这次画的正方形是一个
+<code>N * N</code> 的正方形。我们观察到，这四个正方形分别是
+<code>8 * 8</code>, <code>4 * 4</code>, <code>2 * 2</code>,
+<code>1 * 1</code>，所以我们可以使用一个变量来存储像素点的数量。</p>
+</blockquote>
+<h4 id="code-5">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">MOV 000 @80 000 // @80 pixel index</span><br><span class="line">MOV 008 @81 000 // @81 current color</span><br><span class="line">MOV 008 @82 000 // @82 loop count limiter</span><br><span class="line">MOV 000 @83 000 // @83 dots count</span><br><span class="line">MOV 001 @84 000 // @84 direction controller</span><br><span class="line">MOV -01 @85 000 // @85 next direction controller</span><br><span class="line">MOV 000 @86 000 // @86 line counter</span><br><span class="line"></span><br><span class="line">PIX @80 @81 000</span><br><span class="line">ADD @83 001 @83</span><br><span class="line"></span><br><span class="line">// judge whether or not the current line is finished</span><br><span class="line">JEQ @83 @82 00C</span><br><span class="line"></span><br><span class="line">// move pixel index and continue drawing current line</span><br><span class="line">ADD @80 @84 @80</span><br><span class="line">JMP -10 000 000</span><br><span class="line"></span><br><span class="line">// finish drawing a line, reset all properties</span><br><span class="line">ADD @86 001 @86</span><br><span class="line">FLP @84 @85 000</span><br><span class="line">MOV 000 @83 000</span><br><span class="line"></span><br><span class="line">// judge whether or not the current square is finished</span><br><span class="line">JEQ @86 @82 00C</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">ADD @80 010 @80</span><br><span class="line">JMP -28 000 000</span><br><span class="line"></span><br><span class="line">// finish drawing a square, reset all properties.</span><br><span class="line">ADD @80 @82 @80</span><br><span class="line">ADD @80 010 @80</span><br><span class="line">DIV @82 002 @82</span><br><span class="line">ADD @81 001 @81</span><br><span class="line">MOV 000 @83 000</span><br><span class="line">MOV 000 @86 000</span><br><span class="line">JMP -44 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-3">Result</h4>
+<figure>
+<img src="/images/20250319/FOUR-SQUARES-II.png" alt="FOUR-SQUARES-II" />
+<figcaption aria-hidden="true">FOUR-SQUARES-II</figcaption>
+</figure>
+<h3 id="carpet">CARPET</h3>
+<blockquote>
+<p>到这一题，已经开始略微有一些难度了，我们可以注意到这个图中总共用到了以下四个颜色：</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">color</th>
+<th style="text-align: center;">palette</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>red</code></td>
+<td style="text-align: center;"><code>002</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>purple</code></td>
+<td style="text-align: center;"><code>001</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>green</code></td>
+<td style="text-align: center;"><code>003</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>orange</code></td>
+<td style="text-align: center;"><code>004</code></td>
+</tr>
+</tbody>
+</table>
+<p>通过观察，我们可以注意到一个现象，假设使用 row 和 col
+表示内存的行和列，那么存在以下逻辑：</p>
+<blockquote>
+<p>对于任意满足 <span class="math inline">\(\text{row} \in (0,
+15]\)</span> 以及 <span class="math inline">\(\text{col} \in [0,
+15)\)</span> 的像素点，他的颜色可以表示为 <span
+class="math inline">\(memory[row - 1][col + 1]\)</span>。</p>
+</blockquote>
+<p>使用上面的公式，我们可以生成数组中的前15个像素点，但是最后一列我们也需要单独的记录（其实也可以找到对应的规律，但是没有必要）。</p>
+<p>所以我们需要做的就是，使用两个数组分别记录
+<code>memory[0][0] ~ memory[0][15]</code> 和
+<code>memory[15][0] ~ memory[15][15]</code>，并在程序中递归的去访问并生成图形。</p>
+<p>更进一步，我们可以发现，如果我们将
+<code>memory[0][0] ~ memory[0][15]</code> 和
+<code>memory[1][15] ~ memory[15][15]</code>
+这里总共31个元素，变换成一个长度为 <code>31</code>
+的一维数组，假设这个数组为 <code>transfomer</code>。</p>
+<p>我们会发现：</p>
+<ol type="1">
+<li><span class="math inline">\(memory[0][0]\)</span> ~ $ memory[0][15]$
+对应的是 <span class="math inline">\(transfomer[0]\)</span> ~ <span
+class="math inline">\(transformer[15]\)</span>；</li>
+<li><span class="math inline">\(memory[1][0]\)</span> ~ $ memory[1][15]$
+对应的是 <span class="math inline">\(transfomer[1]\)</span> ~ <span
+class="math inline">\(transformer[16]\)</span>；</li>
+<li>...</li>
+<li><span class="math inline">\(memory[i][0]\)</span> ~ $ memory[i][15]$
+对应的是 <span class="math inline">\(transfomer[i]\)</span> ~ <span
+class="math inline">\(transformer[i + 15]\)</span>；</li>
+</ol>
+</blockquote>
+<h4 id="code-6">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// @01 point to the first parameter of PIX</span><br><span class="line">// @1A is the pointer pointing to current color</span><br><span class="line">// @03 is the column number</span><br><span class="line">PIX 000 *1A 000 // draw pixel</span><br><span class="line">ADD 001 @01 @01 // move pixel index</span><br><span class="line">ADD 001 @1A @1A // move pointer</span><br><span class="line">MOD @01 010 @03 // get column number</span><br><span class="line">JNE @03 000 @00 // if not first column, return to the beginning</span><br><span class="line">SUB @1A 00F @1A // go to the proper position</span><br><span class="line"></span><br><span class="line">// 01B is is the position of @1A</span><br><span class="line">JMP @00 01B 002</span><br><span class="line">001 003 004 001</span><br><span class="line">001 004 003 001</span><br><span class="line">004 001 001 004</span><br><span class="line">001 001 002 001</span><br><span class="line">001 004 001 003</span><br><span class="line">004 001 001 004</span><br><span class="line">003 001 004 001</span><br><span class="line">001 002 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-4">Result</h4>
+<figure>
+<img src="/images/20250319/CARPET.png" alt="CARPET" />
+<figcaption aria-hidden="true">CARPET</figcaption>
+</figure>
+<h3 id="carpet-ii">CARPET-II</h3>
+<blockquote>
+<p>这题非常简单，在这一题中，我们用到了以下两个颜色：</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">color</th>
+<th style="text-align: center;">palette</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>Dark Green</code></td>
+<td style="text-align: center;"><code>003</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Light Green</code></td>
+<td style="text-align: center;"><code>00B</code></td>
+</tr>
+</tbody>
+</table>
+<p>整个绘制过程也不复杂，可以细分为两个步骤：</p>
+<ol type="1">
+<li>绘制一个色块为颜色一，绘制后续三个色块为颜色二，绘制随后的一个色块为颜色一；</li>
+<li>翻转颜色一和颜色二，跳转到
+<code>&lt;1&gt;</code>，循环直到将所有颜色绘制完毕。</li>
+</ol>
+</blockquote>
+<h4 id="code-7">Code</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">PIX @2E @2F 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @30 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @30 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @30 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line">PIX @2E @2F 000</span><br><span class="line">ADD @2E 001 @2E</span><br><span class="line"></span><br><span class="line">FLP @2F @30 000</span><br><span class="line">JMP -2C 000 003</span><br><span class="line">00B</span><br></pre></td></tr></table></figure>
+<h4 id="result-5">Result</h4>
+<figure>
+<img src="/images/20250319/CARPET-II.png" alt="CARPET II" />
+<figcaption aria-hidden="true">CARPET II</figcaption>
+</figure>
+<h3 id="sierpinski">SIERPINSKI</h3>
+<blockquote>
+<p><strong>这题相对之前的题难度提升了非常多</strong></p>
+<p>这一题我们要绘制的是：<a
+target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Sierpi%C5%84ski_triangle">SIERPINSKI
+TRIANGLE（谢尔宾斯基三角形）</a>，根据描述，可以如下生成：</p>
+<blockquote>
+<p>It can be created by starting with one large, equilateral triangle,
+and then repeatedly cutting smaller triangles out of its center.</p>
+</blockquote>
+</blockquote>
+<h4 id="code-for-drawing-a-triangle">Code for drawing a triangle</h4>
+<blockquote>
+<p>在我们开始绘制谢尔宾斯基三角形之前，我们可以先试试如何绘制一个简单的三角形，这个其实很简单，我们先找到一个起点，在后面的每次循环中：</p>
+<ol type="1">
+<li>我们将起点向下移动一格作为竖边，并作为下次绘制竖边的起点；</li>
+<li>我们将起点向下移动一格后向右移动一格（也有可能是向左移动）作为斜边，并作为下次绘制斜边的起点；</li>
+</ol>
+<p>为了实现更简便，我们可以在最开始时就定义两个点，这两个点重合作为起始点，随后分别作为竖边和斜边进行移动。</p>
+<p>这样，我们就得到了我们需要的竖边和斜边，随后我们将竖边的点开始向斜边的点开始移动，直到竖边的点和斜边的点重合。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">PIX @28 008 000</span><br><span class="line">PIX @29 008 000</span><br><span class="line">ADD @28 010 @28</span><br><span class="line">ADD @29 011 @29</span><br><span class="line">ADD @30 001 @30</span><br><span class="line">JNE @30 00F -14</span><br><span class="line">PIX @28 008 000</span><br><span class="line">ADD @28 001 @28</span><br><span class="line">JNE @28 @29 -08</span><br><span class="line">PIX @28 008 000</span><br><span class="line"></span><br><span class="line"># .data</span><br><span class="line">000 000 000</span><br></pre></td></tr></table></figure>
+<h4 id="result-for-drawing-a-triangle">Result for drawing a
+triangle</h4>
+<figure>
+<img src="/images/20250319/DRAWING-A-TRIANGLE.png"
+alt="DRAWING-A-TRIANGLE" />
+<figcaption aria-hidden="true">DRAWING-A-TRIANGLE</figcaption>
+</figure>
+<h4 id="code-for-sierpinski-triangle">Code for Sierpinski triangle</h4>
+<p>参考在 <a href="SIERPINSKI-TRIANGLE">SIERPINSKI TRIANGLE</a>
+中的详细描述</p>
+<h4 id="code-for-sierpinski-trianglemini-version">Code for Sierpinski
+triangle(mini version)</h4>
+<blockquote>
+<p>根据我们之前的算法，我们还可以实现一个不使用多线程，而是通过最短的代码量来实现的结果</p>
+</blockquote>
+<h4 id="result-6">Result</h4>
+<figure>
+<img src="/images/20250319/SIERPINSKI-TRIANGLE.png"
+alt="SIERPINSKI TRIANGLE" />
+<figcaption aria-hidden="true">SIERPINSKI TRIANGLE</figcaption>
+</figure>
+<h3 id="sierpinski-ii">SIERPINSKI II</h3>
+<h4 id="code-8">Code</h4>
+<p>这一题，和刚才的题非常相似，区别在于：</p>
+<ol type="1">
+<li>使用的颜色变化了；</li>
+<li>现在三角形内部的空余部分也需要进行上色了；</li>
+</ol>
+<p>现在三角形的边使用的颜色是 <code>001</code>，而内部填充的则是
+<code>00C</code>；</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">PIX 000 @27 000</span><br><span class="line">ADD @26 @27 @37        ; set color for the next 10th pixel</span><br><span class="line"></span><br><span class="line">JEQ @37 000 014        ; if (topLeft + top) == 0, the value is correct, jump out.</span><br><span class="line">JNE @26 @27 00C        ; if (topLeft == top) set color as 0xC</span><br><span class="line">MOV 00C @37 000</span><br><span class="line">JMP 008 000 000</span><br><span class="line">MOV 001 @37 000        ; else set color as 0x1</span><br><span class="line"></span><br><span class="line">ADD @01 001 @01        ; add pixel index</span><br><span class="line">MOV @27 @26 011</span><br><span class="line">JMP @00 000 001</span><br><span class="line"></span><br><span class="line">; if (topLeft == 0 &amp;&amp; top == 0) return 0;</span><br><span class="line">; if ((topLeft == 1 &amp;&amp; top == 1) || (topLeft == C &amp;&amp; top == C)) return C;</span><br><span class="line">; else return 1;</span><br><span class="line">;</span><br><span class="line">; 以上的逻辑可以优化为</span><br><span class="line">; if (topLeft == 0 &amp;&amp; top == 0) return 0;</span><br><span class="line">; if (topLeft == top) return C;</span><br><span class="line">; else return 1;</span><br></pre></td></tr></table></figure>
+<h4 id="result-7">Result</h4>
+<figure>
+<img src="/images/20250319/SIERPINSKI-TRIANGLE-II.png"
+alt="SIERPINSKI TRIANGLE" />
+<figcaption aria-hidden="true">SIERPINSKI TRIANGLE</figcaption>
+</figure>
+<h3 id="smiley-face">SMILEY FACE</h3>
+<h4 id="code-9">Code</h4>
+<blockquote>
+<p>这一题，我总共想到了以下几种思路：</p>
+<ol type="1">
+<li>通过编码压缩来表示图片中的上色区域和飞上色区域：
+<ol type="1">
+<li>通过二元组 <code>[start, end]</code> 来表示一个连续的上色区域，例如
+<code>[06, 09]</code>
+表示第一行的上色区域，而且这样对于跨行的连续上色区域可以使用一个数组来表示：例如：<code>[6A, A2]</code>
+这一大片区域只需要一个二元组即可表示，<strong>对于这种表示方式，我们总共需要25个二元组来表示</strong>。</li>
+<li>通过二元组 <code>[start, end]</code> 来表示连续的非上色区域，例如
+<code>[00, 05]</code> 表示第一行开头的非上色区域， <code>[0A, 13]</code>
+分别表示跨第一行和第二行的非上色区域，<strong>对于这种表示方式，我们总共需要20个二元组来表示</strong>。</li>
+</ol></li>
+</ol>
+<p>没有想到有什么好的方法来优化这个逻辑，可以尝试使用位图或者其他的方式。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">MOV *1C @1A 000</span><br><span class="line">PIX @1A 00A 000</span><br><span class="line">ADD @1A 001 @1A</span><br><span class="line">JNE @1A *1D -08</span><br><span class="line"></span><br><span class="line">ADD @1C 002 @1C</span><br><span class="line">ADD @1D 002 @1D</span><br><span class="line">JMP -18 000 000</span><br><span class="line">01E 01F 006 00A</span><br><span class="line"></span><br><span class="line">014 01C 023 02D</span><br><span class="line">032 036 037 039</span><br><span class="line">03A 03E 041 046</span><br><span class="line">047 049 04A 04F</span><br><span class="line">051 056 057 059</span><br><span class="line">05A 05F 060 066</span><br><span class="line">067 069 06A 0A0</span><br><span class="line">0A1 0A3</span><br><span class="line">0A4 0AC 0AD 0AF</span><br><span class="line">0B1 0B4 0B5 0BB</span><br><span class="line">0BC 0BF 0C2 0C5</span><br><span class="line">0CB 0CE 0D3 0DD</span><br><span class="line">0E4 0EC 0F6 0FA</span><br></pre></td></tr></table></figure>
+<h4 id="result-8">Result</h4>
+<figure>
+<img src="/images/20250319/SMILEY-FACE.png" alt="SMILEY-FACE" />
+<figcaption aria-hidden="true">SMILEY-FACE</figcaption>
+</figure>
+<h3 id="mario">MARIO</h3>
+<blockquote>
+<p>这个思路和上面的思路其实是一样的，就直接贴代码了</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">MOV @1A @06 001</span><br><span class="line">PIX 005 000 000</span><br><span class="line">SUB @06 010 @06</span><br><span class="line">ADD 001 @05 @05</span><br><span class="line">JGR @06 00F @04</span><br><span class="line">ADD 001 @01 @01</span><br><span class="line">JMP @00 058 0A0</span><br><span class="line">098 070 034 02F</span><br><span class="line">014 01F 080 014</span><br><span class="line">01F 014 03F 014</span><br><span class="line">03F 060 014 01F</span><br><span class="line">024 03F 014 03F</span><br><span class="line">060 014 04F 044</span><br><span class="line">080 06F 090 028</span><br><span class="line">01C 028 01C 028</span><br><span class="line">070 038 01C 028</span><br><span class="line">01C 038 050 048</span><br><span class="line">04C 048 040 02F</span><br><span class="line">018 01C 01A 02C</span><br><span class="line">01A 01C 018 02F</span><br><span class="line">040 03F 06C 03F</span><br><span class="line">040 02F 08C 02F</span><br><span class="line">060 03C 020 03C</span><br><span class="line">070 034 040 034</span><br><span class="line">050 044 040 044</span><br></pre></td></tr></table></figure>
+<h4 id="result-9">Result</h4>
+<figure>
+<img src="/images/20250319/MARIO.png" alt="MARIO" />
+<figcaption aria-hidden="true">MARIO</figcaption>
+</figure>
+<h2 id="引用">引用</h2>
+<ul>
+<li><p><a target="_blank" rel="noopener" href="http://box-256.com/manual/index.html">BOX-256
+Manual</a></p></li>
+<li><p><a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/threads.htm">BOX-256
+Threads</a></p></li>
+<li><p><a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/pandora.htm">BOX-256
+Forth</a></p></li>
+</ul>
+<h2 id="问题">问题</h2>
+<blockquote>
+<p>这里总结了一下，在解题过程中碰见，<strong>但是尚未解决的问题</strong>，可能是因为个人能力有限，也有可能是需要投入的时间精力过多。</p>
+</blockquote>
+<h3 id="线程创建算法">线程创建算法</h3>
+<blockquote>
+<p>这个公式暂时还没有推理证明过程。</p>
+</blockquote>
+<p>线程创建算法需要满足一个公式：假设存在一个大于2的正整数
+<code>N</code>，该正整数 <code>N</code> 的二进制 place value
+可以表示为：<span class="math inline">\(b_mb_m-1...b_i...b_1b_0\)</span>
+，如果从高到低遍历N的place value，并且按照如下规则计算：</p>
+<ol type="1">
+<li>存在 <span class="math inline">\(x\)</span> 初始值为 1；</li>
+<li>如果 <span class="math inline">\(b_i\)</span> 为 1，则
+<code>x = 2 * x</code>；</li>
+<li>如果 <span class="math inline">\(b_i\)</span> 为 0，则
+<code>x = (2 * x) - 1</code>；</li>
+</ol>
+<p>递归计算完成后，<span class="math inline">\(x\)</span> 的值等于 <span
+class="math inline">\(N+1\)</span></p>
+<h3 id="siérpinski-triangle-的点绘制算法">Siérpinski Triangle
+的点绘制算法</h3>
+<p>在<strong>Siérpinski
+Triangle</strong>的绘制过程中，有用户给出了一个非常非常巧妙的方法，参考
+<a target="_blank" rel="noopener" href="https://corewar.co.uk/box256/threads.htm">BOX-256 Threads - A
+practical example</a> 中提出的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">00 - THR 004         ;</span><br><span class="line">04 - MOV @00 @04 004 ; create 5 parallel threads</span><br><span class="line">08 - MOV @04 @08 004 ; </span><br><span class="line"></span><br><span class="line">0C - MOV @10 @FB 005 ; copy an array of 5 addresses over the PCs</span><br><span class="line"></span><br><span class="line">10 - 024 020 01C 018</span><br><span class="line">14 - 00C 000 000 000 ; 1st thread jumps back to execute the MOV at 0x0Ch</span><br><span class="line"></span><br><span class="line">18 - PIX 000 @29 000 ; 2nd thread</span><br><span class="line">1C - MOV @29 @28 010 ; 3rd thread</span><br><span class="line">20 - ADD @29 @28 @38 ; 4th thread</span><br><span class="line">24 - ADD 001 @19 @19 ; 5th thread</span><br><span class="line"></span><br><span class="line">28 - 000 008 000 000 ; seed data for Siérpinski triangle</span><br></pre></td></tr></table></figure>
+<p>这段代码的其他部分解读可以参考本文的 <a
+href="#SIERPINSKI-TRIANGLE">SIERPINSKI
+TRIANGLE</a>，但是这里还存在的一个问题是，下面的代码的工作原理只是根据代码以及图形倒推，并没有给出严禁的证明。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">20 - ADD @29 @28 @38 ; 4th thread</span><br><span class="line">24 - ADD 001 @19 @19 ; 5th thread</span><br></pre></td></tr></table></figure>
+<h3 id="其他">其他</h3>
+<p>暂时来说，我们目前大部分方法都是使用的比较简单原始的暴力破解，其实我们还可以使用很多手段来优化，不过这是一个处于学习目的的小练手项目，就不准备再继续投入更多的时间了。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/assembly/" rel="tag"># assembly</a>
+              <a href="/tags/OS/" rel="tag"># OS</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/03/12/game-log-%E5%BC%80%E6%BA%90%E5%95%A6/" rel="prev" title="game log 开源啦">
+                  <i class="fa fa-angle-left"></i> game log 开源啦
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/" rel="next" title="Python里的一些语法糖">
+                  Python里的一些语法糖 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

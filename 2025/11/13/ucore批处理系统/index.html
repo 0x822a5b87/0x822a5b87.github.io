@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="批处理系统 综述 在本章节中，我们实现一个简单的批处理系统，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：  通过加载器在启动时动态的加载代码到并执行； 实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如 privilege。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore批处理系统">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="批处理系统 综述 在本章节中，我们实现一个简单的批处理系统，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：  通过加载器在启动时动态的加载代码到并执行； 实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如 privilege。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251118/fp.png">
+<meta property="article:published_time" content="2025-11-13T03:35:28.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251118/fp.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/","path":"2025/11/13/ucore批处理系统/","title":"uCore批处理系统"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore批处理系统 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.</span> <span class="nav-text">批处理系统</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">综述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#rcore-code-organization"><span class="nav-number">1.1.1.</span> <span class="nav-text">rCore和rCore-test如何组织代码？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcore-test"><span class="nav-number">1.2.</span> <span class="nav-text">rCore-test</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile"><span class="nav-number">1.2.1.</span> <span class="nav-text">makefile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#build.py"><span class="nav-number">1.2.2.</span> <span class="nav-text">build.py</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linker.ld"><span class="nav-number">1.2.3.</span> <span class="nav-text">linker.ld</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcore-kernel"><span class="nav-number">1.3.</span> <span class="nav-text">rCore-kernel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#trap"><span class="nav-number">1.3.1.</span> <span class="nav-text">trap</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#trap-handler"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">trap handler</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#alltraps"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">__alltraps</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#running-app"><span class="nav-number">1.3.2.</span> <span class="nav-text">running app</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#build.rs"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">build.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#link_app.s"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">link_app.S</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#app_manager"><span class="nav-number">1.3.2.3.</span> <span class="nav-text">APP_MANAGER</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kernel_stack-user_stack"><span class="nav-number">1.3.2.4.</span> <span class="nav-text">KERNEL_STACK &amp; USER_STACK</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.4.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E6%A0%91"><span class="nav-number">1.4.1.</span> <span class="nav-text">代码树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86git%E7%9B%AE%E5%BD%95%E5%AE%89%E5%85%A8%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%E5%BC%95%E5%8F%91%E7%9A%84%E7%BC%96%E8%AF%91%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.2.</span> <span class="nav-text">如何处理GIT目录安全检查机制引发的编译异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#riscv%E7%89%B9%E6%9D%83%E7%BA%A7%E5%88%87%E6%8D%A2"><span class="nav-number">1.4.3.</span> <span class="nav-text">riscv特权级切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E7%9B%B8%E5%85%B3%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">异常处理相关的寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">异常处理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E6%98%AF%E5%A6%82%E4%BD%95%E7%BB%84%E7%BB%87%E4%BE%9D%E8%B5%96%E7%9A%84"><span class="nav-number">1.4.4.</span> <span class="nav-text">rust是如何组织依赖的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E4%B8%ADlib.rs%E5%92%8Cmod.rs%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.4.5.</span> <span class="nav-text">rust中lib.rs和mod.rs的区别是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#lib.rs"><span class="nav-number">1.4.5.1.</span> <span class="nav-text">lib.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mod.rs"><span class="nav-number">1.4.5.2.</span> <span class="nav-text">mod.rs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.5.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#macro_use-%E5%92%8C-macro_export"><span class="nav-number">1.4.6.</span> <span class="nav-text">#[macro_use] 和
+#[macro_export]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fp-%E7%9A%84%E4%BD%9C%E7%94%A8%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.4.7.</span> <span class="nav-text">fp 的作用是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#riscv%E4%B8%AD%E7%9A%84%E5%B8%B8%E8%A7%81%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.8.</span> <span class="nav-text">RISCV中的常见异常</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E6%A0%B8%E5%BF%83%E9%80%9A%E7%94%A8%E5%BC%82%E5%B8%B8%E4%BB%BB%E6%84%8F%E7%89%B9%E6%9D%83%E7%BA%A7%E5%8F%AF%E8%83%BD%E8%A7%A6%E5%8F%91"><span class="nav-number">1.4.8.1.</span> <span class="nav-text">一、核心通用异常（任意特权级可能触发）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8%E4%B8%BB%E5%8A%A8%E8%A7%A6%E5%8F%91%E7%94%A8%E4%BA%8E%E7%89%B9%E6%9D%83%E7%BA%A7%E5%88%87%E6%8D%A2"><span class="nav-number">1.4.8.2.</span> <span class="nav-text">二、系统调用相关异常（主动触发，用于特权级切换）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E9%A1%B5%E8%A1%A8%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8%E7%BC%BA%E9%A1%B5-%E9%A1%B5%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E5%8F%AF%E6%81%A2%E5%A4%8D"><span class="nav-number">1.4.8.3.</span> <span class="nav-text">三、页表相关异常（缺页 &#x2F;
+页权限错误，可恢复）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E8%99%9A%E6%8B%9F%E5%8C%96%E6%89%A9%E5%B1%95%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8%E4%BB%85%E6%94%AF%E6%8C%81-v-%E6%89%A9%E5%B1%95%E6%97%B6%E7%94%9F%E6%95%88"><span class="nav-number">1.4.8.4.</span> <span class="nav-text">四、虚拟化扩展相关异常（仅支持
+V 扩展时生效）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E5%85%9C%E5%BA%95%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.8.5.</span> <span class="nav-text">五、兜底异常</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">1.4.8.6.</span> <span class="nav-text">代码</span></a></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore批处理系统 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore批处理系统
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-13 11:35:28" itemprop="dateCreated datePublished" datetime="2025-11-13T11:35:28+08:00">2025-11-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="批处理系统">批处理系统</h1>
+<h2 id="综述">综述</h2>
+<p>在本章节中，我们实现一个简单的<strong>批处理系统</strong>，内核在启动之后，将多个程序打包输入并按顺序执行，而本章节我们会实现以下几个重要逻辑：</p>
+<ol type="1">
+<li>通过加载器在启动时动态的加载代码到并执行；</li>
+<li>实现错误处理，保证在单个程序出错时不影响其他的程序。这个位置我们会引入一些新的概念，例如
+<code>privilege</code>。同时我们也可以看到操作系统和普通的应用程序的区别，例如：操作系统有自己的内核栈，这个栈是完全独立于任何程序的。</li>
+<li>操作系统通过trap机制来处理 <code>interruption</code> 和
+<code>exception</code> 事件。</li>
+</ol>
+<pre><code class="highlight mermaid">---
+title: Compiling rCore-test
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    build_system(&quot;构建系统&quot;):::purple
+    dir(&quot;文件夹&quot;):::green
+    products(&quot;源文件/构建产物&quot;):::animate
+end
+
+
+subgraph 构建过程
+    direction LR
+    makefile(&quot;Makefile&quot;):::purple
+    build(&quot;build.py&quot;):::purple
+
+    target(&quot;target/riscv64gc-unknown-none-elf/release&quot;):::green
+    build_dir(&quot;build&quot;):::green
+
+    source_code(&quot;*.rs&quot;):::animate
+    bin(&quot;*.bin&quot;):::animate
+    elf(&quot;*.elf&quot;):::animate
+    object(&quot;*.object&quot;):::animate
+
+
+    source_code --&gt;|输入| build --&gt;|编译| object -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|rust-objcopy| bin -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|cp| elf -.-&gt;|输出到文件夹| target
+
+    bin --&gt;|cp| build_dir
+    elf --&gt;|cp| build_dir
+end
+
+desc --&gt; 构建过程
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h3 id="rcore-code-organization">rCore和rCore-test如何组织代码？</h3>
+<p>在 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test">rCore-test</a>
+这个项目中，构建系统主要包含两个文件分别是 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test/blob/main/build.py">build.py</a>
+和 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test/blob/main/src/linker.ld">linker.ld</a>。</p>
+<p>仔细观察我们会发现一个奇怪的问题：</p>
+<ol type="1">
+<li>build.py 中 通过
+<code>cargo rustc --bin %s %s -- -Clink-args=-Ttext=%x</code>
+这个指令，将build/app下的所有文件编译成了可执行文件。并且以
+<code>0x80400000</code> 作为基址，每个app的大小是
+<code>0x20000</code>；</li>
+<li>而在 linker.ld 中，我们的 BASE_ADDRESS = <code>0x0</code> 。</li>
+</ol>
+<p>要想要解释这个原因，我们首先必须理清项目的编译和执行逻辑。在rCore的开发中，总共可以分为三个不同的模块：</p>
+<ol type="1">
+<li>rCore 的 <a
+target="_blank" rel="noopener" href="https://github.com/LearningOS/2025a-rcore-0x822a5b87/tree/ch2">kernel</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test/tree/main/src/bin">rCore-test的用户态程序</a>，也就是我们的
+<code>rCore-Tutorial-Test</code> 中 <code>src/bin</code> 部分；</li>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/rCore-Tutorial-Test/tree/main/src">rCore-Tutorial-Test的用户态程序依赖的库</a>，也就是我们的
+<code>rCore-Tutorial-Test</code> 中 <code>src</code> 除了 bin
+的部分；</li>
+</ol>
+<p>下面我们将简称这三个模块分别为：<code>kernel</code>,
+<code>user</code>, <code>lib</code>。</p>
+<ol type="1">
+<li>编译阶段
+<ol type="1">
+<li><code>lib</code> 先被编译为静态库，因其 linker.ld 基址为
+0，代码中使用相对跳转访问，不依赖具体加载地址。</li>
+<li><code>user</code> 程序编译时，通过 cargo rustc 链接 lib，并通过
+--link-args=-Ttext=0x80400000 指定最终加载基址，将 lib
+的相对地址代码重定位到该基址，生成独立的 ELF 二进制文件（.bin）。</li>
+</ol></li>
+<li>执行阶段：
+<ol type="1">
+<li>内核通过 <code>build.rs</code> 将用户程序的 .bin
+文件嵌入到内核镜像中（或在运行时读取），确保启动时可访问。</li>
+<li>内核的 load_app() 函数（如 batch.rs
+中）将用户程序二进制数据加载到内存的 0x80400000
+及后续地址（与编译时指定的基址一致）。</li>
+<li>内核通过上下文切换将 CPU
+权限切换到用户态，并跳转到用户程序的入口地址（0x80400000 附近的 _start
+函数，定义在 lib/src/lib.rs 中），开始执行用户程序。</li>
+</ol></li>
+</ol>
+<blockquote>
+<p>观察上面的结论，我们发现，当 kernel 加载 user 的代码时，由于user
+程序编译时的基址（0x80400000）必须与内核加载时的目标地址一致，否则会因地址错位导致程序崩溃（例如指令或数据访问到错误内存)。</p>
+<p>也就是说，每个app都必须加载在 <code>build.py</code> 中使用
+<code>cargo rustc</code> 编译时声明的位置。</p>
+<p>而此时，user 代码和 kernel
+是共用同一片虚拟内存空间的，内核需要提供一些机制防止 <code>user</code>
+去访问没有权限的内存！</p>
+<p>这个错误也非常好模拟，只需要修改 <code>batch.rs</code> 中
+<code>APP_BASE_ADDRESS</code> 到 0x80200000
+即可，这是kernel的代码段，复制会覆盖这段内存导致内核异常。</p>
+</blockquote>
+<h2 id="rcore-test">rCore-test</h2>
+<p><code>rCore-test</code> 包含了项目的测试文件，我们前面提到的
+“<strong>批处理系统将多个程序打包输入并按顺序执行</strong>”，那些被打包执行的程序就源自于该仓库中。</p>
+<p>整体编译逻辑如下：</p>
+<ol type="1">
+<li>根据参数BASE,TEST,CHAPTER生成一个包含所有需要编译文件的列表；</li>
+<li>pre 执行会将所有的目标文件复制到 <code>app</code> 目录下；</li>
+<li>binary 编译源文件：
+<ul>
+<li>编译源文件得到elf文件放在<code>$(TARGET_DIR)</code>目录下；</li>
+<li>通过 rust-objcopy 得到二进制文件放在 <code>$(TARGET_DIR)</code>
+目录下；</li>
+</ul></li>
+<li>build 将 <code>.bin</code> 和 <code>.elf</code> 复制到
+<code>build</code> 对应的目录下；</li>
+</ol>
+<pre><code class="highlight mermaid">---
+title: Compiling rCore-test
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    build_system(&quot;构建系统&quot;):::purple
+    dir(&quot;文件夹&quot;):::green
+    products(&quot;源文件/构建产物&quot;):::animate
+end
+
+
+subgraph 构建过程
+    direction LR
+    makefile(&quot;Makefile&quot;):::purple
+    build(&quot;build.py&quot;):::purple
+
+    target(&quot;target/riscv64gc-unknown-none-elf/release&quot;):::green
+    build_dir(&quot;build&quot;):::green
+
+    source_code(&quot;*.rs&quot;):::animate
+    bin(&quot;*.bin&quot;):::animate
+    elf(&quot;*.elf&quot;):::animate
+    object(&quot;*.object&quot;):::animate
+
+
+    source_code --&gt;|输入| build --&gt;|编译| object -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|rust-objcopy| bin -.-&gt;|输出到文件夹| target
+    object --&gt;|输入| makefile --&gt;|cp| elf -.-&gt;|输出到文件夹| target
+
+    bin --&gt;|cp| build_dir
+    elf --&gt;|cp| build_dir
+end
+
+desc --&gt; 构建过程
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h3 id="makefile">makefile</h3>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># define variables</span></span><br><span class="line">TARGET := riscv64gc-unknown-none-elf</span><br><span class="line">MODE := release</span><br><span class="line">APP_DIR := src/bin</span><br><span class="line">TARGET_DIR := target/<span class="variable">$(TARGET)</span>/<span class="variable">$(MODE)</span></span><br><span class="line">BUILD_DIR := build</span><br><span class="line">OBJDUMP := rust-objdump --arch-name=riscv64</span><br><span class="line">OBJCOPY := rust-objcopy --binary-architecture=riscv64</span><br><span class="line">PY := python3</span><br><span class="line"></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(MODE)</span>, release)</span><br><span class="line">	MODE_ARG := --release</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line">BASE ?= 0</span><br><span class="line">CHAPTER ?= 0</span><br><span class="line">TEST ?= <span class="variable">$(CHAPTER)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Generate a list contains all target files.</span></span><br><span class="line"><span class="comment"># $(TEST) : indicate which tests should run, 0 stands for none, 1 stands for all,</span></span><br><span class="line"><span class="comment">#			and other values stand for tests based on BASE and TEST</span></span><br><span class="line"><span class="comment"># $(BASE) : Indicate which types of test should run, 0 stands for normal, 1 stands for basic,</span></span><br><span class="line"><span class="comment">#			and other values stand for basic and normal.</span></span><br><span class="line"><span class="comment"># $(CHAPTER) : set default values for TEST</span></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(TEST)</span>, 0) <span class="comment"># No test, deprecated, previously used in v3</span></span><br><span class="line">	APPS :=  <span class="variable">$(<span class="built_in">filter</span>-out $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch*.rs)</span>, <span class="variable">$(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/*.rs)</span>)</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">ifeq</span> (<span class="variable">$(TEST)</span>, 1) <span class="comment"># All test</span></span><br><span class="line">	APPS :=  <span class="variable">$(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch*.rs)</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">	<span class="comment"># generate a sequential number between BASE and TEST, with both BASE and TEST included.</span></span><br><span class="line">	TESTS := <span class="variable">$(<span class="built_in">shell</span> seq <span class="variable">$(BASE)</span> <span class="variable">$(TEST)</span>)</span></span><br><span class="line">	<span class="keyword">ifeq</span> (<span class="variable">$(BASE)</span>, 0) <span class="comment"># Normal tests only</span></span><br><span class="line">		APPS := <span class="variable">$(<span class="built_in">foreach</span> T, <span class="variable">$(TESTS)</span>, $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch<span class="variable">$(T)</span>_*.rs)</span>)</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">ifeq</span> (<span class="variable">$(BASE)</span>, 1) <span class="comment"># Basic tests only</span></span><br><span class="line">		APPS := <span class="variable">$(<span class="built_in">foreach</span> T, <span class="variable">$(TESTS)</span>, $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch<span class="variable">$(T)</span>b_*.rs)</span>)</span><br><span class="line">	<span class="keyword">else</span> <span class="comment"># Basic and normal</span></span><br><span class="line">		APPS := <span class="variable">$(<span class="built_in">foreach</span> T, <span class="variable">$(TESTS)</span>, $(<span class="built_in">wildcard</span> <span class="variable">$(APP_DIR)</span>/ch<span class="variable">$(T)</span>*.rs)</span>)</span><br><span class="line">	<span class="keyword">endif</span></span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Use pattern substitution to generate a target directory list by replacing APP_DIR with TARGET_DIR.</span></span><br><span class="line"><span class="comment"># For example : src/bin/hello_world.rs will become target/riscv64gc-unknown-none-elf/release/hello_world</span></span><br><span class="line">ELFS := <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(APP_DIR)</span>/%.rs, <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(APPS)</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Generate binary file according to $CHAPTER.</span></span><br><span class="line"><span class="comment"># 1. Generate elf file by cargo or build.py;</span></span><br><span class="line"><span class="comment"># 2. Transform elf file to binary file by rust-objcopy, and add .bin as suffix for elf file name as the name of binary file;</span></span><br><span class="line"><span class="comment"># 3. Copy elf file to $BUILD_DIR/elf.</span></span><br><span class="line"><span class="section">binary:</span></span><br><span class="line">	@echo <span class="variable">$(ELFS)</span></span><br><span class="line">	@if [ $&#123;CHAPTER&#125; -gt 3 ]; then \</span><br><span class="line">		cargo build <span class="variable">$(MODE_ARG)</span> ;\</span><br><span class="line">	<span class="keyword">else</span> \</span><br><span class="line">		CHAPTER=<span class="variable">$(CHAPTER)</span> python3 build.py ;\</span><br><span class="line">	fi</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> elf, <span class="variable">$(ELFS)</span>, \</span></span><br><span class="line"><span class="variable">		<span class="variable">$(OBJCOPY)</span> <span class="variable">$(elf)</span> --<span class="built_in">strip</span>-all -O binary $(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.bin, <span class="variable">$(elf)</span>)</span>; \</span><br><span class="line">		cp <span class="variable">$(elf)</span> <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.elf, <span class="variable">$(elf)</span>)</span>;)</span><br><span class="line"></span><br><span class="line"><span class="section">disasm:</span></span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> elf, <span class="variable">$(ELFS)</span>, \</span></span><br><span class="line"><span class="variable">		<span class="variable">$(OBJDUMP)</span> <span class="variable">$(elf)</span> -S &gt; $(<span class="built_in">patsubst</span> <span class="variable">$(TARGET_DIR)</span>/%, <span class="variable">$(TARGET_DIR)</span>/%.asm, <span class="variable">$(elf)</span>)</span>;)</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(ELFS)</span>, cp <span class="variable">$(t)</span>.asm <span class="variable">$(BUILD_DIR)</span>/asm/;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># prepare context and copy all target files</span></span><br><span class="line"><span class="section">pre:</span></span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/bin/</span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/elf/</span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/app/</span><br><span class="line">	@mkdir -p <span class="variable">$(BUILD_DIR)</span>/asm/</span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(APPS)</span>, cp <span class="variable">$(t)</span> <span class="variable">$(BUILD_DIR)</span>/app/;)</span></span><br><span class="line"></span><br><span class="line"><span class="section">build: clean pre binary</span></span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(ELFS)</span>, cp <span class="variable">$(t)</span>.bin <span class="variable">$(BUILD_DIR)</span>/bin/;)</span></span><br><span class="line">	@<span class="variable">$(<span class="built_in">foreach</span> t, <span class="variable">$(ELFS)</span>, cp <span class="variable">$(t)</span>.elf <span class="variable">$(BUILD_DIR)</span>/elf/;)</span></span><br></pre></td></tr></table></figure>
+<h3 id="build.py">build.py</h3>
+<p><code>build.py</code> 的逻辑比较简单，就是将我们在
+<code>make pre</code> 中复制到 <code>build/app</code> 目录下的所有
+<code>*.rs</code> 源文件编译到 <code>可执行文件</code>（这也是为什么
+<code>bin/*.rs</code>
+的每个源文件中都有main函数的原因），以下是一些值得注意的细节：</p>
+<ol type="1">
+<li>代码的基址是 <code>0x80400000</code>，在 <code>rCore-kernel</code>
+中，我们也必须使用相同的地址来处理这个地址；</li>
+<li>每段代码我们使用了 <code>0x20000</code>
+这么多空间，理论上来说这个是有问题的，因为每段程序的大小不一样，这有可能导致内存碎片（对于不足0x20000的程序），或者内存溢出等问题（对于超过0x20000的程序）。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line">base_address = <span class="number">0x80400000</span></span><br><span class="line">step = <span class="number">0x20000</span></span><br><span class="line">linker = <span class="string">&quot;src/linker.ld&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> app <span class="keyword">in</span> apps:</span><br><span class="line">    app = app[: app.find(<span class="string">&quot;.&quot;</span>)]</span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    os.system(</span><br><span class="line">        <span class="comment"># generate object files by compiling source codes.</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment"># cargo rustc --bin hello_world --release -- -Clink-args=Ttext=0x80400000</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment">#       --bin [&lt;NAME&gt;]      Build only the specified binary</span></span><br><span class="line">        <span class="comment">#       --release           Use release mode, which enables -O3 optimization, etc.</span></span><br><span class="line">        <span class="comment">#       --                  Separator indicating the subsequent parameters are passed to `rustc`</span></span><br><span class="line">        <span class="comment">#       -C, --codegen &lt;OPT&gt;[=&lt;VALUE&gt;] Set a codegen option</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment">#           link-args specifies that it&#x27;s an argument for linker.</span></span><br><span class="line">        <span class="comment">#           -Ttext=0x80400000 T=template, text=.text section. It explicitly specifies the load address of the code.</span></span><br><span class="line">        <span class="string">&quot;cargo rustc --bin %s %s -- -Clink-args=-Ttext=%x&quot;</span></span><br><span class="line">        % (app, mode_arg, base_address + step * app_id)</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        <span class="string">&quot;[build.py] application %s start with address %s&quot;</span></span><br><span class="line">        % (app, <span class="built_in">hex</span>(base_address + step * app_id))</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">if</span> chapter == <span class="string">&#x27;3&#x27;</span>:</span><br><span class="line">        app_id = app_id + <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<h3 id="linker.ld">linker.ld</h3>
+<p><code>linker.ld</code> 的逻辑和 <code>rCore-kernel</code>
+的逻辑基本没有什么区别，就是老生常谈的指定 <code>.text</code>,
+<code>.bss</code>, <code>.data</code>
+等区域的初始地址，唯一值得注意的是，他这里的基址指定为
+<code>0x0</code>，因为这里是需要生成一个静态链接库，具体的他在程序里的偏移量是在链接时由引用他的程序来确定。</p>
+<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_ARCH(riscv)</span><br><span class="line">ENTRY(_start)</span><br><span class="line"></span><br><span class="line">BASE_ADDRESS <span class="operator">=</span> <span class="number">0</span>x0<span class="comment">;</span></span><br></pre></td></tr></table></figure>
+<h2 id="rcore-kernel">rCore-kernel</h2>
+<blockquote>
+<p>接下来介绍 <code>kernel</code> 的部分。</p>
+</blockquote>
+<p>从main函数入手，我们可以看到相对于第一章初始化完成之后，我们多了三个额外操作：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// the rust entry-point of os</span></span><br><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">rust_main</span>()  &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    trap::<span class="title function_ invoke__">init</span>();</span><br><span class="line">    batch::<span class="title function_ invoke__">init</span>();</span><br><span class="line">    batch::<span class="title function_ invoke__">run_next_app</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code class="highlight mermaid">---
+title: trap and batch
+---
+flowchart LR
+
+os(&quot;OS&quot;):::green --&gt; trap
+os --&gt; batch
+
+trap(&quot;trap.s&quot;) --&gt; trap_desc(&quot;注册中断向量表（stvec），处理异常&quot;)
+batch(&quot;batch.s&quot;) --&gt; batch_desc(&quot;加载test的app到内核空间并执行&quot;)
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h3 id="trap">trap</h3>
+<p>我们可以再回顾一下，一个 trap 触发的流程：</p>
+<pre><code class="highlight mermaid">---
+title: 跳转
+---
+
+flowchart TB
+
+
+    stvec(&quot;stvec&quot;):::pink
+    scause(&quot;scause&quot;):::pink
+    sstatus(&quot;sstatus&quot;):::pink
+    stval(&quot;stval&quot;):::pink
+
+
+
+    用户态触发trap(&quot;用户态触发trap&quot;):::green
+    内核trap处理(&quot;内核trap处理&quot;):::error
+
+    stvec --&gt;|1. 读取stvec| 用户态触发trap --&gt; TrapHandler(&quot;TrapHandler&quot;):::error
+
+    scause --&gt;|2. 读取trap原因-缺页？系统调用？| 内核trap处理
+    sstatus --&gt;|3. 原特权等级-自陷？| 内核trap处理
+
+    stval --&gt;|4. 根据scause解析stval并解析执行| 内核trap处理
+
+    TrapHandler --&gt; scause
+    TrapHandler --&gt; sstatus
+    TrapHandler --&gt; stval
+
+classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<p>一次trap的处理，我们需要三个重要寄存器合作：</p>
+<ol type="1">
+<li><code>stvec</code> 找到中断向量表；</li>
+<li><code>scause</code> 找到trap的原因，例如系统调用，缺页异常等；</li>
+<li><code>stval</code>
+trap相关的值，不同的scause下，stval有不同的含义。例如，对于缺页异常，stval会保存导致缺页异常的虚拟地址。</li>
+</ol>
+<h4 id="trap-handler">trap handler</h4>
+<p><code>trap</code> handler
+从某种程度来说，就是一个普通的函数，区别是：</p>
+<ol type="1">
+<li><strong>调用权限与触发方式</strong>：普通函数可由任意权限（U/S
+态）主动调用（如 call 指令）；而 trap handler 是「被动触发」的 —— 只有
+CPU 检测到 trap（ecall、缺页、中断等）时，才会自动从 U 态切到 S
+态，跳转到 stvec 指向的入口，U 态程序无法主动「调用」它（本质是 CPU
+强制触发的跳转，而非函数调用）；</li>
+<li><strong>入口地址的存储与使用</strong>：普通函数的地址是链接时确定的，调用时直接嵌入代码（如
+call 0x80201000）；而 trap handler 的基址存储在 stvec
+寄存器中（内核初始化时设置），CPU 触发 trap 时会动态读取 stvec
+的值来跳转，而非硬编码地址。</li>
+<li><strong>统一入口与分发逻辑</strong>：所有 trap
+共享同一个「入口点」（stvec
+指向的起始地址），而非像普通函数那样有各自独立的入口；入口处会先读取
+scause 识别 trap
+类型，再分发到对应的处理逻辑（如系统调用、缺页异常），这和普通函数「一个函数对应一个功能」的模式完全不同。</li>
+</ol>
+<blockquote>
+<p>值得注意的是： 1. trap handler 由 CPU
+触发（硬件行为），内核仅提供实现并提前设置 stvec； 2.
+系统调用的本质是「用户态通过 ecall 触发 trap，内核态处理 trap
+并提供服务」，核心依赖 trap 机制； 3. CPU 负责「切换特权态、跳转 trap
+handler」，内核负责「权限检查、 trap 类型分发、业务逻辑处理」。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="comment">/// handle an interrupt, exception, or system call from user space</span></span><br><span class="line"><span class="comment">/// [`TrapContext`] is the context of the trap, which contains 32 registers, sstatus and sepc</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">trap_handler</span>(cx: &amp;<span class="keyword">mut</span> TrapContext) <span class="punctuation">-&gt;</span> &amp;<span class="keyword">mut</span> TrapContext &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">scause</span> = scause::<span class="title function_ invoke__">read</span>(); <span class="comment">// get trap cause</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">stval</span> = stval::<span class="title function_ invoke__">read</span>(); <span class="comment">// get extra value</span></span><br><span class="line">    <span class="keyword">match</span> scause.<span class="title function_ invoke__">cause</span>() &#123;</span><br><span class="line">        <span class="comment">// handle ecall</span></span><br><span class="line">        Trap::<span class="title function_ invoke__">Exception</span>(Exception::UserEnvCall) =&gt; &#123;</span><br><span class="line">            <span class="comment">// ecall is an instruction with 4 bytes, so we have to step forward 4 bytes; otherwise we will enter an infinite loop.</span></span><br><span class="line">            cx.sepc += <span class="number">4</span>;</span><br><span class="line">            <span class="comment">// As we mentioned before, a0 holds the return value, a0 ~ a6 hold the parameters of the called function;</span></span><br><span class="line">            <span class="comment">// a7 holds the system call ID.</span></span><br><span class="line">            cx.x[<span class="number">10</span>] = <span class="title function_ invoke__">syscall</span>(cx.x[<span class="number">17</span>], [cx.x[<span class="number">10</span>], cx.x[<span class="number">11</span>], cx.x[<span class="number">12</span>]]) <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Trap::<span class="title function_ invoke__">Exception</span>(Exception::StoreFault) | Trap::<span class="title function_ invoke__">Exception</span>(Exception::StorePageFault) =&gt; &#123;</span><br><span class="line">            <span class="built_in">println!</span>(<span class="string">&quot;[kernel] PageFault in application, kernel killed it.&quot;</span>);</span><br><span class="line">            <span class="title function_ invoke__">run_next_app</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        Trap::<span class="title function_ invoke__">Exception</span>(Exception::IllegalInstruction) =&gt; &#123;</span><br><span class="line">            <span class="built_in">println!</span>(<span class="string">&quot;[kernel] IllegalInstruction in application, kernel killed it.&quot;</span>);</span><br><span class="line">            <span class="title function_ invoke__">run_next_app</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        _ =&gt; &#123;</span><br><span class="line">            <span class="built_in">panic!</span>(</span><br><span class="line">                <span class="string">&quot;Unsupported trap &#123;:?&#125;, stval = &#123;:#x&#125;!&quot;</span>,</span><br><span class="line">                scause.<span class="title function_ invoke__">cause</span>(),</span><br><span class="line">                stval</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    cx</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="alltraps">__alltraps</h4>
+<blockquote>
+<p>首先是定义的两个宏用于保存现场，这样我们在trap完成之后可以正常的执行trap之前在执行的代码：
+1. 存储寄存器到栈 2. 栈读取到寄存器</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># enable alternate macro syntax</span><br><span class="line">.altmacro</span><br><span class="line"># Store the n-th register into the stack pointer at an offset of n * 8.</span><br><span class="line">.macro SAVE_GP n</span><br><span class="line">    sd x\n, \n*8(sp)</span><br><span class="line">.endm</span><br><span class="line"># load register from stack</span><br><span class="line">.macro LOAD_GP n</span><br><span class="line">    ld x\n, \n*8(sp)</span><br><span class="line">.endm</span><br></pre></td></tr></table></figure>
+<p>随后，我们的第一个
+<code>__alltraps</code>来了，我们再回顾前面的代码会发现，我们注册到
+<code>stvec</code> 的是 <code>__alltraps</code> 而不是
+<code>trap_handler</code>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// initialize CSR `stvec` as the entry of `__alltraps`</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">init</span>() &#123;</span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__alltraps</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        stvec::<span class="title function_ invoke__">write</span>(__alltraps <span class="keyword">as</span> <span class="type">usize</span>, TrapMode::Direct);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>为什么？其实只要细想就能知道，我们还缺少了两个机器关键的步骤：</p>
+<ol type="1">
+<li>在处理trap的业务逻辑前，我们要保存用户程序的context；</li>
+<li>在处理trap的业务逻辑后，我们要恢复用户程序的context；</li>
+</ol>
+<p>这就是 <code>__alltraps</code> 和 <code>__restore</code>
+存在的原因，他们一个为我们保存现场，一个为我们恢复现场。</p>
+<p>这里需要注意的点有几个：</p>
+<ol type="1">
+<li><code>sscratch</code>，<code>sepc</code>，<code>sstatus</code>
+三个寄存器不能直接写入内存，必须通过用户寄存器进行中转；</li>
+<li><code>x4(tp)</code> 不需要存，应用用不到；</li>
+<li><code>x2(sp)</code></li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">__alltraps:</span><br><span class="line">    # swap sp and sscratch in order to avoid using sp of user</span><br><span class="line">    csrrw sp, sscratch, sp</span><br><span class="line">    # now sp-&gt;kernel stack, sscratch-&gt;user stack</span><br><span class="line">    # allocate a TrapContext on kernel stack, which includes 32 general-purpose registers, sstatus and sepc</span><br><span class="line">    addi sp, sp, -34*8</span><br><span class="line">    # save general-purpose registers</span><br><span class="line">    sd x1, 1*8(sp)</span><br><span class="line">    # skip sp(x2), we will save it later</span><br><span class="line">    sd x3, 3*8(sp)</span><br><span class="line">    # skip tp(x4), application does not use it</span><br><span class="line">    # save x5~x31</span><br><span class="line">    .set n, 5</span><br><span class="line">    .rept 27</span><br><span class="line">        SAVE_GP %n</span><br><span class="line">        .set n, n+1</span><br><span class="line">    .endr</span><br><span class="line"></span><br><span class="line">    # Now the user&#x27;s context is completely stored on the kernel stack, so we can use t0/t1/t2 freely.</span><br><span class="line">    # Here&#x27;s another tip: sstatus and sepc are not user-purpose registers, which means they can only be</span><br><span class="line">    # operated via csrr rather than ld.</span><br><span class="line">    # On the other hand, sstatus and sepc cannot be directly transferred from system registers to memory.</span><br><span class="line">    # Therefore, using user-purpose registers as an intermediate buffer is necessary.</span><br><span class="line">    csrr t0, sstatus</span><br><span class="line">    csrr t1, sepc</span><br><span class="line">    sd t0, 32*8(sp)</span><br><span class="line">    sd t1, 33*8(sp)</span><br><span class="line"></span><br><span class="line">    # read user stack from sscratch and save it on the kernel stack</span><br><span class="line">    csrr t2, sscratch</span><br><span class="line">    sd t2, 2*8(sp)</span><br><span class="line">    # set input argument of trap_handler(cx: &amp;mut TrapContext)</span><br><span class="line">    mv a0, sp</span><br><span class="line">    </span><br><span class="line">    call trap_handler</span><br></pre></td></tr></table></figure>
+<p>接下来 <code>__restore</code>
+的逻辑就比较简单了，就是按照先进后出的顺序，恢复上下文。并且释放内核空间的栈，最后退出到用户态；</p>
+<p>但是需要注意的，在这里 <code>a0</code> 是 <code>__restore</code>
+的第一个参数，也就是 <code>sp</code>，这个 <code>sp</code>
+指向的是内核栈中的 <code>TrapContext</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">__restore:</span><br><span class="line">    # THIS IS IMPORTANT!!! a0 IS THE FIRST ARGUMENT OF __restore,</span><br><span class="line">    # WHICH MEANS a0 POINTS TO THE KERNEL STACK WHERE THE TrapContext IS STORED.</span><br><span class="line">    # </span><br><span class="line">    #    __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(</span><br><span class="line">    #        APP_BASE_ADDRESS,</span><br><span class="line">    #        USER_STACK.get_sp(),</span><br><span class="line">    #    )) as *const _ as usize);</span><br><span class="line">    # case1: start running app by __restore</span><br><span class="line">    # case2: back to U after handling trap</span><br><span class="line">    mv sp, a0</span><br><span class="line">    # now sp points to kernel stack(after allocated), sscratch points to user stack</span><br><span class="line">    # restore sstatus/sepc</span><br><span class="line"></span><br><span class="line">    # t0 equals sstatus, t1 equals sepc, t2 equals sscratch</span><br><span class="line">    ld t0, 32*8(sp)</span><br><span class="line">    ld t1, 33*8(sp)</span><br><span class="line">    ld t2, 2*8(sp)</span><br><span class="line">    csrw sstatus, t0</span><br><span class="line">    csrw sepc, t1</span><br><span class="line">    csrw sscratch, t2</span><br><span class="line"></span><br><span class="line">    # restore general-purpuse registers except sp/tp</span><br><span class="line">    ld x1, 1*8(sp)</span><br><span class="line">    ld x3, 3*8(sp)</span><br><span class="line">    .set n, 5</span><br><span class="line">    .rept 27</span><br><span class="line">        LOAD_GP %n</span><br><span class="line">        .set n, n+1</span><br><span class="line">    .endr</span><br><span class="line"></span><br><span class="line">    # release TrapContext on kernel stack</span><br><span class="line">    addi sp, sp, 34*8</span><br><span class="line">    # now sp-&gt;kernel stack, sscratch-&gt;user stack</span><br><span class="line">    csrrw sp, sscratch, sp</span><br><span class="line">    sret</span><br></pre></td></tr></table></figure>
+<h3 id="running-app">running app</h3>
+<blockquote>
+<p>接下来，我们开始解析 <code>rCore</code>
+是如何将多个程序加载到内核空间，并且在内核空间执行。</p>
+</blockquote>
+<ul>
+<li><code>build.rs</code> 读取 <code>user</code>
+下生成的二进制文件，并生成一个 <code>link_app.S</code>
+文件，文件中包含了全部用户程序等待执行。</li>
+<li><code>link_app.S</code> 由 <code>build.rs</code>
+生成的汇编文件，会被 <code>APP_MANAGER</code> 加载并执行；</li>
+<li><code>AppManager</code>
+应用程序管理器，负责管理当前执行的用户程序，例如加载用户程序到内核栈；</li>
+<li><code>APP_MANAGER</code> 一个 <code>AppManager</code>
+的单线程单核下可变实例，支持 <code>exclusive_access</code>；</li>
+<li><code>USER_STACK</code>
+用户栈的地址，目前其实没有真正的用于存储用户数据。只是在
+<code>__alltraps</code> 和 <code>__restore</code> 中会和
+<code>sscratch</code> 进行交换时会用到。</li>
+<li><code>KERNEL_STACK</code> 内核栈，目前在 <code>__alltraps</code> 和
+<code>__restore</code> 中用于存储和还原trap的上下文；</li>
+<li><code>syscall</code> 系统调用的实现mod，当trap是
+<code>Exception::UserEnvCall</code> 时，<code>trap_handler</code> 会通过
+<code>syscall</code> 下面的包来调用系统调用函数。</li>
+</ul>
+<pre><code class="highlight mermaid">---
+title: 执行程序
+---
+flowchart TB
+
+subgraph desc
+    direction TB
+    registers(&quot;寄存器&quot;):::pink
+    dir(&quot;文件夹&quot;):::green
+    object(&quot;对象&quot;):::purple
+    products(&quot;源文件/生成文件&quot;):::animate
+    t(&quot;中断&quot;):::error
+    p(&quot;用户程序&quot;):::coral
+end
+
+subgraph run
+    direction TB
+
+    exception_or_interruption(&quot;用户中断&quot;):::error
+
+    program(&quot;用户程序&quot;):::coral
+
+    build(&quot;build.rs&quot;):::animate
+    link_app(&quot;link_app.S&quot;):::animate
+    trap(&quot;trap.s&quot;):::animate
+    trap_handler(&quot;trap_handler&quot;):::animate
+
+    source_bin(&quot;user/build/bin&quot;):::green
+    APP_MANAGER(&quot;APP_MANAGER&quot;):::purple
+    USER_STACK(&quot;USER_STACK&quot;):::purple
+    KERNEL_STACK(&quot;KERNEL_STACK&quot;):::purple
+
+    subgraph TrapContext
+        user_registers(&quot;User-Purpose Registers&quot;):::pink
+        sstatus(&quot;sstatus&quot;):::pink
+        sepc(&quot;sepc&quot;):::pink
+    end
+
+    source_bin --&gt;|二进制文件| build --&gt;|生成文件| link_app
+
+    link_app --&gt;|汇编文件| APP_MANAGER
+
+    
+    APP_MANAGER --&gt;|1. 加载用户程序到内存| program
+    APP_MANAGER --&gt;|2. 初始化context，包含了一个sepc指向用户程序的地址| TrapContext
+    APP_MANAGER --&gt;|3. 将context压入内核栈| KERNEL_STACK
+    APP_MANAGER --&gt;|4. 调用__restore，会将context中的sepc写入到寄存器| trap
+
+    KERNEL_STACK --&gt;|从内核栈读取并设置寄存器| trap
+
+    program -.-&gt;|执行时可能触发中断| trap --&gt; exception_or_interruption --&gt;|如果触发中断，则进行中断处理| trap_handler
+end
+
+desc --&gt; run
+
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+
+
+linkStyle 3,4,5,6,7 color:red;</code></pre>
+<h4 id="build.rs">build.rs</h4>
+<p><code>build.rs</code> 的逻辑非常简单，就是读取
+<code>user/build/bin</code>
+下的所有二进制文件，最后生成一个可执行的汇编程序到
+<code>link_app.S</code> 下。</p>
+<p>具体 <code>user/build/bin</code> 目录下的内容是从哪里来的，可以参考
+<a
+href="#rcore-code-organization">rCore和rCore-test如何组织代码？</a>。</p>
+<h4 id="link_app.s">link_app.S</h4>
+<p><code>link_app.S</code> 的生成逻辑非常简单，就是两个部分：</p>
+<ol type="1">
+<li>一个数组，数组包含了所有用户程序的开始地址，以及最后一个用户程序的结束地址；所以数组的长度是
+<code>n+1</code>，具体原因在源码的注释中有解释；</li>
+<li>通过 <code>incbin</code>
+将二进制文件引入，并且程序地址和数组前面的代码一一对应。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">    .align 3</span><br><span class="line">    .section .data</span><br><span class="line">    .global _num_app</span><br><span class="line">_num_app:</span><br><span class="line">    .quad 7</span><br><span class="line">    .quad app_0_start</span><br><span class="line">    # ...</span><br><span class="line">    .quad app_6_start</span><br><span class="line">    # This is essential: we need the length of each application.</span><br><span class="line">    # For all applications except the last one, their lengths can be calculated as (app_n+1_start - app_n_start).</span><br><span class="line">    # Therefore, we introduce an extra pointer pointing to the end address of the last application.</span><br><span class="line">    .quad app_6_end</span><br><span class="line"></span><br><span class="line">    .section .data</span><br><span class="line">    .global app_0_start</span><br><span class="line">    .global app_0_end</span><br><span class="line">app_0_start:</span><br><span class="line">    .incbin &quot;../user/build/bin/ch2b_bad_address.bin&quot;</span><br><span class="line">app_0_end:</span><br><span class="line"></span><br><span class="line">    # ...</span><br></pre></td></tr></table></figure>
+<h4 id="app_manager">APP_MANAGER</h4>
+<p><code>APP_MANAGER</code> 是一个 <code>AppManager</code>
+的可变实例，主要负责：</p>
+<ol type="1">
+<li>从 <code>link_app.S</code> 中加载用户程序到内存；</li>
+<li>执行用户程序。</li>
+<li>在执行完用户程序之后，通过 <code>trap.S</code>
+恢复上下文并跳转回用户态。</li>
+</ol>
+<blockquote>
+<p>加载用户程序到内存。这里需要注意的是，在汇编中使用了一个很有意思的小技巧：
+1. 程序的开始地址和结束地址是通过 <code>link_app.S</code> 中的
+<code>_num_app</code> 符号来获取的。 2. 通过 <code>_num_app</code>
+符号，我们可以获取到一个数组，数组的长度是
+<code>应用数量+1</code>，后面的元素是每个用户程序的开始地址，最后一个元素是最后一个用户程序的结束地址。
+3. 除了最后一个用户程序的结束地址之外，其他用户程序的长度都可以通过
+<code>app_n+1_start - app_n_start</code> 来计算得到。 4.
+而最后一个用户程序的结束地址，则是通过数组的最后一个元素（也就是最后一个程序的结束地址）减去最后一个程序的开始地址来计算得到。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">lazy_static! &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">ref</span> APP_MANAGER: UPSafeCell&lt;AppManager&gt; = <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        UPSafeCell::<span class="title function_ invoke__">new</span>(&#123;</span><br><span class="line">            <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">                <span class="keyword">fn</span> <span class="title function_">_num_app</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// parse application info from link_app.S</span></span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="comment">//_num_app:</span></span><br><span class="line">            <span class="comment">// .quad 7</span></span><br><span class="line">            <span class="comment">//     .quad app_0_start</span></span><br><span class="line">            <span class="comment">//     ...</span></span><br><span class="line">            <span class="comment">//     .quad app_6_end</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">num_app_ptr</span> = _num_app <span class="keyword">as</span> <span class="type">usize</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">usize</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">num_app</span> = num_app_ptr.<span class="title function_ invoke__">read_volatile</span>();</span><br><span class="line">            <span class="comment">// This is essential: it is an array with a length equal to MAX_APP_NUM + 1,</span></span><br><span class="line">            <span class="comment">// because the generated pointers include an extra pointer pointing to the end of the last application.</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">app_start</span>: [<span class="type">usize</span>; MAX_APP_NUM + <span class="number">1</span>] = [<span class="number">0</span>; MAX_APP_NUM + <span class="number">1</span>];</span><br><span class="line">            <span class="comment">// Skip the initial &quot;.quad 7&quot; (application count) and read all application-related entries, including the extra end pointer.</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">app_start_raw</span>: &amp;[<span class="type">usize</span>] =</span><br><span class="line">                core::slice::<span class="title function_ invoke__">from_raw_parts</span>(num_app_ptr.<span class="title function_ invoke__">add</span>(<span class="number">1</span>), num_app + <span class="number">1</span>);</span><br><span class="line">            <span class="comment">// copy (num_app + 1) elements from app_start_raw, which includes all start pointer of application</span></span><br><span class="line">            <span class="comment">// and the end pointer of the last application.</span></span><br><span class="line">            app_start[..=num_app].<span class="title function_ invoke__">copy_from_slice</span>(app_start_raw);</span><br><span class="line">            AppManager &#123;</span><br><span class="line">                num_app,</span><br><span class="line">                current_app: <span class="number">0</span>,</span><br><span class="line">                app_start,</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>加载用户程序： - <code>load_app</code>
+把应用二进制拷贝到内存（<code>APP_BASE_ADDRESS</code>），并执行
+<code>fence.i</code>，保证指令抓取能看到刚写入的代码。 - 调用
+<code>TrapContext::app_init_context(APP_BASE_ADDRESS, USER_STACK.get_sp())</code>
+创建一个用户上下文（设置 sepc 为应用入口、把用户栈指针放到上下文里等）。
+- 用 <code>KERNEL_STACK.push_context(...)</code> 把这个
+<code>TrapContext</code>
+压到内核栈上，然后把该上下文地址传给外部汇编例程
+<code>__restore</code>。 - <code>__restore</code>（在汇编文件里，通常是
+<code>restore.S</code> / <code>restore.s</code> /
+<code>trap.s</code>）会把 <code>TrapContext</code> 中的寄存器恢复到
+CPU（包括把用户 SP 恢复到 <code>sp</code>、把
+<code>sepc</code>/<code>sstatus</code> 写入相应 CSR），并执行
+<code>sret</code> 跳回到 S 模式下的用户态，从而开始执行加载到
+<code>APP_BASE_ADDRESS</code> 的程序。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">load_app</span>(&amp;<span class="keyword">self</span>, app_id: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> app_id &gt;= <span class="keyword">self</span>.num_app &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;All applications completed!&quot;</span>);</span><br><span class="line">        <span class="keyword">use</span> crate::board::QEMUExit;</span><br><span class="line">        crate::board::QEMU_EXIT_HANDLE.<span class="title function_ invoke__">exit_success</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;[kernel] Loading app_&#123;&#125;&quot;</span>, app_id);</span><br><span class="line">    <span class="comment">// clear app area</span></span><br><span class="line">    core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(APP_BASE_ADDRESS <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>, APP_SIZE_LIMIT).<span class="title function_ invoke__">fill</span>(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// copy data from memory.</span></span><br><span class="line">    <span class="comment">// as we mentioned before, the start pointer is app_start[n] and the end pointer is app_start[n+1]</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">app_src</span> = core::slice::<span class="title function_ invoke__">from_raw_parts</span>(</span><br><span class="line">        <span class="keyword">self</span>.app_start[app_id] <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>,</span><br><span class="line">        <span class="keyword">self</span>.app_start[app_id + <span class="number">1</span>] - <span class="keyword">self</span>.app_start[app_id],</span><br><span class="line">    );</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">app_dst</span> = core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(APP_BASE_ADDRESS <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>, app_src.<span class="title function_ invoke__">len</span>());</span><br><span class="line">    app_dst.<span class="title function_ invoke__">copy_from_slice</span>(app_src);</span><br><span class="line">    <span class="comment">// Memory fence about fetching the instruction memory</span></span><br><span class="line">    <span class="comment">// It is guaranteed that a subsequent instruction fetch must</span></span><br><span class="line">    <span class="comment">// observes all previous writes to the instruction memory.</span></span><br><span class="line">    <span class="comment">// Therefore, fence.i must be executed after we have loaded</span></span><br><span class="line">    <span class="comment">// the code of the next app into the instruction memory.</span></span><br><span class="line">    <span class="comment">// See also: riscv non-priv spec chapter 3, &#x27;Zifencei&#x27; extension.</span></span><br><span class="line">    asm!(<span class="string">&quot;fence.i&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>执行用户程序：这段代码中，我们最重要的代码是调用
+<code>__restore</code>，这个函数定义在 <code>trap.S</code>
+中，他的作用是从内核栈中恢复用户程序的上下文，并且通过 <code>sret</code>
+指令跳转到用户态执行用户程序。</p>
+<ol type="1">
+<li>初始化
+<code>TrapContext</code>，这个上下文中包含了用户程序的入口地址（<code>APP_BASE_ADDRESS</code>）和用户栈的地址（<code>USER_STACK.get_sp()</code>）；</li>
+<li>将 <code>TrapContext</code> 压入内核栈中，准备恢复现场；</li>
+<li>调用 <code>__restore</code>，**此时一定要注意，__retore 的参数
+<code>a0</code> 对应的是内核栈的地址；**</li>
+<li>在 <code>__restore</code> 中，会从内核栈中恢复
+<code>TrapContext</code>，而这个上下文中包含了
+<ul>
+<li>用户的程序地址（<code>sepc</code>）；</li>
+<li>用户的栈地址（<code>sp</code>）；</li>
+</ul></li>
+<li>最后通过 <code>sret</code> 指令跳转到用户态执行用户程序。</li>
+</ol>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// run next app</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">run_next_app</span>() <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">app_manager</span> = APP_MANAGER.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">current_app</span> = app_manager.<span class="title function_ invoke__">get_current_app</span>();</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        app_manager.<span class="title function_ invoke__">load_app</span>(current_app);</span><br><span class="line">    &#125;</span><br><span class="line">    app_manager.<span class="title function_ invoke__">move_to_next_app</span>();</span><br><span class="line">    <span class="title function_ invoke__">drop</span>(app_manager);</span><br><span class="line">    <span class="comment">// before this we have to drop local variables related to resources manually</span></span><br><span class="line">    <span class="comment">// and release the resources</span></span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">__restore</span>(cx_addr: <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        <span class="comment">// After the application runs, restore the user context from the kernel stack.</span></span><br><span class="line">        <span class="comment">// USER_STACK.get_sp() return the address pointing to the next address of self.data.</span></span><br><span class="line">        __restore(KERNEL_STACK.<span class="title function_ invoke__">push_context</span>(TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">            APP_BASE_ADDRESS,</span><br><span class="line">            USER_STACK.<span class="title function_ invoke__">get_sp</span>(),</span><br><span class="line">        )) <span class="keyword">as</span> *<span class="keyword">const</span> _ <span class="keyword">as</span> <span class="type">usize</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">panic!</span>(<span class="string">&quot;Unreachable in batch::run_current_app!&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="kernel_stack-user_stack">KERNEL_STACK &amp; USER_STACK</h4>
+<h2 id="qa">QA</h2>
+<h3 id="代码树">代码树</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">── os</span><br><span class="line">│   ├── Cargo.toml</span><br><span class="line">│   ├── Makefile (修改：构建内核之前先构建应用)</span><br><span class="line">│   ├── build.rs (新增：生成 link_app.S 将应用作为一个数据段链接到内核)</span><br><span class="line">│   └── src</span><br><span class="line">│       ├── batch.rs(新增：实现了一个简单的批处理系统)</span><br><span class="line">│       ├── console.rs</span><br><span class="line">│       ├── entry.asm</span><br><span class="line">│       ├── lang_items.rs</span><br><span class="line">│       ├── link_app.S(构建产物，由 os/build.rs 输出)</span><br><span class="line">│       ├── linker.ld</span><br><span class="line">│       ├── logging.rs</span><br><span class="line">│       ├── main.rs(修改：主函数中需要初始化 Trap 处理并加载和执行应用)</span><br><span class="line">│       ├── sbi.rs</span><br><span class="line">│       ├── sync(新增：包装了RefCell，暂时不用关心)</span><br><span class="line">│       │   ├── mod.rs</span><br><span class="line">│       │   └── up.rs</span><br><span class="line">│       ├── syscall(新增：系统调用子模块 syscall)</span><br><span class="line">│       │   ├── fs.rs(包含文件 I/O 相关的 syscall)</span><br><span class="line">│       │   ├── mod.rs(提供 syscall 方法根据 syscall ID 进行分发处理)</span><br><span class="line">│       │   └── process.rs(包含任务处理相关的 syscall)</span><br><span class="line">│       └── trap(新增：Trap 相关子模块 trap)</span><br><span class="line">│           ├── context.rs(包含 Trap 上下文 TrapContext)</span><br><span class="line">│           ├── mod.rs(包含 Trap 处理入口 trap_handler)</span><br><span class="line">│           └── trap.S(包含 Trap 上下文保存与恢复的汇编代码)</span><br><span class="line">└── user(新增：应用测例保存在 user 目录下)</span><br><span class="line">   ├── Cargo.toml</span><br><span class="line">   ├── Makefile</span><br><span class="line">   └── src</span><br><span class="line">      ├── bin(基于用户库 user_lib 开发的应用，每个应用放在一个源文件中)</span><br><span class="line">      │   ├── ...</span><br><span class="line">      ├── console.rs</span><br><span class="line">      ├── lang_items.rs</span><br><span class="line">      ├── lib.rs(用户库 user_lib)</span><br><span class="line">      ├── linker.ld(应用的链接脚本)</span><br><span class="line">      └── syscall.rs(包含 syscall 方法生成实际用于系统调用的汇编指令，</span><br><span class="line">                     各个具体的 syscall 都是通过 syscall 来实现的)</span><br></pre></td></tr></table></figure>
+<h3
+id="如何处理git目录安全检查机制引发的编译异常">如何处理GIT目录安全检查机制引发的编译异常</h3>
+<p>这里rCore-code和rCore-test是通过两个独立的 git
+clone引入的，部分情况下（例如通过docker启动并且通过mount关联宿主机的文件地址）可能会触发git的“目录安全检查”
+机制导致编译失败，一般异常会如下所示：</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="literal">error</span>: failed <span class="keyword">to</span> run custom build command <span class="keyword">for</span> `os v0.<span class="number">1.0</span> (/mnt/os)`</span><br><span class="line"></span><br><span class="line">Caused by:</span><br><span class="line">  <span class="keyword">process</span> didn<span class="symbol">&#x27;t</span> <span class="keyword">exit</span> successfully: `/mnt/os/target/debug/build/os-bb0e74f81fa807fa/build-script-build` (<span class="keyword">exit</span> status: <span class="number">101</span>)</span><br><span class="line">  <span class="comment">--- stdout</span></span><br><span class="line">  cargo:rerun-<span class="keyword">if</span>-changed=../user/src/</span><br><span class="line">  cargo:rerun-<span class="keyword">if</span>-changed=../user/build/bin/</span><br><span class="line"></span><br><span class="line">  <span class="comment">--- stderr</span></span><br><span class="line">  thread <span class="symbol">&#x27;main</span>&#x27; panicked at build.rs:<span class="number">42</span>:<span class="number">44</span>:</span><br><span class="line">  attempt <span class="keyword">to</span> subtract <span class="keyword">with</span> overflow</span><br><span class="line">  <span class="literal">note</span>: run <span class="keyword">with</span> `RUST_BACKTRACE=<span class="number">1</span>` environment <span class="keyword">variable</span> <span class="keyword">to</span> display a backtrace</span><br><span class="line"><span class="literal">warning</span>: build failed, waiting <span class="keyword">for</span> other jobs <span class="keyword">to</span> finish...</span><br></pre></td></tr></table></figure>
+<p>这个是因为git的目录安全检查机制，可能间接影响目录的文件访问权限（或脚本的执行上下文），导致
+build.rs 无法读取 ../user/build/bin/
+等依赖目录的文件（比如文件大小被误判为 0），进而引发计算溢出。</p>
+<p>我们把新的项目加入safe.directory即可：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global --add safe.directory /mnt</span><br></pre></td></tr></table></figure>
+<p>不过一般来说，对于这种嵌套依赖的项目，我们使用 <code>submodule</code>
+可能是一个更好的选择：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git submodule add https://github.com/LearningOS/rCore-Tutorial-Test.git user</span><br></pre></td></tr></table></figure>
+<h3 id="riscv特权级切换">riscv特权级切换</h3>
+<p>在现代计算机体系下，如果我们把代码的执行看成一个线性的（不考虑多核CPU和乱序指令等）指令执行，那么我们会发现有一些事件我们没有办法处理，例如：</p>
+<ol type="1">
+<li>在程序执行的过程中计算机找到了一个新的设备，那我必须要等待当前的这些程序全部执行完才能识别到新设备；</li>
+<li>计算机在访问内存的过程中，发现页表中的缓存已经失效，或者发生了缺页异常；</li>
+<li>我在某个线程中设置了一个定时器，此时定时器设定的时间到了，我需要去执行定时器的回调函数；</li>
+<li>用户需要跳转到更高级的特权等级以便于执行某些需要更高权限的操作：例如处于用户态时的系统调用。</li>
+</ol>
+<p>这些事件都是不可预测的，而为了处理这些事件，我们需要有一个方式来通知计算机，也就是
+<code>trap</code>，而我们根据这些事件的类型，我们将他分为了两个大分类：<code>interruption</code>
+和 <code>exception</code>。</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+subgraph program
+    instruction1(&quot;指令1&quot;):::green --&gt; instruction2(&quot;指令2&quot;):::green --&gt; instruction3(&quot;指令3&quot;):::green -.-&gt; instruction4(&quot;...&quot;):::green
+end
+
+subgraph 处理
+    instruction3 --&gt; handler(&quot;处理异常/中断&quot;):::pink --&gt; instruction4
+end
+
+exception(&quot;exception or interruption&quot;):::error -.-&gt;|通知程序有新的事件需要处理| instruction3
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h4 id="异常处理相关的寄存器">异常处理相关的寄存器</h4>
+<ul>
+<li>Trap触发与入口配置
+<ul>
+<li><code>stvec</code> Supervisor Trap Vector Base Address Register</li>
+<li><code>scause</code> Supervisor Cause Register</li>
+<li><code>sepc</code> Supervisor Exception Program Counter</li>
+<li><code>sstatus</code> Supervisor Status Register</li>
+</ul></li>
+<li>数据传递与地址记录 CSR
+<ul>
+<li><code>stval</code> Supervisor Trap Value</li>
+<li><code>sscratch</code> Supervisor Scratch</li>
+</ul></li>
+<li>中断控制相关 CSR（扩展必备）
+<ul>
+<li><code>sie</code> Supervisor Interrupt Enable Register</li>
+<li><code>sip</code> Supervisor Interrupt Pending Register</li>
+</ul></li>
+</ul>
+<h4 id="异常处理">异常处理</h4>
+<blockquote>
+<p>这里我们先不关注中断相关的CSR，因为本章节主要是关注特权优先级的转换。</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 86%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>CSR</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>stvec</td>
+<td>控制 trap 处理代码的入口地址</td>
+</tr>
+<tr class="even">
+<td>scause</td>
+<td>描述 trap 的原因</td>
+</tr>
+<tr class="odd">
+<td>sepc</td>
+<td>当 trap 是第一个异常的时候，记录 trap 发生之前的 pc</td>
+</tr>
+<tr class="even">
+<td>sstatus</td>
+<td>SPP 等字段给出 Trap 发生之前 CPU 处在哪个特权级（S/U）等信息</td>
+</tr>
+<tr class="odd">
+<td>stval</td>
+<td>Trap 值寄存器：保存与 Trap 相关的补充数据（因 Trap 类型而异）</td>
+</tr>
+<tr class="even">
+<td>sscratch</td>
+<td>S 特权级临时 scratch 寄存器：Trap
+触发后，内核可临时存储数据（如内核栈指针
+sp），避免覆盖用户态寄存器。</td>
+</tr>
+</tbody>
+</table>
+<p>在这里，我们先抛开寄存器，考虑一下异常触发时整体的流程：</p>
+<ol type="1">
+<li>用户态触发trap，通知内核处理trap；</li>
+<li>内核trap处理，找到trap的对应处理逻辑，并执行该逻辑；</li>
+<li>内核还原现场到触发trap之前，并将控制权交还给用户态程序；</li>
+</ol>
+<p>那他整体的流程相当于是可以看做如下伪代码执行：</p>
+<ol type="1">
+<li><code>work()</code> 触发异常，跳转到异常处理逻辑；</li>
+<li><code>handle_exception()</code> 处理异常；</li>
+<li>跳转回用户态，继续执行 <code>after_handle_exception()</code>；</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        work();</span><br><span class="line">        after_handle_exception();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception1 e) &#123;</span><br><span class="line">        handle_exception_1();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception2 e) &#123;</span><br><span class="line">        handle_exception_2();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而在这个程序流转的过程中，我们需要很多信息，例如：</p>
+<ol type="1">
+<li>触发的是 exception1 还是
+exception2？这样我们才能知道使用哪个异常处理函数；</li>
+<li>异常处理完了，我应该跳回到哪里？work还是after_handle_exception？</li>
+</ol>
+<blockquote>
+<p>当我们把这整个过程扩展开来的时候，我们就可以清楚的了解到，这些寄存器就是连接用户态和内核态的桥梁。</p>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: 一次ecall引发的trap
+---
+flowchart TB
+
+    subgraph registers
+        stvec(&quot;stvec&quot;):::pink
+        scause(&quot;scause&quot;):::pink
+        sepc(&quot;sepc&quot;):::pink
+        sstatus(&quot;sstatus&quot;):::pink
+        stval(&quot;stval&quot;):::pink
+        sscratch(&quot;sscratch&quot;):::pink
+        a0(&quot;a0 ~ a7&quot;):::pink
+    end
+
+    用户态触发trap(&quot;用户态触发trap&quot;):::green
+    内核trap处理(&quot;内核trap处理&quot;):::error
+    返回用户态(&quot;返回用户态&quot;):::green
+
+
+    TrapContext(&quot;TrapContext&quot;):::purple
+
+    用户态触发trap --&gt;|保存当前特权级| sstatus
+    用户态触发trap --&gt;|保存当前指令地址| sepc
+    用户态触发trap --&gt;|设置trap原因| scause
+    用户态触发trap --&gt;|设置系统调用参数| a0
+
+    scause -.-&gt;|确认trap原因| 内核trap处理
+    sepc -.-&gt;|记录返回地址| 内核trap处理 --&gt;|记录sepc| TrapContext
+    a0 -.-&gt;|获取系统调用参数并执行| 内核trap处理
+
+    sepc --&gt;|读取并写入TrapContext| 返回用户态 --&gt;|sepc+4| TrapContext
+    sstatus --&gt;|读取并写入TrapContext| 返回用户态 --&gt;|sstatus| TrapContext
+
+    返回用户态 --&gt;|从 sepc 恢复执行，回到用户态| 用户态(&quot;用户态&quot;)
+
+classDef pink 0,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<pre><code class="highlight mermaid">---
+title: 跳转
+---
+
+flowchart TB
+
+
+    stvec(&quot;stvec&quot;):::pink
+    scause(&quot;scause&quot;):::pink
+    sstatus(&quot;sstatus&quot;):::pink
+    stval(&quot;stval&quot;):::pink
+
+
+
+    用户态触发trap(&quot;用户态触发trap&quot;):::green
+    内核trap处理(&quot;内核trap处理&quot;):::error
+
+    stvec --&gt;|1. 读取stvec| 用户态触发trap --&gt; TrapHandler(&quot;TrapHandler&quot;):::error
+
+    scause --&gt;|2. 读取trap原因-缺页？系统调用？| 内核trap处理
+    sstatus --&gt;|3. 原特权等级-自陷？| 内核trap处理
+
+    stval --&gt;|4. 根据scause解析stval并解析执行| 内核trap处理
+    
+    TrapHandler --&gt; scause
+    TrapHandler --&gt; sstatus
+    TrapHandler --&gt; stval
+
+classDef pink 0, fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #695,color: #fff,font-weight: bold;
+classDef purple fill:#968,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 8,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h3 id="rust是如何组织依赖的">rust是如何组织依赖的</h3>
+<blockquote>
+<p>rust中： 1. 每个项目被称之为crate，crate
+可以引用其他人发布的crate，由 <code>lib.rs</code> 来管理； 2.
+crate下可能包含模块目录（Module Directory），模块目录由
+<code>mod.rs</code> 来管理； 3.
+模块目录下的每个文件一定是一个单独的mod； 4. 文件内部可以声明
+<code>内嵌mod（Nested Module）</code>。</p>
+</blockquote>
+<p>一个典型的rust项目的结构如下所示：</p>
+<figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">dev_os/                   <span class="comment"># 项目根目录</span></span><br><span class="line">├── src/                  <span class="comment"># 源代码目录（Rust 约定 src/ 下是 crate 内容）</span></span><br><span class="line">│   ├── main.rs           <span class="comment"># 二进制 crate 入口（顶层 crate 的入口）</span></span><br><span class="line">│   ├── os/               <span class="comment"># 模块目录（Module Directory）</span></span><br><span class="line">│   │   ├── <span class="keyword">mod</span>.rs        <span class="comment"># 模块目录入口：管理 os/ 下的文件模块</span></span><br><span class="line">│   │   ├── console.rs    <span class="comment"># 文件模块：mod console</span></span><br><span class="line">│   │   │   └─ 内部可声明：<span class="keyword">mod</span> inner_console &#123; ... &#125; （内嵌子 <span class="keyword">mod</span>）</span><br><span class="line">│   │   ├── process/      <span class="comment"># 嵌套模块目录（os/ 下的子模块目录）</span></span><br><span class="line">│   │   │   ├── <span class="keyword">mod</span>.rs    <span class="comment"># 嵌套模块目录入口</span></span><br><span class="line">│   │   │   └── scheduler.rs  <span class="comment"># 文件模块：process::scheduler</span></span><br><span class="line">│   │   └── sbi.rs        <span class="comment"># 文件模块：mod sbi</span></span><br><span class="line">│   └── lib.rs            <span class="comment"># （可选）库 crate 入口（若需对外提供库功能）</span></span><br><span class="line">└── user/                 <span class="comment"># 另一个模块目录（用户程序相关）</span></span><br><span class="line">    ├── <span class="keyword">mod</span>.rs</span><br><span class="line">    └── hello_world.rs</span><br></pre></td></tr></table></figure>
+<h3
+id="rust中lib.rs和mod.rs的区别是什么">rust中<code>lib.rs</code>和<code>mod.rs</code>的区别是什么？</h3>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 51%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>特征</th>
+<th>lib.rs</th>
+<th>mod.rs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>核心定位</td>
+<td>整个 crate 的「库目标入口文件」</td>
+<td>某个子模块的「目录入口文件」</td>
+</tr>
+<tr class="even">
+<td>适用范围</td>
+<td>仅用于 src/ 根目录下</td>
+<td>仅用于「子模块目录」下（如 src/foo/mod.rs）</td>
+</tr>
+<tr class="odd">
+<td>默认作用</td>
+<td>自动成为 crate 根模块（crate::）</td>
+<td>自动成为该目录对应的模块（crate::foo::）</td>
+</tr>
+<tr class="even">
+<td>关联目标</td>
+<td>对应 Cargo.toml 中的 [lib] 目标</td>
+<td>对应某个嵌套子模块（手动通过 mod foo; 引入）</td>
+</tr>
+<tr class="odd">
+<td>是否必需</td>
+<td>库目标（library）默认必需（可通过 Cargo.toml 配置修改）</td>
+<td>子模块目录默认必需（否则无法识别该目录为模块）</td>
+</tr>
+</tbody>
+</table>
+<p>例如，在我们的 <code>/user</code> 项目下，它的整体目录结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">──── user(新增：应用测例保存在 user 目录下)</span><br><span class="line">   ├── Cargo.toml</span><br><span class="line">   ├── Makefile</span><br><span class="line">   └── src</span><br><span class="line">      ├── bin(基于用户库 user_lib 开发的应用，每个应用放在一个源文件中)</span><br><span class="line">      │   ├── ...</span><br><span class="line">      ├── console.rs</span><br><span class="line">      ├── lang_items.rs</span><br><span class="line">      ├── lib.rs(用户库 user_lib)</span><br><span class="line">      ├── linker.ld(应用的链接脚本)</span><br><span class="line">      └── syscall.rs(包含 syscall 方法生成实际用于系统调用的汇编指令，</span><br><span class="line">                     各个具体的 syscall 都是通过 syscall 来实现的)</span><br></pre></td></tr></table></figure>
+<p>我们的 Cargo.toml 定义如下：</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[package]</span></span><br><span class="line"><span class="attr">name</span> = <span class="string">&quot;user_lib&quot;</span></span><br><span class="line"><span class="attr">version</span> = <span class="string">&quot;0.1.0&quot;</span></span><br><span class="line"><span class="attr">authors</span> = [<span class="string">&quot;Yifan Wu &lt;shinbokuow@163.com&gt;&quot;</span>]</span><br><span class="line"><span class="attr">edition</span> = <span class="string">&quot;2018&quot;</span></span><br></pre></td></tr></table></figure>
+<p>在这里，我们通过 <code>name="user_lib"</code> 将所有的文件打包为一个
+<code>crate</code>。</p>
+<p>并且，我们在 <code>lib.rs</code> 中，声明如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[macro_use]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> console;</span><br><span class="line"><span class="keyword">mod</span> lang_items;</span><br><span class="line"><span class="keyword">mod</span> syscall;</span><br></pre></td></tr></table></figure>
+<p>也就是，只有 <code>console</code> 是 pub 的。</p>
+<h4 id="lib.rs">lib.rs</h4>
+<blockquote>
+<p>Crate 的「根入口」（库目标专属）</p>
+</blockquote>
+<ol type="1">
+<li>仅存于 src/ 根目录：不能放在子目录（如 src/foo/lib.rs 无效），只能在
+src/lib.rs；</li>
+<li>自动关联 crate 根模块：无需任何配置，lib.rs 中的内容直接属于 crate::
+命名空间（比如 lib.rs 中定义 pub fn hello() {}，外部可通过 use
+user_lib::hello; 访问，其中 user_lib 是 crate 名称）；</li>
+<li>控制 crate 对外暴露的内容：lib.rs 中用 pub mod xxx;
+导出子模块、#[macro_export] 导出宏、pub use xxx; 重导出内容，外部 crate
+只能访问这里公开的内容；</li>
+<li>可以在 cargo.toml 中配置修改默认的 <code>lib.rs</code>；</li>
+</ol>
+<h4 id="mod.rs">mod.rs</h4>
+<blockquote>
+<p>子模块目录的「入口文件」：mod.rs 是 Rust 中 嵌套子模块目录
+的默认入口文件，核心作用是「定义该目录对应的模块内容、组织该目录下的子文件
+/ 子目录」。 简单说：当你想把一个目录（如
+src/utils/）当作一个模块时，必须在该目录下创建 mod.rs，否则 Rust
+无法识别这个目录是一个模块。</p>
+</blockquote>
+<ol type="1">
+<li>仅存于「子模块目录」下：必须放在子目录中（如
+src/utils/mod.rs），不能在 src/ 根目录下用 mod.rs 替代
+lib.rs（无效）；</li>
+<li>自动关联目录模块：src/foo/mod.rs 直接对应模块
+crate::foo，该目录下的其他文件（如 foo/bar.rs）需在 mod.rs 中通过 mod
+bar; 引入；</li>
+<li>控制子模块的对外暴露：mod.rs 中用 pub mod bar;
+导出目录下的子模块，外部只能访问这里公开的内容；</li>
+</ol>
+<h4 id="总结">总结</h4>
+<ol type="1">
+<li>Rust 以 Crate（包）-&gt; Mod（模块） 为核心层级组织代码 —— 一个
+Crate 是最小的编译单元（由 Cargo.toml 的 name 定义），内部通过 mod
+拆分逻辑（文件 / 目录对应模块）；</li>
+<li>Crate 的库目标（library）默认由 src/lib.rs 管理（根模块
+crate::）；子模块目录（如 src/foo/）默认由 mod.rs 管理（对应模块
+crate::foo::）；</li>
+<li>访问规则：
+<ul>
+<li>普通成员（fn/struct/enum 等）：需满足「双重公开」—— 自身用 pub
+修饰（如 pub fn xxx），且所在模块在「根模块到该成员的路径上」都有 pub
+暴露（如 lib.rs 中 pub mod foo，foo/mod.rs 中 pub mod
+bar，才能让外部访问 crate::foo::bar::xxx）；</li>
+<li>宏（macro_rules!）：需用 #[macro_export] 标记（替代普通成员的
+pub），且所在模块需通过 pub mod
+暴露（否则外部无法识别该模块的宏）；</li>
+<li>私有模块 / 成员：仅当前 Crate
+内部可访问，外部完全不可见（用于封装内部实现）。</li>
+</ul></li>
+</ol>
+<h3 id="macro_use-和-macro_export"><code>#[macro_use]</code> 和
+<code>#[macro_export]</code></h3>
+<ul>
+<li><code>#[macro_use]</code> 就是针对于宏的 <code>import</code>；</li>
+<li><code>#[macro_export]</code> 就是针对于宏的
+<code>export</code>；</li>
+</ul>
+<h3 id="fp-的作用是什么"><code>fp</code> 的作用是什么？</h3>
+<p><code>fp</code> 是 Frame Pointer（帧指针） 的缩写，在 RISC-V
+等架构中对应通用寄存器 x8，核心作用是
+作为函数调用栈帧的「固定锚点」，定位栈帧内的关键数据（如返回地址、上一层帧指针、局部变量、函数参数）——
+配合 sp（栈指针）管理函数调用栈，是栈回溯、调试、函数调用 /
+返回的核心依赖。</p>
+<p>在函数中，每一个函数都有自己的栈帧（Stack
+Frame），栈帧中存储了函数的局部变量、参数、返回地址等信息。而
+<code>fp</code> 就是用来指向当前函数的栈帧的起始位置。</p>
+<p>每一个函数在调用时，都会创建一个新的栈帧，并且将 <code>fp</code>
+指向这个新的栈帧的起始位置。当函数执行完毕后，<code>fp</code>
+会被恢复到上一个栈帧的位置。</p>
+<p>而一个函数的完整栈帧可以通过如下方式还原：</p>
+<ol type="1">
+<li><code>fp</code> 指向当前栈帧的起始位置；</li>
+<li><code>fp - 1</code> 存储了上一个栈帧的
+<code>save_ra</code>（返回地址）；</li>
+<li><code>fp - 2</code> 存储了上一个栈帧的
+<code>save_fp</code>（上一个帧指针）；</li>
+<li><code>fp - 3</code> 开始存储了当前函数的局部变量和参数；</li>
+<li>也就是说，通过 <code>fp - 2</code> 可以找到上一个栈帧的
+<code>fp</code>，从而实现栈帧的回溯。</li>
+</ol>
+<blockquote>
+<p>假设存在一个 <code>a -&gt; b -&gt; c</code>
+的函数调用链，那么他的栈帧结构如下所示：</p>
+</blockquote>
+<figure>
+<img src="/images/20251118/fp.png" alt="diagram" />
+<figcaption aria-hidden="true">diagram</figcaption>
+</figure>
+<blockquote>
+<p>下面是一个打印栈回溯的例子：</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> core::&#123;arch::asm, ptr&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">print_stack_trace</span>() <span class="punctuation">-&gt;</span> () &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">fp</span>: *<span class="keyword">const</span> <span class="type">usize</span>;</span><br><span class="line">    asm!(<span class="string">&quot;mv &#123;&#125;, fp&quot;</span>, <span class="title function_ invoke__">out</span>(reg) fp);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;== Begin stack trace ==&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> fp != ptr::<span class="title function_ invoke__">null</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">saved_ra</span> = *fp.<span class="title function_ invoke__">sub</span>(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">saved_fp</span> = *fp.<span class="title function_ invoke__">sub</span>(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;0x&#123;:016x&#125;, fp = 0x&#123;:016x&#125;&quot;</span>, saved_ra, saved_fp);</span><br><span class="line"></span><br><span class="line">        fp = saved_fp <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">usize</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;== End stack trace ==&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="riscv中的常见异常">RISCV中的常见异常</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Copy, Clone, Debug, Eq, PartialEq)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Exception</span> &#123;</span><br><span class="line">    InstructionMisaligned,</span><br><span class="line">    InstructionFault,</span><br><span class="line">    IllegalInstruction,</span><br><span class="line">    Breakpoint,</span><br><span class="line">    LoadFault,</span><br><span class="line">    StoreMisaligned,</span><br><span class="line">    StoreFault,</span><br><span class="line">    UserEnvCall,</span><br><span class="line">    VirtualSupervisorEnvCall,</span><br><span class="line">    InstructionPageFault,</span><br><span class="line">    LoadPageFault,</span><br><span class="line">    StorePageFault,</span><br><span class="line">    InstructionGuestPageFault,</span><br><span class="line">    LoadGuestPageFault,</span><br><span class="line">    VirtualInstruction,</span><br><span class="line">    StoreGuestPageFault,</span><br><span class="line">    Unknown,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4
+id="一核心通用异常任意特权级可能触发">一、核心通用异常（任意特权级可能触发）</h4>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 4%" />
+<col style="width: 38%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>InstructionMisaligned</code></td>
+<td>指令地址未对齐</td>
+<td>CPU 取指令时，指令地址未满足 RISC-V 要求的对齐规则（默认 4
+字节对齐，C 扩展支持 2 字节对齐）。</td>
+<td>跳转到非 4 字节对齐地址执行指令（如
+<code>j 0x80001231</code>）；程序计数器 <code>pc</code>
+被栈溢出覆盖为非对齐地址。</td>
+</tr>
+<tr class="even">
+<td><code>InstructionFault</code></td>
+<td>指令访问错误</td>
+<td>CPU 取指令时，虚拟地址无法通过 MMU
+地址转换（无有效映射），或访问权限不足（如 U 态取内核态指令）。</td>
+<td>U 态程序尝试执行内核态地址（如 <code>0x80000000</code>
+以上）的指令；取指令地址为未映射的空指针 <code>0x0</code>。</td>
+</tr>
+<tr class="odd">
+<td><code>IllegalInstruction</code></td>
+<td>非法指令</td>
+<td>CPU 解码指令时，发现指令编码无效（非 RISC-V
+标准指令），或所需扩展未启用（如未开 F
+扩展却执行浮点指令），或特权级不足执行特权指令。</td>
+<td>执行随机二进制数据（非标准指令编码）；U 态执行 M 态特权指令
+<code>csrrw</code>；未启用 F 扩展却执行 <code>fadd</code>。</td>
+</tr>
+<tr class="even">
+<td><code>Breakpoint</code></td>
+<td>断点</td>
+<td>执行 <code>ebreak</code>
+断点指令，或调试器设置硬件断点后，程序执行到目标地址触发。</td>
+<td>代码中插入 <code>ebreak</code> 调试断点；GDB
+设置硬件断点后，程序运行到断点地址。</td>
+</tr>
+<tr class="odd">
+<td><code>LoadFault</code></td>
+<td>加载故障</td>
+<td>执行加载指令（<code>lb</code>/<code>lh</code>/<code>lw</code>/<code>ld</code>
+等）时，虚拟地址无有效映射，或访问权限不足（如 U
+态访问内核态数据）。</td>
+<td>U 态程序读取内核栈地址数据；加载未映射的无效地址（如
+<code>*((int*)0x1234)</code>）。</td>
+</tr>
+<tr class="even">
+<td><code>StoreMisaligned</code></td>
+<td>存储地址未对齐</td>
+<td>执行存储指令（<code>sb</code>/<code>sh</code>/<code>sw</code>/<code>sd</code>
+等）时，地址未满足对齐规则（如 <code>sd</code> 需 8
+字节对齐、<code>sw</code> 需 4 字节对齐）。</td>
+<td>用 <code>sd</code> 指令将 8 字节数据写入 <code>0x80001234</code>（非
+8 字节对齐）；<code>char* p=0x80001231; *(long long*)p=1;</code>。</td>
+</tr>
+<tr class="odd">
+<td><code>StoreFault</code></td>
+<td>存储访问错误</td>
+<td>执行存储指令时，虚拟地址无有效映射，或访问权限不足（如写入只读内存、U
+态写入内核态地址）。</td>
+<td>U 态程序写入内核全局变量地址；向 <code>.rodata</code>
+只读段写入数据（如 <code>const int a=5; a=6;</code>）。</td>
+</tr>
+</tbody>
+</table>
+<h4
+id="二系统调用相关异常主动触发用于特权级切换">二、系统调用相关异常（主动触发，用于特权级切换）</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 7%" />
+<col style="width: 38%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>UserEnvCall</code></td>
+<td>用户态系统调用</td>
+<td>U 态程序执行 <code>ecall</code>
+指令，主动请求内核提供服务（如文件操作、内存分配）。</td>
+<td>用户态调用 <code>open</code>/<code>read</code>
+系统调用时，编译器生成 <code>ecall</code> 指令触发异常。</td>
+</tr>
+<tr class="even">
+<td><code>VirtualSupervisorEnvCall</code></td>
+<td>虚拟监督态系统调用</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行 <code>ecall</code> 指令，请求宿主
+OS（Host）提供虚拟化服务。</td>
+<td>来宾 OS 请求宿主分配虚拟内存；Guest 调用需 Host
+模拟的硬件相关系统调用。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="三页表相关异常缺页-页权限错误可恢复">三、页表相关异常（缺页 /
+页权限错误，可恢复）</h4>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 4%" />
+<col style="width: 40%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>InstructionPageFault</code></td>
+<td>指令页故障</td>
+<td>取指令时，虚拟地址对应页表项（PTE）存在，但 PTE
+无效（<code>valid</code> 位 0）或权限不足（如无执行权限）。</td>
+<td>虚拟地址已分配 PTE 但未分配物理内存（缺页）；PTE
+<code>execute</code> 位为 0 却执行该页指令。</td>
+</tr>
+<tr class="even">
+<td><code>LoadPageFault</code></td>
+<td>加载页故障</td>
+<td>加载指令访问时，虚拟地址对应 PTE 存在，但 PTE
+无效或权限不足（如无读取权限）。</td>
+<td>加载地址对应的页被换出到交换分区；PTE <code>valid</code> 位为 0
+但虚拟地址已分配。</td>
+</tr>
+<tr class="odd">
+<td><code>StorePageFault</code></td>
+<td>存储页故障</td>
+<td>存储指令访问时，虚拟地址对应 PTE 存在，但 PTE
+无效或权限不足（如无写入权限）。</td>
+<td>写入只读页（PTE <code>w</code> 位为
+0）；存储地址对应的页未分配物理内存（缺页）。</td>
+</tr>
+</tbody>
+</table>
+<h4
+id="四虚拟化扩展相关异常仅支持-v-扩展时生效">四、虚拟化扩展相关异常（仅支持
+V 扩展时生效）</h4>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 5%" />
+<col style="width: 36%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>InstructionGuestPageFault</code></td>
+<td>来宾指令页故障</td>
+<td>虚拟化场景中，来宾 OS（Guest）取指令时，触发 Guest
+层面的页表故障（PTE 无效/权限不足）。</td>
+<td>Guest 程序取指令地址的 PTE 未分配物理内存；Guest PTE
+权限不允许执行指令。</td>
+</tr>
+<tr class="even">
+<td><code>LoadGuestPageFault</code></td>
+<td>来宾加载页故障</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行加载指令时，触发 Guest
+层面的页表故障。</td>
+<td>Guest 加载地址对应的 PTE 无效；Guest PTE
+无读取权限却执行加载操作。</td>
+</tr>
+<tr class="odd">
+<td><code>VirtualInstruction</code></td>
+<td>虚拟指令异常</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行需 Host
+模拟的指令（如未授权的特权指令）。</td>
+<td>Guest 尝试修改 <code>mtvec</code> 控制寄存器（Host 未授权）；Guest
+执行 Host 独占的硬件操作指令。</td>
+</tr>
+<tr class="even">
+<td><code>StoreGuestPageFault</code></td>
+<td>来宾存储页故障</td>
+<td>虚拟化场景中，来宾 OS（Guest）执行存储指令时，触发 Guest
+层面的页表故障。</td>
+<td>Guest 存储地址对应的 PTE 无效；Guest PTE
+无写入权限却执行存储操作。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="五兜底异常">五、兜底异常</h4>
+<table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 5%" />
+<col style="width: 46%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>异常类型</th>
+<th>类型</th>
+<th>描述</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Unknown</code></td>
+<td>未知异常</td>
+<td><code>mcause</code>/<code>scause</code>
+寄存器记录的异常代码未匹配任何标准异常（如扩展异常、寄存器值错误）。</td>
+<td>遇到 RISC-V 新扩展定义的未适配异常；<code>mcause</code>
+寄存器被错误修改为无效值。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="代码">代码</h4>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">➜  ~/code/2025a-rcore-0x822a5b87 git:(ch2) ✗ cloc --include-ext=rs,s,S,asm os        </span><br><span class="line"><span class="code">     191 text files.</span></span><br><span class="line"><span class="code">     150 unique files.                                          </span></span><br><span class="line"><span class="code">     184 files ignored.</span></span><br><span class="line"></span><br><span class="line">1 error:</span><br><span class="line">Unable to read:  os/.gdb_history</span><br><span class="line"></span><br><span class="line"><span class="section">github.com/AlDanial/cloc v 1.82  T=0.02 s (1154.8 files/s, 54212.4 lines/s)</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">Language                     files          blank        comment           code</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line">Rust                            15             77            114            515</span><br><span class="line"><span class="section">Assembly                         3             10             16            113</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">SUM:                            18             87            130            628</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/" rel="prev" title="uCore基本执行环境">
+                  <i class="fa fa-angle-left"></i> uCore基本执行环境
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/" rel="next" title="uCore分时任务">
+                  uCore分时任务 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

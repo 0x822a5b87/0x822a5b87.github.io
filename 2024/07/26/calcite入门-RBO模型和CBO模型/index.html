@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="calcite入门--RBO模型和CBO模型 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。 解析 sql parse 的过程 flowchart LR  subgraph 模版 	direction LR 	模板Parser.jj 	compoundI">
+<meta property="og:type" content="article">
+<meta property="og:title" content="calcite入门--RBO模型和CBO模型">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="calcite入门--RBO模型和CBO模型 由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。 解析 sql parse 的过程 flowchart LR  subgraph 模版 	direction LR 	模板Parser.jj 	compoundI">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/sql_joins.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/sqlNode_2_relNode.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/Converter.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/RelTrait.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/project_push_down.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/filter_push_down.png">
+<meta property="article:published_time" content="2024-07-26T01:53:40.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/2024/07/26/images/003/sql_joins.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/","path":"2024/07/26/calcite入门-RBO模型和CBO模型/","title":"calcite入门--RBO模型和CBO模型"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>calcite入门--RBO模型和CBO模型 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#calcite%E5%85%A5%E9%97%A8--rbo%E6%A8%A1%E5%9E%8B%E5%92%8Ccbo%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">calcite入门--RBO模型和CBO模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text">解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sql-parse-%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.1.</span> <span class="nav-text">sql parse 的过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parser.jj"><span class="nav-number">1.1.2.</span> <span class="nav-text">Parser.jj</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#validator%E7%9B%B8%E5%85%B3"><span class="nav-number">1.1.3.</span> <span class="nav-text">validator相关</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#schema"><span class="nav-number">1.1.3.1.</span> <span class="nav-text">Schema</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#schemaplus"><span class="nav-number">1.1.3.2.</span> <span class="nav-text">SchemaPlus</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#calciteschema"><span class="nav-number">1.1.3.3.</span> <span class="nav-text">CalciteSchema</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#prepare"><span class="nav-number">1.1.3.4.</span> <span class="nav-text">Prepare</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#catalogreader"><span class="nav-number">1.1.3.5.</span> <span class="nav-text">CatalogReader</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#joins"><span class="nav-number">1.1.4.</span> <span class="nav-text">joins</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sql-to-relnode"><span class="nav-number">1.1.5.</span> <span class="nav-text">sql to RelNode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#calcite%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81%E8%BD%AC"><span class="nav-number">1.1.6.</span> <span class="nav-text">calcite的数据流转</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#relnode-%E5%92%8C-sqlnode-%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.1.7.</span> <span class="nav-text">RelNode 和 SqlNode
+的区别是什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reloptcluster%E5%9C%A8calcite%E4%B8%AD%E7%9A%84%E5%90%AB%E4%B9%89"><span class="nav-number">1.1.8.</span> <span class="nav-text">RelOptCluster在calcite中的含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E7%9A%84%E8%8A%82%E7%82%B9"><span class="nav-number">1.1.9.</span> <span class="nav-text">逻辑执行计划的节点</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#reloptnode"><span class="nav-number">1.1.9.1.</span> <span class="nav-text">RelOptNode</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#relnode"><span class="nav-number">1.1.9.2.</span> <span class="nav-text">RelNode</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#abstractrelnode"><span class="nav-number">1.1.9.3.</span> <span class="nav-text">AbstractRelNode</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#singlerel"><span class="nav-number">1.1.10.</span> <span class="nav-text">SingleRel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#converter"><span class="nav-number">1.1.11.</span> <span class="nav-text">Converter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reltrait"><span class="nav-number">1.1.12.</span> <span class="nav-text">RelTrait</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#calling-convention"><span class="nav-number">1.1.13.</span> <span class="nav-text">Calling Convention</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#relbuilder"><span class="nav-number">1.1.14.</span> <span class="nav-text">RelBuilder</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sqltorelconverter"><span class="nav-number">1.1.15.</span> <span class="nav-text">SqlToRelConverter</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">1.2.</span> <span class="nav-text">优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#rbo"><span class="nav-number">1.2.1.</span> <span class="nav-text">RBO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#column-pruning"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">Column Pruning</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#predict-pushdown"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">predict pushdown</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cbo"><span class="nav-number">1.2.2.</span> <span class="nav-text">CBO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#calcite%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text">Calcite查询优化器实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5%E5%92%8C%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">查询优化器相关概念和数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#filtermergerule"><span class="nav-number">1.2.3.1.1.</span> <span class="nav-text">FilterMergeRule</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#converterrule"><span class="nav-number">1.2.3.1.2.</span> <span class="nav-text">ConverterRule</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#enumerablefilterrule"><span class="nav-number">1.2.3.1.3.</span> <span class="nav-text">EnumerableFilterRule</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#heprelvertex"><span class="nav-number">1.2.4.</span> <span class="nav-text">HepRelVertex</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hepinstruction-hepstate"><span class="nav-number">1.2.5.</span> <span class="nav-text">HepInstruction &amp;&amp; HepState</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hepinstruction"><span class="nav-number">1.2.5.1.</span> <span class="nav-text">HepInstruction</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hepstate"><span class="nav-number">1.2.5.2.</span> <span class="nav-text">HepState</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#summary"><span class="nav-number">1.2.5.3.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#example"><span class="nav-number">1.2.5.4.</span> <span class="nav-text">Example</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hepprogram-hepprogrambuilder"><span class="nav-number">1.2.6.</span> <span class="nav-text">HepProgram &amp;&amp;
+HepProgramBuilder</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hepplanner"><span class="nav-number">1.2.7.</span> <span class="nav-text">HepPlanner</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#example-1"><span class="nav-number">1.2.7.1.</span> <span class="nav-text">Example</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#setroot"><span class="nav-number">1.2.7.2.</span> <span class="nav-text">setRoot()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#findbestexp"><span class="nav-number">1.2.7.3.</span> <span class="nav-text">findBestExp()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A5ruleinstance%E4%BD%9C%E4%B8%BA%E5%AE%9E%E4%BE%8B%E8%AF%B4%E6%98%8Ehepinstruction%E7%9A%84%E4%BC%98%E5%8C%96%E8%A7%84%E5%88%99"><span class="nav-number">1.2.7.4.</span> <span class="nav-text">以RuleInstance作为实例说明HepInstruction的优化规则</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">1.3.</span> <span class="nav-text">引用</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="calcite入门--RBO模型和CBO模型 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          calcite入门--RBO模型和CBO模型
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-07-26 09:53:40" itemprop="dateCreated datePublished" datetime="2024-07-26T09:53:40+08:00">2024-07-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1
+id="calcite入门--rbo模型和cbo模型">calcite入门--RBO模型和CBO模型</h1>
+<p>由于最近接手了公司的一些血缘解析，SQL优化相关的任务，同时也涉及到了一些DSL的开发，在开发的过程中涉及到大量的calcite规则（Rule）定制，用此文章记录一下calcite的学习心得。</p>
+<h2 id="解析">解析</h2>
+<h3 id="sql-parse-的过程">sql parse 的过程</h3>
+<pre><code class="highlight mermaid">flowchart LR
+
+subgraph 模版
+	direction LR
+	模板Parser.jj
+	compoundIdentifier.ftl
+	parserImpls.ftl
+	config.fmpp
+	default_config.fmpp
+end
+
+模版 --&gt; FMPP --&gt; Parser.jj:::underline --&gt; JavaCC --&gt; SqlParserImpl:::underline
+
+classDef underline fill:#f9f,stroke:#333,stroke-width:4px;</code></pre>
+<p>我们通过 <code>freemarker</code> 以及 <code>javacc</code> 生成了一个
+<code>SalParserImpl</code>
+类，该类就是我们实际用于解析sql的类，内部包含了一个
+<code>SqlParserImplFactory</code> :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> SqlParserImplFactory&#125; implementation for creating parser.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">SqlParserImplFactory</span> <span class="variable">FACTORY</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SqlParserImplFactory</span>() &#123;</span><br><span class="line">    <span class="keyword">public</span> SqlAbstractParserImpl <span class="title function_">getParser</span><span class="params">(Reader reader)</span> &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">SqlParserImpl</span> <span class="variable">parser</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SqlParserImpl</span>(reader);</span><br><span class="line">        <span class="keyword">if</span> (reader <span class="keyword">instanceof</span> SourceStringReader) &#123;</span><br><span class="line">            <span class="keyword">final</span> <span class="type">String</span> <span class="variable">sql</span> <span class="operator">=</span></span><br><span class="line">                ((SourceStringReader) reader).getSourceString();</span><br><span class="line">            parser.setOriginalSql(sql);</span><br><span class="line">        &#125;</span><br><span class="line">      <span class="keyword">return</span> parser;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>我们可以如下使用该类</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SqlParser.<span class="type">Config</span> <span class="variable">c</span> <span class="operator">=</span> SqlParser.config()</span><br><span class="line">                              .withParserFactory(SqlParserImpl.FACTORY)</span><br><span class="line">                              .withCaseSensitive(<span class="literal">false</span>);</span><br><span class="line"><span class="type">SqlParser</span> <span class="variable">sqlParser</span>    <span class="operator">=</span> SqlParser.create(sql, c);</span><br><span class="line"><span class="type">SqlNode</span>   <span class="variable">sqlNode</span>      <span class="operator">=</span> sqlParser.parseStmt();</span><br></pre></td></tr></table></figure>
+<h3 id="parser.jj">Parser.jj</h3>
+<p><code>Parser.jj</code> 是 calcite 的 parser 的核心定义类，会和一些
+freemarker 的模板共同作为输入生成一个可以作为 <code>JavaCC</code> 输入的
+<code>Parser.jj</code> 文件。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">options &#123;</span><br><span class="line">    STATIC = <span class="literal">false</span>;</span><br><span class="line">    IGNORE_CASE = <span class="literal">true</span>;</span><br><span class="line">    UNICODE_INPUT = <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">PARSER_BEGIN(SqlParserImpl)</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">PARSER_END(SqlParserImpl)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>可以看到，在 <code>sqlParser.parseStmt()</code> 中，最终是调用了
+<code>parser.parseSqlStmtEof()</code>，也就是对应了
+<code>Parser.jj</code> 中的 <code>parseSqlStmtEof()</code>方法。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> SqlNode <span class="title function_">parseSqlStmtEof</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="keyword">return</span> SqlStmtEof();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>整体的调用链路如下所示：</p>
+<pre><code class="highlight mermaid">flowchart TD
+    SqlStmtEof --&gt;|Parses an SQL statement followed by the end-of-file symbol.| SqlStmtm
+    SqlStmtm --&gt; SqlAlter
+    SqlStmtm --&gt; OrderedQueryOrExpr
+    SqlStmtm --&gt; Other[...]
+    OrderedQueryOrExpr --&gt;|expression or query with out order by| QueryOrExpr
+    OrderedQueryOrExpr --&gt;|optional order by, fetch, and so on| OrderByLimitOpt
+    QueryOrExpr --&gt; LeafQueryOrExpr
+    LeafQueryOrExpr --&gt;|SELECT, VALUES OR TABLE| LeafQuery
+    LeafQueryOrExpr --&gt;|expression| Expression
+    LeafQuery --&gt;|SELECT| SqlSelect
+    LeafQuery --&gt;|VALUES| TableConstructor
+    LeafQuery --&gt;|TABLE| ExplicitTable
+</code></pre>
+<blockquote>
+<p>最终到达我们的 SELECT 解析方法。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Parses a leaf SELECT expression without ORDER BY.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">SqlSelect <span class="title function_">SqlSelect</span><span class="params">()</span> :</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">final</span> List&lt;SqlLiteral&gt; keywords = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;SqlLiteral&gt;();</span><br><span class="line">    <span class="keyword">final</span> SqlLiteral keyword;</span><br><span class="line">    <span class="keyword">final</span> SqlNodeList keywordList;</span><br><span class="line">    <span class="keyword">final</span> List&lt;SqlNode&gt; selectList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;SqlNode&gt;();</span><br><span class="line">    <span class="keyword">final</span> SqlNode fromClause;</span><br><span class="line">    <span class="keyword">final</span> SqlNode where;</span><br><span class="line">    <span class="keyword">final</span> SqlNodeList groupBy;</span><br><span class="line">    <span class="keyword">final</span> SqlNode having;</span><br><span class="line">    <span class="keyword">final</span> SqlNodeList windowDecls;</span><br><span class="line">    <span class="keyword">final</span> SqlNode qualify;</span><br><span class="line">    <span class="keyword">final</span> List&lt;SqlNode&gt; hints = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;SqlNode&gt;();</span><br><span class="line">    <span class="keyword">final</span> Span s;</span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    &lt;SELECT&gt; &#123; s = span(); &#125;</span><br><span class="line">    [ &lt;HINT_BEG&gt; AddHint(hints) ( &lt;COMMA&gt; AddHint(hints) )* &lt;COMMENT_END&gt; ]</span><br><span class="line">    <span class="comment">// Parses **dialect-specific** keywords immediately following the SELECT keyword.</span></span><br><span class="line">    <span class="comment">// 这里其实是一个接口，不同的dialect-specific有不同的实现</span></span><br><span class="line">    SqlSelectKeywords(keywords)</span><br><span class="line">    <span class="comment">// 是否为stream</span></span><br><span class="line">    (</span><br><span class="line">        &lt;STREAM&gt; &#123;</span><br><span class="line">            keywords.add(SqlSelectKeyword.STREAM.symbol(getPos()));</span><br><span class="line">        &#125;</span><br><span class="line">    )?</span><br><span class="line">    <span class="comment">// DISTINCT OR ALL</span></span><br><span class="line">    (</span><br><span class="line">        keyword = AllOrDistinct() &#123; keywords.add(keyword); &#125;</span><br><span class="line">    )?</span><br><span class="line">    <span class="comment">// STREAM keyworkd AND DISTINCT/ALL keyword</span></span><br><span class="line">    &#123;</span><br><span class="line">        keywordList = <span class="keyword">new</span> <span class="title class_">SqlNodeList</span>(keywords, s.addAll(keywords).pos());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// SELECT 选择的字段</span></span><br><span class="line">    AddSelectItem(selectList)</span><br><span class="line">    ( &lt;COMMA&gt; AddSelectItem(selectList) )*</span><br><span class="line">    (</span><br><span class="line">        &lt;FROM&gt; fromClause = FromClause()</span><br><span class="line">        ( where = Where() | &#123; where = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( groupBy = GroupBy() | &#123; groupBy = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( having = Having() | &#123; having = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( windowDecls = Window() | &#123; windowDecls = <span class="literal">null</span>; &#125; )</span><br><span class="line">        ( qualify = Qualify() | &#123; qualify = <span class="literal">null</span>; &#125; )</span><br><span class="line">    |</span><br><span class="line">        E() &#123;</span><br><span class="line">            fromClause = <span class="literal">null</span>;</span><br><span class="line">            where = <span class="literal">null</span>;</span><br><span class="line">            groupBy = <span class="literal">null</span>;</span><br><span class="line">            having = <span class="literal">null</span>;</span><br><span class="line">            windowDecls = <span class="literal">null</span>;</span><br><span class="line">            qualify = <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SqlSelect</span>(s.end(<span class="built_in">this</span>), keywordList,</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">SqlNodeList</span>(selectList, Span.of(selectList).pos()),</span><br><span class="line">            fromClause, where, groupBy, having, windowDecls, qualify,</span><br><span class="line">            <span class="literal">null</span>, <span class="literal">null</span>, <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">SqlNodeList</span>(hints, getPos()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="validator相关">validator相关</h3>
+<pre><code class="highlight mermaid">---
+title: Schema
+---
+classDiagram
+	     Schema &lt;|-- SchemaPlus
+	     Schema &lt;|-- AbstractSchema
+	     Schema &lt;|-- DelegatingSchema
+	     Schema &lt;|--JdbcSchema
+	     
+	     AbstractSchema &lt;|-- FileSchema
+	     AbstractSchema &lt;|-- JdbcCatalogSchema
+	     AbstractSchema &lt;|-- MetadataSchema</code></pre>
+<h4 id="schema">Schema</h4>
+<blockquote>
+<p>A namespace for tables and functions.</p>
+<p>A schema can also contain sub-schemas, to any level of nesting. Most
+providers have a limited number of levels; for example, most JDBC
+databases have either one level ("schemas") or two levels ("database"
+and "catalog").</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Schema</span> &#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns a table with a given name, or null if not found.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Nullable</span> Table <span class="title function_">getTable</span><span class="params">(String name)</span>;</span><br><span class="line"></span><br><span class="line">  Set&lt;String&gt; <span class="title function_">getTableNames</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns a type with a given name, or null if not found.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Nullable</span> RelProtoDataType <span class="title function_">getType</span><span class="params">(String name)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the names of the types in this schema.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Set&lt;String&gt; <span class="title function_">getTypeNames</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns a list of functions in this schema with the given name, or</span></span><br><span class="line"><span class="comment">   * an empty list if there is no such function.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Collection&lt;Function&gt; <span class="title function_">getFunctions</span><span class="params">(String name)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the names of the functions in this schema.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Set&lt;String&gt; <span class="title function_">getFunctionNames</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns a sub-schema with a given name, or null.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Nullable</span> Schema <span class="title function_">getSubSchema</span><span class="params">(String name)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the names of this schema&#x27;s child schemas.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Set&lt;String&gt; <span class="title function_">getSubSchemaNames</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the expression by which this schema can be referenced in generated</span></span><br><span class="line"><span class="comment">   * code.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> parentSchema Parent schema</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> name Name of this schema</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> Expression by which this schema can be referenced in generated code</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Expression <span class="title function_">getExpression</span><span class="params">(<span class="meta">@Nullable</span> SchemaPlus parentSchema, String name)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Returns whether the user is allowed to create new tables, functions</span></span><br><span class="line"><span class="comment">   * and sub-schemas in this schema, in addition to those returned automatically</span></span><br><span class="line"><span class="comment">   * by methods such as &#123;<span class="doctag">@link</span> #getTable(String)&#125;.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;Even if this method returns true, the maps are not modified. Calcite</span></span><br><span class="line"><span class="comment">   * stores the defined objects in a wrapper object.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> Whether the user is allowed to create new tables, functions</span></span><br><span class="line"><span class="comment">   *   and sub-schemas in this schema</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="type">boolean</span> <span class="title function_">isMutable</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Returns the snapshot of this schema as of the specified time. The</span></span><br><span class="line"><span class="comment">   * contents of the schema snapshot should not change over time.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> version The current schema version</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> the schema snapshot.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Schema <span class="title function_">snapshot</span><span class="params">(SchemaVersion version)</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="schemaplus">SchemaPlus</h4>
+<blockquote>
+<ol type="1">
+<li><p><code>SchemaPlus</code> 是针对于 <code>Schema</code>
+的一些扩展；</p></li>
+<li><p>用户自定义的 Schema 不需要实现 <code>SchemaPlus</code>
+接口，但是当Schema被传递到user-defined schema或者user-defined
+table时，会被包装成 <code>SchemaPlus</code>；</p></li>
+<li><p>SchemaPlus is intended to be used by users but not instantiated
+by them；</p></li>
+<li><p>相对于 <code>Schema</code> ，SchemaPlus 增加了许多的
+<code>add</code> 方法用于添加 Schema、Table、Function；</p></li>
+</ol>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">SchemaPlus</span> <span class="keyword">extends</span> <span class="title class_">Schema</span> &#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the parent schema, or null if this schema has no parent.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Nullable</span> SchemaPlus <span class="title function_">getParentSchema</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the name of this schema.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;The name must not be null, and must be unique within its parent.</span></span><br><span class="line"><span class="comment">   * The root schema is typically named &quot;&quot;.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  String <span class="title function_">getName</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// override with stricter return</span></span><br><span class="line">  <span class="meta">@Override</span> <span class="meta">@Nullable</span> SchemaPlus <span class="title function_">getSubSchema</span><span class="params">(String name)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Adds a schema as a sub-schema of this schema, and returns the wrapped</span></span><br><span class="line"><span class="comment">   * object. */</span></span><br><span class="line">  SchemaPlus <span class="title function_">add</span><span class="params">(String name, Schema schema)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Adds a table to this schema. */</span></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(String name, Table table)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Removes a table from this schema, used e.g. to clean-up temporary tables. */</span></span><br><span class="line">  <span class="keyword">default</span> <span class="type">boolean</span> <span class="title function_">removeTable</span><span class="params">(String name)</span> &#123;</span><br><span class="line">    <span class="comment">// Default implementation provided for backwards compatibility, to be removed before 2.0</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Adds a function to this schema. */</span></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(String name, Function function)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Adds a type to this schema.  */</span></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(String name, RelProtoDataType type)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Adds a lattice to this schema. */</span></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(String name, Lattice lattice)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span> <span class="type">boolean</span> <span class="title function_">isMutable</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Returns an underlying object. */</span></span><br><span class="line">  &lt;T <span class="keyword">extends</span> <span class="title class_">Object</span>&gt; <span class="meta">@Nullable</span> T <span class="title function_">unwrap</span><span class="params">(Class&lt;T&gt; clazz)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">setPath</span><span class="params">(ImmutableList&lt;ImmutableList&lt;String&gt;&gt; path)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">setCacheEnabled</span><span class="params">(<span class="type">boolean</span> cache)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="type">boolean</span> <span class="title function_">isCacheEnabled</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="calciteschema">CalciteSchema</h4>
+<blockquote>
+<p><code>CalciteSchema</code> : Wrapper around user-defined schema used
+internally.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Defines a table within this schema. */</span></span><br><span class="line"><span class="keyword">public</span> TableEntry <span class="title function_">add</span><span class="params">(String tableName, Table table,</span></span><br><span class="line"><span class="params">    ImmutableList&lt;String&gt; sqls)</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="type">TableEntryImpl</span> <span class="variable">entry</span> <span class="operator">=</span></span><br><span class="line">      <span class="keyword">new</span> <span class="title class_">TableEntryImpl</span>(<span class="built_in">this</span>, tableName, table, sqls);</span><br><span class="line">  tableMap.put(tableName, entry);</span><br><span class="line">  <span class="keyword">return</span> entry;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: Calcite Schema
+---
+classDiagram
+	CalciteSchema &lt;|-- CachingCalciteSchema
+	CalciteSchema &lt;|-- SimpleCalciteSchema</code></pre>
+<h4 id="prepare">Prepare</h4>
+<blockquote>
+<p><code>Prepare</code> Abstract base for classes that implement the
+process of preparing and executing SQL expressions.</p>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: Calcite Schema
+---
+classDiagram
+	Prepare &lt;|-- CalcitePreparingStmt
+	CalcitePreparingStmt &lt;|-- CalciteMaterializer</code></pre>
+<h4 id="catalogreader">CatalogReader</h4>
+<blockquote>
+<p><code>CatalogReader</code> Interface by which validator and planner
+can read table metadata.</p>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: CatalogReader
+---
+classDiagram
+	Wrapper &lt;|-- SqlValidatorCatalogReader
+	SqlValidatorCatalogReader &lt;|-- CatalogReader
+	RelOptSchema &lt;|-- CatalogReader
+	SqlOperatorTable &lt;|-- CatalogReader</code></pre>
+<h3 id="joins">joins</h3>
+<figure>
+<img src="../images/003/sql_joins.png" alt="sql joins" />
+<figcaption aria-hidden="true">sql joins</figcaption>
+</figure>
+<h3 id="sql-to-relnode">sql to RelNode</h3>
+<figure>
+<img src="../images/003/sqlNode_2_relNode.png" alt="sql to RelNode" />
+<figcaption aria-hidden="true">sql to RelNode</figcaption>
+</figure>
+<h3 id="calcite的数据流转">calcite的数据流转</h3>
+<p>在整个过程中，我们的数据经历了从 <code>string</code> -&gt;
+<code>SqlNode</code> -&gt; <code>RexNode</code> -&gt;
+<code>RelNode</code> 的过程，其中 <code>SqlNode</code> -&gt;
+<code>RexNode</code> 和 <code>RexNode</code> -&gt; <code>RelNode</code>
+都是在 <code>SqlToRelConverter</code> 中发生。</p>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant Input
+	participant SqlParser
+	participant SqlValidator
+	participant SqlToRelConverter
+	participant Planner
+	
+	Input --&gt;&gt; SqlParser : string
+	SqlParser -&gt;&gt; SqlValidator : SqlNode
+	SqlValidator --&gt;&gt; SqlValidator : validate(SqlNode)
+	SqlValidator -&gt;&gt; SqlToRelConverter : SqlNode
+	SqlToRelConverter --&gt;&gt; SqlToRelConverter : convertQuery(SqlNode)
+	NOTE OVER SqlToRelConverter : RexBuilder &amp;&amp; SqlNodeToRexConverter convert SqlNode to RexNode
+  SqlToRelConverter --&gt;&gt; Planner : RelNode</code></pre>
+<h3 id="relnode-和-sqlnode-的区别是什么">RelNode 和 SqlNode
+的区别是什么</h3>
+<p>在 Calcite 中，<code>RelNode</code> 和 <code>SqlNode</code>
+，分别表示关系代数树中的节点和 SQL 解析树中的节点。</p>
+<ul>
+<li><code>RelNode</code>：<code>RelNode</code>
+表示逻辑计划的一部分。<code>RelNode</code> 用于表示关系代数操作，例如
+<code>Scan</code>、<code>Project</code>、<code>Filter</code>、<code>Join</code>等，用于优化和执行逻辑计划。</li>
+<li><code>SqlNode</code>：<code>SqlNode</code> 表示 SQL
+查询或语句的结构，例如 SELECT 子句、FROM 子句、WHERE
+子句等。<code>SqlNode</code> 的每个节点都对应 SQL
+语法中的一个语句或表达式。<code>SqlNode</code> 用于解析和分析 SQL
+查询，生成对应的 <code>RelNode</code> 逻辑计划。</li>
+</ul>
+<p>SqlNode 是 validator 进行校验之后，通过 Converter 生成，并提供给
+Planner 使用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// parse sql node</span></span><br><span class="line"><span class="type">SqlParser</span> <span class="variable">parser</span> <span class="operator">=</span> SqlParser.create(sql, SqlParser.Config.DEFAULT);</span><br><span class="line"><span class="type">SqlNode</span> <span class="variable">parsed</span> <span class="operator">=</span> parser.parseStmt();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// conver SqlNode to RelNode</span></span><br><span class="line"><span class="comment">// init SqlToRelConverter config</span></span><br><span class="line"><span class="keyword">final</span> SqlToRelConverter.<span class="type">Config</span> <span class="variable">config</span> <span class="operator">=</span> SqlToRelConverter.configBuilder()</span><br><span class="line">	.withConfig(fromworkConfig.getSqlToRelConverterConfig())</span><br><span class="line">	.withTrimUnusedFields(<span class="literal">false</span>)</span><br><span class="line">	.withConvertTableAccess(<span class="literal">false</span>)</span><br><span class="line">	.build();</span><br><span class="line"><span class="comment">// SqlNode toRelNode</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">SqlToRelConverter</span> <span class="variable">sqlToRelConverter</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SqlToRelConverter</span>(<span class="keyword">new</span> <span class="title class_">CalciteUtils</span>.ViewExpanderImpl(),</span><br><span class="line">		validator, calciteCatalogReader, cluster, fromworkConfig.getConvertletTable(), config);</span><br><span class="line"><span class="type">RelRoot</span> <span class="variable">root</span> <span class="operator">=</span> sqlToRelConverter.convertQuery(validated, <span class="literal">false</span>, <span class="literal">true</span>);</span><br></pre></td></tr></table></figure>
+<p>对于如下SQL</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> u.id <span class="keyword">AS</span> user_id,</span><br><span class="line">       u.name <span class="keyword">AS</span> user_name,</span><br><span class="line">       j.company <span class="keyword">AS</span> user_company,</span><br><span class="line">       u.age <span class="keyword">AS</span> user_age</span><br><span class="line"><span class="keyword">FROM</span> users u</span><br><span class="line"><span class="keyword">JOIN</span> jobs j <span class="keyword">ON</span> u.id<span class="operator">=</span>j.id</span><br><span class="line"><span class="keyword">JOIN</span> users u2 <span class="keyword">ON</span> u.id<span class="operator">=</span>u2.id</span><br><span class="line"><span class="keyword">WHERE</span> u.age <span class="operator">&gt;</span> <span class="number">30</span></span><br><span class="line">  <span class="keyword">AND</span> j.id<span class="operator">&gt;</span><span class="number">10</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> user_id</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>它的SqlNode可能如下（省略了大部分节点），其中每个节点都是 SqlNode
+的子类。</p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart LR
+	SqlOrderBy --&gt; SqlSelect
+	SqlOrderBy --&gt; SqlNodeList[SqlNodeList for Order by]
+	
+	SqlSelect --&gt; SqlNodeList1[SqlNodeList for selectList]
+	SqlSelect --&gt; SqlJoin[SqlJoin for from]
+	SqlSelect --&gt; SqlBasicCall[SqlBasicCall for where]</code></pre>
+<blockquote>
+<p>它的RelNode则可能如下（展示了所有的节点），每个节点都是
+<code>RelNode</code> 的子类 <code>HepRelVertex</code></p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart TD
+	LogicalSort[&quot;LogicalSort(sort0=[$0], dir0=[ASC])&quot;] --&gt; LogicalProject[&quot;LogicalProject(USER_ID=[$0], USER_NAME=[$1], USER_COMPANY=[$5], USER_AGE=[$2])&quot;]
+	LogicalProject --&gt; LogicalFilter[&quot;LogicalFilter(condition=[AND(&gt;($2, 30), &gt;($3, 10))])&quot;]
+	LogicalFilter --&gt; LogicalJoin1[&quot;LogicalJoin(condition=[=($0, $3)], joinType=[inner])&quot;]
+	LogicalJoin1 --&gt; LogicalJoin2[&quot;LogicalJoin(condition=[=($0, $3)], joinType=[inner])&quot;]
+	LogicalJoin1 --&gt; EnumerableTableScan3[&quot;EnumerableTableScan(table=[[USERS]])&quot;]
+	LogicalJoin2 --&gt; EnumerableTableScan1[&quot;EnumerableTableScan(table=[[USERS]])&quot;]
+	LogicalJoin2 --&gt; EnumerableTableScan2[&quot;EnumerableTableScan(table=[[JOBS]])&quot;]</code></pre>
+<blockquote>
+<p><strong>有一个很重要的特征是，SqlNode
+树的节点非常多，这也是为什么我们只画了一部分节点，而逻辑执行计划的节点相对则非常少。</strong>而在逻辑执行计划中，多个条件可能会在一个节点中。</p>
+</blockquote>
+<h3
+id="reloptcluster在calcite中的含义">RelOptCluster在calcite中的含义</h3>
+<ul>
+<li><code>Rel</code> relational</li>
+<li><code>Opt</code> optimizer</li>
+<li><code>Cluster</code> enviroment</li>
+</ul>
+<p>在calicte中，Cluster 一般用于指代 <code>enviroment</code>，这里是
+calcite
+中一个很容易让人误解的命名（可能是由于历史因素导致）。同时，calcite也有额外的
+<code>Context</code> 类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * An environment for related relational expressions during the</span></span><br><span class="line"><span class="comment"> * optimization of a query.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RelOptCluster</span> &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="逻辑执行计划的节点">逻辑执行计划的节点</h3>
+<pre><code class="highlight mermaid">---
+title: Logical Planner Node
+---
+classDiagram
+	    RelOptNode &lt;|-- RelNode
+	    Cloneable &lt;|-- RelNode
+	    RelNode &lt;|-- AbstractRelNode
+	    AbstractRelNode &lt;|-- SingleRel
+	    AbstractRelNode &lt;|-- BiRel
+	    
+	    SingleRel &lt;|-- Filter 
+	    Filter &lt;|-- LogicalFilter
+	    Filter &lt;|-- EnumerableFilter
+	    Filter &lt;|-- BindableFilter
+	    SingleRel &lt;|-- Sort
+	    Sort &lt;|-- LogicalSort
+	    SingleRel &lt;|-- Project
+	    Project &lt;|-- LogicalProject
+	    
+	    BiRel &lt;|-- Join
+	    Join &lt;|-- LogicalJoin
+	    Join &lt;|-- EquiJoin</code></pre>
+<h4 id="reloptnode">RelOptNode</h4>
+<p><code>RelOptNode</code> 是 planner 中的基本节点对应的
+<strong>interface</strong>，所有的节点都是 RelOptNode 的子类，通过
+<code>RelOptNode</code> 可以获取到许多 planner 需要的重要信息：</p>
+<ol type="1">
+<li><code>id</code> 唯一ID，在服务开始时被创建；</li>
+<li><code>digest</code> 返回一个 relational expression 的
+<code>摘要</code>，如果两个 RelOptNode
+的摘要相同，则可以视为两个节点等价（假设我们的子节点已经被标准化）。<strong>注意，digest是不能包含当前RelOptNode的id的，否则将永远得不到等价节点。</strong></li>
+<li><code>traitSet</code> RelTraitSet represents an <code>ordered</code>
+set of RelTraits. <strong>允许编辑
+traitSet，但是不允许在优化期间编辑</strong>；</li>
+<li><code>desc</code> 返回当前节点的描述，相对于
+<code>digest</code>，<strong>desc包含了id信息</strong>；</li>
+<li><code>inputs</code> 当前节点的输入，不为null；</li>
+<li><code>cluster</code> 返回当前节点所归属的
+<code>cluster</code>。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Node in a planner.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">RelOptNode</span> &#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the ID of this relational expression, unique among all relational</span></span><br><span class="line"><span class="comment">   * expressions created since the server was started.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> Unique ID</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="type">int</span> <span class="title function_">getId</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns a string which concisely describes the definition of this</span></span><br><span class="line"><span class="comment">   * relational expression. Two relational expressions are equivalent if and</span></span><br><span class="line"><span class="comment">   * only if their digests are the same.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;The digest does not contain the relational expression&#x27;s identity --</span></span><br><span class="line"><span class="comment">   * that would prevent similar relational expressions from ever comparing</span></span><br><span class="line"><span class="comment">   * equal -- but does include the identity of children (on the assumption</span></span><br><span class="line"><span class="comment">   * that children have already been normalized).</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;If you want a descriptive string which contains the identity, call</span></span><br><span class="line"><span class="comment">   * &#123;<span class="doctag">@link</span> Object#toString()&#125;, which always returns &quot;rel#&#123;id&#125;:&#123;digest&#125;&quot;.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> Digest of this &#123;<span class="doctag">@code</span> RelNode&#125;</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  String <span class="title function_">getDigest</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Retrieves this RelNode&#x27;s traits. Note that although the RelTraitSet</span></span><br><span class="line"><span class="comment">   * returned is modifiable, it &lt;b&gt;must not&lt;/b&gt; be modified during</span></span><br><span class="line"><span class="comment">   * optimization. It is legal to modify the traits of a RelNode before or</span></span><br><span class="line"><span class="comment">   * after optimization, although doing so could render a tree of RelNodes</span></span><br><span class="line"><span class="comment">   * unimplementable. If a RelNode&#x27;s traits need to be modified during</span></span><br><span class="line"><span class="comment">   * optimization, clone the RelNode and change the clone&#x27;s traits.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> this RelNode&#x27;s trait set</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  RelTraitSet <span class="title function_">getTraitSet</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// <span class="doctag">TODO:</span> We don&#x27;t want to require that nodes have very detailed row type. It</span></span><br><span class="line">  <span class="comment">// may not even be known at planning time.</span></span><br><span class="line">  RelDataType <span class="title function_">getRowType</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns a string which describes the relational expression and, unlike</span></span><br><span class="line"><span class="comment">   * &#123;<span class="doctag">@link</span> #getDigest()&#125;, also includes the identity. Typically returns</span></span><br><span class="line"><span class="comment">   * &quot;rel#&#123;id&#125;:&#123;digest&#125;&quot;.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> String which describes the relational expression and, unlike</span></span><br><span class="line"><span class="comment">   *   &#123;<span class="doctag">@link</span> #getDigest()&#125;, also includes the identity</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  String <span class="title function_">getDescription</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns an array of this relational expression&#x27;s inputs. If there are no</span></span><br><span class="line"><span class="comment">   * inputs, returns an empty list, not &#123;<span class="doctag">@code</span> null&#125;.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> Array of this relational expression&#x27;s inputs</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  List&lt;? <span class="keyword">extends</span> <span class="title class_">RelOptNode</span>&gt; getInputs();</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns the cluster this relational expression belongs to.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> cluster</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  RelOptCluster <span class="title function_">getCluster</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="relnode">RelNode</h4>
+<ol type="1">
+<li>A <code>RelNode</code> is a relational expression. Relational
+expressions process data, so their names are typically verbs: Sort,
+Join, Project, Filter, Scan, Sample.</li>
+<li><code>RelNode</code> 是一个 <strong>relational
+expression</strong>，不同于 <strong>scalar expression</strong>（由
+<code>RexNode</code> 表示）。relational expression
+通常执行结果是一个二维的表格（也就是SQL执行的返回值），而 scalar
+expression 表达式的执行结果通常是一个单个的值；</li>
+</ol>
+<p><code>RelNode</code> 也包含了很多的方法：</p>
+<ol type="1">
+<li><code>Convention</code> 返回 <code>traitSet</code> 的 calling
+convention trait；</li>
+<li><code>RelNode getInput(int i)</code> 获取第i个输入RelNode；</li>
+<li><code>double estimateRowCount(RelMetadataQuery mq)</code>
+估算一个查询可能返回的行数；</li>
+</ol>
+<h4 id="abstractrelnode">AbstractRelNode</h4>
+<p><code>AbstractRelNode</code> 是所有 relational expression
+的基类，之所以保留 <code>RelNode</code> 是因为所有的 interface
+都必须从另一个 interface 导出。</p>
+<h3 id="singlerel">SingleRel</h3>
+<pre><code class="highlight mermaid">---
+title: Abstract base class for relational expressions with a single input.
+---
+classDiagram
+
+SingleRel &lt;|-- Sort
+SingleRel &lt;|-- Filter
+SingleRel &lt;|-- Project
+SingleRel &lt;|-- Window
+SingleRel &lt;|-- Calc
+SingleRel &lt;|-- Aggregate
+
+Sort &lt;|-- LogicalSort
+Filter &lt;|-- LogicalFilter
+Project &lt;|-- LogicalProject
+Window &lt;|-- LogicalWindow
+Calc &lt;|-- LogicalCalc
+Aggregate &lt;|-- LogicalAggregate</code></pre>
+<h3 id="converter">Converter</h3>
+<blockquote>
+<p><code>Converter</code> A relational expression implements the
+interface Converter to indicate that it converts a physical attribute,
+or trait, of a relational expression from one value to another.</p>
+<p><code>JdbcToEnumerableConverter</code> Relational expression
+representing a scan of a table in a JDBC data source.</p>
+</blockquote>
+<figure>
+<img src="../images/003/Converter.png" alt="Converter" />
+<figcaption aria-hidden="true">Converter</figcaption>
+</figure>
+<h3 id="reltrait">RelTrait</h3>
+<p>在 Calcite 中，<code>RelTrait</code> 是一个用于
+<strong>描述节点特征的
+<code>接口</code></strong>，例如节点<strong>是否排序</strong>，<strong>数据类型</strong>等。使用
+RelTrait
+我们可以知道优化器选择合适的执行计划：例如，如果我们的数据本身就是有序的，那么我们可以直接优化掉SQL中的
+order by（如何排序和实际排序一致的话）。</p>
+<p>在我们的实际使用中，<code>RelTrait</code>
+只是定义特征的接口，实际的实现是由 <code>RelTraitDef</code>
+来实现的。<strong>从某种角度来说，RelTrait 和 RelTraitDef 的关系类似于
+java 里的 <code>class</code> 和
+<code>instance</code></strong>。RelTrait作为一个接口，定义了特征的基本行为和方法，例如
+<code>getTraitDef()</code> 用于获取trait定义、<code>satisfies()</code>
+用于比较trait。而RelTraitDef作为一个抽象类，用于定义 trait
+的规范和操作，例如 <code>convert()</code>
+用于转换一个RelNode到另外一个RelNod。</p>
+<blockquote>
+<p>RelTrait的结构如下所示。</p>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: RelTrait 表示关系表达式特征在特征定义中的表现。
+---
+classDiagram
+	RelTrait &lt;|-- Convention
+	RelTrait &lt;|-- RelMultipleTrait
+	RelMultipleTrait &lt;|-- RelDistribution
+	RelMultipleTrait &lt;|-- RelCollation</code></pre>
+<figure>
+<img src="../images/003/RelTrait.png" alt="RelTrait" />
+<figcaption aria-hidden="true">RelTrait</figcaption>
+</figure>
+<ul>
+<li><code>Convention</code>：<code>Convention</code>
+表示关系代数树中节点的约定或物理实现方式。它描述了节点的数据布局、执行引擎、数据传输方式等。<code>Convention</code>
+定义了节点的物理属性，以指导优化器选择适合的物理操作和执行计划。</li>
+<li><code>RelMultipleTrait</code>
+RelMultipleTrait是一种特殊的关系特征，用于描述关系的多个特征。它可以包含多个RelTrait，例如RelCollation和RelDistribution等；</li>
+<li><code>RelCollation</code>
+RelCollation用于描述关系的排序要求。它定义了关系中的行的排序顺序，可以指定一个或多个列以升序或降序进行排序；</li>
+<li><code>RelDistribution</code> RelDistribution
+定义了关系在分布式环境中的数据分布方式，例如，是否分布在多个节点上、是否进行分区等。</li>
+</ul>
+<h3 id="calling-convention">Calling Convention</h3>
+<p>在<code>RelNode</code>相关的代码注释中经常会看到Calling
+Convention这个词,
+从字面上理解它表示的是<code>RelNode</code>该如何被调用.
+<strong>这个”调用”实际上应该理解为”转换”,
+一般情况下是指从逻辑算子到物理算子的转换,
+如从<code>LogicalTableScan</code>到<code>EnumerableTableScan</code>的转换.</strong></p>
+<p><strong>转化特征</strong>（Convention）：属于 Trait 的子类，用于转化
+RelNode 到具体平台实现（可以将下文提到的 Planner 注册到 Convention 中）.
+例如 JdbcConvention，FlinkConventions.DATASTREAM
+等。同一个关系表达式的输入必须来自单个数据源，各表达式之间通过 Converter
+生成的 Bridge 来连接。</p>
+<p>从上文的介绍中也可以知道,
+每个<code>RelNode</code>都会有一个<code>RelTraitSet</code>类型的变量来描述其当前的物理属性,
+其中包含<code>Convention</code>. 对于逻辑算子,
+其<code>Convention</code>一般是默认实现, 即<code>Convention.Impl</code>,
+而物理算子则有其对应的<code>Convention</code>属性,
+如<code>EnumerableRel</code>包含<code>EnumerableConvention</code>.</p>
+<h3 id="relbuilder">RelBuilder</h3>
+<p><code>RelBuilder</code>是Calcite中的关系算子生成器,
+它提供的方法可用于快速生成绝大多数关系算子. 从整体上来看,
+<code>RelBuilder</code>所提供的方法可分为以下几类:</p>
+<ul>
+<li>一类是生成<code>RelNode</code>的<a
+target="_blank" rel="noopener" href="https://calcite.apache.org/docs/algebra.html#relational-operators">方法</a>,
+如<code>scan()</code>, <code>filter()</code>,
+<code>project()</code>等.</li>
+<li>一类是生成<code>RexNode</code>的<a
+target="_blank" rel="noopener" href="https://calcite.apache.org/docs/algebra.html#scalar-expression-methods">方法</a>,
+如<code>field()</code>, <code>and()</code>,
+<code>equals()</code>等.</li>
+<li>还有其他一些辅助方法,
+如生成<code>GROUP BY</code>字段的<code>groupKey()</code><a
+target="_blank" rel="noopener" href="https://calcite.apache.org/docs/algebra.html#group-key-methods">方法</a>.</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates a relational expression for a table scan.</span></span><br><span class="line"><span class="comment"> * It is equivalent to</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &lt;blockquote&gt;&lt;pre&gt;SELECT *</span></span><br><span class="line"><span class="comment"> * FROM emp&lt;/pre&gt;&lt;/blockquote&gt;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> RelBuilder <span class="title function_">example0</span><span class="params">(RelBuilder builder)</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> builder</span><br><span class="line">      .values(<span class="keyword">new</span> <span class="title class_">String</span>[] &#123;<span class="string">&quot;a&quot;</span>, <span class="string">&quot;b&quot;</span>&#125;, <span class="number">1</span>, <span class="literal">true</span>, <span class="literal">null</span>, <span class="literal">false</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates a relational expression for a table scan, aggregate, filter.</span></span><br><span class="line"><span class="comment"> * It is equivalent to</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &lt;blockquote&gt;&lt;pre&gt;SELECT deptno, count(*) AS c, sum(sal) AS s</span></span><br><span class="line"><span class="comment"> * FROM emp</span></span><br><span class="line"><span class="comment"> * GROUP BY deptno</span></span><br><span class="line"><span class="comment"> * HAVING count(*) &amp;gt; 10&lt;/pre&gt;&lt;/blockquote&gt;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> RelBuilder <span class="title function_">example3</span><span class="params">(RelBuilder builder)</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> builder</span><br><span class="line">      .scan(<span class="string">&quot;EMP&quot;</span>)</span><br><span class="line">      .aggregate(builder.groupKey(<span class="string">&quot;DEPTNO&quot;</span>),</span><br><span class="line">          builder.count(<span class="literal">false</span>, <span class="string">&quot;C&quot;</span>),</span><br><span class="line">          builder.sum(<span class="literal">false</span>, <span class="string">&quot;S&quot;</span>, builder.field(<span class="string">&quot;SAL&quot;</span>)))</span><br><span class="line">      .filter(</span><br><span class="line">          builder.call(SqlStdOperatorTable.GREATER_THAN, builder.field(<span class="string">&quot;C&quot;</span>),</span><br><span class="line">              builder.literal(<span class="number">10</span>)));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Sometimes the stack becomes so deeply nested it gets confusing. To keep</span></span><br><span class="line"><span class="comment"> * things straight, you can remove expressions from the stack. For example,</span></span><br><span class="line"><span class="comment"> * here we are building a bushy join:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &lt;blockquote&gt;&lt;pre&gt;</span></span><br><span class="line"><span class="comment"> *                join</span></span><br><span class="line"><span class="comment"> *              /      \</span></span><br><span class="line"><span class="comment"> *         join          join</span></span><br><span class="line"><span class="comment"> *       /      \      /      \</span></span><br><span class="line"><span class="comment"> * CUSTOMERS ORDERS LINE_ITEMS PRODUCTS</span></span><br><span class="line"><span class="comment"> * &lt;/pre&gt;&lt;/blockquote&gt;</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;We build it in three stages. Store the intermediate results in variables</span></span><br><span class="line"><span class="comment"> * `left` and `right`, and use `push()` to put them back on the stack when it</span></span><br><span class="line"><span class="comment"> * is time to create the final `Join`.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> RelBuilder <span class="title function_">example4</span><span class="params">(RelBuilder builder)</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="type">RelNode</span> <span class="variable">left</span> <span class="operator">=</span> builder</span><br><span class="line">      .scan(<span class="string">&quot;CUSTOMERS&quot;</span>)</span><br><span class="line">      .scan(<span class="string">&quot;ORDERS&quot;</span>)</span><br><span class="line">      .join(JoinRelType.INNER, <span class="string">&quot;ORDER_ID&quot;</span>)</span><br><span class="line">      .build();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">final</span> <span class="type">RelNode</span> <span class="variable">right</span> <span class="operator">=</span> builder</span><br><span class="line">      .scan(<span class="string">&quot;LINE_ITEMS&quot;</span>)</span><br><span class="line">      .scan(<span class="string">&quot;PRODUCTS&quot;</span>)</span><br><span class="line">      .join(JoinRelType.INNER, <span class="string">&quot;PRODUCT_ID&quot;</span>)</span><br><span class="line">      .build();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> builder</span><br><span class="line">      .push(left)</span><br><span class="line">      .push(right)</span><br><span class="line">      .join(JoinRelType.INNER, <span class="string">&quot;ORDER_ID&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="sqltorelconverter">SqlToRelConverter</h3>
+<blockquote>
+<p>初始化 SqlToRelConverter</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">initConverter</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// 创建SqlToRelConverter</span></span><br><span class="line">    <span class="type">RelOptCluster</span> <span class="variable">cluster</span> <span class="operator">=</span> RelOptCluster.create(planner, <span class="keyword">new</span> <span class="title class_">RexBuilder</span>(catalogReader.getTypeFactory()));</span><br><span class="line">    SqlToRelConverter.<span class="type">Config</span> <span class="variable">converterConfig</span> <span class="operator">=</span> SqlToRelConverter.config()</span><br><span class="line">                                                                .withTrimUnusedFields(<span class="literal">true</span>)</span><br><span class="line">                                                                .withExpand(<span class="literal">false</span>);</span><br><span class="line">    converter = <span class="keyword">new</span> <span class="title class_">SqlToRelConverter</span>(</span><br><span class="line">            <span class="literal">null</span>,</span><br><span class="line">            validator,</span><br><span class="line">            catalogReader,</span><br><span class="line">            cluster,</span><br><span class="line">            StandardConvertletTable.INSTANCE,</span><br><span class="line">            converterConfig);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>以以下SQL作为输入</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> `USERS`</span><br></pre></td></tr></table></figure>
+<p>在经过 validator 验证之后，会被改写为：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> `USERS`.`id`, `USERS`.`name`, `USERS`.`age`</span><br><span class="line"><span class="keyword">FROM</span> `x`.`USERS` <span class="keyword">AS</span> `USERS`</span><br></pre></td></tr></table></figure>
+<p>改写后的SQL会作为 SqlToRelConverter 的输入</p>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: SqlToRelConverter
+---
+flowchart TD
+	convertQuery --&gt; convertQueryRecursive --&gt;|SELECT| convertSelect
+	convertSelect --&gt;|getWhereScope| SqlValidatorScope
+	convertSelect --&gt;|createBlackboard| Blackboard
+	convertSelect --&gt; convertSelectImpl
+	convertSelectImpl --&gt;|1| convertFrom
+	convertSelectImpl --&gt;|2| convertSelectList
+	
+	convertFrom --&gt;|1. REMOVE AS| convertFrom
+	convertFrom --&gt;|2| convertIdentifier
+	convertIdentifier --&gt; setRoot
+	convertSelectList --&gt; RelBuilder.projectNamed</code></pre>
+<h2 id="优化">优化</h2>
+<h3 id="rbo">RBO</h3>
+<p>规则的定义需要<code>Pattern</code>和<code>Substitution</code>,
+其中Pattern表示规则可匹配的查询子树,
+而Substitution表示与Pattern等价的关系表达式</p>
+<h4 id="column-pruning">Column Pruning</h4>
+<figure>
+<img src="../images/003/project_push_down.png"
+alt="project push down" />
+<figcaption aria-hidden="true">project push down</figcaption>
+</figure>
+<h4 id="predict-pushdown">predict pushdown</h4>
+<figure>
+<img src="../images/003/filter_push_down.png" alt="predict pushdown" />
+<figcaption aria-hidden="true">predict pushdown</figcaption>
+</figure>
+<h3 id="cbo">CBO</h3>
+<blockquote>
+<p>基于成本的优化有两个核心依赖, 即:</p>
+<ul>
+<li>统计信息, 例如表的行数, 列索引上唯一键的数量等.</li>
+<li>成本模型, 在单机环境下一般考虑IO, CPU, 内存成本;
+在分布式环境下还需考虑网络成本.</li>
+</ul>
+</blockquote>
+<h3 id="calcite查询优化器实现">Calcite查询优化器实现</h3>
+<pre><code class="highlight mermaid">---
+title: Calcite查询优化器实现
+---
+classDiagram
+	RelOptPlanner &lt;|-- AbstractRelOptPlanner
+	AbstractRelOptPlanner &lt;|-- HepPlanner
+	AbstractRelOptPlanner &lt;|-- VolcanoPlanner</code></pre>
+<h4 id="查询优化器相关概念和数据结构">查询优化器相关概念和数据结构</h4>
+<blockquote>
+<p>无论是RBO还是CBO, 实际都是由规则驱动的.</p>
+</blockquote>
+<p>Calcite中已经实现了上百种优化规则,
+从优化内容来看可以分为以下两种类型:</p>
+<ul>
+<li><code>TransformationRule</code>:
+用于将一种逻辑表达式转换为另一种等价的逻辑表达式.
+对应Cascades中的Transformation Rule, 是一个独立的接口,
+并不继承于<code>RelOptRule</code>.
+需要注意的是<code>TransformationRule</code>接口仅在VolcanoPlanner中有效,
+HepPlanner会直接忽略这一接口.</li>
+<li><code>ConverterRule</code>: 用于将一种Calling
+Convention的表达式转换为另一种Calling Convention的表达式,
+可用于将逻辑表达式转换为物理表达式. 对应Cascades中的Implementation Rule,
+<code>ConverterRule</code>继承于<code>RelOptRule</code>.</li>
+</ul>
+<p>定义一个规则至少需要两部分信息, 即Pattern和Sustitution,
+在Calcite中:</p>
+<ul>
+<li>Pattern由<code>RelOptRuleOperand</code>实现,
+用于表示该规则可匹配的表达式结构.</li>
+<li>Substitution表示该规则可产生的逻辑等价表达式,
+在函数<code>onMatch()</code>中实现.</li>
+</ul>
+<h5 id="filtermergerule">FilterMergeRule</h5>
+<blockquote>
+<p><code>FilterMergeRule</code> 是一个简单的
+<code>TransformationRule</code> 实例，它将查询树种的上下两个
+<code>Filter</code> 算子合并为一个。</p>
+<pre><code class="highlight mermaid">---
+title: FilterMergeRule
+---
+flowchart LR
+	beforeOpt --&gt; afterOpt
+	subgraph beforeOpt
+		Filter0[topFilter] --&gt; Filter1[bottomFilter] --&gt; anyInputs
+	end
+	
+	subgraph afterOpt
+		Filter2Input[anyInputs] --&gt; Filter2[&quot;topFilter.condition()&quot;]
+		Filter2Input[anyInputs] --&gt; Filter3[&quot;bottomFilter.condition()&quot;]
+	end</code></pre>
+<p>可以看到，我们的代码有如下特点：</p>
+<ol type="1">
+<li>在 <code>matches</code> 中匹配，在 <code>onMatch</code>
+中转换；</li>
+<li><code>FilterMergeRule</code> 的构造函数为
+<code>protected</code>，只能通过
+<code>FilterMergeRule#Config#DEFAULT.toRule()</code> 构造；</li>
+<li><code>FilterMergeRule#Config#withOperandSupplier</code> 有一个
+<code>default</code> 方法，通过它可以指定具体匹配的节点类型。</li>
+</ol>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Licensed to the Apache Software Foundation (ASF) under one or more</span></span><br><span class="line"><span class="comment"> * contributor license agreements.  See the NOTICE file distributed with</span></span><br><span class="line"><span class="comment"> * this work for additional information regarding copyright ownership.</span></span><br><span class="line"><span class="comment"> * The ASF licenses this file to you under the Apache License, Version 2.0</span></span><br><span class="line"><span class="comment"> * (the &quot;License&quot;); you may not use this file except in compliance with</span></span><br><span class="line"><span class="comment"> * the License.  You may obtain a copy of the License at</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * http://www.apache.org/licenses/LICENSE-2.0</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Unless required by applicable law or agreed to in writing, software</span></span><br><span class="line"><span class="comment"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></span><br><span class="line"><span class="comment"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></span><br><span class="line"><span class="comment"> * See the License for the specific language governing permissions and</span></span><br><span class="line"><span class="comment"> * limitations under the License.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">package</span> org.apache.calcite.rel.rules;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.calcite.plan.RelOptRuleCall;</span><br><span class="line"><span class="keyword">import</span> org.apache.calcite.plan.RelRule;</span><br><span class="line"><span class="keyword">import</span> org.apache.calcite.rel.core.Filter;</span><br><span class="line"><span class="keyword">import</span> org.apache.calcite.tools.RelBuilder;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.immutables.value.Value;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Planner rule that combines two</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> org.apache.calcite.rel.logical.LogicalFilter&#125;s.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Value</span>.Enclosing</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">FilterMergeRule</span> <span class="keyword">extends</span> <span class="title class_">RelRule</span>&lt;FilterMergeRule.Config&gt;</span><br><span class="line">    <span class="keyword">implements</span> <span class="title class_">SubstitutionRule</span> &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Creates a FilterMergeRule. As we see, the constructor is **protected**.</span></span><br><span class="line"><span class="comment">   * &lt;p/&gt;</span></span><br><span class="line"><span class="comment">   * Use &#123;<span class="doctag">@link</span> FilterMergeRule.Config#toRule()&#125; get an instance</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="title function_">FilterMergeRule</span><span class="params">(Config config)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(config);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * **ATTENTION**: the method is copied from superclass and just for readability.</span></span><br><span class="line"><span class="comment">   * extends from &#123;<span class="doctag">@link</span> org.apache.calcite.plan.RelOptRule#matches(RelOptRuleCall)&#125;, always</span></span><br><span class="line"><span class="comment">   * return true</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">matches</span><span class="params">(RelOptRuleCall call)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">super</span>.matches(call);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onMatch</span><span class="params">(RelOptRuleCall call)</span> &#123;</span><br><span class="line">    <span class="comment">// input match topFilter -&gt; bottomFilter -&gt; anyInput</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">Filter</span> <span class="variable">topFilter</span>    <span class="operator">=</span> call.rel(<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">final</span> <span class="type">Filter</span> <span class="variable">bottomFilter</span> <span class="operator">=</span> call.rel(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// convert to</span></span><br><span class="line">    <span class="comment">// bottomFilter -&gt; bottomFilter.getCondition()</span></span><br><span class="line">    <span class="comment">// bottomFilter -&gt; topFilter.getCondition()</span></span><br><span class="line">    <span class="keyword">final</span> <span class="type">RelBuilder</span> <span class="variable">relBuilder</span> <span class="operator">=</span> call.builder();</span><br><span class="line">    relBuilder.push(bottomFilter.getInput())</span><br><span class="line">              .filter(bottomFilter.getCondition(), topFilter.getCondition());</span><br><span class="line"></span><br><span class="line">    call.transformTo(relBuilder.build());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/***</span></span><br><span class="line"><span class="comment">   * 1. &#123;<span class="doctag">@link</span> Config#withOperandFor(Class)&#125; Defines an operand tree for the given classes;</span></span><br><span class="line"><span class="comment">   * 2. Inner interface used to create a &#123;<span class="doctag">@link</span> FilterMergeRule&#125; instance.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Value</span>.Immutable</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Config</span> <span class="keyword">extends</span> <span class="title class_">RelRule</span>.Config &#123;</span><br><span class="line">    <span class="type">Config</span> <span class="variable">DEFAULT</span> <span class="operator">=</span> ImmutableFilterMergeRule.Config.of().withOperandFor(Filter.class);</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">default</span> FilterMergeRule <span class="title function_">toRule</span><span class="params">()</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">FilterMergeRule</span>(<span class="built_in">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Defines an operand tree for the given classes.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">default</span> Config <span class="title function_">withOperandFor</span><span class="params">(Class&lt;? extends Filter&gt; filterClass)</span> &#123;</span><br><span class="line">      <span class="comment">// indicate an operand with particular structure</span></span><br><span class="line">      <span class="comment">// Filter -&gt; Filter -&gt; anyInputs</span></span><br><span class="line">      <span class="comment">// b0 contains one and only one Filter as input</span></span><br><span class="line">      <span class="comment">// followed by b1</span></span><br><span class="line">      <span class="comment">// b2 contains one and only one Filter as input too</span></span><br><span class="line">      <span class="comment">// followed by anyInputs</span></span><br><span class="line">      <span class="keyword">return</span> withOperandSupplier(b0 -&gt;</span><br><span class="line">                                     b0.operand(filterClass)</span><br><span class="line">                                       .oneInput(b1 -&gt; b1.operand(filterClass)</span><br><span class="line">                                                         .anyInputs()))</span><br><span class="line">          .as(Config.class);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="converterrule">ConverterRule</h5>
+<blockquote>
+<p><code>ConverterRule</code>可用于在逻辑算子和物理算子之间进行转换,
+基类的<code>onMatch()</code>方法会调用子类的<code>convert()</code>方法实现转换.</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Abstract base class for a rule which converts from one calling convention to</span></span><br><span class="line"><span class="comment"> * another without changing semantics.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Value</span>.Enclosing</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">ConverterRule</span></span><br><span class="line">    <span class="keyword">extends</span> <span class="title class_">RelRule</span>&lt;ConverterRule.Config&gt; &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Creates a &lt;code&gt;ConverterRule&lt;/code&gt;. */</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="title function_">ConverterRule</span><span class="params">(Config config)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(config);</span><br><span class="line">    <span class="built_in">this</span>.inTrait = Objects.requireNonNull(config.inTrait());</span><br><span class="line">    <span class="built_in">this</span>.outTrait = Objects.requireNonNull(config.outTrait());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Source and target traits must have same type</span></span><br><span class="line">    <span class="keyword">assert</span> inTrait.getTraitDef() == outTrait.getTraitDef();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Most sub-classes are concerned with converting one convention to</span></span><br><span class="line">    <span class="comment">// another, and for them, the &quot;out&quot; field is a convenient short-cut.</span></span><br><span class="line">    <span class="built_in">this</span>.out =</span><br><span class="line">        outTrait <span class="keyword">instanceof</span> Convention ? (Convention) outTrait</span><br><span class="line">            : castNonNull(<span class="literal">null</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Converts a relational expression to the target trait(s) of this rule.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;Returns null if conversion is not possible. */</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">abstract</span> <span class="meta">@Nullable</span> RelNode <span class="title function_">convert</span><span class="params">(RelNode rel)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onMatch</span><span class="params">(RelOptRuleCall call)</span> &#123;</span><br><span class="line">    <span class="type">RelNode</span> <span class="variable">rel</span> <span class="operator">=</span> call.rel(<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (rel.getTraitSet().contains(inTrait)) &#123;</span><br><span class="line">      <span class="comment">// if rel&#x27;s trait set contain inTrait, call convert</span></span><br><span class="line">      <span class="keyword">final</span> <span class="type">RelNode</span> <span class="variable">converted</span> <span class="operator">=</span> convert(rel);</span><br><span class="line">      <span class="keyword">if</span> (converted != <span class="literal">null</span>) &#123;</span><br><span class="line">        call.transformTo(converted);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="enumerablefilterrule">EnumerableFilterRule</h5>
+<blockquote>
+<p><code>EnumerableFilter</code> 是一种 <strong>对
+<code>EnumerableConvention</code> 调用约定的 <code>Filter</code>
+操作的实现。 </strong></p>
+<p>在 Calcite 中，Enumerable 是一种计算模型和调用约定，它将
+<strong>关系代数操作映射到迭代器模型</strong>，以便在内存中进行计算。在
+Enumerable
+调用约定中，查询计划将转换为一系列迭代器操作，每个操作都返回一个迭代器，用于按需获取结果。</p>
+<p>Filter（过滤）操作是关系代数中的一种基本操作，用于根据给定的谓词条件从输入行集中选择满足条件的行。</p>
+<p>而 <strong>Implementation of Filter in enumerable calling
+convention</strong> 指的是在基于 Enumerable 调用约定的计算模型中，对
+Filter 操作的具体实现方式。</p>
+<p>在下面的代码中，EnumerableFilterRule 通过 <code>DEFAULT_CONFIG</code>
+声明了一个如下的 <code>ConverterRule</code>。</p>
+<pre><code class="highlight mermaid">---
+title: EnumerableFilterRule
+---
+flowchart TD
+	from --&gt; to
+	
+	subgraph from
+		direction LR
+		InTraits --&gt; IntraitsValue[Convention.NONE]
+		OutTraits --&gt; OutTraitsValue[EnumerableConvention.INSTANCE]
+		OperandSupplier --&gt; LogicalFilter --&gt;|with predict| PredictValue[&quot;f -&gt; !f.containsOver()&quot;]
+	end
+	
+	subgraph to
+		EnumerableFilter
+	end</code></pre>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Rule to convert a &#123;<span class="doctag">@link</span> LogicalFilter&#125; to an &#123;<span class="doctag">@link</span> EnumerableFilter&#125;.</span></span><br><span class="line"><span class="comment"> * You may provide a custom config to convert other nodes that extend &#123;<span class="doctag">@link</span> Filter&#125;.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> EnumerableRules#ENUMERABLE_FILTER_RULE</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EnumerableFilterRule</span> <span class="keyword">extends</span> <span class="title class_">ConverterRule</span> &#123;</span><br><span class="line">  <span class="comment">/** Default configuration. */</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Config</span> <span class="variable">DEFAULT_CONFIG</span> <span class="operator">=</span> Config.INSTANCE</span><br><span class="line">      <span class="comment">// 1st, 2nd params used to specify operandSupplier</span></span><br><span class="line">      <span class="comment">// b -&gt; b.operand(operandClazz).predicate(predicate).convert(in)</span></span><br><span class="line">      .withConversion(LogicalFilter.class,                    <span class="comment">// operandClazz</span></span><br><span class="line">                      f -&gt; !f.containsOver(),                 <span class="comment">// predicate</span></span><br><span class="line">                      Convention.NONE,                        <span class="comment">// inTrait</span></span><br><span class="line">                      EnumerableConvention.INSTANCE,          <span class="comment">// outTrait</span></span><br><span class="line">                      <span class="string">&quot;EnumerableFilterRule&quot;</span>)                 <span class="comment">// description</span></span><br><span class="line">      .withRuleFactory(EnumerableFilterRule::<span class="keyword">new</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">protected</span> <span class="title function_">EnumerableFilterRule</span><span class="params">(Config config)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(config);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span> <span class="keyword">public</span> RelNode <span class="title function_">convert</span><span class="params">(RelNode rel)</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">Filter</span> <span class="variable">filter</span> <span class="operator">=</span> (Filter) rel;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">EnumerableFilter</span>(rel.getCluster(),</span><br><span class="line">                                rel.getTraitSet().replace(EnumerableConvention.INSTANCE),</span><br><span class="line">                                convert(filter.getInput(),</span><br><span class="line">                                        filter.getInput().getTraitSet()</span><br><span class="line">                                              .replace(EnumerableConvention.INSTANCE)), filter.getCondition());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>withConversion</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">default</span> &lt;R <span class="keyword">extends</span> <span class="title class_">RelNode</span>&gt; Config <span class="title function_">withConversion</span><span class="params">(Class&lt;R&gt; clazz,</span></span><br><span class="line"><span class="params">    Predicate&lt;? <span class="built_in">super</span> R&gt; predicate, RelTrait in, RelTrait out,</span></span><br><span class="line"><span class="params">    String descriptionPrefix)</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> withInTrait(in)</span><br><span class="line">      .withOutTrait(out)</span><br><span class="line">      .withOperandSupplier(b -&gt;</span><br><span class="line">          b.operand(clazz).predicate(predicate).convert(in))</span><br><span class="line">      .withDescription(createDescription(descriptionPrefix, in, out))</span><br><span class="line">      .as(Config.class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="heprelvertex">HepRelVertex</h3>
+<blockquote>
+<p>在<code>HepPlanner</code>内部,
+会将待优化的<code>RelNode</code>算子树转化为一个有向无环图(DAG)</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HepRelVertex</span> <span class="keyword">extends</span> <span class="title class_">AbstractRelNode</span> <span class="keyword">implements</span> <span class="title class_">DelegatingMetadataRel</span> &#123;</span><br><span class="line">  <span class="comment">//~ Instance fields --------------------------------------------------------</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Wrapped rel currently chosen for implementation of expression.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">private</span> RelNode currentRel;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//~ Constructors -----------------------------------------------------------</span></span><br><span class="line"></span><br><span class="line">  HepRelVertex(RelNode rel) &#123;</span><br><span class="line">    <span class="built_in">super</span>(rel.getCluster(), rel.getTraitSet());</span><br><span class="line">    currentRel = requireNonNull(rel, <span class="string">&quot;rel&quot;</span>);</span><br><span class="line">    checkArgument(!(rel <span class="keyword">instanceof</span> HepRelVertex));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="hepinstruction-hepstate">HepInstruction &amp;&amp; HepState</h3>
+<h4 id="hepinstruction">HepInstruction</h4>
+<p><strong>HepInstruction represents one instruction in a
+HepProgram.</strong> The actual instruction set is defined here via
+inner classes; if these grow too big, they should be moved out to
+top-level classes</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">HepInstruction</span> &#123;</span><br><span class="line">  <span class="comment">/** Creates runtime state for this instruction.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;The state is mutable, knows how to execute the instruction, and is</span></span><br><span class="line"><span class="comment">   * discarded after this execution. See &#123;<span class="doctag">@link</span> HepState&#125;.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> px Preparation context; the state should copy from the context</span></span><br><span class="line"><span class="comment">   * all information that it will need to execute</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> Initialized state</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">abstract</span> HepState <span class="title function_">prepare</span><span class="params">(PrepareContext px)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="hepstate">HepState</h4>
+<p>Able to execute an instruction or program, and contains all mutable
+state for that instruction.</p>
+<p><strong>The goal is that programs are re-entrant</strong>. they can
+be used by more than one thread at a time. We achieve this by making
+instructions and programs immutable. All mutable state is held in the
+state objects.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">HepState</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> HepPlanner planner;</span><br><span class="line">  <span class="keyword">final</span> HepProgram.State programState;</span><br><span class="line"></span><br><span class="line">  HepState(HepInstruction.PrepareContext px) &#123;</span><br><span class="line">    <span class="built_in">this</span>.planner = px.planner;</span><br><span class="line">    <span class="built_in">this</span>.programState = px.programState;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Executes the instruction. */</span></span><br><span class="line">  <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">execute</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Re-initializes the state. (The state was initialized when it was created</span></span><br><span class="line"><span class="comment">   * via &#123;<span class="doctag">@link</span> HepInstruction#prepare&#125;.) */</span></span><br><span class="line">  <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="summary">Summary</h4>
+<pre><code class="highlight mermaid">---
+title: Hep Instruction Sets
+---
+classDiagram
+	    HepInstruction &lt;|-- HepProgram
+	    HepInstruction &lt;|-- RuleCollection
+	    HepInstruction &lt;|-- ConverterRules
+	    HepInstruction &lt;|-- MatchOrder
+	    HepInstruction &lt;|-- MatchLimit
+	    HepInstruction &lt;|-- BeginGroup</code></pre>
+<blockquote>
+<p><code>HepInstruction</code> 表示 <code>HepProgram</code>
+中的一条指令，实际指令集在 <code>HepInstruction.java</code>
+中通过内部类定义，主要用于<strong>optimizer的优化规则</strong>。</p>
+<ol type="1">
+<li><p><code>HepInstruction</code> 是一个抽象类，他只包含了一个方法
+<code>prepare()</code> 用于初始化 instruction 的 runtime
+state。</p></li>
+<li><p>他内部包含了大量的自身的实现类，例如：</p>
+<ol type="1">
+<li><code>ConverterRules</code> Instruction that executes converter
+rules.</li>
+<li><code>MatchLimit</code> Instruction that sets match order.</li>
+<li>而且，一般来说，每个 HepInstruction 的实现类，都会在内部实现一个
+<code>HepState</code> 接口用来管理自身的 runtime state。</li>
+</ol></li>
+<li><p>HepInstruction 内部还有一个
+<code>PrepareContext</code>，这个类的实例是
+<code>State prepare(PrepareContext)</code>
+方法的参数，很明显是用来初始化 State 的，内部也只有三个成员变量：</p>
+<ol type="1">
+<li>HepPlanner</li>
+<li>HepProgram.State</li>
+<li>EndGroup.State</li>
+</ol></li>
+</ol>
+</blockquote>
+<h4 id="example">Example</h4>
+<blockquote>
+<p>在我们的实际应用中，我们不会直接使用类似于
+<code>new MatchLimit(10)</code> 之类的方式来初始化一个
+HepInstrction，而是使用 HepProgramBuilder() 来初始化：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Adds an instruction to change the order of pattern matching for</span></span><br><span class="line"><span class="comment"> * subsequent instructions. The new order will take effect for the rest of</span></span><br><span class="line"><span class="comment"> * the program (not counting subprograms) or until another match order</span></span><br><span class="line"><span class="comment"> * instruction is encountered.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> order new match direction to set</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> HepProgramBuilder <span class="title function_">addMatchOrder</span><span class="params">(HepMatchOrder order)</span> &#123;</span><br><span class="line">  checkArgument(group &lt; <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">return</span> addInstruction(<span class="keyword">new</span> <span class="title class_">HepInstruction</span>.MatchOrder(order));</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">UNION_TREE</span> <span class="operator">=</span></span><br><span class="line">     <span class="string">&quot;(select name from dept union select ename from emp)&quot;</span></span><br><span class="line">     + <span class="string">&quot; union (select ename from bonus)&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Test</span> <span class="keyword">void</span> <span class="title function_">testMatchLimitOneTopDown</span><span class="params">()</span> &#123;</span><br><span class="line">   <span class="comment">// Verify that only the top union gets rewritten.</span></span><br><span class="line"></span><br><span class="line">   <span class="type">HepProgramBuilder</span> <span class="variable">programBuilder</span> <span class="operator">=</span> HepProgram.builder();</span><br><span class="line">   <span class="comment">// 指定TOP_DOWN匹配</span></span><br><span class="line">   programBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);</span><br><span class="line">   <span class="comment">// 指定 MatchLimit</span></span><br><span class="line">   programBuilder.addMatchLimit(<span class="number">1</span>);</span><br><span class="line">   programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);</span><br><span class="line"></span><br><span class="line">   sql(UNION_TREE).withProgram(programBuilder.build()).check();</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="hepprogram-hepprogrambuilder">HepProgram &amp;&amp;
+HepProgramBuilder</h3>
+<blockquote>
+<p>HepProgram specifies the order in which rules should be attempted by
+HepPlanner. Use HepProgramBuilder to create a new instance of
+HepProgram.</p>
+<p>Note that the structure of a program is immutable, but the planner
+uses it as read/ write during planning, <strong>so a program can only be
+in use by a single planner at a time</strong>.</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HepProgram</span> <span class="keyword">extends</span> <span class="title class_">HepInstruction</span> &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Symbolic constant for matching until no more matches occur.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">MATCH_UNTIL_FIXPOINT</span> <span class="operator">=</span> Integer.MAX_VALUE;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">final</span> ImmutableList&lt;HepInstruction&gt; instructions;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Creates a new empty HepProgram. The program has an initial match order of</span></span><br><span class="line"><span class="comment">   * &#123;<span class="doctag">@link</span> org.apache.calcite.plan.hep.HepMatchOrder#DEPTH_FIRST&#125;, and an initial</span></span><br><span class="line"><span class="comment">   * match limit of &#123;<span class="doctag">@link</span> #MATCH_UNTIL_FIXPOINT&#125;.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  HepProgram(List&lt;HepInstruction&gt; instructions) &#123;</span><br><span class="line">    <span class="built_in">this</span>.instructions = ImmutableList.copyOf(instructions);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span> State <span class="title function_">prepare</span><span class="params">(PrepareContext px)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">State</span>(px, instructions);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="hepplanner">HepPlanner</h3>
+<h4 id="example-1">Example</h4>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">HepProgramBuilder</span> <span class="variable">hepProgramBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepProgramBuilder</span>();</span><br><span class="line"><span class="comment">// 添加优化规则</span></span><br><span class="line">hepProgramBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);</span><br><span class="line">hepProgramBuilder.addRuleInstance(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);</span><br><span class="line">hepProgramBuilder.addRuleInstance(EnumerableRules.ENUMERABLE_CALC_RULE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1. 构建HepPlanner</span></span><br><span class="line"><span class="type">HepPlanner</span> <span class="variable">planner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepPlanner</span>(hepProgramBuilder.build());</span><br><span class="line"><span class="comment">// 2. 构建DAG</span></span><br><span class="line">planner.setRoot(root);</span><br><span class="line"><span class="comment">// 3. 执行优化</span></span><br><span class="line"><span class="type">RelNode</span> <span class="variable">optimizedRoot</span> <span class="operator">=</span> planner.findBestExp();</span><br></pre></td></tr></table></figure>
+<p>HepPlanner 的优化分为两步</p>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant HepPlanner
+	HepPlanner --&gt;&gt; HepPlanner : setRoot()
+	HepPlanner --&gt;&gt; HepPlanner : findBestExp()</code></pre>
+<h4 id="setroot">setRoot()</h4>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant User
+	participant HepPlanner
+	participant RelNode
+	participant HepRelVertex
+	participant DirectedGraph as DirectedGraph&lt;HepRelVertex, DefaultEdge&gt;
+
+
+	User --&gt;&gt; HepPlanner : setRoot(RelNode)
+	HepPlanner --&gt;&gt; HepPlanner : addRelToGraph(RelNode)
+	HepPlanner --&gt;&gt; RelNode : getInputs()
+	RelNode --&gt;&gt; HepPlanner : List&lt;RelNode&gt;
+	loop List&lt;RelNode&gt;
+			NOTE OVER HepPlanner : depth first
+			HepPlanner --&gt;&gt; HepPlanner: addRelToGraph(RelNode)!
+  end
+
+	HepPlanner --&gt;&gt; RelNode : recomputeDigest()
+	HepPlanner --&gt;&gt; HepRelVertex : new
+	HepRelVertex --&gt;&gt; HepPlanner : HepRelVertex
+	
+	HepPlanner --&gt;&gt; DirectedGraph : addVertex(HepRelVertex)
+	HepPlanner --&gt;&gt; HepPlanner : updateVertex(newVertex, oldRel)
+	NOTE OVER HepPlanner : notify discard &amp;&amp; replace old rel by new rel
+			
+	User --&gt;&gt; HepPlanner : findBestExp()
+	
+	HepPlanner --&gt;&gt; User : RelNode</code></pre>
+<h4 id="findbestexp">findBestExp()</h4>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span> <span class="keyword">public</span> RelNode <span class="title function_">findBestExp</span><span class="params">()</span> &#123;</span><br><span class="line">  requireNonNull(root, <span class="string">&quot;root&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Initializes state and then invokes the program.</span></span><br><span class="line">  executeProgram(mainProgram);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Get rid of everything except what&#x27;s in the final plan.</span></span><br><span class="line">  collectGarbage();</span><br><span class="line">  dumpRuleAttemptsInfo();</span><br><span class="line">  <span class="keyword">return</span> buildFinalPlan(requireNonNull(root, <span class="string">&quot;root&quot;</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>随后进入我们核心的 <code>executeProgram</code>
+方法，这个方法中我们会初始化 <code>HepState</code>，并基于
+<code>HepState</code> 执行 <code>HepInstruction</code>。</p>
+<p>在这里，我们再回忆一下在HepState中提到：</p>
+<p><strong>The goal is that programs are re-entrant - they can be used
+by more than one thread at a time. We achieve this by making
+instructions and programs immutable. All mutable state is held in the
+state objects.</strong></p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">executeProgram</span><span class="params">(HepProgram program)</span> &#123;</span><br><span class="line">  <span class="comment">// create and initialize hep state</span></span><br><span class="line">  <span class="keyword">final</span> HepInstruction.<span class="type">PrepareContext</span> <span class="variable">px</span> <span class="operator">=</span> HepInstruction.PrepareContext.create(<span class="built_in">this</span>);</span><br><span class="line">  <span class="comment">// HepProgram 是 HepInstruction 的一个子类，所以他自然有自己的 prepare 方法</span></span><br><span class="line">  <span class="comment">// 在这个方法中，HepProgram 使用了 px 和使用 HepProgramBuilder 构造时添加的 HepInstruction</span></span><br><span class="line">  <span class="comment">// 初始化一个 HepState 实例。</span></span><br><span class="line">  <span class="keyword">final</span> <span class="type">HepState</span> <span class="variable">state</span> <span class="operator">=</span> program.prepare(px);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// execute state</span></span><br><span class="line">  state.execute();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>program.prepare(px)</code> 使用 <code>HepProgramBUilder</code>
+时添加的 HepInstruction 构造了一个
+HepState，将所有的HepInstruction转换为了对应的HepState便于后续的执行。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">State</span> <span class="keyword">extends</span> <span class="title class_">HepState</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> ImmutableList&lt;HepState&gt; instructionStates;</span><br><span class="line">  <span class="type">int</span>                                     <span class="variable">matchLimit</span> <span class="operator">=</span> MATCH_UNTIL_FIXPOINT;</span><br><span class="line">  <span class="type">HepMatchOrder</span>                           <span class="variable">matchOrder</span> <span class="operator">=</span> HepMatchOrder.DEPTH_FIRST;</span><br><span class="line">  HepInstruction.EndGroup.<span class="meta">@Nullable</span> State group;</span><br><span class="line"></span><br><span class="line">  State(PrepareContext px, List&lt;HepInstruction&gt; instructions) &#123;</span><br><span class="line">    <span class="built_in">super</span>(px);</span><br><span class="line">    <span class="keyword">final</span> <span class="type">PrepareContext</span> <span class="variable">px2</span> <span class="operator">=</span> px.withProgramState(castToInitialized(<span class="built_in">this</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> List&lt;HepState&gt;                          states  = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">final</span> Map&lt;HepInstruction, Consumer&lt;HepState&gt;&gt; actions = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (HepInstruction instruction : instructions) &#123;</span><br><span class="line">      <span class="keyword">final</span> HepState state;</span><br><span class="line">      <span class="keyword">if</span> (instruction <span class="keyword">instanceof</span> BeginGroup) &#123;</span><br><span class="line">        <span class="comment">// The state of a BeginGroup instruction needs the state of the</span></span><br><span class="line">        <span class="comment">// corresponding EndGroup instruction, which we haven&#x27;t seen yet.</span></span><br><span class="line">        <span class="comment">// Temporarily put a placeholder State into the list, and add an</span></span><br><span class="line">        <span class="comment">// action to replace that State. The action will be invoked when we</span></span><br><span class="line">        <span class="comment">// reach the EndGroup.</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> states.size();</span><br><span class="line">        actions.put(((BeginGroup) instruction).endGroup, state2 -&gt;</span><br><span class="line">            states.set(i,</span><br><span class="line">                       instruction.prepare(</span><br><span class="line">                           px2.withEndGroupState((EndGroup.State) state2))));</span><br><span class="line">        state = castNonNull(<span class="literal">null</span>);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 将 HepInstrcution 转换为 HepState</span></span><br><span class="line">        state = instruction.prepare(px2);</span><br><span class="line">        <span class="keyword">if</span> (actions.containsKey(instruction)) &#123;</span><br><span class="line">          actions.get(instruction).accept(state);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      states.add(state);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">this</span>.instructionStates = ImmutableList.copyOf(states);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>state.execute()</code> 逻辑非常简单，就是单纯的遍历
+instructionState 并执行对应的 <code>execute()</code></p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">executeProgram</span><span class="params">(HepProgram instruction, HepProgram.State state)</span> &#123;</span><br><span class="line">  state.init();</span><br><span class="line">  <span class="comment">// 遍历HepProgram中的HepInstruction并执行</span></span><br><span class="line">  <span class="comment">// 这里的每一个HepInstruction就是前面提到的各个实例，类似于</span></span><br><span class="line">  <span class="comment">// 我们使用 HepProgramBuilder#addRuleInstance 方法添加了一个 HepInstruction.RuleInstance</span></span><br><span class="line">  <span class="comment">// 这样就可以使用这个规则匹配了</span></span><br><span class="line">  state.instructionStates.forEach(instructionState -&gt; &#123;</span><br><span class="line">    instructionState.execute();</span><br><span class="line">    <span class="type">int</span> <span class="variable">delta</span> <span class="operator">=</span> nTransformations - nTransformationsLastGC;</span><br><span class="line">    <span class="keyword">if</span> (delta &gt; graphSizeLastGC) &#123;</span><br><span class="line">      <span class="comment">// The number of transformations performed since the last</span></span><br><span class="line">      <span class="comment">// garbage collection is greater than the number of vertices in</span></span><br><span class="line">      <span class="comment">// the graph at that time.  That means there should be a</span></span><br><span class="line">      <span class="comment">// reasonable amount of garbage to collect now.  We do it this</span></span><br><span class="line">      <span class="comment">// way to amortize garbage collection cost over multiple</span></span><br><span class="line">      <span class="comment">// instructions, while keeping the highwater memory usage</span></span><br><span class="line">      <span class="comment">// proportional to the graph size.</span></span><br><span class="line">      collectGarbage();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>所以对于我们<code>Example</code>中的代码，执行逻辑就很简单了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">HepProgramBuilder</span> <span class="variable">hepProgramBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepProgramBuilder</span>();</span><br><span class="line"><span class="comment">// 添加优化规则</span></span><br><span class="line">hepProgramBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);</span><br><span class="line">hepProgramBuilder.addRuleInstance(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);</span><br><span class="line">hepProgramBuilder.addRuleInstance(EnumerableRules.ENUMERABLE_CALC_RULE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1. 构建HepPlanner</span></span><br><span class="line"><span class="type">HepPlanner</span> <span class="variable">planner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepPlanner</span>(hepProgramBuilder.build());</span><br><span class="line"><span class="comment">// 2. 构建DAG</span></span><br><span class="line">planner.setRoot(root);</span><br><span class="line"><span class="comment">// 3. 执行优化</span></span><br><span class="line"><span class="type">RelNode</span> <span class="variable">optimizedRoot</span> <span class="operator">=</span> planner.findBestExp();</span><br></pre></td></tr></table></figure>
+<p>整个过程就是：</p>
+<ol type="1">
+<li>HepProgramBuilder 添加 HepInstruction，并生成 HepProgram；</li>
+<li>使用 HepProgram 生成 HepPlanner；</li>
+<li>HepPlanner 调用 findBestExp() -&gt;
+executeProgram(program)；这里的program就是刚才传进来的 HepProgram；</li>
+<li>HepProgram 初始化
+<code>HepProgram#State</code>，<code>HepProgram#State</code> 内部将所有
+&lt;1&gt; 中添加的 HepInstruction 转换为 HepState；</li>
+<li>调用 <code>HepProgram#State#execute()</code> -&gt;
+<code>HepPlanner.executeProgram()</code> 执行完毕。</li>
+</ol>
+</blockquote>
+<pre><code class="highlight mermaid">sequenceDiagram
+	participant HepProgramBuilder
+	participant HepProgram
+	participant HepPlanner
+	participant HepProgram#State
+
+			
+	HepProgramBuilder --&gt;&gt; HepProgramBuilder : addRuleInstance/addMatchLimit/...
+	NOTE OVER HepProgramBuilder : HepInstrucionts
+	HepProgramBuilder --&gt;&gt; HepProgram : build()
+	HepProgram --&gt;&gt; HepPlanner : new()
+	NOTE OVER HepPlanner : HepInstrucionts
+	NOTE OVER HepPlanner : findBestExp()
+	NOTE OVER HepPlanner : executeProgram()
+	HepPlanner --&gt;&gt; HepProgram#State : prepare(HepPlanner)
+	loop HepInstructions
+			HepProgram#State --&gt;&gt; HepInstruction: prepare()
+			HepInstruction --&gt;&gt; HepProgram#State : HepState
+	end
+	NOTE OVER HepProgram#State : HepStates
+	NOTE OVER HepProgram#State : execte()
+	HepProgram#State --&gt;&gt; HepPlanner : executeProgram(HepProgram.this, this)
+	loop HepStates
+		HepPlanner --&gt;&gt; HepPlanner : instructionState.execute()
+	end</code></pre>
+<blockquote>
+<p>相对来说，如果代码写成如下形式将更加直观：</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span> <span class="keyword">public</span> RelNode <span class="title function_">findBestExp</span><span class="params">()</span> &#123;</span><br><span class="line">  requireNonNull(root, <span class="string">&quot;root&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Initializes state and then invokes the program.</span></span><br><span class="line">  HepProgram.<span class="type">State</span> <span class="variable">state</span> <span class="operator">=</span> buildState(mainProgram);</span><br><span class="line">  state.execute();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Get rid of everything except what&#x27;s in the final plan.</span></span><br><span class="line">  collectGarbage();</span><br><span class="line">  dumpRuleAttemptsInfo();</span><br><span class="line">  <span class="keyword">return</span> buildFinalPlan(requireNonNull(root, <span class="string">&quot;root&quot;</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** Top-level entry point for a program. Initializes state and then invokes</span></span><br><span class="line"><span class="comment"> * the program. */</span></span><br><span class="line"><span class="keyword">private</span> HepProgram.State <span class="title function_">buildState</span><span class="params">(HepProgram program)</span> &#123;</span><br><span class="line">  <span class="comment">// create and initialize hep state</span></span><br><span class="line">  <span class="keyword">final</span> HepInstruction.<span class="type">PrepareContext</span> <span class="variable">px</span> <span class="operator">=</span> HepInstruction.PrepareContext.create(<span class="built_in">this</span>);</span><br><span class="line">  <span class="keyword">return</span> program.prepare(px);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4
+id="以ruleinstance作为实例说明hepinstruction的优化规则">以RuleInstance作为实例说明HepInstruction的优化规则</h4>
+<p>从前面的代码中，我们发现RBO的优化其实逻辑非常简单，就是为每个规则生成一个HepInstruction并遍历执行，为了保证HepInstruction的可重入性（re-entrant），我们增加了一个额外的HepState来存储状态。<strong>所以，实际的优化其实是定义在HepInstruction中的。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Rule that combines two &#123;<span class="doctag">@link</span> LogicalFilter&#125;s. */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">FilterMergeRule</span> <span class="variable">FILTER_MERGE</span> <span class="operator">=</span> FilterMergeRule.Config.DEFAULT.toRule();</span><br><span class="line"></span><br><span class="line"><span class="type">HepProgram</span> <span class="variable">program</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepProgramBuilder</span>().addRuleInstance(CoreRules.FILTER_MERGE);</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="type">HepPlanner</span> <span class="variable">hepPlanner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HepPlanner</span>(program);</span><br><span class="line">hepPlanner.setRoot(target);</span><br><span class="line">target = hepPlanner.findBestExp();</span><br></pre></td></tr></table></figure>
+<p>在以上代码中，我们添加了 <code>FilterMergeRule</code> 并执行，它是
+<code>RelOptRule</code> 的子类，基于 <code>matches()</code> 和
+<code>onMatch()</code> 方法将一个epxression转换为另外的expression。</p>
+<p>而<code>RuleInstance#State</code>的execute()方法，最终会执行到<code>HepPlanner.applyRules()</code>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">applyRules</span><span class="params">(HepProgram.State programState,</span></span><br><span class="line"><span class="params">    Collection&lt;RelOptRule&gt; rules, <span class="type">boolean</span> forceConversions)</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> HepInstruction.EndGroup.<span class="type">State</span> <span class="variable">group</span> <span class="operator">=</span> programState.group;</span><br><span class="line">  <span class="keyword">if</span> (group != <span class="literal">null</span>) &#123;</span><br><span class="line">    checkArgument(group.collecting);</span><br><span class="line">    Set&lt;RelOptRule&gt; ruleSet = requireNonNull(group.ruleSet, <span class="string">&quot;group.ruleSet&quot;</span>);</span><br><span class="line">    ruleSet.addAll(rules);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  LOGGER.trace(<span class="string">&quot;Applying rule set &#123;&#125;&quot;</span>, rules);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 匹配顺序不为深度优先，则设置该值为true，这会使得每次有节点被成功的优化时，再次回到root节点进行优化</span></span><br><span class="line">  <span class="comment">// ATTENTION ：在后面获取迭代器的代码中，这两个顺序其实都是深度优先</span></span><br><span class="line">  <span class="keyword">final</span> <span class="type">boolean</span> <span class="variable">fullRestartAfterTransformation</span> <span class="operator">=</span></span><br><span class="line">      programState.matchOrder != HepMatchOrder.ARBITRARY</span><br><span class="line">      &amp;&amp; programState.matchOrder != HepMatchOrder.DEPTH_FIRST;</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> <span class="variable">nMatches</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="type">boolean</span> fixedPoint;</span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据 &#123;<span class="doctag">@link</span> HepProgram.State#matchOrder&#125; 获取对应的迭代器，这里遍历的就是我们在&#123;<span class="doctag">@link</span> HepPlanner#setRoot(RelNode)&#125; 生成的DAG</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Iterator&lt;HepRelVertex&gt; iter =</span><br><span class="line">        getGraphIterator(programState, requireNonNull(root, <span class="string">&quot;root&quot;</span>));</span><br><span class="line">    fixedPoint = <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">      <span class="type">HepRelVertex</span> <span class="variable">vertex</span> <span class="operator">=</span> iter.next();</span><br><span class="line">      <span class="comment">// 对于DAG的每个节点，我们都使用提供的规则尝试进行匹配和转换</span></span><br><span class="line">      <span class="keyword">for</span> (RelOptRule rule : rules) &#123;</span><br><span class="line">        <span class="type">HepRelVertex</span> <span class="variable">newVertex</span> <span class="operator">=</span> applyRule(rule, vertex, forceConversions);</span><br><span class="line">        <span class="keyword">if</span> (newVertex == <span class="literal">null</span> || newVertex == vertex) &#123;</span><br><span class="line">          <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 如果到这里，说明当前的DAG节点可以被转换为一个新的节点。</span></span><br><span class="line">        ++nMatches;</span><br><span class="line">        <span class="comment">// 限制最大匹配次数</span></span><br><span class="line">        <span class="keyword">if</span> (nMatches &gt;= programState.matchLimit) &#123;</span><br><span class="line">          <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 如果fullRestartAfterTransformation，我们回到root节点再次进行从头转换</span></span><br><span class="line">        <span class="comment">// 因为这个时候，我们的结构改变了，所以刚才不能转换的节点现在可能可以转换了。</span></span><br><span class="line">        <span class="keyword">if</span> (fullRestartAfterTransformation) &#123;</span><br><span class="line">          iter = getGraphIterator(programState, requireNonNull(root, <span class="string">&quot;root&quot;</span>));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">// 如果是DEPTH_FIRST，直接使用新节点作为root节点重新开始匹配，因为转换后的节点可能匹配新的规则</span></span><br><span class="line">          iter = getGraphIterator(programState, newVertex);</span><br><span class="line">          <span class="comment">// 如果是深度优先，则继续遍历。</span></span><br><span class="line">          <span class="comment">// 再回忆一下，只有 HepMatchOrder.ARBITRARY 和 HepMatchOrder.DEPTH_FIRST 会进入到这个位置</span></span><br><span class="line">          <span class="keyword">if</span> (programState.matchOrder == HepMatchOrder.DEPTH_FIRST) &#123;</span><br><span class="line">            nMatches =</span><br><span class="line">                depthFirstApply(programState, iter, rules, forceConversions, nMatches);</span><br><span class="line">            <span class="keyword">if</span> (nMatches &gt;= programState.matchLimit) &#123;</span><br><span class="line">              <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// 标记不退出循环，因为由于HepMatchOrder我们跳过了一些节点</span></span><br><span class="line">          fixedPoint = <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">while</span> (!fixedPoint);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="引用">引用</h2>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-calcite">https://github.com/0x822a5b87/test-calcite</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/zzzzming95/calcite-demo">calcite-demo ：
+calcite adapter and calcite optimizer and so on</a></li>
+<li><a
+target="_blank" rel="noopener" href="http://matt33.com/2019/03/07/apache-calcite-process-flow/">Apache
+Calcite 处理流程详解（一）</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://matt33.com/2019/03/17/apache-calcite-planner/">Apache
+Calcite 优化器详解（二）</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://io-meter.com/2018/11/01/sql-query-optimization-volcano/">SQL
+查询优化原理与 Volcano Optimizer 介绍</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://liebing.org.cn/apache-calcite-query-optimization-overview.html">Apche
+Calcite查询优化概述</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://liebing.org.cn/apache-calcite-relational-algebra.html">Apache
+Calcite关系代数</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://liebing.org.cn/apache-calcite-hepplanner.html">Apache
+Calcite查询优化器之HepPlanner</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://liebing.org.cn/apache-calcite-volcanoplanner.html">Apache
+Calcite查询优化器之VolcanoPlanner</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://io-meter.com/2018/11/01/sql-query-optimization-volcano/">SQL
+查询优化原理与 Volcano Optimizer 介绍</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/07/25/calcite%E5%85%A5%E9%97%A8-Volcano-Optimizer/" rel="prev" title="calcite入门-- Volcano Optimizer">
+                  <i class="fa fa-angle-left"></i> calcite入门-- Volcano Optimizer
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/07/26/golang%E6%B3%9B%E5%9E%8B%E7%AE%80%E8%BF%B0/" rel="next" title="golang泛型简述">
+                  golang泛型简述 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

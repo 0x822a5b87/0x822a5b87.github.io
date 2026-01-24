@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="进程间通信 基于文件的管道 1234567&#x2F;&#x2F; os&#x2F;src&#x2F;fs&#x2F;pipe.rspub struct Pipe &#123;    readable: bool,    writable: bool,    buffer: Arc&lt;Mutex&lt;PipeRingBuffer&gt;&gt;,&#125; 通过 buffer 字段还可以找到该管道端所在的管道自身。后续我们将为它实现 Fi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore进程间通信">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="进程间通信 基于文件的管道 1234567&#x2F;&#x2F; os&#x2F;src&#x2F;fs&#x2F;pipe.rspub struct Pipe &#123;    readable: bool,    writable: bool,    buffer: Arc&lt;Mutex&lt;PipeRingBuffer&gt;&gt;,&#125; 通过 buffer 字段还可以找到该管道端所在的管道自身。后续我们将为它实现 Fi">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251208/user-stack-cmdargs.png">
+<meta property="article:published_time" content="2025-12-13T01:07:14.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251208/user-stack-cmdargs.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/","path":"2025/12/13/uCore进程间通信/","title":"uCore进程间通信"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore进程间通信 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1"><span class="nav-number">1.</span> <span class="nav-text">进程间通信</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%87%E4%BB%B6%E7%9A%84%E7%AE%A1%E9%81%93"><span class="nav-number">1.1.</span> <span class="nav-text">基于文件的管道</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E5%88%9B%E5%BB%BA"><span class="nav-number">1.1.1.</span> <span class="nav-text">管道创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8pipe"><span class="nav-number">1.1.2.</span> <span class="nav-text">使用pipe</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E8%AF%BB"><span class="nav-number">1.1.3.</span> <span class="nav-text">管道读</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0%E4%B8%8E%E6%A0%87%E5%87%86-io-%E9%87%8D%E5%AE%9A%E5%90%91"><span class="nav-number">1.2.</span> <span class="nav-text">命令行参数与标准 I&#x2F;O 重定向</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#shell%E7%A8%8B%E5%BA%8F%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0%E5%88%86%E5%89%B2"><span class="nav-number">1.2.1.</span> <span class="nav-text">shell程序的命令行参数分割</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sys_exec-%E5%B0%86%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0%E5%8E%8B%E5%85%A5%E7%94%A8%E6%88%B7%E6%A0%88"><span class="nav-number">1.2.2.</span> <span class="nav-text">sys_exec
+将命令行参数压入用户栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%BA%93%E4%BB%8E%E7%94%A8%E6%88%B7%E6%A0%88%E4%B8%8A%E8%BF%98%E5%8E%9F%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text">用户库从用户栈上还原命令行参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux-%E7%AE%A1%E9%81%93pipe%E6%A0%B8%E5%BF%83%E8%A7%A3%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text">Linux 管道（Pipe）核心解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E7%9A%84%E6%A0%B8%E5%BF%83%E5%88%86%E7%B1%BB"><span class="nav-number">1.3.1.</span> <span class="nav-text">管道的核心分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BF%E5%90%8D%E7%AE%A1%E9%81%93"><span class="nav-number">1.3.2.</span> <span class="nav-text">匿名管道</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E7%89%B9%E6%80%A7"><span class="nav-number">1.3.3.</span> <span class="nav-text">关键特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93fifo"><span class="nav-number">1.3.4.</span> <span class="nav-text">命名管道（FIFO）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E7%9A%84%E6%A0%B8%E5%BF%83%E9%99%90%E5%88%B6"><span class="nav-number">1.3.5.</span> <span class="nav-text">管道的核心限制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E7%9A%84%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.6.</span> <span class="nav-text">管道的底层实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BF%E5%90%8D%E7%AE%A1%E9%81%93%E5%92%8C%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.3.7.</span> <span class="nav-text">匿名管道和命名管道的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.4.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E4%B8%AD%E7%9A%84string"><span class="nav-number">1.4.1.</span> <span class="nav-text">Rust中的String</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rust-%E4%B8%AD%E6%8C%87%E9%92%88%E8%A3%B8%E6%8C%87%E9%92%88%E4%B8%8E%E5%BC%95%E7%94%A8"><span class="nav-number">1.4.2.</span> <span class="nav-text">Rust 中指针（裸指针）与引用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A3%B8%E6%8C%87%E9%92%88"><span class="nav-number">1.4.3.</span> <span class="nav-text">裸指针</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#mut-t"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">*mut T</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#const-t"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">*const T</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%B4%E6%97%B6%E5%8F%98%E9%87%8F"><span class="nav-number">1.4.4.</span> <span class="nav-text">临时变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rvo"><span class="nav-number">1.4.5.</span> <span class="nav-text">RVO</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A0rvo"><span class="nav-number">1.4.5.1.</span> <span class="nav-text">无RVO</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%89rvo"><span class="nav-number">1.4.5.2.</span> <span class="nav-text">有RVO</span></a></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore进程间通信 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore进程间通信
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-13 09:07:14" itemprop="dateCreated datePublished" datetime="2025-12-13T09:07:14+08:00">2025-12-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="进程间通信">进程间通信</h1>
+<h2 id="基于文件的管道">基于文件的管道</h2>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    readable: <span class="type">bool</span>,</span><br><span class="line">    writable: <span class="type">bool</span>,</span><br><span class="line">    buffer: Arc&lt;Mutex&lt;PipeRingBuffer&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过 <code>buffer</code>
+字段还可以找到该管道端所在的管道自身。后续我们将为它实现
+<code>File</code> Trait ，之后它便可以通过文件描述符来访问。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> RING_BUFFER_SIZE: <span class="type">usize</span> = <span class="number">32</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, PartialEq)]</span></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">RingBufferStatus</span> &#123;</span><br><span class="line">    FULL,</span><br><span class="line">    EMPTY,</span><br><span class="line">    NORMAL,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">PipeRingBuffer</span> &#123;</span><br><span class="line">    arr: [<span class="type">u8</span>; RING_BUFFER_SIZE],</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">    status: RingBufferStatus,</span><br><span class="line">    write_end: <span class="type">Option</span>&lt;Weak&lt;Pipe&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>PipeRingBuffer</code> 的 <code>arr/head/tail</code>
+三个字段用来维护一个循环队列，其中 <code>arr</code> 为存放数据的数组，
+<code>head</code> 为循环队列队头的下标， <code>tail</code>
+为循环队列队尾的下标。</li>
+<li><code>RingBufferStatus</code>
+记录了缓冲区目前的状态：<code>FULL</code> 表示缓冲区已满不能再继续写入；
+<code>EMPTY</code> 表示缓冲区为空无法从里面读取；而 <code>NORMAL</code>
+则表示除了 <code>FULL</code> 和 <code>EMPTY</code> 之外的其他状态。</li>
+<li><code>PipeRingBuffer</code> 的 <code>write_end</code>
+字段还保存了它的写端的一个弱引用计数，这是由于在某些情况下需要确认该管道所有的写端是否都已经被关闭了，通过这个字段很容易确认这一点。</li>
+</ul>
+<blockquote>
+<p>这里值得注意的是，在 <code>PipeRingBuffer</code> 中
+<code>write_end</code> 我们持有的是对 <code>Pipe</code>
+的弱引用，而在读端和写端则持有对 <code>Pipe</code> 的强引用。</p>
+<p>这意味着，当读端和写端都被关闭时，<code>PipeRingBuffer</code>
+可以被自动的回收。同时，我们通过对 <code>Pipe</code>
+的弱引用，保证不会出现循环引用。</p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart LR
+
+ReadEnd(&quot;ReadEnd&quot;)
+WriteEnd(&quot;WriteEnd&quot;)
+
+Pipe(&quot;Pipe&quot;)
+PipeRingBuffer(&quot;PipeRingBuffer&quot;)
+
+Pipe --&gt;|Arc| PipeRingBuffer
+PipeRingBuffer -.-&gt;|Weak| Pipe
+
+ReadEnd --&gt;|Arc| Pipe
+WriteEnd --&gt;|Arc| Pipe</code></pre>
+<h3 id="管道创建">管道创建</h3>
+<blockquote>
+<p>这里有个很有意思的点，这里看起来有大量的临时变量创建，然后被
+<code>Arc</code> 移动到堆，但是实际上rust编译器会优化这些行为。</p>
+<p>可以参考 <a href="#临时变量">临时变量</a> 和 <a href="#RVO">RVO</a>
+中的描述。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Return (read_end, write_end)</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">make_pipe</span>() <span class="punctuation">-&gt;</span> (Arc&lt;Pipe&gt;, Arc&lt;Pipe&gt;) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">buffer</span> = Arc::<span class="title function_ invoke__">new</span>(<span class="keyword">unsafe</span> &#123; UPSafeCell::<span class="title function_ invoke__">new</span>(PipeRingBuffer::<span class="title function_ invoke__">new</span>()) &#125;);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">read_end</span> = Arc::<span class="title function_ invoke__">new</span>(Pipe::<span class="title function_ invoke__">read_end_with_buffer</span>(buffer.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">write_end</span> = Arc::<span class="title function_ invoke__">new</span>(Pipe::<span class="title function_ invoke__">write_end_with_buffer</span>(buffer.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line">    buffer.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">set_write_end</span>(&amp;write_end);</span><br><span class="line">    (read_end, write_end)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="使用pipe">使用pipe</h3>
+<p><code>pipe</code> 的使用相当简单，就是分配 <code>Pipe</code> 后将
+<code>fd</code> 写入到用户传入的地址。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_pipe</span>(pipe: *<span class="keyword">mut</span> <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">	trace!(<span class="string">&quot;kernel:pid[&#123;&#125;] sys_pipe&quot;</span>, <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>().pid.<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task</span> = <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">token</span> = <span class="title function_ invoke__">current_user_token</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> (pipe_read, pipe_write) = <span class="title function_ invoke__">make_pipe</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">read_fd</span> = inner.<span class="title function_ invoke__">alloc_fd</span>();</span><br><span class="line">    inner.fd_table[read_fd] = <span class="title function_ invoke__">Some</span>(pipe_read);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">write_fd</span> = inner.<span class="title function_ invoke__">alloc_fd</span>();</span><br><span class="line">    inner.fd_table[write_fd] = <span class="title function_ invoke__">Some</span>(pipe_write);</span><br><span class="line">    *<span class="title function_ invoke__">translated_refmut</span>(token, pipe) = read_fd;</span><br><span class="line">    *<span class="title function_ invoke__">translated_refmut</span>(token, <span class="keyword">unsafe</span> &#123; pipe.<span class="title function_ invoke__">add</span>(<span class="number">1</span>) &#125;) = write_fd;</span><br><span class="line">    <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="管道读">管道读</h3>
+<p><code>PipeRingBuffer</code> 在读数据的时候需要注意几个事情：</p>
+<ol type="1">
+<li>他不是线程安全的，所以 <code>Pipe</code> 在访问时需要通过
+<code>self.buffer.exclusive_access()</code> 来获取唯一访问权限；</li>
+<li>他不会判断缓冲区是否为空，所以在调用 <code>read_byte()</code>
+前需要通过 <code>available_read()</code> 保证缓冲区存在数据；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">PipeRingBuffer</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">read_byte</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">u8</span> &#123;</span><br><span class="line">        <span class="keyword">self</span>.status = RingBufferStatus::Normal;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">c</span> = <span class="keyword">self</span>.arr[<span class="keyword">self</span>.head];</span><br><span class="line">        <span class="keyword">self</span>.head = (<span class="keyword">self</span>.head + <span class="number">1</span>) % RING_BUFFER_SIZE;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">self</span>.head == <span class="keyword">self</span>.tail &#123;</span><br><span class="line">            <span class="keyword">self</span>.status = RingBufferStatus::Empty;</span><br><span class="line">        &#125;</span><br><span class="line">        c</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">available_read</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">self</span>.status == RingBufferStatus::Empty &#123;</span><br><span class="line">            <span class="number">0</span></span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> <span class="keyword">self</span>.tail &gt; <span class="keyword">self</span>.head &#123;</span><br><span class="line">            <span class="keyword">self</span>.tail - <span class="keyword">self</span>.head</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">self</span>.tail + RING_BUFFER_SIZE - <span class="keyword">self</span>.head</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">all_write_ends_closed</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;</span><br><span class="line">        <span class="keyword">self</span>.write_end.<span class="title function_ invoke__">as_ref</span>().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">upgrade</span>().<span class="title function_ invoke__">is_none</span>()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面是 <code>Pipe</code> 的读实现：</p>
+<ol type="1">
+<li>管道环形缓冲区非进程安全，必须通过 <code>exclusive_access()</code>
+获取独占引用（等效加锁），避免多进程竞争；</li>
+<li>读端进程因缓冲区空挂起前，<strong>必须手动 <code>drop</code>
+释放独占引用（锁）</strong>：若不释放，进程挂起期间锁会被长期持有，写端无法获取缓冲区权限写入数据，最终导致
+“读端等数据、写端等锁” 的永久死锁；</li>
+<li>进程被唤醒后需<strong>重新获取锁并检查缓冲区状态</strong>。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">File</span> <span class="keyword">for</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">read</span>(&amp;<span class="keyword">self</span>, buf: UserBuffer) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;</span><br><span class="line">        <span class="comment">// 校验读端合法性并初始化读取计数 / 迭代器</span></span><br><span class="line">        <span class="built_in">assert!</span>(<span class="keyword">self</span>.<span class="title function_ invoke__">readable</span>());</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">want_to_read</span> = buf.<span class="title function_ invoke__">len</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">buf_iter</span> = buf.<span class="title function_ invoke__">into_iter</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">already_read</span> = <span class="number">0usize</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在循环中读取数据直到满足条件</span></span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="comment">// 缓冲区不是进程安全的，所以必须加锁</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">ring_buffer</span> = <span class="keyword">self</span>.buffer.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">            <span class="comment">// 保证管道缓冲区非空</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">loop_read</span> = ring_buffer.<span class="title function_ invoke__">available_read</span>();</span><br><span class="line">            <span class="keyword">if</span> loop_read == <span class="number">0</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> ring_buffer.<span class="title function_ invoke__">all_write_ends_closed</span>() &#123;</span><br><span class="line">                    <span class="keyword">return</span> already_read;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 如果当前缓冲区为空，那么我们需要手动的 drop 避免死锁，因为这里会通过 __switch 进行进程切换，</span></span><br><span class="line">                <span class="comment">// 会导致当前进程被挂起，ring_buffer 不会被销毁，他持有的锁也不会被释放，进而导致写端长期阻塞死锁</span></span><br><span class="line">                <span class="title function_ invoke__">drop</span>(ring_buffer);</span><br><span class="line">                <span class="title function_ invoke__">suspend_current_and_run_next</span>();</span><br><span class="line">                <span class="comment">// 这里很重要，在下次切换回来的时候，我们必须回到最开始的位置重新获取锁，重新判断缓冲区状态。</span></span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 逐字节读取管道数据（本次最多读取当前可读取的字节数），直到用户缓冲区满/读满目标/管道数据空</span></span><br><span class="line">            <span class="keyword">for</span> <span class="variable">_</span> <span class="keyword">in</span> <span class="number">0</span>..loop_read &#123;</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(byte_ref) = buf_iter.<span class="title function_ invoke__">next</span>() &#123;</span><br><span class="line">                    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                        *byte_ref = ring_buffer.<span class="title function_ invoke__">read_byte</span>();</span><br><span class="line">                    &#125;</span><br><span class="line">                    already_read += <span class="number">1</span>;</span><br><span class="line">                    <span class="keyword">if</span> already_read == want_to_read &#123;</span><br><span class="line">                        <span class="keyword">return</span> want_to_read;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">return</span> already_read;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="命令行参数与标准-io-重定向">命令行参数与标准 I/O 重定向</h2>
+<h3 id="shell程序的命令行参数分割">shell程序的命令行参数分割</h3>
+<p>我们希望在rcore上支持 <code>argc/argc</code> 参数，为此我们的
+<code>sys_exec</code> 函数增加了一个参数
+<code>args</code>，数组中的每个元素都是<strong>命令行参数字符串的起始地址</strong>。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_exec</span>(path: *<span class="keyword">const</span> <span class="type">u8</span>, <span class="keyword">mut</span> args: *<span class="keyword">const</span> <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>从应用程序的角度来讲，它的调用参数是：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_exec</span>(path: &amp;<span class="type">str</span>, args: &amp;[*<span class="keyword">const</span> <span class="type">u8</span>]) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    <span class="title function_ invoke__">syscall</span>(</span><br><span class="line">        SYSCALL_EXEC,</span><br><span class="line">        [path.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, args.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, <span class="number">0</span>],</span><br><span class="line">    )</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们在 <code>ch7b_user_shell.rs</code>
+中是这样去组织它的，此外String操作可以参考一下 <a
+href="#rust中的string">Rust中的String</a>：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="comment">// 这里是我们的输入字符串</span></span><br><span class="line">	<span class="keyword">let</span> <span class="variable">line</span> = <span class="string">&quot;...&quot;</span>;</span><br><span class="line">    <span class="comment">// 将输入字符串转换为&amp;str数组</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">args</span>: <span class="type">Vec</span>&lt;_&gt; = line.<span class="title function_ invoke__">as_str</span>().<span class="title function_ invoke__">split</span>(<span class="string">&#x27; &#x27;</span>).<span class="title function_ invoke__">collect</span>();</span><br><span class="line">    <span class="comment">// 将&amp;str数组转换为String数组</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">args_copy</span>: <span class="type">Vec</span>&lt;<span class="type">String</span>&gt; = args</span><br><span class="line">        .<span class="title function_ invoke__">iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|&amp;arg| &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">string</span> = <span class="type">String</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">            string.<span class="title function_ invoke__">push_str</span>(arg);</span><br><span class="line">            string</span><br><span class="line">        &#125;)</span><br><span class="line">        .<span class="title function_ invoke__">collect</span>();</span><br><span class="line">	<span class="comment">// 在String数组的结尾追加 &#x27;\0&#x27;</span></span><br><span class="line">    args_copy.<span class="title function_ invoke__">iter_mut</span>().for_each(|string| &#123;</span><br><span class="line">        string.<span class="title function_ invoke__">push</span>(<span class="string">&#x27;<span class="char escape_">\0</span>&#x27;</span>);</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// redirect input and output</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 再将 String 数组转换为 Vec&lt;*const u8&gt;</span></span><br><span class="line">	<span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">args_addr</span>: <span class="type">Vec</span>&lt;*<span class="keyword">const</span> <span class="type">u8</span>&gt; = args_copy.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">map</span>(|arg| arg.<span class="title function_ invoke__">as_ptr</span>()).<span class="title function_ invoke__">collect</span>();</span><br><span class="line">	<span class="comment">// 在数组的结尾添加 &#x27;\0&#x27;</span></span><br><span class="line">    args_addr.<span class="title function_ invoke__">push</span>(<span class="number">0</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// exec</span></span><br><span class="line">    <span class="keyword">if</span> <span class="title function_ invoke__">exec</span>(args_copy[<span class="number">0</span>].<span class="title function_ invoke__">as_str</span>(), args_addr.<span class="title function_ invoke__">as_slice</span>()) &#123;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这三段代码可以总结如下：</p>
+<ol type="1">
+<li>将 <code>line</code>
+按空格分割为多个字符串切片，取第零个切片转换为带 <code>\0</code>
+终止符的 <code>String</code>，作为 <code>exec</code>
+的程序路径（path）；</li>
+<li>将所有分割后的字符串切片转换为带 <code>\0</code> 终止符的
+<code>String</code>，提取每个 <code>String</code>
+的字节指针构建数组，并在数组末尾追加空指针（<code>0 as *const u8</code>），作为
+<code>exec</code> 的参数列表（args）。</li>
+<li>调用 <code>exec</code> 时，以 <code>&lt;1&gt;</code>
+中路径字符串的底层字节指针（<code>args_copy[0].as_str()</code>
+对应的指针）、<code>&lt;2&gt;</code>
+中带空指针终止的指针数组切片（<code>args_addr.as_slice()</code>）作为参数执行系统调用。</li>
+</ol>
+<p>数据结构可以如下图所示：</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+params(&quot;params&quot;)
+path(&quot;path:*const u8&quot;)
+args(&quot;args:*const *const u8&quot;)
+zero_pointer(&quot;NULL&quot;)
+
+subgraph p
+    pr(&quot;r&quot;)
+    pu(&quot;u&quot;)
+    ps(&quot;s&quot;)
+    pt(&quot;t&quot;)
+    pc(&quot;c&quot;)
+    p0(&quot;&#x27;\0&#x27;&quot;)
+end
+
+subgraph a
+    subgraph a1
+        direction TB
+        a1_pr(&quot;r&quot;)
+        a1_pu(&quot;u&quot;)
+        a1_ps(&quot;s&quot;)
+        a1_pt(&quot;t&quot;)
+        a1_pc(&quot;c&quot;)
+        a1_p0(&quot;&#x27;\0&#x27;&quot;)
+    end
+    
+    subgraph a2
+        direction TB
+        a2_pr(&quot;h&quot;)
+        a2_pu(&quot;e&quot;)
+        a2_ps(&quot;l&quot;)
+        a2_pt(&quot;l&quot;)
+        a2_pc(&quot;o&quot;)
+        a2_p0(&quot;&#x27;\0&#x27;&quot;)
+    end
+
+    subgraph a3
+        etc(&quot;...&quot;)
+    end
+
+    subgraph a4
+        a4_0(&quot;NULL&quot;)
+    end
+
+    a1 --&gt; a2 --&gt; a3 --&gt; a4
+end
+
+params --&gt; path
+params --&gt; args
+params --&gt; zero_pointer
+
+path --&gt; p
+args --&gt; a</code></pre>
+<h3 id="sys_exec-将命令行参数压入用户栈">sys_exec
+将命令行参数压入用户栈</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sys_exec</span>(path: *<span class="keyword">const</span> <span class="type">u8</span>, <span class="keyword">mut</span> args: *<span class="keyword">const</span> <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="type">isize</span> &#123;</span><br><span class="line">    trace!(<span class="string">&quot;kernel:pid[&#123;&#125;] sys_exec&quot;</span>, <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>().pid.<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">token</span> = <span class="title function_ invoke__">current_user_token</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">path</span> = <span class="title function_ invoke__">translated_str</span>(token, path);</span><br><span class="line">    <span class="comment">// 解析命令行参数</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">args_vec</span>: <span class="type">Vec</span>&lt;<span class="type">String</span>&gt; = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">arg_str_ptr</span> = *<span class="title function_ invoke__">translated_ref</span>(token, args);</span><br><span class="line">        <span class="keyword">if</span> arg_str_ptr == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        args_vec.<span class="title function_ invoke__">push</span>(<span class="title function_ invoke__">translated_str</span>(token, arg_str_ptr <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>));</span><br><span class="line">        <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            args = args.<span class="title function_ invoke__">add</span>(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(app_inode) = <span class="title function_ invoke__">open_file</span>(path.<span class="title function_ invoke__">as_str</span>(), OpenFlags::RDONLY) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">all_data</span> = app_inode.<span class="title function_ invoke__">read_all</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">task</span> = <span class="title function_ invoke__">current_task</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">argc</span> = args_vec.<span class="title function_ invoke__">len</span>();</span><br><span class="line">        task.<span class="title function_ invoke__">exec</span>(all_data.<span class="title function_ invoke__">as_slice</span>(), args_vec);</span><br><span class="line">        <span class="comment">// return argc because cx.x[10] will be covered with it later</span></span><br><span class="line">        argc <span class="keyword">as</span> <span class="type">isize</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        -<span class="number">1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们还需要把这些参数复制到用户栈：</p>
+<ol type="1">
+<li><code>user_sp</code> 由于内存分配需要修改；</li>
+<li><code>trap_cx.x[10] = args.len();</code> 修改 <code>a0</code>
+表示命令行参数的个数；</li>
+<li><code>trap_cx.x[11] = argv_base;</code>，而 <code>a1</code>
+则表示图中 <code>argv_base</code> 即蓝色区域的起始地址。</li>
+<li>这两个参数在第一次进入对应应用的用户态的时候会被接收并用于还原命令行参数。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">TaskControlBlock</span> &#123;</span><br><span class="line">    <span class="comment">/// Load a new elf to replace the original application address space and start execution</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">exec</span>(&amp;<span class="keyword">self</span>, elf_data: &amp;[<span class="type">u8</span>], args: <span class="type">Vec</span>&lt;<span class="type">String</span>&gt;) &#123;</span><br><span class="line">        <span class="comment">// memory_set with elf program headers/trampoline/trap context/user stack</span></span><br><span class="line">        <span class="keyword">let</span> (memory_set, <span class="keyword">mut</span> user_sp, entry_point) = MemorySet::<span class="title function_ invoke__">from_elf</span>(elf_data);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">trap_cx_ppn</span> = memory_set</span><br><span class="line">            .<span class="title function_ invoke__">translate</span>(VirtAddr::<span class="title function_ invoke__">from</span>(TRAP_CONTEXT_BASE).<span class="title function_ invoke__">into</span>())</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            .<span class="title function_ invoke__">ppn</span>();</span><br><span class="line">        <span class="comment">// push arguments on user stack</span></span><br><span class="line">        <span class="comment">// 长度是 args.len() + 1 是因为我们要以 NULL 作为结尾</span></span><br><span class="line">        <span class="comment">// * core::mem::size_of::&lt;usize&gt;() 是因为我们这里是指针</span></span><br><span class="line">        user_sp -= (args.<span class="title function_ invoke__">len</span>() + <span class="number">1</span>) * core::mem::size_of::&lt;<span class="type">usize</span>&gt;();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">argv_base</span> = user_sp;</span><br><span class="line">        <span class="comment">// 背景：用户栈上已预留 (args.len()+1)*size_of::&lt;usize&gt;() 字节空间，用于存储 argv 指针数组（每个元素是参数字符串地址，末尾为NULL）</span></span><br><span class="line">        <span class="comment">// 问题：内核态仅知道该数组每个元素的用户态虚拟地址（argv_base + arg * size_of::&lt;usize&gt;()），无法直接访问用户态内存</span></span><br><span class="line">        <span class="comment">// 解决：通过 translated_refmut 结合用户页表（memory_set.token()），将用户态虚拟地址翻译为内核态可直接解引用的可变引用</span></span><br><span class="line">        <span class="comment">// 效果：内核可通过该引用修改用户栈上 argv 数组的内容（后续赋值参数字符串地址/NULL）</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">argv</span>: <span class="type">Vec</span>&lt;_&gt; = (<span class="number">0</span>..=args.<span class="title function_ invoke__">len</span>())</span><br><span class="line">            .<span class="title function_ invoke__">map</span>(|arg| &#123;</span><br><span class="line">                <span class="title function_ invoke__">translated_refmut</span>(</span><br><span class="line">                    memory_set.<span class="title function_ invoke__">token</span>(),</span><br><span class="line">                    (argv_base + arg * core::mem::size_of::&lt;<span class="type">usize</span>&gt;()) <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">usize</span>,</span><br><span class="line">                )</span><br><span class="line">            &#125;)</span><br><span class="line">            .<span class="title function_ invoke__">collect</span>();</span><br><span class="line">        <span class="comment">// 使用 NULL 作为结尾</span></span><br><span class="line">        *argv[args.<span class="title function_ invoke__">len</span>()] = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将args参数写入栈中</span></span><br><span class="line">        <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..args.<span class="title function_ invoke__">len</span>() &#123;</span><br><span class="line">            <span class="comment">// 为参数分配内存，因为String是不包含 &#x27;\0&#x27; 的，所以这里长度必须+1</span></span><br><span class="line">            user_sp -= args[i].<span class="title function_ invoke__">len</span>() + <span class="number">1</span>;</span><br><span class="line">            <span class="comment">// 让指针地址指向字符串的起始位置</span></span><br><span class="line">            *argv[i] = user_sp;</span><br><span class="line">            <span class="comment">// 将字符串写入到对应的虚拟内存地址</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">p</span> = user_sp;</span><br><span class="line">            <span class="keyword">for</span> <span class="variable">c</span> <span class="keyword">in</span> args[i].<span class="title function_ invoke__">as_bytes</span>() &#123;</span><br><span class="line">                *<span class="title function_ invoke__">translated_refmut</span>(memory_set.<span class="title function_ invoke__">token</span>(), p <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>) = *c;</span><br><span class="line">                p += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            *<span class="title function_ invoke__">translated_refmut</span>(memory_set.<span class="title function_ invoke__">token</span>(), p <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>) = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 进行内存对齐</span></span><br><span class="line">        user_sp -= user_sp % core::mem::size_of::&lt;<span class="type">usize</span>&gt;();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// **** access current TCB exclusively</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">inner</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">        <span class="comment">// substitute memory_set</span></span><br><span class="line">        inner.memory_set = memory_set;</span><br><span class="line">        <span class="comment">// update trap_cx ppn</span></span><br><span class="line">        inner.trap_cx_ppn = trap_cx_ppn;</span><br><span class="line">        <span class="comment">// initialize trap_cx</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">trap_cx</span> = TrapContext::<span class="title function_ invoke__">app_init_context</span>(</span><br><span class="line">            entry_point,</span><br><span class="line">            user_sp,</span><br><span class="line">            KERNEL_SPACE.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">token</span>(),</span><br><span class="line">            <span class="keyword">self</span>.kernel_stack.<span class="title function_ invoke__">get_top</span>(),</span><br><span class="line">            trap_handler <span class="keyword">as</span> <span class="type">usize</span>,</span><br><span class="line">        );</span><br><span class="line">        trap_cx.x[<span class="number">10</span>] = args.<span class="title function_ invoke__">len</span>();</span><br><span class="line">        trap_cx.x[<span class="number">11</span>] = argv_base;</span><br><span class="line">        *inner.<span class="title function_ invoke__">get_trap_cx</span>() = trap_cx;</span><br><span class="line">        <span class="comment">// **** release current PCB</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>假设输入值是 <code>aa</code> 和
+<code>bb</code>，最终的内存结构为：</p>
+<figure>
+<img src="/images/20251208/user-stack-cmdargs.png"
+alt="user-stack-cmdargs" />
+<figcaption aria-hidden="true">user-stack-cmdargs</figcaption>
+</figure>
+<h3
+id="用户库从用户栈上还原命令行参数">用户库从用户栈上还原命令行参数</h3>
+<p>在应用第一次进入用户态的时候，我们放在 Trap 上下文 a0/a1
+两个寄存器中的内容可以被用户库中的入口函数以参数的形式接收：这里可以参考之前的
+<a
+href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/#%E8%BF%9B%E7%A8%8B%E7%9A%84%E9%80%80%E5%87%BA-1">进程调度</a>
+中关于 <code>_start</code> 函数的描述：</p>
+<ol type="1">
+<li>这里 <code>argc</code> 对应于我们的参数数量，<code>argv</code>
+是我们的参数指针数组；通过 <code>[*argv, *(argc - 1 + argv)]</code>
+我们可以访问到我们的所有参数。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="meta">#[link_section = <span class="string">&quot;.text.entry&quot;</span>]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="keyword">fn</span> <span class="title function_">_start</span>(argc: <span class="type">usize</span>, argv: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> ! &#123;</span><br><span class="line">    <span class="title function_ invoke__">clear_bss</span>();</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        HEAP.<span class="title function_ invoke__">lock</span>()</span><br><span class="line">            .<span class="title function_ invoke__">init</span>(HEAP_SPACE.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> <span class="type">usize</span>, USER_HEAP_SIZE);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">v</span>: <span class="type">Vec</span>&lt;&amp;<span class="symbol">&#x27;static</span> <span class="type">str</span>&gt; = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..argc &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">str_start</span> =</span><br><span class="line">            <span class="keyword">unsafe</span> &#123; ((argv + i * core::mem::size_of::&lt;<span class="type">usize</span>&gt;()) <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">usize</span>).<span class="title function_ invoke__">read_volatile</span>() &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">len</span> = (<span class="number">0usize</span>..)</span><br><span class="line">            .<span class="title function_ invoke__">find</span>(|i| <span class="keyword">unsafe</span> &#123; ((str_start + *i) <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>).<span class="title function_ invoke__">read_volatile</span>() == <span class="number">0</span> &#125;)</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        v.<span class="title function_ invoke__">push</span>(</span><br><span class="line">            core::<span class="type">str</span>::<span class="title function_ invoke__">from_utf8</span>(<span class="keyword">unsafe</span> &#123;</span><br><span class="line">                core::slice::<span class="title function_ invoke__">from_raw_parts</span>(str_start <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>, len)</span><br><span class="line">            &#125;)</span><br><span class="line">            .<span class="title function_ invoke__">unwrap</span>(),</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">exit</span>(<span class="title function_ invoke__">main</span>(argc, v.<span class="title function_ invoke__">as_slice</span>()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="linux-管道pipe核心解析">Linux 管道（Pipe）核心解析</h2>
+<p>Linux 管道是<strong>进程间通信（IPC）</strong>
+的基础机制，本质是内核提供的<strong>单向、基于字节流的伪文件</strong>，用于在进程间传递数据，核心特征可总结为：<strong>单向、匿名（默认）、基于文件描述符、内核缓存、随进程退出释放</strong>。</p>
+<h3 id="管道的核心分类">管道的核心分类</h3>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 37%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>类型</th>
+<th>匿名管道（Pipe）</th>
+<th>命名管道（FIFO）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>创建方式</td>
+<td><code>pipe()</code> 系统调用</td>
+<td><code>mkfifo()</code> 系统调用 / <code>mkfifo</code> 命令</td>
+</tr>
+<tr class="even">
+<td>标识</td>
+<td>无文件名，仅通过文件描述符关联</td>
+<td>有文件系统路径（如 <code>/tmp/myfifo</code>），无实际数据块</td>
+</tr>
+<tr class="odd">
+<td>生命周期</td>
+<td>随创建进程 / 相关进程退出而销毁</td>
+<td>随文件系统存在（需手动删除），数据随进程退出释放</td>
+</tr>
+<tr class="even">
+<td>通信范围</td>
+<td>父子进程 / 兄弟进程（有血缘关系）</td>
+<td>任意进程（无血缘关系）</td>
+</tr>
+<tr class="odd">
+<td>核心特性</td>
+<td>单向、字节流、内核缓存</td>
+<td>单向 / 双向（需两个 FIFO）、字节流、内核缓存</td>
+</tr>
+</tbody>
+</table>
+<h3 id="匿名管道">匿名管道</h3>
+<ul>
+<li>调用 <code>pipe(int fd[2])</code>
+时，内核创建一个<strong>内存缓存区</strong>（管道核心），并返回两个文件描述符：
+<ul>
+<li><code>fd[0]</code>：只读端（read）；</li>
+<li><code>fd[1]</code>：只写端（write）；</li>
+</ul></li>
+<li>管道是<strong>单向的</strong>：数据只能从 <code>fd[1]</code>
+写入，从 <code>fd[0]</code> 读出；若需双向通信，需创建两个管道。</li>
+<li>内核缓存区大小固定（默认 64KB，可通过 <code>fcntl()</code>
+调整），写入 / 读取遵循 “先进先出（FIFO）”。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> fd[<span class="number">2</span>];</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">1024</span>];</span><br><span class="line">    <span class="type">pid_t</span> pid;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1. 创建匿名管道</span></span><br><span class="line">    <span class="keyword">if</span> (pipe(fd) == <span class="number">-1</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;pipe&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 创建子进程（继承父进程的文件描述符）</span></span><br><span class="line">    pid = fork();</span><br><span class="line">    <span class="keyword">if</span> (pid == <span class="number">-1</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;fork&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (pid == <span class="number">0</span>) &#123; <span class="comment">// 子进程：读管道</span></span><br><span class="line">        close(fd[<span class="number">1</span>]); <span class="comment">// 关闭写端（只读）</span></span><br><span class="line">        read(fd[<span class="number">0</span>], buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;子进程读取到：%s\n&quot;</span>, buf);</span><br><span class="line">        close(fd[<span class="number">0</span>]);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">// 父进程：写管道</span></span><br><span class="line">        close(fd[<span class="number">0</span>]); <span class="comment">// 关闭读端（只写）</span></span><br><span class="line">        <span class="type">char</span> *msg = <span class="string">&quot;Hello from parent!&quot;</span>;</span><br><span class="line">        write(fd[<span class="number">1</span>], msg, <span class="built_in">strlen</span>(msg)+<span class="number">1</span>);</span><br><span class="line">        close(fd[<span class="number">1</span>]);</span><br><span class="line">        wait(<span class="literal">NULL</span>); <span class="comment">// 等待子进程退出</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="关键特性">关键特性</h3>
+<ul>
+<li><strong>阻塞行为</strong>：
+<ul>
+<li>读端：管道为空时，<code>read()</code>
+阻塞；若写端全部关闭，<code>read()</code> 返回 0（表示 EOF）；</li>
+<li>写端：管道满时，<code>write()</code>
+阻塞；若读端全部关闭，<code>write()</code> 触发 <code>SIGPIPE</code>
+信号（默认终止进程）。</li>
+</ul></li>
+<li><strong>原子性</strong>：写入数据 ≤ PIPE_BUF（默认
+4KB）时，内核保证写入原子性（不会被其他进程打断）；超过则可能拆分。</li>
+<li><strong>无血缘限制（扩展）</strong>：若通过
+<code>UNIX 域套接字</code>
+传递文件描述符，匿名管道也可用于无血缘进程通信。</li>
+<li>通常来说，由于管道的使用依赖文件描述符（fd），匿名管道对于有血缘关系的进程而言通信非常方便
+——
+因为子进程在fork()执行完毕后会复制父进程的文件描述符表（fd_table），因此天然共享匿名管道的
+fd。不过 Linux 也提供了 AF_UNIX（UNIX
+域套接字）机制，允许无血缘关系的进程间传递匿名管道的
+fd，从而实现无血缘进程对匿名管道的共享使用。</li>
+</ul>
+<h3 id="命名管道fifo">命名管道（FIFO）</h3>
+<ul>
+<li>通过 <code>mkfifo("myfifo", 0666)</code>
+创建一个<strong>管道文件</strong>（文件类型为
+<code>p</code>），该文件仅作为 “标识”，数据仍存储在内核缓存区；</li>
+<li>任意进程可通过
+<code>open("myfifo", O_RDONLY)</code>/<code>open("myfifo", O_WRONLY)</code>
+打开管道，实现无血缘通信；</li>
+<li>必须同时打开读端和写端，否则 <code>open()</code> 会阻塞（除非指定
+<code>O_NONBLOCK</code>）。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 进程A：创建并写入FIFO</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    mkfifo(<span class="string">&quot;/tmp/myfifo&quot;</span>, <span class="number">0666</span>); <span class="comment">// 创建FIFO文件</span></span><br><span class="line">    <span class="type">int</span> fd = open(<span class="string">&quot;/tmp/myfifo&quot;</span>, O_WRONLY);</span><br><span class="line">    write(fd, <span class="string">&quot;Hello FIFO&quot;</span>, <span class="number">10</span>);</span><br><span class="line">    close(fd);</span><br><span class="line">    unlink(<span class="string">&quot;/tmp/myfifo&quot;</span>); <span class="comment">// 删除FIFO文件</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 进程B：读取FIFO</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">1024</span>];</span><br><span class="line">    <span class="type">int</span> fd = open(<span class="string">&quot;/tmp/myfifo&quot;</span>, O_RDONLY);</span><br><span class="line">    read(fd, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;读取到：%s\n&quot;</span>, buf); <span class="comment">// 输出 &quot;Hello FIFO&quot;</span></span><br><span class="line">    close(fd);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="管道的核心限制">管道的核心限制</h3>
+<ol type="1">
+<li><strong>单向性</strong>：默认管道只能单方向传输数据，双向通信需两个管道；</li>
+<li><strong>字节流无边界</strong>：管道传输的是无结构字节流，读写端需自行约定数据分隔（如换行符、固定长度）；</li>
+<li><strong>内核缓存有限</strong>：写入数据超过缓存区大小时，写操作会阻塞（除非设置非阻塞模式）；</li>
+<li><strong>只能用于同主机</strong>：管道基于内核缓存，无法跨网络通信（跨网络需用
+socket）；</li>
+<li><strong>不支持随机访问</strong>：管道是顺序流，只能
+<code>read()</code>/<code>write()</code>，无法
+<code>lseek()</code>。</li>
+</ol>
+<h3 id="管道的底层实现">管道的底层实现</h3>
+<ol type="1">
+<li><strong>内核数据结构</strong>：管道由
+<code>struct pipe_inode_info</code> 表示，包含：
+<ul>
+<li>环形缓存区（存储数据）；</li>
+<li>读 / 写等待队列（阻塞时挂起进程）；</li>
+<li>引用计数（关联打开的文件描述符）；</li>
+</ul></li>
+<li><strong>文件系统视角</strong>：管道是
+“伪文件”，无实际磁盘存储，仅在内存中存在；</li>
+<li><strong>进程关联</strong>：进程通过文件描述符表关联管道的
+<code>file</code> 结构体，fork
+后子进程继承文件描述符，因此可共享管道。</li>
+</ol>
+<h3 id="匿名管道和命名管道的区别">匿名管道和命名管道的区别</h3>
+<ul>
+<li>匿名管道通常是在 <code>fork()</code> 之前，执行
+<code>pipe(fd)</code> 来创建一个 <code>read</code> 和一个
+<code>write</code> 管道，随后父进程和子进程通过 <code>fd</code>
+中的文件描述符来进行通信。</li>
+<li>命名管道是通过 <code>mkfifo()/open()</code>
+方法打开同一个命名文件来实现管道共享。<strong>这里需要注意的是，不同的进程打开的命名管道在各自的进程中有不同的
+<code>fd</code>，只是被映射到了同一个管道内核对象</strong></li>
+</ul>
+<h2 id="qa">QA</h2>
+<h3 id="rust中的string">Rust中的String</h3>
+<h3 id="rust-中指针裸指针与引用">Rust 中指针（裸指针）与引用</h3>
+<p>Rust
+里的<strong>引用（<code>&amp;T</code>/<code>&amp;mut T</code>）</strong>
+和<strong>裸指针（<code>*const T</code>/<code>*mut T</code>）</strong>
+是完全不同的概念，核心差异围绕 “安全规则” 和 “编译器约束” 展开：</p>
+<ul>
+<li>引用本质是 “受约束的裸指针”：编译器会将 <code>&amp;T</code>
+编译为底层的地址指针，但附加了严格的安全规则；</li>
+<li>裸指针是 “无约束的地址”：完全对标 C
+语言的指针，开发者需手动保证其合法性（非空、非悬垂、无数据竞争）。</li>
+</ul>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 42%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>引用（<code>&amp;T</code>/<code>&amp;mut T</code>）</th>
+<th>裸指针（<code>*const T</code>/<code>*mut T</code>）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>安全约束</td>
+<td>受 Rust 借用检查器（Borrow Checker）严格管控</td>
+<td>无任何安全约束，仅在 <code>unsafe</code> 块中使用</td>
+</tr>
+<tr class="even">
+<td>空指针 / 悬垂检查</td>
+<td>编译器保证非空、非悬垂（指向有效内存）</td>
+<td>允许为空、悬垂（指向已释放 / 无效内存）</td>
+</tr>
+<tr class="odd">
+<td>可变性规则</td>
+<td>遵循 “要么多个只读，要么一个可写”（别名规则）</td>
+<td>可同时存在 <code>*mut T</code> 和
+<code>*const T</code>，无别名检查</td>
+</tr>
+<tr class="even">
+<td>生命周期</td>
+<td>有明确生命周期标注，编译器管控作用域</td>
+<td>无生命周期概念，完全由开发者管控</td>
+</tr>
+<tr class="odd">
+<td>使用范围</td>
+<td>普通代码（safe）</td>
+<td>仅 <code>unsafe</code> 块中使用</td>
+</tr>
+<tr class="even">
+<td>核心定位</td>
+<td>安全的内存访问方式（Rust 安全核心）</td>
+<td>底层 / 高性能操作（如内核、FFI、自定义容器）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="裸指针">裸指针</h3>
+<p>rust中的裸指针分为两种：</p>
+<ul>
+<li><code>*mut T</code> 可变裸指针，位于标准库的
+<code>src/ptr/mut_ptr.rs</code>，他的具体实现（从编译器的角度可以称之为类型特化）分为三种：
+<ul>
+<li><code>impl&lt;T: ?Sized&gt; *mut T {}</code>：通用裸指针（支持 Sized
+/ 非 Sized 类型）。注意，Rust
+对泛型参数有一个<strong>默认隐式约束</strong>：<strong>所有泛型类型参数
+<code>T</code> 都会自动加上 <code>T: Sized</code>
+约束</strong>，除非显式用 <code>?Sized</code> 取消。；</li>
+<li><code>impl&lt;T&gt; *mut [T] {}</code>
+切片裸指针（动态长度数组）；</li>
+<li><code>impl&lt;T, const N: usize&gt; *mut [T; N] {}</code>
+固定长度数组裸指针；</li>
+</ul></li>
+<li><code>*const T</code> 不可变裸指针，位于标准库的
+<code>src/ptr/const_ptr.rs</code>，他和 <code>*mut T</code>
+一样，有三种类型特化：
+<ul>
+<li><code>impl&lt;T: ?Sized&gt; *const T {}</code></li>
+<li><code>impl&lt;T&gt; *const [T] {}</code></li>
+<li><code>impl&lt;T, const N: usize&gt; *const [T; N] {}</code></li>
+</ul></li>
+</ul>
+<h4 id="mut-t">*mut T</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// A mutable variable, reference, or pointer.</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span>&gt; *<span class="keyword">mut</span> T &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">const</span> <span class="keyword">fn</span> <span class="title function_">is_null</span>(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;&#125;</span><br><span class="line">	<span class="keyword">pub</span> <span class="keyword">const</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">as_mut</span>&lt;<span class="symbol">&#x27;a</span>&gt;(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;&amp;<span class="symbol">&#x27;a</span> <span class="keyword">mut</span> T&gt; &#123;&#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="const-t">*const T</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Compile-time constants, compile-time evaluable functions, and raw pointers.</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span>&gt; *<span class="keyword">const</span> T &#123;</span><br><span class="line">	<span class="keyword">pub</span> <span class="keyword">const</span> <span class="keyword">fn</span> <span class="title function_">is_null</span>(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;&#125;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">const</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">as_ref</span>&lt;<span class="symbol">&#x27;a</span>&gt;(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;&amp;<span class="symbol">&#x27;a</span> T&gt; &#123;&#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="临时变量">临时变量</h3>
+<p>在 <code>rust</code> 中</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Return (read_end, write_end)</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">make_pipe</span>() <span class="punctuation">-&gt;</span> (Arc&lt;Pipe&gt;, Arc&lt;Pipe&gt;) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">buffer</span> = Arc::<span class="title function_ invoke__">new</span>(<span class="keyword">unsafe</span> &#123; UPSafeCell::<span class="title function_ invoke__">new</span>(PipeRingBuffer::<span class="title function_ invoke__">new</span>()) &#125;);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">read_end</span> = Arc::<span class="title function_ invoke__">new</span>(Pipe::<span class="title function_ invoke__">read_end_with_buffer</span>(buffer.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">write_end</span> = Arc::<span class="title function_ invoke__">new</span>(Pipe::<span class="title function_ invoke__">write_end_with_buffer</span>(buffer.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line">    buffer.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">set_write_end</span>(&amp;write_end);</span><br><span class="line">    (read_end, write_end)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    readable: <span class="type">bool</span>,</span><br><span class="line">    writable: <span class="type">bool</span>,</span><br><span class="line">    buffer: Arc&lt;UPSafeCell&lt;PipeRingBuffer&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    <span class="comment">/// create readable pipe</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">read_end_with_buffer</span>(buffer: Arc&lt;UPSafeCell&lt;PipeRingBuffer&gt;&gt;) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            readable: <span class="literal">true</span>,</span><br><span class="line">            writable: <span class="literal">false</span>,</span><br><span class="line">            buffer,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// create writable pipe</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">write_end_with_buffer</span>(buffer: Arc&lt;UPSafeCell&lt;PipeRingBuffer&gt;&gt;) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            readable: <span class="literal">false</span>,</span><br><span class="line">            writable: <span class="literal">true</span>,</span><br><span class="line">            buffer,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当我们调用 <code>read_end_with_buffer</code> 他的执行流程是：</p>
+<ol type="1">
+<li>调用 <code>Pipe::read_end_with_buffer</code>，在栈上创建临时
+<code>Pipe</code> 实例；</li>
+<li><code>Arc::new(...)</code> 会把这个临时 <code>Pipe</code>
+实例<strong>从栈上移动到堆上</strong>（<code>Arc</code> 的底层实现是
+<code>Box</code> + 引用计数，<code>Box</code> 负责堆分配）；</li>
+<li>Arc 会持有堆上 Pipe 实例的所有权，并返回一个指向堆内存的 Arc
+智能指针（read_end）；</li>
+<li>函数退出时，栈上的临时 Pipe 变量（函数内的 Self）会被销毁，但这只是
+“栈上的临时拷贝”，堆上的真实实例已经被 Arc 接管。</li>
+</ol>
+<p>而 <code>make_pipe</code> 的执行流程可以概括为：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">make_pipe</span>() <span class="punctuation">-&gt;</span> (Arc&lt;Pipe&gt;, Arc&lt;Pipe&gt;) &#123;</span><br><span class="line">    <span class="comment">// 步骤1：创建 PipeRingBuffer 并封装到 UPSafeCell（栈→栈）</span></span><br><span class="line">    <span class="comment">// 1.1 栈上创建 PipeRingBuffer 临时对象（重量级，含环形缓冲区数组）；</span></span><br><span class="line">    <span class="comment">// 1.2 调用 unsafe &#123; UPSafeCell::new(...) &#125;：栈上创建 UPSafeCell 临时对象，</span></span><br><span class="line">    <span class="comment">//     内部用 RefCell::new(value) 将 PipeRingBuffer 包裹（仍在栈上，RefCell 仅提供可变性，不分配堆）；</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">temp_upsafe</span> = <span class="keyword">unsafe</span> &#123; UPSafeCell::<span class="title function_ invoke__">new</span>(PipeRingBuffer::<span class="title function_ invoke__">new</span>()) &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 步骤2：将 UPSafeCell 移到堆并由 Arc 管理（栈→堆）</span></span><br><span class="line">    <span class="comment">// 2.1 Arc::new(temp_upsafe)：将栈上的 UPSafeCell&lt;PipeRingBuffer&gt; 移动到堆上；</span></span><br><span class="line">    <span class="comment">// 2.2 栈上创建 buffer（Arc 指针，8字节），指向堆上的 UPSafeCell，引用计数=1；</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">buffer</span> = Arc::<span class="title function_ invoke__">new</span>(temp_upsafe);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 步骤3：创建读端 Pipe（栈→堆）</span></span><br><span class="line">    <span class="comment">// 3.1 buffer.clone()：Arc 引用计数+1（=2），仅拷贝指针，不拷贝堆数据；</span></span><br><span class="line">    <span class="comment">// 3.2 栈上创建 Pipe 临时对象（read_end 版本：readable=true，持有 buffer 克隆指针）；</span></span><br><span class="line">    <span class="comment">// 3.3 Arc::new(...)：将栈上的 Pipe 移动到堆上；</span></span><br><span class="line">    <span class="comment">// 3.4 栈上创建 read_end（Arc 指针），指向堆上的读端 Pipe；</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">read_end</span> = Arc::<span class="title function_ invoke__">new</span>(Pipe::<span class="title function_ invoke__">read_end_with_buffer</span>(buffer.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 步骤4：创建写端 Pipe（逻辑同读端）</span></span><br><span class="line">    <span class="comment">// 4.1 buffer.clone()：Arc 引用计数+1（=3）；</span></span><br><span class="line">    <span class="comment">// 4.2 栈上创建 Pipe 临时对象（write_end 版本：writable=true）；</span></span><br><span class="line">    <span class="comment">// 4.3 Arc::new(...)：将栈上的 Pipe 移动到堆上；</span></span><br><span class="line">    <span class="comment">// 4.4 栈上创建 write_end（Arc 指针），指向堆上的写端 Pipe；</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">write_end</span> = Arc::<span class="title function_ invoke__">new</span>(Pipe::<span class="title function_ invoke__">write_end_with_buffer</span>(buffer.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 步骤5：修改堆上的 PipeRingBuffer（内部可变性）</span></span><br><span class="line">    <span class="comment">// 5.1 buffer.exclusive_access()：通过 Arc 访问堆上的 UPSafeCell，</span></span><br><span class="line">    <span class="comment">//     调用 RefCell::borrow_mut() 获取 PipeRingBuffer 的可变引用（Panic 如果已被借用）；</span></span><br><span class="line">    <span class="comment">// 5.2 set_write_end(&amp;write_end)：将写端 Pipe 的 Arc 指针（栈上）关联到堆上的 PipeRingBuffer；</span></span><br><span class="line">    buffer.<span class="title function_ invoke__">exclusive_access</span>().<span class="title function_ invoke__">set_write_end</span>(&amp;write_end);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 步骤6：返回结果</span></span><br><span class="line">    <span class="comment">// 6.1 栈上的 read_end/write_end（Arc 指针）被拷贝到调用方；</span></span><br><span class="line">    <span class="comment">// 6.2 函数内所有栈临时对象（PipeRingBuffer/UPSafeCell/Pipe 栈对象）被销毁（已无数据，仅空壳）；</span></span><br><span class="line">    (read_end, write_end)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里看起来，有多次<strong>栈分配 -&gt;
+Arc移动临时变量到堆</strong>的操作，但是实际上这个过程会被 rust 编译器的
+<a href="#RVO">RVO</a> 优化到直接堆分配。</p>
+<h3 id="rvo">RVO</h3>
+<p><code>RVO</code> 是 <code>Return Value Optimization</code> 是
+Rust/C++ 等编译器的核心优化手段，核心作用是<strong>跳过函数返回值的
+“栈上临时对象创建 → 拷贝 / 移动到目标位置”
+的过程，直接在目标位置构造对象</strong>，RVO 分为两种：</p>
+<ul>
+<li><strong>RVO</strong>：基础返回值优化，针对
+“函数返回匿名临时对象”；</li>
+<li><strong>NRVO</strong>：Named Return Value
+Optimization，命名返回值优化，针对 “函数返回命名的局部对象”；</li>
+</ul>
+<p>以我们的 <code>make_pipe</code> 中的 <code>UPSafeCell</code>
+为例子：</p>
+<h4 id="无rvo">无RVO</h4>
+<p>全程：栈→栈→堆，有两次数据移动：</p>
+<ol type="1">
+<li>PipeRingBuffer::new() → 栈上创建 temp →
+移动到函数外的栈临时位置；</li>
+<li>UPSafeCell::new(...) → 栈上包裹该临时对象；</li>
+<li>Arc::new(...) → 将栈上的 UPSafeCell 移动到堆；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 步骤1：函数内栈上创建临时对象</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> PipeRingBuffer &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">temp</span> = <span class="keyword">Self</span> &#123; arr: [<span class="number">0</span>; <span class="number">4096</span>], head: <span class="number">0</span>, tail: <span class="number">0</span>, status: Empty, write_end: <span class="literal">None</span> &#125;;</span><br><span class="line">    temp <span class="comment">// 返回时：栈上 temp 被拷贝/移动到函数外的临时位置</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 步骤2：调用处接收并移动到堆</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">buffer</span> = Arc::<span class="title function_ invoke__">new</span>(<span class="keyword">unsafe</span> &#123; UPSafeCell::<span class="title function_ invoke__">new</span>(PipeRingBuffer::<span class="title function_ invoke__">new</span>()) &#125;);</span><br></pre></td></tr></table></figure>
+<h4 id="有rvo">有RVO</h4>
+<p>全程：无栈临时对象，直接堆构造，0 次数据移动。</p>
+<ol type="1">
+<li>Arc::new() 先分配堆内存（为
+<code>UPSafeCell&lt;PipeRingBuffer&gt;</code> 预留空间）；</li>
+<li>PipeRingBuffer::new() 直接在该堆内存的指定位置构造对象；</li>
+<li>UPSafeCell::new() 直接在该堆内存中包裹 PipeRingBuffer；</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 编译器优化后：</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">buffer</span> = Arc::<span class="title function_ invoke__">new</span>(<span class="keyword">unsafe</span> &#123; UPSafeCell::<span class="title function_ invoke__">new</span>(PipeRingBuffer::<span class="title function_ invoke__">new</span>()) &#125;);</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="prev" title="uCore文件系统">
+                  <i class="fa fa-angle-left"></i> uCore文件系统
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/" rel="next" title="uCore并发">
+                  uCore并发 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Conclusion of Linear Algebra For Everyone REFERENCES  The-Art-of-Linear-Algebra  Glossary of Terms        terms descprition     Matrix A rectangular array of numbers, symbols, or expressions arranged">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Conclusion of Linear Algebra For Everyone">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="Conclusion of Linear Algebra For Everyone REFERENCES  The-Art-of-Linear-Algebra  Glossary of Terms        terms descprition     Matrix A rectangular array of numbers, symbols, or expressions arranged">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-05-14T11:40:56.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="linear algebra">
+<meta property="article:tag" content="mathmatic">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/","path":"2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/","title":"Conclusion of Linear Algebra For Everyone"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Conclusion of Linear Algebra For Everyone | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#conclusion-of-linear-algebra-for-everyone"><span class="nav-number">1.</span> <span class="nav-text">Conclusion of
+Linear Algebra For Everyone</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#references"><span class="nav-number">1.1.</span> <span class="nav-text">REFERENCES</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#glossary-of-terms"><span class="nav-number">1.2.</span> <span class="nav-text">Glossary of Terms</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#summary"><span class="nav-number">1.3.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#content"><span class="nav-number">1.4.</span> <span class="nav-text">Content</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#vector-times-vector---2-ways"><span class="nav-number">1.4.1.</span> <span class="nav-text">2. Vector times Vector - 2
+Ways</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#dot-product"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">Dot Product</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cross-product"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">Cross Product</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#matrix-times-vector---2-ways"><span class="nav-number">1.4.2.</span> <span class="nav-text">3. Matrix times Vector - 2
+Ways</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#matrix-times-matrix---4-ways"><span class="nav-number">1.4.3.</span> <span class="nav-text">4. Matrix times Matrix - 4
+ways</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Conclusion of Linear Algebra For Everyone | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Conclusion of Linear Algebra For Everyone
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-05-14 19:40:56" itemprop="dateCreated datePublished" datetime="2025-05-14T19:40:56+08:00">2025-05-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="conclusion-of-linear-algebra-for-everyone">Conclusion of
+<strong>Linear Algebra For Everyone</strong></h1>
+<h2 id="references">REFERENCES</h2>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/kenjihiranabe/The-Art-of-Linear-Algebra">The-Art-of-Linear-Algebra</a></li>
+</ul>
+<h2 id="glossary-of-terms">Glossary of Terms</h2>
+<table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">terms</th>
+<th style="text-align: center;">descprition</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>Matrix</code></td>
+<td style="text-align: center;">A rectangular array of numbers, symbols,
+or expressions arranged in rows and columns.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Vector</code></td>
+<td style="text-align: center;">An ordered set of numbers, often
+represented as a column or row matrix.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Scalar</code></td>
+<td style="text-align: center;">A single number, as opposed to a vector
+or matrix.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Transpose</code></td>
+<td style="text-align: center;">A matrix operation that flips a matrix
+over its .</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Determinant</code></td>
+<td style="text-align: center;">A scalar value that can be computed from
+a square matrix</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Eigenvector</code></td>
+<td style="text-align: center;">A non-zero vector that only changes by a
+scalar factor when a linear transformation is applied to it.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Eigenvalue</code></td>
+<td style="text-align: center;">The scalar factor by which an
+eigenvector is scaled during a linear transformation.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Rank</code></td>
+<td style="text-align: center;">The dimension of the column space or row
+space of a matrix.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Dot Product</code></td>
+<td style="text-align: center;">The scalar product of two vectors,
+obtained by multiplying the corresponding components and summing the
+results.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Cross Product</code></td>
+<td style="text-align: center;">The vector product of two vectors in
+three-dimensional space, resulting in a vector that is to the original
+vectors</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Orthogonal</code></td>
+<td style="text-align: center;">Two vectors are orthogonal if their dot
+product is zero</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>space</code></td>
+<td style="text-align: center;">Represents a collection of vectors with
+certain properties</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Vector Space</code></td>
+<td style="text-align: center;">A vector space is a set of vectors along
+with operations of vector addition and scalar multiplication that
+satisfy certain properties.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Subspace</code></td>
+<td style="text-align: center;">A subspace is a subset of a vector space
+that is itself a vector space. It contains the zero vector, is closed
+under vector addition and scalar multiplication, and satisfies the other
+properties of a vector space.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Inner product space</code></td>
+<td style="text-align: center;">An inner product space is a vector space
+equipped with an inner product, which is a generalization of the dot
+product. The inner product defines a notion of angle and length in the
+space.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Normed Vector Space</code></td>
+<td style="text-align: center;">A normed vector space is a vector space
+equipped with a norm, which is a function that assigns a non-negative
+length to each vector and satisfies certain properties.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>Hilbert Space</code></td>
+<td style="text-align: center;">A Hilbert space is a complete inner
+product space, meaning that it is a vector space equipped with an inner
+product that is also a complete metric space with respect to the norm
+induced by the inner product.</td>
+</tr>
+<tr class="even">
+<td
+style="text-align: center;"><code>Upper Triangular Matrix</code></td>
+<td style="text-align: center;">A Upper Triangular Matrix is a matrix in
+which all the elements below the main diagonal are zero, and all the
+elements on or above the main diagonal can be zero or non-zero.</td>
+</tr>
+<tr class="odd">
+<td
+style="text-align: center;"><code>Lower Triangular Matrix</code></td>
+<td style="text-align: center;">A Lower Triangular Matrix is a matrix in
+which all the elements above the main diagonal (the diagonal from the
+top left to the bottom right) are zero, and all the elements on or below
+the main diagonal can be zero or non-zero.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>Orthogonal Matrix</code></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>CR</code></td>
+<td style="text-align: center;">C stands for Column, R stands for
+Row</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>LU</code></td>
+<td style="text-align: center;">Lower tirangular and Upper
+triangular</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>QR</code></td>
+<td style="text-align: center;">QR decomposition as Gram-Schmidt
+orthogonalization Orthogonal Q and triangular R</td>
+</tr>
+</tbody>
+</table>
+<h2 id="summary">Summary</h2>
+<ol type="1">
+<li>A scarlar times a row vector produces a row vector;</li>
+<li>A scarlar times a column vector produces a column vector;</li>
+<li>Multiplying a row vector by a column vector results in a scalar
+value, which is obtained by summing the products of the corresponding
+elements of the two vectors;</li>
+<li>Multipling a column vector with a row vector produces a matrix.
+Assuming the height of column vector is <code>M</code> and the length of
+row vector is <code>N</code>, the matrix will be a Rank 1 matrix with
+dimensions <strong>M * N</strong>;</li>
+<li>According the rules <code>3</code> and <code>4</code>, we
+suprisingly find that <strong>a row vector times a column vector
+produces a scalar value, while a column vector times a row vector
+produces a matrix.</strong>, here is the explanation:
+<ol type="1">
+<li><strong>Row Vector times Column Vector (Dot Product):</strong> When
+a row vector (1 x n matrix) is multiplied by a column vector (n x 1
+matrix), the resulting product is a scalar value, known as the dot
+product. This is because the dimensions of the row vector and column
+vector are such that the inner dimensions match (n), allowing for the
+dot product operation which results in a scalar.</li>
+<li><strong>Column Vector times Row Vector (Outer Product):</strong>
+When a column vector (m x 1 matrix) is multiplied by a row vector (1 x n
+matrix), the resulting product is a matrix, known as the outer product
+or tensor product. The dimensions of the column vector and row vector
+are such that the outer product operation results in a matrix with
+dimensions m x n, where each element of the resulting matrix is obtained
+by multiplying the corresponding elements of the column vector and row
+vector.</li>
+</ol></li>
+<li>Lower triangular matrix times upper triangular matrix leads to
+Gaussian elimination, thus resulting in a matrix filled with zero except
+the diagnal‌ line.</li>
+</ol>
+<h2 id="content">Content</h2>
+<h3 id="vector-times-vector---2-ways">2. Vector times Vector - 2
+Ways</h3>
+<ul>
+<li><strong>Dot product</strong> (<span class="math inline">\(\vec{a}
+\cdot \vec{b}\)</span>) is expressed as <span
+class="math inline">\(\vec{a} ^T \vec{b}\)</span> in matrix language and
+yields a <code>number</code></li>
+<li><strong>Cross Product</strong> <span class="math inline">\(\vec{a}
+\times \vec{b}\)</span> : <span class="math inline">\(\vec{a}
+\vec{b}^T\)</span> is a matrix. If neither a, b are 0, the result A is a
+rank 1 matrix.</li>
+</ul>
+<h4 id="dot-product">Dot Product</h4>
+<p><span class="math display">\[
+\begin{bmatrix}
+1 &amp; 2 &amp; 3
+\end{bmatrix}
+\begin{bmatrix}
+x_1 \\
+x_2 \\
+x_3
+\end{bmatrix}  =
+\begin{bmatrix}
+1 \\
+2 \\
+3
+\end{bmatrix}
+\cdot
+\begin{bmatrix}
+x_1 \\
+x_2 \\
+x_3
+\end{bmatrix} = x_1 + 2x_2 + 3x_3
+\]</span></p>
+<h4 id="cross-product">Cross Product</h4>
+<p><span class="math display">\[
+\begin{bmatrix}
+1 \\
+2 \\
+3
+\end{bmatrix}
+\begin{bmatrix}
+x &amp; y
+\end{bmatrix} =
+\begin{bmatrix}
+1 \\
+2 \\
+3
+\end{bmatrix}
+\times
+\begin{bmatrix}
+x \\
+y
+\end{bmatrix} =
+\begin{bmatrix}
+x &amp; y \\
+2x &amp; 2y \\
+3x &amp; 3y
+\end{bmatrix}
+\]</span></p>
+<h3 id="matrix-times-vector---2-ways">3. Matrix times Vector - 2
+Ways</h3>
+<p>A matrix times a vector creates a vecotr of three <strong>dot
+product</strong> as well as a linear combination of the column vectors
+of A.</p>
+<blockquote>
+<p>The row vectors of A are multiplied by a vector <span
+class="math inline">\(x\)</span> and become the three dot-product
+elements of <span class="math inline">\(Ax\)</span></p>
+</blockquote>
+<p><span class="math display">\[
+Ax = \begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix}
+\begin{bmatrix}
+x_1 \\
+x_2
+\end{bmatrix} =
+\begin{bmatrix}
+(x_1 + 2x_2) \\
+(3x_1 + 4x_2) \\
+(5x_1 + 6x_2)
+\end{bmatrix}
+\]</span></p>
+<blockquote>
+<p>The product <span class="math inline">\(Ax\)</span> is a linear
+combination of the column vectors of A.</p>
+</blockquote>
+<p><span class="math display">\[
+Ax = \begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix}
+\begin{bmatrix}
+x_1 \\
+x_2
+\end{bmatrix} =
+x_1\begin{bmatrix}
+1 \\
+3 \\
+5
+\end{bmatrix} +
+x_2\begin{bmatrix}
+2 \\
+4 \\
+6
+\end{bmatrix}
+\]</span></p>
+<p>Also, (vM1) and (vM2) show the same pattern of a row vector times a
+matrix</p>
+<blockquote>
+<p>A row vector <code>y</code> multiplied by the two column vectors of A
+and become the two dot-product elements of <span
+class="math inline">\(yA\)</span></p>
+</blockquote>
+<p><span class="math display">\[
+yA =
+\begin{bmatrix}
+y_1 &amp; y_2 &amp; y_3
+\end{bmatrix}
+\begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix} =
+\begin{bmatrix}
+(y_1 + 3y_2 + 5y_3) &amp; (2y_1 + 4y_2 + 6y_3)
+\end{bmatrix}
+\]</span></p>
+<blockquote>
+<p>The product <span class="math inline">\(yA\)</span> is a linear
+combination of the row vectors of A.</p>
+</blockquote>
+<p><span class="math display">\[
+yA =
+\begin{bmatrix}
+y_1 &amp; y_2 &amp; y_3
+\end{bmatrix}
+\begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix} =
+y_1
+\begin{bmatrix}
+1 &amp; 2
+\end{bmatrix} +
+y_2
+\begin{bmatrix}
+3 &amp; 4
+\end{bmatrix} +
+y_3
+\begin{bmatrix}
+5 &amp; 6
+\end{bmatrix}
+\]</span></p>
+<h3 id="matrix-times-matrix---4-ways">4. Matrix times Matrix - 4
+ways</h3>
+<blockquote>
+<p>A matrix with <code>M</code> rows and <code>N</code> columns times
+another matrix with <code>N</code> rows and <code>L</code> columns
+produces a matrix of <code>M</code> rows and <code>L</code> columns,
+each element is a <strong>dot product</strong>.</p>
+<p>Assuming we have two matrices, denoted as <code>A</code> and
+<code>B</code>, where A is an <strong>3 * 2</strong> matrix and B is an
+<strong>2* 2</strong> matrix. Multiplying the two matrices produces a
+new matrix <code>C</code>, and its value can be computed by the
+following formula:</p>
+<p><span class="math inline">\(C(x, y) = A(x, 0) * B(0, y) + A(x, 1) *
+B(1, y)\)</span></p>
+</blockquote>
+<p><span class="math display">\[
+\begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix}
+\begin{bmatrix}
+x_1 &amp; y_1 \\
+x_2 &amp; y_2
+\end{bmatrix} =
+\begin{bmatrix}
+(x_1 + 2x_2) &amp; (y_1 + 2y_2) \\
+(3x_1 + 4x_2) &amp; (3y_1 + 4y_2) \\
+(5x_1 + 6x_2) &amp; (5y_1 + 5y_2)
+\end{bmatrix}
+\]</span></p>
+<blockquote>
+<p><span class="math inline">\(Ax\)</span> and <span
+class="math inline">\(Ay\)</span> are linear combinations of columns of
+<span class="math inline">\(A\)</span>. View the matrix on the left as a
+whole and view each row in matrix on the right as a whole, <span
+class="math inline">\(\begin{bmatrix}A\end{bmatrix}\begin{bmatrix}x
+&amp; y\end{bmatrix}\)</span> can be transformed into <span
+class="math inline">\(\begin{bmatrix}Ax &amp;
+Ay\end{bmatrix}\)</span>.</p>
+<p>In the following example, the formulate is transformed into the
+linear combinations of a <strong>3 x 2</strong> matrix times a <strong>2
+* 1</strong> matrix which produces a <strong>3 * 1</strong> new
+matrix.</p>
+</blockquote>
+<p><span class="math display">\[
+\begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix}
+\begin{bmatrix}
+x_1 &amp; y_1 \\
+x_2 &amp; y_2
+\end{bmatrix} =
+\begin{bmatrix}
+A
+\end{bmatrix}
+\begin{bmatrix}
+x &amp; y
+\end{bmatrix} =
+\begin{bmatrix}
+Ax &amp; Ay
+\end{bmatrix}
+\]</span></p>
+<blockquote>
+<p>The produced rows are linear combinations of rows.</p>
+<p>View each column in the matrix on the left as a whole and view the
+matrix on the right as a whole. The following matrix can be transformed
+into a matrix where every row is a <strong>1 * 2</strong> matrix
+produced from a <strong>1 * 2</strong> matrix multiplied by a <strong>2
+* 2</strong> matrix</p>
+</blockquote>
+<p><span class="math display">\[
+\begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix}
+\begin{bmatrix}
+x_1 &amp; y_1 \\
+x_2 &amp; y_2
+\end{bmatrix} =
+\begin{bmatrix}
+a_1^* \\
+a_2^* \\
+a_3^*
+\end{bmatrix} X =
+\begin{bmatrix}
+a_1^*X \\
+a_2^*X \\
+a_3^*X
+\end{bmatrix}
+\]</span></p>
+<blockquote>
+<p>View each column in matrix on the left as a whole and view each row
+in the matrix on the right as a whole, multiplication <span
+class="math inline">\(AB\)</span> is broken down to a sum of
+<strong>rank 1 matrix</strong>.</p>
+</blockquote>
+<p><span class="math display">\[
+\begin{bmatrix}
+1 &amp; 2 \\
+3 &amp; 4 \\
+5 &amp; 6
+\end{bmatrix}
+\begin{bmatrix}
+x_1 &amp; y_1 \\
+x_2 &amp; y_2
+\end{bmatrix} =
+\begin{bmatrix}
+a_1 &amp; a2
+\end{bmatrix}
+\begin{bmatrix}
+b_1^* \\
+b_2^*
+\end{bmatrix} =
+\begin{bmatrix}
+a_1b_1^* \\
+a_2b_2^*
+\end{bmatrix} =
+\begin{bmatrix}
+1 \\
+3 \\
+5
+\end{bmatrix}
+\begin{bmatrix}
+b_{11} &amp; b_{12}
+\end{bmatrix} +
+\begin{bmatrix}
+2 \\
+4 \\
+6
+\end{bmatrix}
+\begin{bmatrix}
+b_{21} &amp; b_{22}
+\end{bmatrix}
+\]</span></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/mathmatic/" rel="tag"># mathmatic</a>
+              <a href="/tags/linear-algebra/" rel="tag"># linear algebra</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/" rel="prev" title="Python里的一些语法糖">
+                  <i class="fa fa-angle-left"></i> Python里的一些语法糖
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/" rel="next" title="dify插件简述">
+                  dify插件简述 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

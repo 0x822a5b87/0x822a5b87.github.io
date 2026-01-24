@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="简述Generics Generics 是一种基本所有现代高级强类型编程语言中都会提供的特性，各个语言的实现模式不一样，例如：  java基于类型擦除（Type Erasure）实现，简单来说就是被在运行时被实际转换为声明的类型（如果没有声明就是object）。这意味着在运行时我们已经丢失实际的类型。 cpp 基于 Template 来实现泛型，模版在编译时进行实例化。 golang 基于 类型参">
+<meta property="og:type" content="article">
+<meta property="og:title" content="golang泛型简述">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/07/26/golang%E6%B3%9B%E5%9E%8B%E7%AE%80%E8%BF%B0/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="简述Generics Generics 是一种基本所有现代高级强类型编程语言中都会提供的特性，各个语言的实现模式不一样，例如：  java基于类型擦除（Type Erasure）实现，简单来说就是被在运行时被实际转换为声明的类型（如果没有声明就是object）。这意味着在运行时我们已经丢失实际的类型。 cpp 基于 Template 来实现泛型，模版在编译时进行实例化。 golang 基于 类型参">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-07-26T02:42:22.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="EBNF">
+<meta property="article:tag" content="Genrics">
+<meta property="article:tag" content="go">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/07/26/golang%E6%B3%9B%E5%9E%8B%E7%AE%80%E8%BF%B0/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/07/26/golang%E6%B3%9B%E5%9E%8B%E7%AE%80%E8%BF%B0/","path":"2024/07/26/golang泛型简述/","title":"golang泛型简述"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>golang泛型简述 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E8%BF%B0generics"><span class="nav-number">1.</span> <span class="nav-text">简述Generics</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#type-erasure-%E7%9A%84%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">Type Erasure 的运行时类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#type-erasure-%E7%9A%84%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AE%89%E5%85%A8%E4%BF%9D%E8%AF%81"><span class="nav-number">1.2.</span> <span class="nav-text">Type Erasure
+的运行时安全保证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cpp%E7%9A%84%E6%A8%A1%E7%89%88"><span class="nav-number">1.3.</span> <span class="nav-text">CPP的模版</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#golang-generics"><span class="nav-number">2.</span> <span class="nav-text">Golang Generics</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#golang-generics-%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">golang generics 的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%A0%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">2.2.</span> <span class="nav-text">几个简单的例子</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#type-parameter-for-functions-and-types"><span class="nav-number">2.2.1.</span> <span class="nav-text">type parameter for
+functions and types</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#type-sets-defined-by-interfaces"><span class="nav-number">2.2.2.</span> <span class="nav-text">Type sets defined by
+interfaces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#type-infer"><span class="nav-number">2.2.3.</span> <span class="nav-text">type infer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#struct-with-generics"><span class="nav-number">2.2.4.</span> <span class="nav-text">struct with generics</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%8E%A5%E5%8F%A3%E4%BD%9C%E4%B8%BA%E6%B3%9B%E5%9E%8B%E7%9A%84%E8%BF%94%E5%9B%9E%E5%80%BC%E7%B1%BB%E5%9E%8B%E6%96%AD%E8%A8%80"><span class="nav-number">2.2.5.</span> <span class="nav-text">使用接口作为泛型的返回值&#x2F;类型断言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E5%BA%95%E5%B1%82%E7%B1%BB%E5%9E%8B%E5%9F%BA%E4%BA%8E-%E8%BF%9B%E8%A1%8C%E7%BA%A6%E6%9D%9F"><span class="nav-number">2.2.6.</span> <span class="nav-text">对底层类型基于 ~
+进行约束</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%9B%E5%9E%8B%E5%8F%AF%E8%83%BD%E6%B6%89%E5%8F%8A%E5%88%B0%E7%9A%84%E6%96%AD%E8%A8%80"><span class="nav-number">2.2.7.</span> <span class="nav-text">泛型可能涉及到的断言</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%B8%B8%E8%A7%81%E7%9A%84%E9%94%99%E8%AF%AF"><span class="nav-number">2.3.</span> <span class="nav-text">一些常见的错误</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#golang%E7%9B%AE%E5%89%8D%E4%B8%8D%E6%94%AF%E6%8C%81%E6%96%B9%E6%B3%95%E6%B3%9B%E5%9E%8B"><span class="nav-number">2.3.1.</span> <span class="nav-text">golang目前不支持方法泛型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cannot-use-a-type-parameter-as-rhs-in-type-declaration"><span class="nav-number">2.3.2.</span> <span class="nav-text">Cannot
+use a type parameter as RHS in type declaration</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#invalid-recursive-type"><span class="nav-number">2.3.3.</span> <span class="nav-text">Invalid recursive type</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#generics-ebnf"><span class="nav-number">2.4.</span> <span class="nav-text">generics EBNF</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#prerequisite"><span class="nav-number">2.4.1.</span> <span class="nav-text">Prerequisite</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#types"><span class="nav-number">2.4.2.</span> <span class="nav-text">Types</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#type-parameter-declarations"><span class="nav-number">2.4.3.</span> <span class="nav-text">Type
+parameter declarations</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#instantiations"><span class="nav-number">2.5.</span> <span class="nav-text">Instantiations</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">引用</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/07/26/golang%E6%B3%9B%E5%9E%8B%E7%AE%80%E8%BF%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="golang泛型简述 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          golang泛型简述
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-07-26 10:42:22" itemprop="dateCreated datePublished" datetime="2024-07-26T10:42:22+08:00">2024-07-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="简述generics">简述Generics</h2>
+<p><code>Generics</code>
+是一种基本所有现代高级强类型编程语言中都会提供的特性，各个语言的实现模式不一样，例如：</p>
+<ul>
+<li>java基于<strong>类型擦除（Type
+Erasure）</strong>实现，简单来说就是被<strong>在运行时被实际转换为声明的类型（如果没有声明就是object）</strong>。这意味着在运行时我们已经丢失实际的类型。</li>
+<li><code>cpp</code> 基于 <code>Template</code>
+来实现泛型，<strong>模版在编译时进行实例化</strong>。</li>
+<li><code>golang</code> 基于 <strong>类型参数</strong> 和
+<strong>约束</strong> 来实现泛型。</li>
+</ul>
+<p>总的来说优缺点如下表所示：</p>
+<table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 30%" />
+<col style="width: 30%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>特性/语言</th>
+<th>Java 泛型</th>
+<th>C++ 模板</th>
+<th>Go 泛型</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>实现方式</strong></td>
+<td>类型擦除（Type Erasure）</td>
+<td>编译时实例化</td>
+<td>类型参数和约束</td>
+</tr>
+<tr class="even">
+<td><strong>类型安全</strong></td>
+<td>有</td>
+<td>有</td>
+<td>有</td>
+</tr>
+<tr class="odd">
+<td><strong>编译时类型检查</strong></td>
+<td>有</td>
+<td>有</td>
+<td>有</td>
+</tr>
+<tr class="even">
+<td><strong>灵活性</strong></td>
+<td>差</td>
+<td>极高，支持模板化和模板元变成</td>
+<td>一般</td>
+</tr>
+<tr class="odd">
+<td><strong>复杂性</strong></td>
+<td>简单</td>
+<td>极复杂</td>
+<td>简单</td>
+</tr>
+<tr class="even">
+<td><strong>运行时开销</strong></td>
+<td>有</td>
+<td>无</td>
+<td>有</td>
+</tr>
+<tr class="odd">
+<td><strong>缺点</strong></td>
+<td>- 运行时无法获取泛型类型信息<br/>- 不能创建泛型数组<br/>-
+不能使用基本类型作为泛型参数<br/>-
+不能在静态上下文中使用泛型类型参数<br/>- 不能直接实例化泛型类型参数</td>
+<td>- 编译速度慢：模板实例化可能导致编译时间增加<br/>-
+代码膨胀：大量模板实例化可能导致生成的二进制代码体积增大<br/>-
+错误信息复杂：模板错误信息可能难以理解和调试</td>
+<td>- 相对较新的特性，生态系统和社区支持可能还不够成熟<br/>-
+可能引入一些性能开销，具体需要根据实际使用场景评估<br/></td>
+</tr>
+</tbody>
+</table>
+<h3 id="type-erasure-的运行时类型">Type Erasure 的运行时类型</h3>
+<p>下面的代码中，结果是 true，这是因为 String 和 Integer
+在运行时都被擦除为 Object 类型。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TypeErasureExample</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        List&lt;String&gt;  stringList  = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;String&gt;();</span><br><span class="line">        List&lt;Integer&gt; integerList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;Integer&gt;();</span><br><span class="line"></span><br><span class="line">        System.out.println(stringList.getClass() == integerList.getClass()); <span class="comment">// 输出 true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="type-erasure-的运行时安全保证">Type Erasure
+的运行时安全保证</h3>
+<p>在下面的代码中，只是会有一些 <code>WARNING</code>
+信息，然而实际代码是可以执行的，只是在运行时会抛出异常
+<code>java.lang.ClassCastException</code>，这是因为由于我们使用了
+<code>&lt;Integer&gt;</code> 作为限制，类型会被擦除为
+<code>&lt;Integer&gt;</code> 而不是上面例子中的
+<code>Object</code>。然而，运行时会对类型进行检查，并转换 String 到
+Integer。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyList</span>&lt;T&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> List&lt;T&gt; array;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">MyList</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.array = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(T t)</span> &#123;</span><br><span class="line">        array.add(t);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">IntegerList</span> <span class="keyword">extends</span> <span class="title class_">MyList</span>&lt;Integer&gt; &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(Integer integer)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>.add(integer);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">IntegerList</span> <span class="variable">integerList</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IntegerList</span>();</span><br><span class="line">        <span class="comment">// WARNING: Raw use of parameterized class &#x27;MyList&#x27;</span></span><br><span class="line">        <span class="type">MyList</span>      <span class="variable">myList</span>      <span class="operator">=</span> integerList;</span><br><span class="line">        <span class="comment">// Exception in thread &quot;main&quot; java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Integer</span></span><br><span class="line">        myList.add(<span class="string">&quot;hello&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="cpp的模版">CPP的模版</h3>
+<p>CPP的模板是在编译时，对模版代码根据用户调用进行实例化，也就是说，模版对应于java里的class，而最终会生成一个真正的函数，对应于java里的实例（instance）。灵活性非常之高，
+但是也极度复杂，写多了掉头发。</p>
+<p>PS：在我多年工作经验中，几乎没有碰见过<strong>常用</strong>cpp模版的人。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义一个模板函数，用于比较两个值并返回较大的那个</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function">T <span class="title">getMax</span><span class="params">(T a, T b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (a &gt; b) ? a : b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 如果存在如下代码，那会在编译时生成一个新的函数</span></span><br><span class="line"><span class="keyword">auto</span> m = <span class="built_in">getMax</span>(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">getMax</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (a &gt; b) ? a : b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="golang-generics">Golang Generics</h2>
+<h3 id="golang-generics-的定义">golang generics 的定义</h3>
+<blockquote>
+<p>golang 的 generics 主要包含三个特性：</p>
+<ol type="1">
+<li>Type parameters for functions and types</li>
+<li>Type sets defined by interfaces</li>
+<li>Type inference</li>
+</ol>
+<p>其中：</p>
+<ol type="1">
+<li>声明了函数，struct等golang常用特性应该如何声明，使用 generics；</li>
+<li>声明了如何在 <code>interface</code> 中定义 generics；</li>
+<li>声明了编译器如何对generics的类型进行推导；</li>
+</ol>
+<p>我们会在后面对这几个主要特性进行探讨。</p>
+</blockquote>
+<h3 id="几个简单的例子">几个简单的例子</h3>
+<h4 id="type-parameter-for-functions-and-types">type parameter for
+functions and types</h4>
+<p>下面的例子说明了如何在function中使用泛型。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Sum sums the values of map m.</span></span><br><span class="line"><span class="comment">// It supports both int64 and float64 as typed of map values</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Sum</span>[<span class="title">K</span> <span class="title">comparable</span>, <span class="title">V</span> <span class="title">int64</span> | <span class="title">float64</span>]<span class="params">(m <span class="keyword">map</span>[K]V)</span></span> V &#123;</span><br><span class="line">	<span class="keyword">var</span> s V</span><br><span class="line">	<span class="keyword">for</span> _, value := <span class="keyword">range</span> m &#123;</span><br><span class="line">		s += value</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> s</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="type-sets-defined-by-interfaces">Type sets defined by
+interfaces</h4>
+<p>下面的例子中说明了如何在interface中使用泛型</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Number declare Number interface type to use as a type constraint</span></span><br><span class="line"><span class="comment">// Essentially, you’re moving the union from the function declaration into a new type constraint.</span></span><br><span class="line"><span class="comment">// That way, when you want to constrain a type parameter to either int64 or float64,</span></span><br><span class="line"><span class="comment">// you can use this Number type constraint instead of writing out int64 | float64.</span></span><br><span class="line"><span class="keyword">type</span> Number <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="type">int64</span> | <span class="type">float64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SumNumber a function with generics with constraint that indicate map&#x27;s value has type of Number</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SumNumber</span>[<span class="title">K</span> <span class="title">comparable</span>, <span class="title">V</span> <span class="title">Number</span>]<span class="params">(data <span class="keyword">map</span>[K]V)</span></span> V &#123;</span><br><span class="line">	<span class="keyword">var</span> s V</span><br><span class="line">	<span class="keyword">for</span> _, value := <span class="keyword">range</span> data &#123;</span><br><span class="line">		s += value</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> s</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="type-infer">type infer</h4>
+<p>下面的例子中说明了如何手动的指定泛型类型以及如何使用编译器的类型推导（type
+infer）来实现函数调用。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sumInt64</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ints := <span class="keyword">map</span>[<span class="type">string</span>]<span class="type">int64</span>&#123;</span><br><span class="line">		<span class="string">&quot;one&quot;</span>: <span class="number">1</span>,</span><br><span class="line">		<span class="string">&quot;two&quot;</span>: <span class="number">2</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// we should specify type arguments before we call the generic function</span></span><br><span class="line">	ret := generics.Sum[<span class="type">string</span>, <span class="type">int64</span>](ints)</span><br><span class="line">	fmt.Println(ret)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// call the generic function without specify type argument, leave it to type infer</span></span><br><span class="line">	ret = generics.Sum(ints)</span><br><span class="line">	fmt.Println(ret)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="struct-with-generics">struct with generics</h4>
+<p>下面的例子定义了一个泛型接口，但是泛型接口的实例是非泛型的</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Id[T <span class="keyword">interface</span>&#123;&#125;] <span class="keyword">interface</span> &#123;</span><br><span class="line">	GetId() T</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> PageView <span class="keyword">struct</span> &#123;</span><br><span class="line">	IntId <span class="type">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p PageView)</span></span> GetId() <span class="type">int</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> p.IntId</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果我们想要泛型实例本身也是泛型的，那么他们本身也必须是泛型的，对于上面的例子中的
+<code>PageView</code>，他并不是一个泛型的结构体，所以他无法实现泛型的接口。如果我们需要实现一个泛型的接口，我们可以这样处理：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IntNumber <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="type">int</span> | <span class="type">int64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> GenericPageView[T IntNumber] <span class="keyword">struct</span> &#123;</span><br><span class="line">	IntNumberId T</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(g GenericPageView[T])</span></span> GetId() T &#123;</span><br><span class="line">	<span class="keyword">return</span> g.IntNumberId</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4
+id="使用接口作为泛型的返回值类型断言">使用接口作为泛型的返回值/类型断言</h4>
+<p>注意，这里必须要是使用<strong>类型断言</strong>将接口类型转换为T并返回。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Gender <span class="keyword">interface</span> &#123;</span><br><span class="line">	GetGender() <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Male <span class="keyword">struct</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m Male)</span></span> GetGender() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="string">&quot;male&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Female <span class="keyword">struct</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m Female)</span></span> GetGender() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="string">&quot;male&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewGenderValue</span>[<span class="title">T</span> <span class="title">Gender</span>]<span class="params">(gender <span class="type">string</span>)</span></span> T &#123;</span><br><span class="line">	<span class="keyword">var</span> g Gender</span><br><span class="line">	<span class="keyword">if</span> gender == <span class="string">&quot;male&quot;</span> &#123;</span><br><span class="line">		g = Male&#123;&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		g = Female&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> g.(T)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="对底层类型基于-进行约束">对底层类型基于 <code>~</code>
+进行约束</h4>
+<p><code>~</code>
+是一种类型约束符号，用于表示一组类型的集合。具体来说，<code>~int</code>
+可以用于表示所有底层类型为int的类型。下面是一个简单的例子：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> MyInt <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// IntArray 声明一个元素底层类型为int的数组</span></span><br><span class="line"><span class="keyword">type</span> IntArray[T ~<span class="type">int</span>] []T</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">FillIntArray</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> intArr IntArray[<span class="type">int</span>]</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">		intArr = <span class="built_in">append</span>(intArr, i)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">FillMyIntArray</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> intArr IntArray[MyInt]</span><br><span class="line">	<span class="keyword">var</span> i MyInt</span><br><span class="line">	<span class="keyword">for</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">		intArr = <span class="built_in">append</span>(intArr, i)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="泛型可能涉及到的断言">泛型可能涉及到的断言</h4>
+<p>参考 <a
+target="_blank" rel="noopener" href="https://stackoverflow.com/questions/71587996/cannot-use-type-assertion-on-type-parameter-value">Cannot
+use type assertion on type parameter
+value</a>，我们在使用泛型的过程中，可能会遇到一些类型无法使用<strong>类型断言</strong>的情况，可以使用如下方法绕过限制。</p>
+<blockquote>
+<p><code>x</code>'s type <code>T</code> is a type parameter, not an
+interface. It is only constrained by an interface. The Go (revised
+<code>1.18</code>) language spec explicitly states <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Type_parameter_declarations">type
+parameters</a> are not allowed in a <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Type_assertions">type assertion</a>:</p>
+<p>For an expression <code>x</code> of <strong><em>interface type, but
+not a type parameter</em></strong>, and a type <code>T</code> ... the
+notation <code>x.(T)</code> is called a type assertion.</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">GenericIsInt</span>[<span class="title">T</span> <span class="title">interface</span></span>&#123;&#125;](x T) <span class="type">bool</span> &#123;</span><br><span class="line">	_, ok := any(x).(<span class="type">int</span>)</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="一些常见的错误">一些常见的错误</h3>
+<h4 id="golang目前不支持方法泛型">golang目前不支持方法泛型</h4>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Person <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Method cannot have type parameters</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Person)</span></span> Say[T <span class="type">int</span> | <span class="type">string</span>](s T) &#123;</span><br><span class="line">    fmt.Println(s)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="cannot-use-a-type-parameter-as-rhs-in-type-declaration">Cannot
+use a type parameter as RHS in type declaration</h4>
+<p>Go
+语言不允许在类型声明中直接使用类型参数作为右侧的类型，因为在部分情况下可能会产生歧义。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Cannot use a type parameter as RHS in type declaration</span></span><br><span class="line"><span class="keyword">type</span> FloatNumber[T <span class="type">float64</span> | <span class="type">float32</span>] T</span><br></pre></td></tr></table></figure>
+<h4 id="invalid-recursive-type">Invalid recursive type</h4>
+<p>Go不允许直接嵌套自身类型的实例，这是为了防止无限递归导致的编译器和内存问题，我们可以通过指针来避免这个问题。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ERROR : Invalid recursive type &#x27;Tree&#x27;</span></span><br><span class="line"><span class="keyword">type</span> Tree[T <span class="keyword">interface</span>&#123;&#125;] <span class="keyword">struct</span> &#123;</span><br><span class="line">	Left  Tree[T]</span><br><span class="line">	Right Tree[T]</span><br><span class="line">	Val   T</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// the code below is legal</span></span><br><span class="line"><span class="keyword">type</span> Tree[T <span class="keyword">interface</span>&#123;&#125;] <span class="keyword">struct</span> &#123;</span><br><span class="line">	Left  *Tree[T]</span><br><span class="line">	Right *Tree[T]</span><br><span class="line">	Val   T</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="generics-ebnf">generics EBNF</h3>
+<p>现在我们差不多了解了golang generics的一些常用用法了，我们可以再回到go
+spec的一些EBNF来查看泛型的使用。</p>
+<h4 id="prerequisite">Prerequisite</h4>
+<p>这里，必须先解释一些重要的概念：</p>
+<ul>
+<li><code>type arguments</code>
+类型参数是用于定义泛型类型或泛型函数的占位符，通常在定义时指定。</li>
+<li><code>type parameter</code>
+类型实参是用于替换类型参数的具体类型，当使用泛型类或者泛型函数时，需要提供具体的类型作为类型实参。</li>
+</ul>
+<p>例如下面的这个例子：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义一个泛型函数，T 是 type arguments</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Print</span>[<span class="title">T</span> <span class="title">any</span>]<span class="params">(value T)</span></span> &#123;</span><br><span class="line">    fmt.Println(value)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用具体类型 int 作为 type parameter</span></span><br><span class="line">Print[<span class="type">int</span>](<span class="number">42</span>)</span><br></pre></td></tr></table></figure>
+<h4 id="types"><a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Types">Types</a></h4>
+<blockquote>
+<p>A type may be denoted by a <em>type name</em>, if it has one, which
+must be followed by <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Instantiations">type arguments</a> if the
+type is generic.</p>
+</blockquote>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">Type</span>      = <span class="title class_">TypeName</span> [ <span class="title class_">TypeArgs</span> ] | <span class="title class_">TypeLit</span> | <span class="string">&quot;(&quot;</span> <span class="title class_">Type</span> <span class="string">&quot;)&quot;</span> .</span><br><span class="line"><span class="title class_">TypeName</span>  = identifier | <span class="title class_">QualifiedIdent</span> .</span><br><span class="line"><span class="title class_">TypeArgs</span>  = <span class="string">&quot;[&quot;</span> <span class="title class_">TypeList</span> [ <span class="string">&quot;,&quot;</span> ] <span class="string">&quot;]&quot;</span> .</span><br><span class="line"><span class="title class_">TypeList</span>  = <span class="title class_">Type</span> &#123; <span class="string">&quot;,&quot;</span> <span class="title class_">Type</span> &#125; .</span><br><span class="line"><span class="title class_">TypeLit</span>   = <span class="title class_">ArrayType</span> | <span class="title class_">StructType</span> | <span class="title class_">PointerType</span> | <span class="title class_">FunctionType</span> | <span class="title class_">InterfaceType</span> |</span><br><span class="line">            <span class="title class_">SliceType</span> | <span class="title class_">MapType</span> | <span class="title class_">ChannelType</span> .</span><br></pre></td></tr></table></figure>
+<h4 id="type-parameter-declarations"><a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Type_parameter_declarations">Type
+parameter declarations</a></h4>
+<blockquote>
+<p>A type parameter list declares the <em>type parameters</em> of a
+generic function or type declaration. The type parameter list looks like
+an ordinary <a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Function_types">function
+parameter list</a> except that the type parameter names must all be
+present and the list is enclosed in square brackets rather than
+parentheses [<a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Go_1.18">Go 1.18</a>].</p>
+</blockquote>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">TypeParameters</span>  = <span class="string">&quot;[&quot;</span> <span class="title class_">TypeParamList</span> [ <span class="string">&quot;,&quot;</span> ] <span class="string">&quot;]&quot;</span> .</span><br><span class="line"><span class="title class_">TypeParamList</span>   = <span class="title class_">TypeParamDecl</span> &#123; <span class="string">&quot;,&quot;</span> <span class="title class_">TypeParamDecl</span> &#125; .</span><br><span class="line"><span class="title class_">TypeParamDecl</span>   = <span class="title class_">IdentifierList</span> <span class="title class_">TypeConstraint</span> .</span><br></pre></td></tr></table></figure>
+<h3 id="instantiations"><a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Instantiations">Instantiations</a></h3>
+<p>A generic function or type is <em>instantiated</em> by substituting
+<code>type arguments</code> for the <code>type parameters</code> [<a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Go_1.18">Go 1.18</a>]. Instantiation
+proceeds in two steps:</p>
+<ol type="1">
+<li>Each type argument is substituted for its corresponding type
+parameter in the generic declaration. This substitution happens across
+the entire function or type declaration, including the type parameter
+list itself and any types in that list.</li>
+<li>After substitution, each type argument must <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Satisfying_a_type_constraint">satisfy</a>
+the <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Type_parameter_declarations">constraint</a>
+(instantiated, if necessary) of the corresponding type parameter.
+Otherwise instantiation fails.</li>
+</ol>
+<blockquote>
+<p><strong>Instantiating a type results in a new non-generic <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Types">named type</a>; instantiating a
+function produces a new non-generic function.</strong></p>
+</blockquote>
+<p>When using a generic function, type arguments may be provided
+explicitly, or they may be partially or completely <a
+target="_blank" rel="noopener" href="https://go.dev/ref/spec#Type_inference">inferred</a> from the
+context in which the function is used. Provided that they can be
+inferred, type argument lists may be omitted entirely if the function
+is:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Calls">called</a> with ordinary
+arguments,</li>
+<li><a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Assignment_statements">assigned</a>
+to a variable with a known type</li>
+<li><a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Calls">passed as an argument</a> to
+another function, or</li>
+<li><a target="_blank" rel="noopener" href="https://go.dev/ref/spec#Return_statements">returned as a
+result</a>.</li>
+</ul>
+<p>here is a example below:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// sum returns the sum (concatenation, for strings) of its arguments.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sum</span>[<span class="title">T</span> ~<span class="title">int</span> | ~<span class="title">float64</span> | ~<span class="title">string</span>]<span class="params">(x ...T)</span></span> T &#123;</span><br><span class="line">	<span class="keyword">var</span> t T</span><br><span class="line">	<span class="keyword">for</span> _, v := <span class="keyword">range</span> x &#123;</span><br><span class="line">		t += v</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> t</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">x := sum                       <span class="comment">// illegal: the type of x is unknown</span></span><br><span class="line">intSum := sum[<span class="type">int</span>]             <span class="comment">// intSum has type func(x... int) int</span></span><br><span class="line">a := intSum(<span class="number">2</span>, <span class="number">3</span>)              <span class="comment">// a has value 5 of type int</span></span><br><span class="line">b := sum[<span class="type">float64</span>](<span class="number">2.0</span>, <span class="number">3</span>)      <span class="comment">// b has value 5.0 of type float64</span></span><br><span class="line">c := sum(b, <span class="number">-1</span>)                <span class="comment">// c has value 4.0 of type float64</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> sumFunc <span class="function"><span class="keyword">func</span><span class="params">(x... <span class="type">string</span>)</span></span> <span class="type">string</span></span><br><span class="line"><span class="keyword">var</span> f sumFunc = sum            <span class="comment">// same as var f sumFunc = sum[string]</span></span><br><span class="line">f = sum                        <span class="comment">// same as f = sum[string]</span></span><br></pre></td></tr></table></figure>
+<p>A partial type argument list cannot be empty; at least the first
+argument must be present. The list is a prefix of the full list of type
+arguments, leaving the remaining arguments to be inferred. Loosely
+speaking, type arguments may be omitted from "right to left".</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">apply</span>[<span class="title">S</span> ~[]<span class="title">E</span>, <span class="title">E</span> <span class="title">any</span>]<span class="params">(s S, f <span class="keyword">func</span>(E)</span></span> E) S &#123; … &#125;</span><br><span class="line"></span><br><span class="line">f0 := apply[]                  <span class="comment">// illegal: type argument list cannot be empty</span></span><br><span class="line">f1 := apply[[]<span class="type">int</span>]             <span class="comment">// type argument for S explicitly provided, type argument for E inferred</span></span><br><span class="line">f2 := apply[[]<span class="type">string</span>, <span class="type">string</span>]  <span class="comment">// both type arguments explicitly provided</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> bytes []<span class="type">byte</span></span><br><span class="line">r := apply(bytes, <span class="function"><span class="keyword">func</span><span class="params">(<span class="type">byte</span>)</span></span> <span class="type">byte</span> &#123; … &#125;)  <span class="comment">// both type arguments inferred from the function arguments</span></span><br></pre></td></tr></table></figure>
+<h2 id="引用">引用</h2>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://www.liwenzhou.com/posts/Go/generics/#c-0-2-0">泛型</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://polarisxu.studygolang.com/posts/go/generics/gophercon2021-generics/">跟着
+Go 作者学泛型</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.baeldung.com/java-type-erasure">Type Erasure in
+Java Explained</a></li>
+<li><a target="_blank" rel="noopener" href="https://go.dev/doc/tutorial/generics">Tutorial: Getting
+started with generics</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://stackoverflow.com/questions/71587996/cannot-use-type-assertion-on-type-parameter-value">Cannot
+use type assertion on type parameter value</a></li>
+<li><a target="_blank" rel="noopener" href="https://go.dev/ref/spec">The Go Programming Language
+Specification[Language version go1.22 (Feb 6, 2024)]</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/Genrics/" rel="tag"># Genrics</a>
+              <a href="/tags/EBNF/" rel="tag"># EBNF</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/07/26/calcite%E5%85%A5%E9%97%A8-RBO%E6%A8%A1%E5%9E%8B%E5%92%8CCBO%E6%A8%A1%E5%9E%8B/" rel="prev" title="calcite入门--RBO模型和CBO模型">
+                  <i class="fa fa-angle-left"></i> calcite入门--RBO模型和CBO模型
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/07/26/%E5%85%B3%E4%BA%8Egolang%E7%9A%84%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC%E3%80%81%E9%9A%90%E5%BC%8F%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" rel="next" title="关于golang的类型推导、隐式类型转换的一些思考">
+                  关于golang的类型推导、隐式类型转换的一些思考 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

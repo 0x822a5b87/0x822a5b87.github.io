@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="词根&#x2F;词缀   前缀和词根共同决定单词的意思； 词性由后缀决定；   描述 flowchart TD  subgraph word-form     direction TB     col:::prefix     labor:::front     ate:::suffix end  subgraph form     direction TB     前缀     词根     后缀 end">
+<meta property="og:type" content="article">
+<meta property="og:title" content="词根">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/10/30/%E8%AF%8D%E6%A0%B9/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="词根&#x2F;词缀   前缀和词根共同决定单词的意思； 词性由后缀决定；   描述 flowchart TD  subgraph word-form     direction TB     col:::prefix     labor:::front     ate:::suffix end  subgraph form     direction TB     前缀     词根     后缀 end">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-30T02:07:57.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="English">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/10/30/%E8%AF%8D%E6%A0%B9/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/10/30/%E8%AF%8D%E6%A0%B9/","path":"2024/10/30/词根/","title":"词根"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>词根 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%8D%E6%A0%B9%E8%AF%8D%E7%BC%80"><span class="nav-number">1.</span> <span class="nav-text">词根&#x2F;词缀</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E7%BC%80"><span class="nav-number">1.2.</span> <span class="nav-text">前缀</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BC%80"><span class="nav-number">1.3.</span> <span class="nav-text">后缀</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%8D%E6%A0%B9"><span class="nav-number">1.4.</span> <span class="nav-text">词根</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/10/30/%E8%AF%8D%E6%A0%B9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="词根 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          词根
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-10-30 10:07:57" itemprop="dateCreated datePublished" datetime="2024-10-30T10:07:57+08:00">2024-10-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="词根词缀">词根/词缀</h1>
+<blockquote>
+<ol type="1">
+<li>前缀和词根共同决定单词的意思；</li>
+<li>词性由后缀决定；</li>
+</ol>
+</blockquote>
+<h2 id="描述">描述</h2>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph word-form
+    direction TB
+    col:::prefix
+    labor:::front
+    ate:::suffix
+end
+
+subgraph form
+    direction TB
+    前缀
+    词根
+    后缀
+end
+
+subgraph descption
+    direction TB
+    词义
+    词性
+end
+
+subgraph word-explanation
+    direction TB
+    一起
+    劳动
+    动词
+end
+
+前缀 --&gt; col
+词根 --&gt; labor
+后缀 --&gt; ate
+
+col --&gt; 一起:::prefix
+labor --&gt; 劳动:::front
+ate --&gt; 动词:::suffix
+
+词义 --&gt; 前缀
+词性 --&gt; 后缀
+
+
+word-explanation --&gt; collaborate:::back
+
+classDef back fill:#969,stroke:#333;
+classDef front 1,fill:#FFCCCC,stroke:#333;
+classDef prefix fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef suffix fill:#ff6347,stroke:#333,stroke-width:4px;</code></pre>
+<h2 id="前缀">前缀</h2>
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#bbb;border-spacing:0;}
+.tg td{background-color:#E0FFEB;border-color:#bbb;border-style:solid;border-width:1px;color:#594F4F;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#9DE0AD;border-color:#bbb;border-style:solid;border-width:1px;color:#493F3F;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-9wq8{border-color:inherit;text-align:center;vertical-align:middle}
+.tg .tg-5z8n{background-color:#efefef;border-color:inherit;color:#cb0000;font-weight:bold;text-align:center;vertical-align:middle}
+.tg .tg-040u{background-color:#9aff99;border-color:#efefef;color:#fd6864;font-family:Impact, Charcoal, sans-serif !important;
+  font-size:18px;font-weight:bold;text-align:center;vertical-align:middle}
+.tg .tg-sirz{background-color:#9aff99;border-color:#efefef;color:#fd6864;font-family:Impact, Charcoal, sans-serif !important;
+  font-size:18px;text-align:center;vertical-align:middle}
+.tg .tg-h0n0{background-color:#efefef;border-color:inherit;color:#cb0000;text-align:center;vertical-align:middle}
+.tg .tg-nref{background-color:#C2FFD6;border-color:inherit;text-align:center;vertical-align:middle}
+.tg .tg-oly2{background-color:#efefef;border-color:inherit;color:#cb0000;font-weight:bold;text-align:center;vertical-align:middle}
+.tg .tg-04y1{background-color:#efefef;border-color:inherit;color:#cb0000;text-align:center;vertical-align:middle}
+</style>
+<table class="tg" style="undefined;table-layout: fixed; width: 864px">
+<colgroup>
+<col style="width: 141px">
+<col style="width: 98px">
+<col style="width: 151px">
+<col style="width: 161px">
+<col style="width: 216px">
+<col style="width: 97px">
+</colgroup>
+<thead>
+<tr>
+<th class="tg-040u">
+前缀
+</th>
+<th class="tg-040u">
+含义
+</th>
+<th class="tg-040u">
+示例
+</th>
+<th class="tg-040u">
+词义
+</th>
+<th class="tg-sirz">
+词根解释
+</th>
+<th class="tg-sirz">
+词根
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tg-h0n0" rowspan="3">
+a/in/im
+</td>
+<td class="tg-nref" rowspan="3">
+无/不/非
+</td>
+<td class="tg-nref">
+apathy
+</td>
+<td class="tg-nref">
+冷漠
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">希腊语
+"pathos"（感受、情感、痛苦）</span>
+</td>
+<td class="tg-nref">
+pathy
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+impossible
+</td>
+<td class="tg-9wq8">
+不可能
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+inactive
+</td>
+<td class="tg-nref">
+不活动的
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-oly2" rowspan="5">
+e/ex/ef
+</td>
+<td class="tg-9wq8" rowspan="5">
+出/外/向外
+</td>
+<td class="tg-9wq8">
+eject
+</td>
+<td class="tg-9wq8">
+喷射
+</td>
+<td class="tg-9wq8">
+投掷/扔
+</td>
+<td class="tg-9wq8">
+ject
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+exhale
+</td>
+<td class="tg-nref">
+呼气
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+excite
+</td>
+<td class="tg-9wq8">
+激发/使兴奋
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"cite"
+来自拉丁语中的 "citare"，意为 "引用"、"提及"</span>
+</td>
+<td class="tg-9wq8">
+cite
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+effect
+</td>
+<td class="tg-nref">
+效果
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"fect"
+表示 "做"、"行动"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+efflux
+</td>
+<td class="tg-9wq8">
+流出
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"flux"
+表示 "流动"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-5z8n" rowspan="3">
+in/im
+</td>
+<td class="tg-nref" rowspan="3">
+入
+</td>
+<td class="tg-nref">
+inject
+</td>
+<td class="tg-nref">
+注射
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+ingress
+</td>
+<td class="tg-9wq8">
+进入
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+import
+</td>
+<td class="tg-nref">
+进口
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-oly2" rowspan="5">
+pro/pre
+</td>
+<td class="tg-9wq8" rowspan="2">
+动态-向前-pro
+</td>
+<td class="tg-9wq8">
+progress
+</td>
+<td class="tg-9wq8">
+进步
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"gress"
+来自拉丁语中的 "gradior"，意为 "走"、"前进"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+propel
+</td>
+<td class="tg-nref">
+促进
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"pel"
+来自拉丁语中的 "pellere"，意为 "推动"、"驱使"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8" rowspan="3">
+静态-向前-pre
+</td>
+<td class="tg-9wq8">
+prepare
+</td>
+<td class="tg-9wq8">
+准备
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"pare"
+表示 "准备" 或 "整理"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+predict
+</td>
+<td class="tg-nref">
+预测
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">dict"
+表示 "说" 或 "声明"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span style="font-weight:400;font-style:normal">Preeminence</span>
+</td>
+<td class="tg-9wq8">
+<span style="font-weight:400;font-style:normal">卓越</span>
+</td>
+<td class="tg-9wq8">
+<span style="font-weight:400;font-style:normal">词根 "eminent" 表示
+"卓越" 或 "杰出"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+re
+</td>
+<td class="tg-nref" rowspan="2">
+回/重新/再次
+</td>
+<td class="tg-nref">
+rebuild
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">重建</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">rejuvenate</span>
+</td>
+<td class="tg-9wq8">
+恢复活力
+</td>
+<td class="tg-9wq8">
+"juven" 表示年轻, "ate" 表示动词
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+co
+</td>
+<td class="tg-nref" rowspan="10">
+共同/一起/共享
+</td>
+<td class="tg-nref">
+cooperate
+</td>
+<td class="tg-nref">
+合作
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+coalesce
+</td>
+<td class="tg-9wq8">
+合并
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">词根
+"alesc" 表示 "增长" 或 "融合"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+con
+</td>
+<td class="tg-nref">
+<span style="font-weight:400;font-style:normal">connect</span>
+</td>
+<td class="tg-nref">
+<span style="font-weight:400;font-style:normal">连接</span>
+</td>
+<td class="tg-nref">
+<span style="font-weight:400;font-style:normal">词根 "nect" 表示 "连接"
+或 "结合"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Conundrum</span>
+</td>
+<td class="tg-9wq8">
+难题
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"undrum"
+源自拉丁语 "quandrum"，意为 "困惑" 或 "难题"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+com
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Community</span>
+</td>
+<td class="tg-nref">
+社区
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">词根
+"mun" 源自拉丁语 "munus"，意为 "职责" 或 "义务"或“保护”</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Commensurate</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">相称的</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"mensur"
+源自拉丁语 "mensura"，意为 "测量" 或 "度量"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+col<br>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Collect</span>
+</td>
+<td class="tg-nref">
+收集
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"lect"
+表示 "选择" 或 "挑选"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Collusion</span>
+</td>
+<td class="tg-9wq8">
+勾结
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"lus" 或
+"lud" 表示 "玩耍" 或 "欺骗"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+cor
+</td>
+<td class="tg-nref">
+Core
+</td>
+<td class="tg-nref">
+核心
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Corroborate</span>
+</td>
+<td class="tg-9wq8">
+共同加强，证实
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">词根
+"robor" 表示 "力量" 或 "坚固"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+di
+</td>
+<td class="tg-nref" rowspan="6">
+分散/散开
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Divide</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">分割</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"vid"
+表示 "看" 或 "观察"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Diffuse</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">扩散</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"fus"
+表示 "融化" 或 "流动"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+dis
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Dislike</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">不喜欢</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Disseminate</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">传播</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"semin"
+表示 "种子" 或 "播种"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+dif
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Different</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">不同的</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Differentiate</span>
+</td>
+<td class="tg-9wq8">
+区分
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+super
+</td>
+<td class="tg-nref" rowspan="6">
+在...之上/超过
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Supermarket</span>
+</td>
+<td class="tg-nref">
+超市
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Superfluous</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">多余的</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"flu" 或
+"flux" 表示 "流动"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+over
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Overcome</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">克服</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Overwhelm</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">压倒，表示被某种情感、感觉或压力淹没或压倒</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"whelm"
+表示 "淹没" 或 "压倒"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+sur
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Surpass</span>
+</td>
+<td class="tg-nref">
+超越
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Surreal</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">超现实的</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"real"
+表示 "现实"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+under
+</td>
+<td class="tg-nref" rowspan="2">
+向下/较低/不足/不完全
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Underestimate</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">低估</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"estimate"
+表示 "估计"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+Undermine
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">削弱</span>
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"mine"
+表示 "矿井" 或 "挖掘"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+de
+</td>
+<td class="tg-nref" rowspan="2">
+向下/分离/完全/彻底
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Decide</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">决定</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"cide"
+源自拉丁语 "caedere"，意为 "切割" 或 "杀死"，但是在这里表示</span>
+"决定" 或 "解决"
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Defend</span>
+</td>
+<td class="tg-9wq8">
+防御
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+sub
+</td>
+<td class="tg-nref" rowspan="2">
+在...之下/次级的/附属的/辅助的
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Submarine</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">潜水艇</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"marine"
+表示 "海洋"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Subtle</span>
+</td>
+<td class="tg-9wq8">
+微妙的
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"tle"
+源自拉丁语 "tulus"，意为 "细小" 或 "微妙"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+trans
+</td>
+<td class="tg-nref" rowspan="2">
+转移/转变
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Transport</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"port"
+表示 "携带" 或 "运输"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Transform</span>
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"form"
+表示 "形状" 或 "形式"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0" rowspan="2">
+inter
+</td>
+<td class="tg-nref" rowspan="2">
+相互之间
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Interact</span>
+</td>
+<td class="tg-nref">
+互动
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"act"
+表示 "行动" 或 "表演"</span>
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Intercontinental</span>
+</td>
+<td class="tg-9wq8">
+洲际的
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-h0n0">
+a+双写辅音字母
+</td>
+<td class="tg-nref">
+表示强调，无实际意义
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-04y1" rowspan="2">
+un/in/im/dis/ab/il
+</td>
+<td class="tg-9wq8" rowspan="2">
+否定前缀
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Unhappy</span>
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Unprecedented</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">前所未有的</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+<tr>
+<td class="tg-04y1" rowspan="2">
+em
+</td>
+<td class="tg-9wq8" rowspan="2">
+进入/使进入/使产生
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Embrace</span>
+</td>
+<td class="tg-9wq8">
+拥抱/接受
+</td>
+<td class="tg-9wq8">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">"brace"，表示
+"臂膀" 或 "抱"</span>
+</td>
+<td class="tg-9wq8">
+</td>
+</tr>
+<tr>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">Empower</span>
+</td>
+<td class="tg-nref">
+<span
+style="font-weight:400;font-style:normal;text-decoration:none">授权</span>
+</td>
+<td class="tg-nref">
+</td>
+<td class="tg-nref">
+</td>
+</tr>
+</tbody>
+</table>
+<h2 id="后缀">后缀</h2>
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#aaa;border-spacing:0;}
+.tg td{background-color:#fff;border-color:#aaa;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f38630;border-color:#aaa;border-style:solid;border-width:1px;color:#fff;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-xyoc{font-family:"Arial Black", Gadget, sans-serif !important;font-size:18px;font-weight:bold;text-align:center;
+  vertical-align:middle}
+.tg .tg-dqta{font-family:"Arial Black", Gadget, sans-serif !important;font-weight:bold;text-align:center;vertical-align:middle}
+.tg .tg-r28n{font-size:18px;text-align:center;vertical-align:middle}
+.tg .tg-hhkl{background-color:#FCFBE3;font-family:"Arial Black", Gadget, sans-serif !important;font-weight:bold;text-align:center;
+  vertical-align:middle}
+.tg .tg-pnt8{background-color:#FCFBE3;text-align:center;vertical-align:middle}
+.tg .tg-nrix{text-align:center;vertical-align:middle}
+</style>
+<table class="tg">
+<thead>
+<tr>
+<th class="tg-xyoc">
+词性
+</th>
+<th class="tg-r28n">
+后缀
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tg-hhkl" rowspan="3">
+动词
+</td>
+<td class="tg-pnt8">
+ize
+</td>
+</tr>
+<tr>
+<td class="tg-nrix">
+ify
+</td>
+</tr>
+<tr>
+<td class="tg-pnt8">
+ish
+</td>
+</tr>
+<tr>
+<td class="tg-dqta" rowspan="6">
+名词
+</td>
+<td class="tg-nrix">
+ion/tion/ation
+</td>
+</tr>
+<tr>
+<td class="tg-pnt8">
+ness
+</td>
+</tr>
+<tr>
+<td class="tg-nrix">
+ity/aity
+</td>
+</tr>
+<tr>
+<td class="tg-pnt8">
+<span style="font-weight:400;font-style:normal">ment</span>
+</td>
+</tr>
+<tr>
+<td class="tg-nrix">
+ence/ance
+</td>
+</tr>
+<tr>
+<td class="tg-pnt8">
+ism
+</td>
+</tr>
+<tr>
+<td class="tg-dqta">
+形容词
+</td>
+<td class="tg-nrix">
+ent/ful/ous/al/ive/ible/able/ant
+</td>
+</tr>
+</tbody>
+</table>
+<h2 id="词根">词根</h2>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/English/" rel="tag"># English</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/10/28/Draw-Diagrams-in-Markdown/" rel="prev" title="Draw Diagrams in Markdown">
+                  <i class="fa fa-angle-left"></i> Draw Diagrams in Markdown
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/10/30/%E5%B8%B8%E7%94%A8%E8%AF%8D%E6%A0%B9/" rel="next" title="常用词根">
+                  常用词根 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

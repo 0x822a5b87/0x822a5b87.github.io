@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="插件逻辑 在 dify 的插件管理中，整个体系逻辑比较混乱，这里使用该文本记录一下 dify 的插件管理逻辑。 插件概述 一个插件以及插件对应的工具的组成部分如下图所示： --- title: 插件 --- flowchart LR  plugin_id(&quot;plugin_id&quot;):::green organization1(&quot;organization&quot;)::">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dify插件简述">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="插件逻辑 在 dify 的插件管理中，整个体系逻辑比较混乱，这里使用该文本记录一下 dify 的插件管理逻辑。 插件概述 一个插件以及插件对应的工具的组成部分如下图所示： --- title: 插件 --- flowchart LR  plugin_id(&quot;plugin_id&quot;):::green organization1(&quot;organization&quot;)::">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-07-23T04:43:02.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/","path":"2025/07/23/dify插件简述/","title":"dify插件简述"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>dify插件简述 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.</span> <span class="nav-text">插件逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">插件概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E5%92%8C%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.</span> <span class="nav-text">插件和工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E5%92%8C%E5%B7%A5%E5%85%B7%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.3.</span> <span class="nav-text">插件和工具之间的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.3.1.</span> <span class="nav-text">数据实例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#plugin_declarations"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">plugin_declarations</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#plugin_installations"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">plugin_installations</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tool_installations"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">tool_installations</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E5%9C%A8%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E7%9A%84%E7%AE%A1%E7%90%86%E9%80%BB%E8%BE%91"><span class="nav-number">1.4.</span> <span class="nav-text">插件在数据库中的管理逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#plugin_declarationsplugins"><span class="nav-number">1.4.1.</span> <span class="nav-text">plugin_declarations&#x2F;plugins</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85"><span class="nav-number">1.4.2.</span> <span class="nav-text">插件安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E5%92%8C%E5%B7%A5%E5%85%B7%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB"><span class="nav-number">1.4.3.</span> <span class="nav-text">插件和工具有什么区别？</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="dify插件简述 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          dify插件简述
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-07-23 12:43:02" itemprop="dateCreated datePublished" datetime="2025-07-23T12:43:02+08:00">2025-07-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="插件逻辑">插件逻辑</h1>
+<p>在 <code>dify</code>
+的插件管理中，整个体系逻辑比较混乱，这里使用该文本记录一下
+<code>dify</code> 的插件管理逻辑。</p>
+<h2 id="插件概述">插件概述</h2>
+<p>一个插件以及插件对应的工具的组成部分如下图所示：</p>
+<pre><code class="highlight mermaid">---
+title: 插件
+---
+flowchart LR
+
+plugin_id(&quot;plugin_id&quot;):::green
+organization1(&quot;organization&quot;):::animate
+plugin_name1(&quot;plugin_name&quot;):::animate
+slash1(&quot;/&quot;):::error
+
+plugin_id --&gt; organization1 --&gt; slash1 --&gt; plugin_name1
+
+
+plugin_unique_identifier(&quot;plugin_unique_identifier&quot;):::green
+
+organization2(&quot;organization&quot;):::animate
+slash2(&quot;/&quot;):::error
+symbol2(&quot;:&quot;):::error
+at2(&quot;@&quot;):::error
+plugin_name2(&quot;plugin_name&quot;):::animate
+version1(&quot;version&quot;):::animate
+checksum1(&quot;checksum&quot;):::animate
+
+plugin_unique_identifier --&gt; organization2 --&gt; slash2 --&gt; plugin_name2 --&gt; symbol2 --&gt; version1 --&gt; at2 --&gt; checksum1
+
+provider(&quot;full_provider&quot;):::green
+
+organization3(&quot;organization&quot;):::animate
+slash3_1(&quot;/&quot;):::error
+plugin_name3(&quot;plugin_name&quot;):::animate
+slash3_2(&quot;/&quot;):::error
+provider_name3(&quot;provider&quot;):::animate
+
+provider --&gt; organization3 --&gt; slash3_1 --&gt; plugin_name3 --&gt; slash3_2 --&gt; provider_name3
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h2 id="插件和工具">插件和工具</h2>
+<p>在 <code>dify_plugin</code> 表中，存在三个表和工具相关：</p>
+<ol type="1">
+<li><code>plugin_declarations</code>
+是最上层的表，用于声明工具的元数据信息。例如
+plugin_id，插件的元数据信息；</li>
+<li><code>plugin_installations</code> 和 <code>tenant</code>
+相关，用户在安装插件后会在该表插入一条记录，该表包含了具体的插件版本号。</li>
+<li><code>tool_installations</code> 工具安装，在安装插件后，如果
+<code>plugin_declarations</code>.<code>declaration</code>
+中包含了工具的声明，那么就会在该表插入一条记录；</li>
+</ol>
+<h2 id="插件和工具之间的关系">插件和工具之间的关系</h2>
+<blockquote>
+<p>下面的图，列出来了三个表之间字段的对应关系，大家会发现，这里有两个字段并没有列出来他们的对应关系。
+而在我们的实际生产环境中，<code>provider</code> 字段是从
+<code>declaration</code> 这个字段中解析出来的。
+具体的解析逻辑可以看后面的详细说明。</p>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title: 表之间的关系
+---
+flowchart LR
+
+subgraph plugin_declarations
+	direction LR
+	1_plugin_id(&quot;plugin_id&quot;):::green
+	1_plugin_unique_identifier(&quot;plugin_unique_identifier&quot;):::pink
+	1_declaration(&quot;declaration&quot;)
+end
+
+subgraph plugin_installations
+	direction LR
+	2_tenant_id(&quot;tenant_id&quot;):::purple
+	2_plugin_id(&quot;plugin_id&quot;):::green
+	2_plugin_unique_identifier(&quot;plugin_unique_identifier&quot;):::pink
+end
+
+subgraph tool_installations
+	direction LR
+	3_tenant_id(&quot;tenant_id&quot;):::purple
+	3_plugin_id(&quot;plugin_id&quot;):::green
+	3_provider(&quot;provider&quot;)
+	3_plugin_unique_identifier(&quot;plugin_unique_identifier&quot;):::pink
+end
+
+1_plugin_id --&gt; 2_plugin_id --&gt; 3_plugin_id
+1_plugin_unique_identifier --&gt; 2_plugin_unique_identifier --&gt; 3_plugin_unique_identifier
+2_tenant_id --&gt; 3_tenant_id
+
+1_declaration -.-&gt;|由json中的内容解析得到| 3_provider
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h3 id="数据实例">数据实例</h3>
+<h4 id="plugin_declarations">plugin_declarations</h4>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> plugin_id,</span><br><span class="line">       plugin_unique_identifier,</span><br><span class="line">       declaration</span><br><span class="line"><span class="keyword">FROM</span> plugin_declarations</span><br><span class="line"><span class="keyword">WHERE</span> plugin_id <span class="operator">=</span> <span class="string">&#x27;hjlarry/database&#x27;</span>\G</span><br></pre></td></tr></table></figure>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">plugin_id</span>                | hjlarry/database</span><br><span class="line"><span class="attribute">plugin_unique_identifier</span> | hjlarry/database:<span class="number">0</span>.<span class="number">0</span>.<span class="number">6</span>@<span class="number">2</span>f547ea4b80c5bbec2b953843a37de9aff7427d276b763a8e237c6b2188359b3</span><br><span class="line"><span class="attribute">declaration</span>              | /*声明内容省略*/</span><br></pre></td></tr></table></figure>
+<h4 id="plugin_installations">plugin_installations</h4>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> tenant_id,</span><br><span class="line">       plugin_id,</span><br><span class="line">       plugin_unique_identifier,</span><br><span class="line">       SOURCE,</span><br><span class="line">       meta</span><br><span class="line"><span class="keyword">FROM</span> plugin_installations</span><br><span class="line"><span class="keyword">WHERE</span> plugin_id <span class="operator">=</span> <span class="string">&#x27;hjlarry/database&#x27;</span> LIMIT <span class="number">1</span>\G</span><br></pre></td></tr></table></figure>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">tenant_id</span>                | ca6ac437-b0bd-<span class="number">4</span>b18-<span class="number">88</span>b9-c8717681ea81</span><br><span class="line"><span class="attribute">plugin_id</span>                | hjlarry/database</span><br><span class="line"><span class="attribute">plugin_unique_identifier</span> | hjlarry/database:<span class="number">0</span>.<span class="number">0</span>.<span class="number">6</span>@<span class="number">2</span>f547ea4b80c5bbec2b953843a37de9aff7427d276b763a8e237c6b2188359b3</span><br><span class="line"><span class="attribute">source</span>                   | marketplace</span><br><span class="line"><span class="attribute">meta</span>                     | &#123;<span class="string">&quot;plugin_unique_identifier&quot;</span>:<span class="string">&quot;hjlarry/database:0.0.6@2f547ea4b80c5bbec2b953843a37de9aff7427d276b763a8e237c6b2188359b3&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="tool_installations">tool_installations</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT tenant_id,</span><br><span class="line">       provider,</span><br><span class="line">       plugin_unique_identifier,</span><br><span class="line">       plugin_id</span><br><span class="line">FROM tool_installations</span><br><span class="line">WHERE plugin_id = <span class="string">&#x27;hjlarry/database&#x27;</span> LIMIT 1\G</span><br></pre></td></tr></table></figure>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">tenant_id</span>                | ca6ac437-b0bd-<span class="number">4</span>b18-<span class="number">88</span>b9-c8717681ea81</span><br><span class="line"><span class="attribute">provider</span>                 | database</span><br><span class="line"><span class="attribute">plugin_unique_identifier</span> | hjlarry/database:<span class="number">0</span>.<span class="number">0</span>.<span class="number">6</span>@<span class="number">2</span>f547ea4b80c5bbec2b953843a37de9aff7427d276b763a8e237c6b2188359b3</span><br><span class="line"><span class="attribute">plugin_id</span>                | hjlarry/database</span><br></pre></td></tr></table></figure>
+<h2 id="插件在数据库中的管理逻辑">插件在数据库中的管理逻辑</h2>
+<p>插件在数据库中，会涉及到以下几个重要的表：</p>
+<h3 id="plugin_declarationsplugins">plugin_declarations/plugins</h3>
+<p>在 <code>plugin_declarations</code> 表和 <code>plugins</code>
+中，声明了插件的相关信息，其中最主要的字段有三个：</p>
+<ol type="1">
+<li><code>plugin_unique_identifier</code>
+插件的唯一ID，这个ID存在唯一索引不能重复；</li>
+<li><code>plugin_id</code>
+是标志插件的类型，但是他只是标志了插件的类型，实际上可以同时存在多个不同的版本；</li>
+<li><code>declaration</code> 声明了插件的元数据信息。例如，他是一个
+<code>model</code> 还是 <code>tools</code> 等。</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> public.plugin_declarations (</span><br><span class="line">    id uuid <span class="keyword">DEFAULT</span> public.uuid_generate_v4() <span class="keyword">NOT NULL</span>,</span><br><span class="line">    created_at <span class="type">timestamp</span> <span class="keyword">with</span> <span class="type">time</span> zone,</span><br><span class="line">    updated_at <span class="type">timestamp</span> <span class="keyword">with</span> <span class="type">time</span> zone,</span><br><span class="line">    plugin_unique_identifier <span class="type">character</span> <span class="type">varying</span>(<span class="number">255</span>),</span><br><span class="line">    plugin_id <span class="type">character</span> <span class="type">varying</span>(<span class="number">255</span>),</span><br><span class="line">    declaration text</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">ALTER TABLE</span> <span class="keyword">ONLY</span> public.plugin_declarations</span><br><span class="line">    <span class="keyword">ADD CONSTRAINT</span> plugin_declarations_pkey <span class="keyword">PRIMARY KEY</span> (id);</span><br><span class="line"></span><br><span class="line"><span class="keyword">ALTER TABLE</span> <span class="keyword">ONLY</span> public.plugin_declarations</span><br><span class="line">    <span class="keyword">ADD CONSTRAINT</span> uni_plugin_declarations_plugin_unique_identifier <span class="keyword">UNIQUE</span> (plugin_unique_identifier);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> INDEX idx_plugin_declarations_plugin_id <span class="keyword">ON</span> public.plugin_declarations <span class="keyword">USING</span> btree (plugin_id);</span><br></pre></td></tr></table></figure>
+<p>例如，对于 <code>langgenius/dingtalk</code> 这个插件的
+<code>0.0.4</code> 版本，他的数据如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> plugin_declarations</span><br><span class="line"><span class="keyword">WHERE</span> plugin_unique_identifier <span class="operator">=</span> <span class="string">&#x27;langgenius/dingtalk:0.0.4@fe34a564a52c3a295e60ed97280ef47abd459d96310239cf9df5f04a5b1681b3&#x27;</span>\G</span><br></pre></td></tr></table></figure>
+<figure class="highlight 1c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">-</span>[ RECORD <span class="number">1</span> ]<span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span><span class="punctuation">-</span></span><br><span class="line">id                       <span class="string">| ca7ac146-7eec-4194-9597-ffd0097b382d</span></span><br><span class="line">created_at               <span class="string">| 2025-03-25 20:30:53.741513+08</span></span><br><span class="line">updated_at               <span class="string">| 2025-03-25 20:30:53.741513+08</span></span><br><span class="line">plugin_unique_identifier <span class="string">| langgenius/dingtalk:0.0.4@fe34a564a52c3a295e60ed97280ef47abd459d96310239cf9df5f04a5b1681b3</span></span><br><span class="line">plugin_id                <span class="string">| langgenius/dingtalk</span></span><br><span class="line">declaration              <span class="string">| &#123;&quot;</span>version<span class="string">&quot;:&quot;</span><span class="number">0.0</span>.<span class="number">4</span><span class="string">&quot;,&quot;</span>type<span class="string">&quot;:&quot;</span>plugin<span class="string">&quot;,&quot;</span>author<span class="string">&quot;:&quot;</span>langgenius<span class="string">&quot;,&quot;</span>name<span class="string">&quot;:&quot;</span>dingtalk<span class="string">&quot;,&quot;</span>label<span class="string">&quot;:&#123;&quot;</span>en_US<span class="string">&quot;:&quot;</span>DingTalk<span class="string">&quot;,&quot;</span>zh_Hans<span class="string">&quot;:&quot;</span>钉钉<span class="string">&quot;,&quot;</span>pt_BR<span class="string">&quot;:&quot;</span>DingTalk<span class="string">&quot;&#125;,&quot;</span>description<span class="string">&quot;:&#123;&quot;</span>en_US<span class="string">&quot;:&quot;</span>DingTalk group robot<span class="string">&quot;,&quot;</span>zh_...</span><br></pre></td></tr></table></figure>
+<p>在这里，我们需要仔细的查看一下 <code>declaration</code>
+的内容，我保留了主干内容后如下：</p>
+<p>由于这是一个工具类型的插件，所以从声明中我们可以看得出来，他在配置文件中声明了他在这个工具中所包含的
+<code>action</code>，并且指明了每个 <code>action</code>
+的输入和输出。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.0.4&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;plugin&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;author&quot;</span><span class="punctuation">:</span> <span class="string">&quot;langgenius&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;dingtalk&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;resource&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;plugins&quot;</span><span class="punctuation">:</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;tools&quot;</span><span class="punctuation">:</span></span><br><span class="line">        <span class="punctuation">[</span></span><br><span class="line">            <span class="string">&quot;provider/dingtalk.yaml&quot;</span></span><br><span class="line">        <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tool&quot;</span><span class="punctuation">:</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;identity&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;credentials_schema&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;tools&quot;</span><span class="punctuation">:</span></span><br><span class="line">        <span class="punctuation">[</span></span><br><span class="line">            <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;identity&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;parameters&quot;</span><span class="punctuation">:</span></span><br><span class="line">                <span class="punctuation">[</span></span><br><span class="line">                    <span class="punctuation">&#123;</span></span><br><span class="line">                        <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;access_token&quot;</span><span class="punctuation">,</span></span><br><span class="line">                        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;secret-input&quot;</span><span class="punctuation">,</span></span><br><span class="line">                        <span class="attr">&quot;required&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">                    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">                  	<span class="comment">// ...</span></span><br><span class="line">                <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;output_schema&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;has_runtime_parameters&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">]</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>整体的结构如下：</p>
+<pre><code class="highlight mermaid">---
+title: 插件配置
+---
+flowchart LR
+
+declaration(&quot;declaration&quot;):::purple
+
+tool(&quot;tool&quot;):::purple
+tools(&quot;tools&quot;):::purple
+
+subgraph tool_array
+	tool_01(&quot;tool_1&quot;):::pink
+	tool_02(&quot;tool_2&quot;):::pink
+	tool_03(&quot;...&quot;):::pink
+	tool_04(&quot;tool_n&quot;):::pink
+end
+
+subgraph tool_info
+	direction LR
+	identity(&quot;identity&quot;):::green
+	description(&quot;description&quot;):::green
+	parameters(&quot;parameters&quot;):::pink
+	output_schema(&quot;output_schema&quot;):::green
+	has_runtime_parameters(&quot;has_runtime_parameters&quot;):::green
+end
+
+subgraph parameter_info_list
+	direction LR
+    param_01(&quot;param_1&quot;):::green
+    param_02(&quot;param_2&quot;):::green
+    param_03(&quot;...&quot;):::green
+    param_04(&quot;param_N&quot;):::green
+end
+
+subgraph parameter_info
+	direction LR
+	name(&quot;name&quot;):::pink
+	required(&quot;required&quot;):::pink
+	human_description(&quot;human_description&quot;):::pink
+	default(&quot;default&quot;):::pink
+end
+
+declaration --&gt; tool --&gt; tools --&gt; tool_array
+
+tool_01 --&gt; tool_info
+tool_02 --&gt; tool_info
+tool_03 --&gt; tool_info
+tool_04 --&gt; tool_info
+
+parameters --&gt; parameter_info_list
+param_01 --&gt; parameter_info
+param_02 --&gt; parameter_info
+param_03 --&gt; parameter_info
+param_04 --&gt; parameter_info
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h3 id="插件安装">插件安装</h3>
+<p>在 <code>dify</code>
+执行安装之后，会根据对应的类型，在对应的表中写入一行数据，这个比较直观，直接从表名就可以看出来具体类型，这里就不展开说了：<strong>唯一需要注意的是，有的插件可能不能提供工具调用，就不会在
+<code>tool_installations</code> 插入数据。</strong></p>
+<pre><code class="highlight mermaid">---
+title: 插件
+---
+flowchart LR
+
+classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333, font-weight: bold;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;
+
+
+plugin_declarations(&quot;plugin_id&quot;):::green
+
+agent_strategy_installations(&quot;agent_strategy_installations&quot;):::animate
+ai_model_installations(&quot;ai_model_installations&quot;):::animate
+plugin_installations(&quot;plugin_installations&quot;):::animate
+tool_installations(&quot;tool_installations&quot;):::animate
+
+plugin_declarations --&gt; agent_strategy_installations
+plugin_declarations --&gt; ai_model_installations
+plugin_declarations --&gt; plugin_installations
+plugin_declarations --&gt; tool_installations</code></pre>
+<h3 id="插件和工具有什么区别">插件和工具有什么区别？</h3>
+<blockquote>
+<p>先说结论：<strong>工具是插件的一个子集</strong>，看我们前面的
+<code>json</code> 我们可以看到，一个插件的 <code>declaration</code>
+中可能包含了一个 <code>tools</code>
+数组，其实这个数组我个人倾向于是<strong>dify在实现的过程中实现了错误的逻辑。</strong></p>
+<p>因为这个 <code>tools</code> 在前端展示时显示的名称为
+<code>action</code>，代表了一个函数调用，我认为这里命名为
+<code>actions</code> 是更合理的。</p>
+</blockquote>
+<p>在我们安装插件的过程中，如果该插件声明了 <code>tools</code>，那么会向
+<code>tool_installations</code> 表写入一行数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> public.tool_installations (</span><br><span class="line">    id uuid <span class="keyword">DEFAULT</span> public.uuid_generate_v4() <span class="keyword">NOT NULL</span>,</span><br><span class="line">    created_at <span class="type">timestamp</span> <span class="keyword">with</span> <span class="type">time</span> zone,</span><br><span class="line">    updated_at <span class="type">timestamp</span> <span class="keyword">with</span> <span class="type">time</span> zone,</span><br><span class="line">    tenant_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">    provider <span class="type">character</span> <span class="type">varying</span>(<span class="number">127</span>) <span class="keyword">NOT NULL</span>,</span><br><span class="line">    plugin_unique_identifier <span class="type">character</span> <span class="type">varying</span>(<span class="number">255</span>),</span><br><span class="line">    plugin_id <span class="type">character</span> <span class="type">varying</span>(<span class="number">255</span>)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">ALTER TABLE</span> public.tool_installations OWNER <span class="keyword">TO</span> postgres;</span><br><span class="line"><span class="keyword">ALTER TABLE</span> <span class="keyword">ONLY</span> public.tool_installations</span><br><span class="line">    <span class="keyword">ADD CONSTRAINT</span> tool_installations_pkey <span class="keyword">PRIMARY KEY</span> (id);</span><br><span class="line"><span class="keyword">CREATE</span> INDEX idx_tool_installations_plugin_id <span class="keyword">ON</span> public.tool_installations <span class="keyword">USING</span> btree (plugin_id);</span><br><span class="line"><span class="keyword">CREATE</span> INDEX idx_tool_installations_plugin_unique_identifier <span class="keyword">ON</span> public.tool_installations <span class="keyword">USING</span> btree (plugin_unique_identifier);</span><br><span class="line"><span class="keyword">CREATE</span> INDEX idx_tool_installations_provider <span class="keyword">ON</span> public.tool_installations <span class="keyword">USING</span> btree (provider);</span><br><span class="line"><span class="keyword">CREATE</span> INDEX idx_tool_installations_tenant_id <span class="keyword">ON</span> public.tool_installations <span class="keyword">USING</span> btree (tenant_id);</span><br></pre></td></tr></table></figure>
+<p>可以看到，在这里除了 <code>plugin_id</code> 和
+<code>plugin_unique_identifier</code>
+这两个关键字段之外，我们还多出来了一个额外的 <code>provider</code>
+字段。</p>
+<p>再回到我们前面的描述，我们会发现 <code>dify</code>
+提供了一个接口用于查询 <code>tool</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl <span class="string">&#x27;https://test-aiflow.woa.com/backend-api/console/api/workspaces/current/tool-provider/builtin/aiflow/google_api/google_api/tools&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>可以看到在这个 curl 中我们的参数是
+<code>/aiflow/google_api/google_api</code> 而不是单纯的
+`<code>/aiflow/google_api</code></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/" rel="prev" title="Conclusion of Linear Algebra For Everyone">
+                  <i class="fa fa-angle-left"></i> Conclusion of Linear Algebra For Everyone
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/" rel="next" title="如何实现一个最简单的包管理系统">
+                  如何实现一个最简单的包管理系统 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

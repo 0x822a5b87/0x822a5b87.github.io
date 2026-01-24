@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="多道程序与分时多任务 内存调度模型 flowchart LR     %% 按类型定义专属样式（遵循通俗约定：函数&#x3D;蓝、结构体&#x3D;绿、寄存器&#x3D;紫、栈&#x3D;浅红、内存&#x3D;黄、管理组件&#x3D;深蓝）     classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px,">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uCore分时任务">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="多道程序与分时多任务 内存调度模型 flowchart LR     %% 按类型定义专属样式（遵循通俗约定：函数&#x3D;蓝、结构体&#x3D;绿、寄存器&#x3D;紫、栈&#x3D;浅红、内存&#x3D;黄、管理组件&#x3D;深蓝）     classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px,">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/20251118/multi.png">
+<meta property="article:published_time" content="2025-11-18T10:12:28.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/20251118/multi.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/","path":"2025/11/18/ucore分时任务/","title":"uCore分时任务"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>uCore分时任务 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E9%81%93%E7%A8%8B%E5%BA%8F%E4%B8%8E%E5%88%86%E6%97%B6%E5%A4%9A%E4%BB%BB%E5%8A%A1"><span class="nav-number">1.</span> <span class="nav-text">多道程序与分时多任务</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%B0%83%E5%BA%A6%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">内存调度模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%8A%A0%E8%BD%BD"><span class="nav-number">1.2.1.</span> <span class="nav-text">应用加载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E6%97%B6%E9%92%9F%E4%B8%AD%E6%96%AD"><span class="nav-number">1.2.2.</span> <span class="nav-text">开启时钟中断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E5%BA%94%E7%94%A8"><span class="nav-number">1.2.3.</span> <span class="nav-text">执行应用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%8A%B6%E6%80%81"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">应用状态</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qa"><span class="nav-number">1.3.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#rust%E4%B8%8B%E5%BC%80%E5%90%AFriscv%E6%97%B6%E9%92%9F%E4%B8%AD%E6%96%AD"><span class="nav-number">1.3.1.</span> <span class="nav-text">rust下开启RISCV时钟中断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#riscv%E6%97%B6%E9%92%9F%E4%B8%AD%E6%96%AD"><span class="nav-number">1.3.2.</span> <span class="nav-text">riscv时钟中断</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#switch-%E5%87%BD%E6%95%B0%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.</span> <span class="nav-text">__switch 函数的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-__switch-%E5%8F%AA%E9%9C%80%E8%A6%81%E4%BF%9D%E5%AD%98-sp-ra-s0s11-%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.3.4.</span> <span class="nav-text">为什么
+__switch 只需要保存 sp, ra,
+s0~s11 寄存器？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E8%A7%A6%E5%8F%91%E9%80%BB%E8%BE%91"><span class="nav-number">1.3.4.1.</span> <span class="nav-text">具体触发逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%A5%E5%85%85"><span class="nav-number">1.3.4.2.</span> <span class="nav-text">补充</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%85%B8%E5%9E%8B%E7%9A%84-__switch-%E8%B0%83%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">1.3.4.3.</span> <span class="nav-text">一些典型的 __switch
+调用场景</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-1"><span class="nav-number">1.3.4.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A0%88"><span class="nav-number">1.3.5.</span> <span class="nav-text">内核栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">1.3.6.</span> <span class="nav-text">代码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#section"><span class="nav-number">1.4.</span> <span class="nav-text"></span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/18/ucore%E5%88%86%E6%97%B6%E4%BB%BB%E5%8A%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="uCore分时任务 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          uCore分时任务
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-18 18:12:28" itemprop="dateCreated datePublished" datetime="2025-11-18T18:12:28+08:00">2025-11-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="多道程序与分时多任务">多道程序与分时多任务</h1>
+<h2 id="内存调度模型">内存调度模型</h2>
+<pre><code class="highlight mermaid">flowchart LR
+    %% 按类型定义专属样式（遵循通俗约定：函数=蓝、结构体=绿、寄存器=紫、栈=浅红、内存=黄、管理组件=深蓝）
+    classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px, font-size:14px;
+    classDef struct fill:#4ade80, stroke:#16a34a, stroke-width:2px, color:#1e293b, font-weight:bold, rounded:8px, font-size:14px;
+    classDef reg fill:#a855f7, stroke:#7e22ce, stroke-width:2px, color:#fff, font-weight:bold, rounded:6px, font-size:13px;
+    classDef stack fill:#fecaca, stroke:#dc2626, stroke-width:2px, color:#7f1d1d, font-weight:600, rounded:8px, font-size:13px;
+    classDef memory fill:#fde047, stroke:#ca8a04, stroke-width:2px, color:#78350f, font-weight:600, rounded:8px, font-size:13px;
+    classDef manager fill:#1e40af, stroke:#1e3a8a, stroke-width:2px, color:#fff, font-weight:bold, rounded:10px, font-size:14px;
+    classDef transition stroke:#64748b, stroke-width:1.5px, stroke-linecap:round, font-size:12px, font-family:Arial;
+    classDef subgraphTitle fill:#1e293b, font-weight:bold, font-size:14px, font-family:Arial;
+
+    %% 栈（USER_STACK/KERNEL_STACK）
+    subgraph USER_STACK[&quot;USER_STACK&quot;]
+        direction LR
+        US1(&quot;...&quot;):::stack
+        US0(&quot;UserStack 0&quot;):::stack
+    end
+    subgraph KERNEL_STACK[&quot;KERNEL_STACK&quot;]
+        direction LR
+        KS1(&quot;...&quot;):::stack
+        KS0(&quot;KernelStack 0&quot;):::stack
+    end
+
+    %% 内存/二进制代码
+    subgraph Memory[&quot;Memory&quot;]
+       direction LR
+        M1(&quot;...&quot;):::memory
+        M0(&quot;Task 0 Code&quot;):::memory
+    end
+
+    %% 任务相关（结构体：TaskControlBlock/TaskStatus/TaskContext/TrapContext）
+    subgraph tasks[&quot;tasks&quot;]
+       subgraph TaskControlBlock1[&quot;TaskControlBlock1&quot;]
+        TaskContext1(&quot;...&quot;):::struct
+        TaskStatus1(&quot;...&quot;):::struct
+       end
+       subgraph TaskControlBlock0[&quot;TaskControlBlock0&quot;]
+        subgraph TaskContext0[&quot;TaskContext0&quot;]
+            ra0(&quot;ra&quot;):::reg 
+            sp0(&quot;sp&quot;):::reg
+            s0(&quot;s0 ~ s11&quot;):::reg
+        end
+        TaskStatus0(&quot;TaskStatus 0&quot;):::struct
+       end
+    end
+    subgraph TrapContextList[&quot;TrapContextList&quot;]
+        OtherTrapContext(&quot;...&quot;):::struct
+        subgraph TrapContext[&quot;TrapContext&quot;]
+            x0(&quot;x0~x31&quot;):::reg
+            ssstatus0(&quot;sstatus&quot;):::reg
+            sepc0(&quot;sepc&quot;):::reg
+        end
+    end
+
+    %% 管理组件（TaskManager/TASK_MANAGER）
+    TaskManager(&quot;TaskManager&quot;):::manager
+    TASK_MANAGER(&quot;TASK_MANAGER&quot;):::manager
+
+    %% 函数（main/__restore）
+    main(&quot;main&quot;):::func
+    __restore(&quot;__restore&quot;):::func
+
+    %% 原有连接关系（保持不变，统一应用transition样式）
+    TaskManager --&gt;|延迟加载全局唯一实例| TASK_MANAGER:::transition
+    main --&gt;|1. load_apps 加载应用代码| Memory:::transition
+    main --&gt;|2. run_first_task触发初始化| TASK_MANAGER:::transition
+    TASK_MANAGER -.-&gt;|初始化| tasks:::transition
+    sp0 -.-&gt;|__restore使用sp作为参数恢复上下文| __restore:::transition
+    sepc0 -.-&gt; M0:::transition
+    x0 -.-&gt;|sp| US0:::transition
+    KS0 -.-&gt;|存储了TrapContext| TrapContext:::transition
+    ra0 --&gt; __restore:::transition
+    sp0 --&gt; KS0:::transition
+
+    %% 优化子图标题样式（统一居中、加粗）
+    style USER_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
+    style KERNEL_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
+    style Memory fill:#fffbeb, stroke:#fde047, stroke-width:1px, padding:10px;
+    style tasks fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
+    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</code></pre>
+<h2 id="实现">实现</h2>
+<h3 id="应用加载">应用加载</h3>
+<p>在老的版本中 <a
+target="_blank" rel="noopener" href="https://github.com/LearningOS/2025a-rcore-0x822a5b87/blob/6eb692006771da9a66508713cbcbd0a79f43f27d/os/src/batch.rs#L81">load_app</a>
+每次只能加载一个应用，并且是固定的加载到 <code>0x80400000</code> ~
+<code>0x80600000</code> 之间。</p>
+<p>而如果我们需要实现分时多任务，加载应用的逻辑不能再和单任务绑定在一起在，所以我们要把应用同时加载到内核中。</p>
+<figure>
+<img src="/images/20251118/multi.png" alt="multi" />
+<figcaption aria-hidden="true">multi</figcaption>
+</figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Load nth user app at</span></span><br><span class="line"><span class="comment">/// [APP_BASE_ADDRESS + n * APP_SIZE_LIMIT, APP_BASE_ADDRESS + (n+1) * APP_SIZE_LIMIT).</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">load_apps</span>() &#123;</span><br><span class="line">    <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">_num_app</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">num_app_ptr</span> = _num_app <span class="keyword">as</span> <span class="type">usize</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">usize</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">num_app</span> = <span class="title function_ invoke__">get_num_app</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// read app start addresses array: [app0_start, app1_start, ..., appN_start, appN_end]</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">app_start</span> = <span class="keyword">unsafe</span> &#123; core::slice::<span class="title function_ invoke__">from_raw_parts</span>(num_app_ptr.<span class="title function_ invoke__">add</span>(<span class="number">1</span>), num_app + <span class="number">1</span>) &#125;;</span><br><span class="line">    <span class="comment">// load apps</span></span><br><span class="line">    <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..num_app &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">base_i</span> = <span class="title function_ invoke__">get_base_i</span>(i);</span><br><span class="line">        <span class="comment">// clear region</span></span><br><span class="line">        (base_i..base_i + APP_SIZE_LIMIT)</span><br><span class="line">            .for_each(|addr| <span class="keyword">unsafe</span> &#123; (addr <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>).<span class="title function_ invoke__">write_volatile</span>(<span class="number">0</span>) &#125;);</span><br><span class="line">        <span class="comment">// load app from data section to memory</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">src</span> = <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            core::slice::<span class="title function_ invoke__">from_raw_parts</span>(app_start[i] <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>, app_start[i + <span class="number">1</span>] - app_start[i])</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">dst</span> = <span class="keyword">unsafe</span> &#123; core::slice::<span class="title function_ invoke__">from_raw_parts_mut</span>(base_i <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>, src.<span class="title function_ invoke__">len</span>()) &#125;;</span><br><span class="line">        dst.<span class="title function_ invoke__">copy_from_slice</span>(src);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Memory fence about fetching the instruction memory</span></span><br><span class="line">    <span class="comment">// It is guaranteed that a subsequent instruction fetch must</span></span><br><span class="line">    <span class="comment">// observe all previous writes to the instruction memory.</span></span><br><span class="line">    <span class="comment">// Therefore, fence.i must be executed after we have loaded</span></span><br><span class="line">    <span class="comment">// the code of the next app into the instruction memory.</span></span><br><span class="line">    <span class="comment">// See also: riscv non-priv spec chapter 3, &#x27;Zifencei&#x27; extension.</span></span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        asm!(<span class="string">&quot;fence.i&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="开启时钟中断">开启时钟中断</h3>
+<p>在开始之前，我们需要先了解一下 RISCV 的时钟中断是如何实现的，参考 <a
+href="#riscv时钟中断">RISCV的时钟中断</a></p>
+<blockquote>
+<p>首先，必须在 supervisor
+模式下开启时钟中断，否则时钟中断不会被触发。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// enable timer interrupt in supervisor mode</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">enable_timer_interrupt</span>() &#123;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        sie::<span class="title function_ invoke__">set_stimer</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>其次，我们需要设置 <code>mtimecmp</code> 寄存器的值，以便在
+<code>mtime</code> 达到该值时触发时钟中断。</p>
+<p>但是，这里有个非常重要的注意事项， <code>mtimecmp</code>
+寄存器是一个内存映射寄存器（MMR），它并不是一个 CSR
+寄存器，所以我们不能使用 CSR
+指令来访问它，而是需要通过内存访问指令来读写它。</p>
+<p>因此，我们需要通过 <code>SBI</code> 提供的接口来设置
+<code>mtimecmp</code> 寄存器的值。</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> SBI_SET_TIMER: <span class="type">usize</span> = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/// use sbi call to set timer</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_timer</span>(timer: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="title function_ invoke__">sbi_call</span>(SBI_SET_TIMER, timer, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="执行应用">执行应用</h3>
+<p>在经历了前面的两个步骤：</p>
+<ol type="1">
+<li>同时加载多个应用到内存中；</li>
+<li>开启时钟中断，并提供设置 <code>mtimecmp</code> 的接口；</li>
+</ol>
+<p>我们就可以开始执行我们的应用了，再回到我们前面的内存模型图：</p>
+<pre><code class="highlight mermaid">flowchart LR
+    %% 按类型定义专属样式（遵循通俗约定：函数=蓝、结构体=绿、寄存器=紫、栈=浅红、内存=黄、管理组件=深蓝）
+    classDef func fill:#4299e1, stroke:#2563eb, stroke-width:2px, color:#fff, font-weight:bold, rounded:8px, font-size:14px;
+    classDef struct fill:#4ade80, stroke:#16a34a, stroke-width:2px, color:#1e293b, font-weight:bold, rounded:8px, font-size:14px;
+    classDef reg fill:#a855f7, stroke:#7e22ce, stroke-width:2px, color:#fff, font-weight:bold, rounded:6px, font-size:13px;
+    classDef stack fill:#fecaca, stroke:#dc2626, stroke-width:2px, color:#7f1d1d, font-weight:600, rounded:8px, font-size:13px;
+    classDef memory fill:#fde047, stroke:#ca8a04, stroke-width:2px, color:#78350f, font-weight:600, rounded:8px, font-size:13px;
+    classDef manager fill:#1e40af, stroke:#1e3a8a, stroke-width:2px, color:#fff, font-weight:bold, rounded:10px, font-size:14px;
+    classDef transition stroke:#64748b, stroke-width:1.5px, stroke-linecap:round, font-size:12px, font-family:Arial;
+    classDef subgraphTitle fill:#1e293b, font-weight:bold, font-size:14px, font-family:Arial;
+
+    %% 栈（USER_STACK/KERNEL_STACK）
+    subgraph USER_STACK[&quot;USER_STACK&quot;]
+        direction LR
+        US1(&quot;...&quot;):::stack
+        US0(&quot;UserStack 0&quot;):::stack
+    end
+    subgraph KERNEL_STACK[&quot;KERNEL_STACK&quot;]
+        direction LR
+        KS1(&quot;...&quot;):::stack
+        KS0(&quot;KernelStack 0&quot;):::stack
+    end
+
+    %% 内存/二进制代码
+    subgraph Memory[&quot;Memory&quot;]
+       direction LR
+        M1(&quot;...&quot;):::memory
+        M0(&quot;Task 0 Code&quot;):::memory
+    end
+
+    %% 任务相关（结构体：TaskControlBlock/TaskStatus/TaskContext/TrapContext）
+    subgraph tasks[&quot;tasks&quot;]
+       subgraph TaskControlBlock1[&quot;TaskControlBlock1&quot;]
+        TaskContext1(&quot;...&quot;):::struct
+        TaskStatus1(&quot;...&quot;):::struct
+       end
+       subgraph TaskControlBlock0[&quot;TaskControlBlock0&quot;]
+        subgraph TaskContext0[&quot;TaskContext0&quot;]
+            ra0(&quot;ra&quot;):::reg 
+            sp0(&quot;sp&quot;):::reg
+            s0(&quot;s0 ~ s11&quot;):::reg
+        end
+        TaskStatus0(&quot;TaskStatus 0&quot;):::struct
+       end
+    end
+    subgraph TrapContextList[&quot;TrapContextList&quot;]
+        OtherTrapContext(&quot;...&quot;):::struct
+        subgraph TrapContext[&quot;TrapContext&quot;]
+            x0(&quot;x0~x31&quot;):::reg
+            ssstatus0(&quot;sstatus&quot;):::reg
+            sepc0(&quot;sepc&quot;):::reg
+        end
+    end
+
+    %% 管理组件（TaskManager/TASK_MANAGER）
+    TaskManager(&quot;TaskManager&quot;):::manager
+    TASK_MANAGER(&quot;TASK_MANAGER&quot;):::manager
+
+    %% 函数（main/__restore）
+    main(&quot;main&quot;):::func
+    __restore(&quot;__restore&quot;):::func
+
+    %% 原有连接关系（保持不变，统一应用transition样式）
+    TaskManager --&gt;|延迟加载全局唯一实例| TASK_MANAGER:::transition
+    main --&gt;|1. load_apps 加载应用代码| Memory:::transition
+    main --&gt;|2. run_first_task触发初始化| TASK_MANAGER:::transition
+    TASK_MANAGER -.-&gt;|初始化| tasks:::transition
+    sp0 -.-&gt;|__restore使用sp作为参数恢复上下文| __restore:::transition
+    sepc0 -.-&gt; M0:::transition
+    x0 -.-&gt;|sp| US0:::transition
+    KS0 -.-&gt;|存储了TrapContext| TrapContext:::transition
+    ra0 --&gt; __restore:::transition
+    sp0 --&gt; KS0:::transition
+
+    %% 优化子图标题样式（统一居中、加粗）
+    style USER_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
+    style KERNEL_STACK fill:#fef2f2, stroke:#fecaca, stroke-width:1px, padding:10px;
+    style Memory fill:#fffbeb, stroke:#fde047, stroke-width:1px, padding:10px;
+    style tasks fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;
+    style TrapContextList fill:#ecfccb, stroke:#4ade80, stroke-width:1px, padding:10px;</code></pre>
+<p>程序的执行逻辑有如下两种情况：</p>
+<blockquote>
+<p>执行第一个task，之所以把它独立出来，是因为第一次执行时，没有任何可用的TaskContext。</p>
+</blockquote>
+<ol type="1">
+<li>通过 <code>TaskManager</code> 获取第一个加载的task的
+<code>TaskContext</code>；</li>
+<li>将task的状态修改为 <code>Running</code></li>
+<li>初始化一个全零的
+<code>TaskContext</code>，这只是个临时变量所以不影响；</li>
+<li>使用 <code>TaskContext</code> 做为参数调用 <code>__switch</code>
+<ol type="1">
+<li><code>ra</code> = <code>__restore</code></li>
+<li><code>sp</code> 指向 KERNEL_STACK 上对应的 KernelStack；</li>
+<li>恢复 s0 ~ s11；</li>
+<li>执行 ret，此时会跳转到 <code>__restore</code>。</li>
+</ol></li>
+<li>执行 <code>__restore</code> 函数，此时 <code>sp</code> 指向内核栈：
+<ol type="1">
+<li>从 KernelStack 加载 sstatus；</li>
+<li>从 KernelStack 加载 <code>sepc</code>，此时 <code>sepc</code>
+指向应用代码的地址（<code>0x80400000</code> ~
+<code>0x80600000</code>）；</li>
+<li>从 KernelStack 加载 <code>sscratch</code>，此时 sp
+指向内核栈，sscratch 指向用户栈；</li>
+<li>恢复 User-Purpose Registers；</li>
+<li>**释放内核栈；这里需要注意的是，当前这次内核栈指针是在
+<code>KernelStack#push_context</code>中分配的，而之后每次进入内核时，都会通过
+__alltraps
+来分配一个最新的TrapContext，此时我们需要使用内核栈的基址。并且，由于进入内核态是通过trap进入的，而根据trap的类型不同，内核的寄存器状态是不同的，所以保存并没有意义。**</li>
+<li>交换 <code>sp</code>和 <code>sscratch</code>，此时，sp
+指向用户栈，sscratch 指向内核栈；</li>
+<li><code>sret</code> 切换回用户态。</li>
+</ol></li>
+</ol>
+<p>在执行完成之后，我们会发现<strong>sp指向用户栈，sepc指向应用代码</strong>，这意味着当程序正式进入用户程序执行。</p>
+<p>我们也可以把上面的简述如下：</p>
+<ol type="1">
+<li>在最开始操作系统处于内核态，初始化内核的 <code>ra</code>,
+<code>sp</code>，<code>寄存器</code> 以及用户程序的 <code>ra</code>,
+<code>sp</code>，<code>寄存器</code>；</li>
+<li>通过 <code>__restore</code> 函数将控制权交给用户态程序；</li>
+<li>用户执行过程中，通过主动的 <code>sys_yield()</code> 或者触发
+<code>Interrupt::SupervisorTimer</code> 让出时间片。</li>
+</ol>
+<h4 id="应用状态">应用状态</h4>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// The status of a task</span></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, PartialEq)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">TaskStatus</span> &#123;</span><br><span class="line">    <span class="comment">/// uninitialized</span></span><br><span class="line">    UnInit,</span><br><span class="line">    <span class="comment">/// ready to run</span></span><br><span class="line">    Ready,</span><br><span class="line">    <span class="comment">/// running</span></span><br><span class="line">    Running,</span><br><span class="line">    <span class="comment">/// exited</span></span><br><span class="line">    Exited,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code class="highlight mermaid">flowchart LR
+    classDef pink fill:#FFCCCC, stroke:#333, stroke-width:2px, color:#333, font-weight:bold, rounded:12px, font-size:14px;
+    classDef green fill:#5a9, stroke:#364, stroke-width:2px, color:#fff, font-weight:bold, rounded:12px, font-size:14px;
+    classDef purple fill:#968, stroke:#534, stroke-width:2px, color:#fff, font-weight:bold, rounded:12px, font-size:14px;
+    classDef error fill:#bbf, stroke:#f65, stroke-width:2px, color:#333, font-weight:bold, rounded:12px, font-size:14px, stroke-dasharray:5 5;
+    classDef coral fill:#f8f, stroke:#333, stroke-width:3px, color:#333, font-weight:bold, rounded:12px, font-size:14px;
+    classDef animate stroke-dasharray:6 4, stroke-dashoffset:80, animation: dash 18s linear infinite;
+    classDef transition stroke:#666, stroke-width:1.5px, stroke-linecap:round, font-size:12px, font-family:Arial;
+
+    UnInit(&quot;UnInit&quot;):::coral
+    Ready(&quot;Ready&quot;):::green
+    Running(&quot;Running&quot;):::purple 
+    Exited(&quot;Exited&quot;):::error
+
+    UnInit --&gt;|init| Ready:::transition
+    Ready --&gt;|run_first_task&lt;br/&gt;or run_next_task| Running:::transition
+    Running --&gt;|mark_current_exited| Exited:::transition
+    Running --&gt;|主动调用sys_yield&lt;br/&gt;或者SupervisorTimer| Ready:::transition</code></pre>
+<p>随后的调度就没有什么复杂的地方，唯一需要注意的是，我们在这里使用的是
+<code>round_robin()</code>
+算法实现的查找，具体的实现还是比较有意思的：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// Find next task to run and return task id.</span></span><br><span class="line"><span class="comment">///</span></span><br><span class="line"><span class="comment">/// In this case, we only return the first `Ready` task in task list.</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">find_next_task</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">usize</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">inner</span> = <span class="keyword">self</span>.inner.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">current</span> = inner.current_task;</span><br><span class="line">    <span class="comment">// This is a simple round-robin scheduler, and I think it&#x27;s quite ingenious.</span></span><br><span class="line">    <span class="comment">// Our goal is to search for a qualified task starting from the task right after the current task to the end of the task list.</span></span><br><span class="line">    <span class="comment">// If no qualified task is found in this range, we continue searching from the beginning of the task list up to the current task.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Think of the task list as a ring; the search range will be as follows:</span></span><br><span class="line">    <span class="comment">// ```text</span></span><br><span class="line">    <span class="comment">// [</span></span><br><span class="line">    <span class="comment">//     current + 1,</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     num_app - 1,</span></span><br><span class="line">    <span class="comment">//     0,</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     current</span></span><br><span class="line">    <span class="comment">// ]</span></span><br><span class="line">    <span class="comment">// ```</span></span><br><span class="line">    <span class="comment">// The current task is included because it is the last resort.</span></span><br><span class="line">    <span class="comment">// Additionally, this search range is exactly equivalent to:</span></span><br><span class="line">    <span class="comment">// ```text</span></span><br><span class="line">    <span class="comment">// [</span></span><br><span class="line">    <span class="comment">//     (current + 1) % num_app,</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     (current + (num_app - current - 1)) % num_app,</span></span><br><span class="line">    <span class="comment">//     ((current + 1) + (num_app - (current + 1) - 1)) % num_app, /// Equals 0</span></span><br><span class="line">    <span class="comment">//     ...,</span></span><br><span class="line">    <span class="comment">//     current</span></span><br><span class="line">    <span class="comment">// ]</span></span><br><span class="line">    <span class="comment">// ```</span></span><br><span class="line">    (current + <span class="number">1</span>..current + <span class="keyword">self</span>.num_app + <span class="number">1</span>)</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|id| id % <span class="keyword">self</span>.num_app)</span><br><span class="line">        .<span class="title function_ invoke__">find</span>(|id| inner.tasks[*id].task_status == TaskStatus::Ready)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code class="highlight mermaid">flowchart LR
+%% 样式定义（简洁清爽，突出映射关系）
+    classDef candidate fill:#f0f8fb, stroke:#2563eb, rounded:8px, font-size:12px;
+    classDef mod fill:#fdf2f8, stroke:#9f7aea, rounded:8px, font-size:12px;
+    classDef index fill:#e8f4f8, stroke:#38b2ac, rounded:8px, font-size:12px;
+    classDef arrow stroke:#64748b, stroke-width:1.5px, font-size:11px;
+
+%% 调整子图命名，明确“输入”和“输出”
+    subgraph &quot;输入&quot;
+        c1(&quot;current&quot;):::candidate
+        c2(&quot;...&quot;):::candidate
+        c3(&quot;num_app - 2&quot;):::candidate
+        c4(&quot;num_app - 1&quot;):::candidate
+        c5(&quot;...&quot;):::candidate
+        c6(&quot;num_app + current - 1&quot;):::candidate
+    end
+    Mod[&quot;取模：id % num_app&quot;]:::mod
+    subgraph &quot;输出&quot;
+        b1(&quot;current + 1&quot;):::index
+        b2(&quot;...&quot;):::index
+        b3(&quot;num_app - 1&quot;):::index
+        b4(&quot;0&quot;):::index
+        b5(&quot;...&quot;):::index
+        b6(&quot;current&quot;):::index
+    end
+
+%% 映射关系：原始ID → 取模 → 循环索引（箭头更顺，避免交叉）
+    c1 --&gt;|原始ID| Mod
+    c3 --&gt;|原始ID| Mod
+    c4 --&gt;|原始ID| Mod
+    c6 --&gt;|原始ID| Mod
+
+    Mod --&gt;|映射后| b1
+    Mod --&gt;|映射后| b3
+    Mod --&gt;|映射后| b4
+    Mod --&gt;|映射后| b6
+
+%% 示例标注（位置调整，不遮挡流程）
+    Note[&quot;迭代范围是 [current + 1, current + 1 + num_app)&quot;]:::candidate
+    style Note fill:#f5fafe, stroke:#94a3b8, rounded:6px;</code></pre>
+<h2 id="qa">QA</h2>
+<h3 id="rust下开启riscv时钟中断">rust下开启RISCV时钟中断</h3>
+<p>在rust下开启RISCV时钟中断是基于一个叫做 <code>sie</code> 的 crate
+来实现的。<code>sie</code> 代表 "Supervisor Interrupt
+Enable"，它提供了一组函数来操作RISCV的中断使能寄存器。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// enable timer interrupt in supervisor mode</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">enable_timer_interrupt</span>() &#123;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        sie::<span class="title function_ invoke__">set_stimer</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>set_timer()</code> 的实现是 <code>rust</code>
+语言下一个及其强大的功能：<code>宏展开（Marco Expansion）</code>，它允许我们定义一段代码模板，然后在编译时将其展开为具体的代码：如下的宏在展开后会生成
+<code>set_stimer</code> 和 <code>clear_stimer</code>
+两个函数，用于设置和清除 supervisor timer interrupt enable 位。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">set_clear_csr!(</span><br><span class="line">    <span class="comment">/// Supervisor Timer Interrupt Enable           /// -&gt; 文档注释</span></span><br><span class="line">    ,</span><br><span class="line">    set_stimer,                                     <span class="comment">/// 指定要生成的函数名</span></span><br><span class="line">    clear_stimer,                                   <span class="comment">/// 另一个指定要生成的函数名</span></span><br><span class="line">    <span class="number">1</span> &lt;&lt; <span class="number">5</span>                                          <span class="comment">/// 比特掩码，用于设置或清除特定位</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>随后，<code>set_clear_csr!</code> 是一个 <code>过程宏</code>
+（Procedural Macro），它会根据传入的参数生成对应的函数代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// macro_rules! is a keyword to define procedural macros in Rust.</span></span><br><span class="line"><span class="comment">/// This macro generates two functions: one to set specific bits in a CSR,</span></span><br><span class="line"><span class="built_in">macro_rules!</span> set_clear_csr &#123;</span><br><span class="line">    ($(<span class="meta">#[$attr:meta]</span>)*, $set_field:ident, $clear_field:ident, $e:expr) =&gt; &#123;</span><br><span class="line">        set_csr!($(<span class="meta">#[$attr]</span>)*, $set_field, $e);</span><br><span class="line">        clear_csr!($(<span class="meta">#[$attr]</span>)*, $clear_field, $e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li><code>(#[$attr:meta])*</code>
+：这是一个可变参数模式，表示可以接受任意数量的元属性（meta
+attributes），这些属性会被应用到生成的函数上，比如文档注释等。</li>
+<li><code>$set_field:ident</code> 和 <code>$clear_field:ident</code>
+：这两个模式表示接受标识符（identifier），即函数名。</li>
+<li><code>$e:expr</code>
+：这是一个表达式模式，表示接受一个表达式，这个表达式通常是一个位掩码，用于指定要设置或清除的位。</li>
+</ol>
+<p><code>set_clear_csr!</code> 宏会调用 <code>set_csr!</code> 和
+<code>clear_csr!</code> 两个宏来生成具体的函数代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">macro_rules!</span> set_csr &#123;</span><br><span class="line">    ($(<span class="meta">#[$attr:meta]</span>)*, $set_field:ident, $e:expr) =&gt; &#123;</span><br><span class="line">        $(<span class="meta">#[$attr]</span>)*</span><br><span class="line">        <span class="meta">#[inline]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> $<span class="title function_ invoke__">set_field</span>() &#123;</span><br><span class="line">            _set($e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li><code>$(#[$attr])*</code> ：将传入的元属性应用到生成的函数上。</li>
+<li><code>#[inline]</code>
+：这是一个属性，告诉编译器将这个函数内联展开，以提高性能。</li>
+<li><code>pub unsafe fn $set_field()</code>
+：定义一个公共的、不安全的函数，函数名由 <code>$set_field</code>
+替换。</li>
+<li><code>_set($e);</code> ：调用一个内部函数
+<code>_set</code>，传入位掩码
+<code>$e</code>，用于实际设置寄存器的位。</li>
+</ol>
+<p><code>clear_csr!</code> 宏的实现与 <code>set_csr!</code>
+类似，只不过它调用的是 <code>_clear</code>
+函数，用于清除寄存器的位。</p>
+<p>其实，最终的 <code>_set</code> 和 <code>_clear</code> 函数会使用
+<code>RISC-V</code> 的汇编指令来操作 <code>CSR</code>（Control and
+Status Register，控制和状态寄存器），具体实现如下：</p>
+<ol type="1">
+<li>csrrs 指令的核心语义就是：bits 中所有为 1 的比特位，会将 CSR
+寄存器对应位 “设 1”；bits 中为 0 的比特位，CSR
+寄存器保持原有值，不做任何修改。</li>
+<li>csrrc 指令的核心语义就是：bits 中所有为 1 的比特位，会将 CSR
+寄存器对应位 “清 0”；bits 中为 0 的比特位，CSR
+寄存器保持原有值，不做任何修改。</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// _set</span></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">_set</span>(bits: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="keyword">match</span> () &#123;</span><br><span class="line">        <span class="meta">#[cfg(all(riscv, feature = <span class="string">&quot;inline-asm&quot;</span>))]</span></span><br><span class="line">        () =&gt; core::arch::asm!(<span class="string">&quot;csrrs x0, &#123;1&#125;, &#123;0&#125;&quot;</span>, <span class="title function_ invoke__">in</span>(reg) bits, <span class="keyword">const</span> $csr_number),</span><br><span class="line">        <span class="comment">/// ...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/// _clear</span></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">_clear</span>(bits: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="keyword">match</span> () &#123;</span><br><span class="line">        <span class="meta">#[cfg(all(riscv, feature = <span class="string">&quot;inline-asm&quot;</span>))]</span></span><br><span class="line">        () =&gt; core::arch::asm!(<span class="string">&quot;csrrc x0, &#123;1&#125;, &#123;0&#125;&quot;</span>, <span class="title function_ invoke__">in</span>(reg) bits, <span class="keyword">const</span> $csr_number),</span><br><span class="line">        <span class="comment">/// ...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="riscv时钟中断">riscv时钟中断</h3>
+<p>RISCV的时钟中断是通过 CSR 寄存器 <code>stime</code>（也可以叫做
+<code>mtime</code> 的 CSR 访问别名），以及 <code>mtime</code> 和
+<code>mtimecmp</code> 两个内存映射寄存器（MMIO）配合实现的：</p>
+<ul>
+<li><code>stime</code>（Supervisor Time Register）：是 S-mode 特权级的
+CSR
+寄存器，表示当前的时间戳，单位是时钟周期数。它是只读的，不能被写入。其值与
+<code>mtime</code>
+完全同步（对应同一硬件计时器），<strong>操作系统为了性能，通常通过 CSR
+指令直接访问 <code>stime</code></strong>，无需依赖内存映射或 SBI。</li>
+<li><code>mtime(Machine Time Register)</code>：一个递增的计时器内存映射寄存器（归属
+CLINT
+外设），表示自系统启动以来的时间（以时钟周期为单位），硬件自动递增，只读；部分平台支持
+M-mode 通过 CSR 指令直接访问（<code>mtime</code> 对应的 CSR 地址
+<code>0xb00</code>），本质是同一计时器的不同访问入口。</li>
+<li><code>mtimecmp(Machine Time Compare Register)</code>：一个比较内存映射寄存器（归属
+CLINT 外设，每个核心独立），当 <code>mtime</code> 的值达到
+<code>mtimecmp</code> 的值时，会触发机器模式（M-mode）时钟中断。</li>
+</ul>
+<p>对于 CSR 寄存器和内存映射寄存器的访问方式，最大的区别在于：</p>
+<ul>
+<li>CSR 寄存器（如 <code>stime</code>/<code>mtime</code>）：通过
+<code>csrr</code>（读）/<code>csrw</code>（写，部分支持）指令访问，无需物理地址，仅对应特权级可访问（S-mode
+访问 <code>stime</code>，M-mode 访问 <code>mtime</code>）；</li>
+<li>内存映射寄存器（如 <code>mtime</code>/<code>mtimecmp</code>）：通过
+<code>ld</code>（64 位读）/<code>sd</code>（64
+位写）指令访问，需要知道具体物理地址（由厂商定义，如 CLINT
+外设地址）；<strong>S-mode 因特权级限制无法直接写入
+<code>mtimecmp</code>，因此通过 <code>SBI</code> 调用让 M-mode
+固件协助访问/更新</strong>。</li>
+</ul>
+<p>再回顾我们的代码中：</p>
+<blockquote>
+<p>访问当前时间（对应 <code>stime</code>），是通过
+<code>time::read()</code> 调用了声明式宏生成的函数，并通过
+<code>csrrs</code> 指令读取对应的 CSR 寄存器：</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">core::arch::asm!(<span class="string">&quot;csrrs &#123;0&#125;, &#123;1&#125;, x0&quot;</span>, <span class="title function_ invoke__">out</span>(reg) r, <span class="keyword">const</span> $csr_number);</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>访问 <code>mtimecmp</code>（设置中断触发阈值），是通过
+<code>SBI</code> 提供的接口来实现的：</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// use sbi call to set timer</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_timer</span>(timer: <span class="type">usize</span>) &#123;</span><br><span class="line">    <span class="title function_ invoke__">sbi_call</span>(SBI_SET_TIMER, timer, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一次时钟中断的触发过程如下：</p>
+<ol type="1">
+<li>系统启动时，<code>mtime</code>
+寄存器开始递增，表示系统运行的时间。</li>
+<li>内核设置 <code>mtimecmp</code>
+寄存器的值为一个未来的时间点（通常是当前 <code>mtime</code>
+值加上一个固定的时间间隔）。</li>
+<li>当 <code>mtime</code> 的值递增到等于或超过 <code>mtimecmp</code>
+的值时，硬件会触发一个时钟中断。</li>
+<li>中断处理程序会被调用，内核可以在中断处理程序中执行任务调度等操作。</li>
+<li>中断处理程序完成后，内核通常会重新设置 <code>mtimecmp</code>
+寄存器，以便在未来再次触发时钟中断。</li>
+</ol>
+<h4 id="总结">总结</h4>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 38%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>特性</th>
+<th>mtime（Machine Time Register）</th>
+<th>mtimecmp（Machine Time Compare Register）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>本质类型</td>
+<td>机器模式（M-mode）CSR（控制状态寄存器）</td>
+<td>内存映射寄存器（MMR），归属 CLINT 外设</td>
+</tr>
+<tr class="even">
+<td>硬件集成位置</td>
+<td>CPU 核心内部</td>
+<td>CPU 核心外部的 CLINT（Core-Local Interrupter）外设</td>
+</tr>
+<tr class="odd">
+<td>访问方式</td>
+<td>专用 CSR 指令 csrr（读）/ csrw（部分实现支持写）</td>
+<td>内存访问指令 ld/sd（64 位）、lw/sw（32 位），需通过物理地址访问</td>
+</tr>
+<tr class="even">
+<td>核心功能</td>
+<td>持续递增的 “系统计时器”，记录当前时间</td>
+<td>存储 “目标触发时间”，与 mtime 比较触发定时中断</td>
+</tr>
+<tr class="odd">
+<td>可修改性</td>
+<td>只读（标准定义），部分实现支持写（用于时间校准）</td>
+<td>可写（需主动设置目标时间）</td>
+</tr>
+<tr class="even">
+<td>RISC-V 标准地位</td>
+<td>架构标准强制定义（功能、CSR 地址 0xb00 固定）</td>
+<td>标准推荐实现（功能统一），物理地址由厂商自定义（如 0x2004000）</td>
+</tr>
+<tr class="odd">
+<td>多核心适配</td>
+<td>所有核心共享一个（全局计时器）</td>
+<td>每个核心独立一个（通过地址偏移区分，如核心 N：0x2004000 + 8*N）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="switch-函数的实现"><code>__switch</code> 函数的实现</h3>
+<p><code>__switch</code> 函数的实现有几点需要注意：</p>
+<ol type="1">
+<li>在我们保存<code>TaskContext</code>的过程中，我们最好的保存方式是，与
+TaskContext
+的字段定义顺序一致：<code>ra -&gt; sp -&gt; s0~s11</code>；</li>
+<li>在恢复TaskContext的过程中，我们最好把 <code>sp</code>
+放在最后恢复。虽然我们在 <code>__switch</code> 中，不会用到
+sp，但是这种可能影响全局的操作放在最后做是一个比较好的防御式编程习惯。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"># Store `sn` into the corresponding register, then add 2 to skip `sp` and `ra`.</span><br><span class="line">.altmacro</span><br><span class="line">.macro SAVE_SN n</span><br><span class="line">    sd s\n, (\n+2)*8(a0)</span><br><span class="line">.endm</span><br><span class="line">.macro LOAD_SN n</span><br><span class="line">    ld s\n, (\n+2)*8(a1)</span><br><span class="line">.endm</span><br><span class="line">    .section .text</span><br><span class="line">    .globl __switch</span><br><span class="line">__switch:</span><br><span class="line">    # __switch(</span><br><span class="line">    #     current_task_cx_ptr: *mut TaskContext,</span><br><span class="line">    #     next_task_cx_ptr: *const TaskContext</span><br><span class="line">    # )</span><br><span class="line">    #</span><br><span class="line">    #   TaskContext</span><br><span class="line">    #       ra: usize,</span><br><span class="line">    #       sp: usize,</span><br><span class="line">    #       s: [usize; 12],</span><br><span class="line">    #</span><br><span class="line"></span><br><span class="line">    sd ra, 0(a0)</span><br><span class="line">    # save kernel stack of current task</span><br><span class="line">    sd sp, 8(a0)</span><br><span class="line">    # save ra &amp; s0~s11 of current execution</span><br><span class="line">    .set n, 0</span><br><span class="line">    .rept 12</span><br><span class="line">        SAVE_SN %n</span><br><span class="line">        .set n, n + 1</span><br><span class="line">    .endr</span><br><span class="line"></span><br><span class="line">    # restore ra &amp; s0~s11 of next execution</span><br><span class="line">    ld ra, 0(a1)</span><br><span class="line">    .set n, 0</span><br><span class="line">    .rept 12</span><br><span class="line">        LOAD_SN %n</span><br><span class="line">        .set n, n + 1</span><br><span class="line">    .endr</span><br><span class="line">    # restore kernel stack of next task</span><br><span class="line">    ld sp, 8(a1)</span><br><span class="line">    ret</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="为什么-__switch-只需要保存-sp-ra-s0s11-寄存器">为什么
+<code>__switch</code> 只需要保存 <code>sp</code>, <code>ra</code>,
+<code>s0</code>~<code>s11</code> 寄存器？</h3>
+<p>这里我之前有个疑问，花了不少时间捋清楚，这里分享一下（不保真），有错误请各位大佬们不吝指教。</p>
+<blockquote>
+<p><strong>为什么，在 <code>trap.S</code> 中需要保存所有寄存器信息，而
+<code>switch.S</code> 中则只需要保存 callee-saved
+registers？</strong></p>
+</blockquote>
+<p>先说结论：这是因为 <code>trap.S</code> 的调用机制和
+<code>switch.S</code> 的调用机制完全不一样：</p>
+<ul>
+<li><code>__alltraps</code> 和 <code>__restore</code>
+是在发生trap时，由CPU触发的跳转，是完全不可控的跳转逻辑：
+<ul>
+<li>可能发生在任意指令之间（比如函数调用 <code>sd a0 0(sp)</code> 时，sp
+指针指向的内存块在MMU不可用发生了缺页异常）；</li>
+<li>可能发生在函数执行的任意阶段（比如函数还没来得及保存
+<code>a0~a7</code>，或者正在使用 <code>a0</code> 进行计算）。</li>
+</ul></li>
+<li><code>__switch</code>
+是内核主动调用的调度函数，调用时机是<strong>完全可控</strong>的 ——
+内核只会在 “安全的时机” 调用 <code>__switch</code>，这个 “安全时机”
+的核心要求是：调用 <code>__switch</code> 之前，当前任务的所有
+caller-saved
+寄存器（<code>a0~a7</code>、<code>t0~t6</code>）都已被当前执行的函数保存到栈上。</li>
+</ul>
+<p>举个例子，在如下的代码中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">foo:</span><br><span class="line">	addi sp, sp, -16</span><br><span class="line">	# 下面的代码可能触发缺页异常进入 __alltraps 和 __restore</span><br><span class="line">	# 然而，不可能出现一个 __switch 调用；</span><br><span class="line">	# call __swtich</span><br><span class="line">	sd   a0, 0(sp)</span><br><span class="line">	sd   a1, 8(sp)</span><br></pre></td></tr></table></figure>
+<h4 id="具体触发逻辑">具体触发逻辑</h4>
+<p>在一切开始之前，我们必须搞清楚两个基本概念，<code>caller-saved registers</code>
+和 <code>callee-saved registers</code>：</p>
+<ul>
+<li>caller-saved 由调用者保存，也就是 a0~a7
+等，函数在调用时会将这些数据保存到自己的函数栈，后续访问都通过函数栈上保存的值来访问；</li>
+<li>callee-saved 由被调用者保存，也就是 ra, fp, s0~s11
+等，被调用的函数需要保存原始值，并且在函数退出之后将这些寄存器恢复到原值。</li>
+</ul>
+<p>此外，在操作系统中，定义了两个不同的函数来保存上下文：</p>
+<ol type="1">
+<li><code>__alltraps</code> 和 <code>__restore</code>
+用于在trap发生时用来处理中断，此时会保存/恢复所有的寄存器作为上下文；</li>
+<li><code>__switch</code>
+用于在需要发生上下文切换时来处理中断，此时只会保存 callee-saved；</li>
+</ol>
+<p>我们举个例子，假设存在两个线程：</p>
+<blockquote>
+<p>线程一</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">foo:</span><br><span class="line">	addi sp, sp, -16</span><br><span class="line">	sd   a0, 0(sp)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>线程二</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bar:</span><br><span class="line">	li a0, 0x0</span><br></pre></td></tr></table></figure>
+<p>对于trap，可能会出现如下的执行顺序：</p>
+<ol type="1">
+<li>addi sp, sp -16</li>
+<li><code>__alltraps</code></li>
+<li>li a0, 0x0</li>
+<li><code>__restore</code></li>
+<li>sd a0, 0(sp)</li>
+</ol>
+<p>在这个例子中不会有任何问题，因为<code>__alltraps</code>和<code>__restore</code>会保存/恢复所有的寄存器。</p>
+<p>而 <code>__switch</code>
+是一个主动调用的函数，并不会触发如下的执行顺序（除非程序或者编译器出现BUG）：</p>
+<ol type="1">
+<li>addi sp, sp -16</li>
+<li><code>__switch</code></li>
+<li>li a0, 0x0</li>
+<li><code>__switch</code></li>
+<li>sd a0, 0(sp)</li>
+</ol>
+<p>而在实际的应用中 <code>__switch</code> 的调用往往是如下场景：</p>
+<blockquote>
+<p>线程一</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">foo:</span><br><span class="line">	addi sp, sp, -16</span><br><span class="line">	sd   a0, 0(sp)</span><br><span class="line">	# all caller-saved registers are stored.</span><br><span class="line"></span><br><span class="line">	call __switch</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>线程二</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bar:</span><br><span class="line">	li a0, 0x0</span><br><span class="line">	call __switch</span><br></pre></td></tr></table></figure>
+<p>在这种情况下，所有的 caller-saved registers 已经使用完毕，所以
+<code>__switch</code> 只需要处理 callee-saved registers 即可。</p>
+<p>总结来说：<code>__switch</code> 无需保存 caller-saved
+寄存器的原因的是：</p>
+<ol type="1">
+<li>这些寄存器的值已被当前函数保存到栈上（栈指针 <code>sp</code> 会被
+<code>__switch</code> 保存，栈数据不会丢失）；</li>
+<li>切换到新任务后，新任务的 caller-saved
+寄存器会由它自己的函数在执行时保存 / 恢复，与当前任务无关；</li>
+<li>当当前任务再次被调度时，<code>__switch</code> 恢复 <code>sp</code>
+后，当前函数会从栈上重新加载 caller-saved
+寄存器的原始值，继续执行。</li>
+</ol>
+<p>简单说：<code>__switch</code> 依赖 “调用前已保存 caller-saved 寄存器”
+的约定，只需保存 callee-saved
+寄存器（<code>ra</code>、<code>sp</code>、<code>s0~s11</code>）——
+这些寄存器是任务长期状态的载体，且不会被函数主动保存，必须由
+<code>__switch</code> 负责保存 / 恢复。</p>
+<h4 id="补充">补充</h4>
+<p>内核调度 <code>__switch</code> 的场景，本质都是 “任务主动放弃 CPU” 或
+“内核在安全点触发调度”：</p>
+<ol type="1">
+<li>任务主动调用系统调用（如
+<code>sleep</code>）：系统调用处理函数会先保存 caller-saved
+寄存器，再调用 <code>__switch</code>；</li>
+<li>时钟中断触发调度：时钟中断的 <code>__alltraps</code>
+会保存所有寄存器，进入内核后，内核会在 “调度前” 确保当前任务的
+caller-saved 已妥善保存（或直接使用 <code>__alltraps</code>
+保存的完整上下文），再调用 <code>__switch</code>；</li>
+<li>任务执行完毕：内核会在任务退出函数中保存 caller-saved 寄存器，再调用
+<code>__switch</code> 切换到其他任务。</li>
+</ol>
+<h4 id="一些典型的-__switch-调用场景">一些典型的 <code>__switch</code>
+调用场景</h4>
+<p>在下面执行任务的场景中，<code>__switch</code> 的调用是保证在所有的
+<code>caller-saved registers</code> 都被保存到栈上之后才会被调用的。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">run_tasks</span>() &#123;</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">processor</span> = PROCESSOR.<span class="title function_ invoke__">exclusive_access</span>();</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(task) = <span class="title function_ invoke__">fetch_task</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">idle_task_cx_ptr</span> = processor.<span class="title function_ invoke__">get_idle_task_cx_ptr</span>();</span><br><span class="line">            <span class="comment">// access coming task TCB exclusively</span></span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">task_inner</span> = task.<span class="title function_ invoke__">inner_exclusive_access</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">next_task_cx_ptr</span> = &amp;task_inner.task_cx <span class="keyword">as</span> *<span class="keyword">const</span> TaskContext;</span><br><span class="line">            task_inner.task_status = TaskStatus::Running;</span><br><span class="line">            <span class="comment">// release coming task_inner manually</span></span><br><span class="line">            <span class="title function_ invoke__">drop</span>(task_inner);</span><br><span class="line">            <span class="comment">// release coming task TCB manually</span></span><br><span class="line">            processor.current = <span class="title function_ invoke__">Some</span>(task);</span><br><span class="line">            <span class="comment">// release processor manually</span></span><br><span class="line">            <span class="title function_ invoke__">drop</span>(processor);</span><br><span class="line">            <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                __switch(idle_task_cx_ptr, next_task_cx_ptr);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            warn!(<span class="string">&quot;no tasks available in run_tasks&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="总结-1">总结</h4>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 40%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>对比维度</th>
+<th><code>__alltraps</code> + <code>__restore</code></th>
+<th><code>__switch</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>触发方式</td>
+<td>被动（硬件 Trap：中断 / 异常 / 系统调用）</td>
+<td>主动（内核函数调用）</td>
+</tr>
+<tr class="even">
+<td>执行时机</td>
+<td>任意时刻（不可控）</td>
+<td>安全点（可控：caller-saved 已保存）</td>
+</tr>
+<tr class="odd">
+<td>保存寄存器范围</td>
+<td>所有通用寄存器 + 状态寄存器（如 <code>mstatus</code>）</td>
+<td>仅
+callee-saved：<code>ra</code>、<code>sp</code>、<code>s0~s11</code></td>
+</tr>
+<tr class="even">
+<td>核心目标</td>
+<td>原封不动恢复现场（Trap 后继续执行）</td>
+<td>切换任务上下文（保证任务能恢复执行）</td>
+</tr>
+<tr class="odd">
+<td>依赖约定</td>
+<td>无（需兜底所有情况）</td>
+<td>调用前 caller-saved 已保存到栈</td>
+</tr>
+</tbody>
+</table>
+<h3 id="内核栈">内核栈</h3>
+<p>假设我们分配了一个内核栈</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[repr(align(4096))]</span></span><br><span class="line"><span class="meta">#[derive(Copy, Clone)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">KernelStack</span> &#123;</span><br><span class="line">    data: [<span class="type">u8</span>; KERNEL_STACK_SIZE],</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么按照riscv的约定：结构体的内存空间是
+“从起始地址开始，向后连续分配”，那么：</p>
+<ol type="1">
+<li>这个内核栈的空间就是
+<code>[data.as_ptr(), data.as_ptr() + KERNEL_STACK_SIZE)</code>；</li>
+<li>内核栈的栈顶地址为 data.as_ptr() + KERNEL_STACK_SIZE，该地址是栈的
+“初始空闲位置”，属于栈空间的逻辑边界（栈顶地址本身不存储有效数据，首次压栈前
+sp 指向这里）；</li>
+<li>如果我们想要分配一个大小为 <code>0x100</code>
+的地址，那么我们应该使用 data.as_ptr() + KERNEL_STACK_SIZE - 100
+作为指针；</li>
+</ol>
+<p>data.as_ptr() 是 <code>*const u8</code>
+类型（单字节指针），直接解引用 <code>*ptr</code> 仅适用于u8
+类型的场景。若是多字节类型（如
+usize、结构体），需先将指针转为对应类型，避免内存越界或数据解析错误。</p>
+<blockquote>
+<p>存储 / 读取 usize 类型（8 字节，RISC-V 64 位）</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">stack_top</span> = data.<span class="title function_ invoke__">as_ptr</span>() + KERNEL_STACK_SIZE;</span><br><span class="line"><span class="comment">// 分配 0x100 字节空间，转为 *mut usize 指针（假设 0x100 ≥ 8）</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">ptr</span> = (stack_top - <span class="number">0x100</span>) <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">usize</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// save（安全：指针类型与数据类型匹配）</span></span><br><span class="line"><span class="keyword">unsafe</span> &#123;</span><br><span class="line">    *ptr = s2; <span class="comment">// s2: usize（8 字节）</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// load</span></span><br><span class="line"><span class="keyword">unsafe</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">s2</span> = *ptr; <span class="comment">// 正确读取 8 字节，重组为 usize</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>存储 / 读取大小为 0x100 的结构体</p>
+</blockquote>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[repr(C)]</span> <span class="comment">// 按 C 布局，确保大小为 0x100</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">MyData</span> &#123;</span><br><span class="line">    data: [<span class="type">u8</span>; <span class="number">0x100</span>]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">stack_top</span> = data.<span class="title function_ invoke__">as_ptr</span>() + KERNEL_STACK_SIZE;</span><br><span class="line"><span class="comment">// 分配 0x100 字节空间，转为 *mut MyData 指针</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">data_ptr</span> = (stack_top - <span class="number">0x100</span>) <span class="keyword">as</span> *<span class="keyword">mut</span> MyData;</span><br><span class="line"></span><br><span class="line"><span class="comment">// save（使用 ptr::write 安全写入结构体）</span></span><br><span class="line"><span class="keyword">unsafe</span> &#123;</span><br><span class="line">    core::ptr::<span class="title function_ invoke__">write</span>(data_ptr, MyData::<span class="title function_ invoke__">default</span>());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// load（使用 ptr::read 安全读取结构体）</span></span><br><span class="line"><span class="keyword">unsafe</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">s2</span> = core::ptr::<span class="title function_ invoke__">read</span>(data_ptr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="代码">代码</h3>
+<p>本章节主要介绍多道程序设计与分时多任务的基本概念，并实现一个简单的任务调度器，可以分为以下几个部分：</p>
+<ol type="1">
+<li>增加了时钟中断 -- 为了对我们同时执行的多个程序进行调度；</li>
+<li>增加了基于伙伴分配算法（Buddy System
+Allocator）的堆分配管理器；</li>
+<li>将 <code>batch.rs</code> 拆分为 <code>loader.rs</code> 和
+<code>task.rs</code> 用于支持多任务调度；</li>
+<li>增加了新的 <code>syscall</code> : <code>sys_yield</code>
+用来主动触发任务切换；</li>
+</ol>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">➜  ~/code/2025a-rcore-0x822a5b87 git:(ch3) cloc --include-ext=rs,s,S,asm os </span><br><span class="line"><span class="code">     143 text files.</span></span><br><span class="line"><span class="code">     117 unique files.                              </span></span><br><span class="line"><span class="code">     122 files ignored.</span></span><br><span class="line"></span><br><span class="line">1 error:</span><br><span class="line">Unable to read:  os/.gdb_history</span><br><span class="line"></span><br><span class="line"><span class="section">github.com/AlDanial/cloc v 1.82  T=0.01 s (2066.4 files/s, 107071.4 lines/s)</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">Language                     files          blank        comment           code</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line">Rust                            23            138            239            851</span><br><span class="line"><span class="section">Assembly                         4             12             29            130</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br><span class="line"><span class="section">SUM:                            27            150            268            981</span></span><br><span class="line"><span class="section">-------------------------------------------------------------------------------</span></span><br></pre></td></tr></table></figure>
+<h2 id="section"></h2>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/13/ucore%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F/" rel="prev" title="uCore批处理系统">
+                  <i class="fa fa-angle-left"></i> uCore批处理系统
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/" rel="next" title="uCore地址空间">
+                  uCore地址空间 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

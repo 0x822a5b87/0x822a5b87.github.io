@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="引用  The yield statement Operators and Expressions in Python Syntactic Sugar: Why Python Is Sweet and Pythonic How to Use Generators and yield in Python When to Use a List Comprehension in Python Pytho">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python里的一些语法糖">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="引用  The yield statement Operators and Expressions in Python Syntactic Sugar: Why Python Is Sweet and Pythonic How to Use Generators and yield in Python When to Use a List Comprehension in Python Pytho">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-05-08T12:02:44.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/","path":"2025/05/08/Python里的一些语法糖/","title":"Python里的一些语法糖"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Python里的一些语法糖 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E8%AF%8D"><span class="nav-number">2.</span> <span class="nav-text">关键词</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#operators"><span class="nav-number">3.</span> <span class="nav-text">Operators</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#membership-tests"><span class="nav-number">3.1.</span> <span class="nav-text">membership tests</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#chained-conditions"><span class="nav-number">4.</span> <span class="nav-text">Chained Conditions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#conditional-expressions"><span class="nav-number">5.</span> <span class="nav-text">Conditional
+expressions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#assignment-expressions"><span class="nav-number">6.</span> <span class="nav-text">Assignment Expressions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unpacking"><span class="nav-number">7.</span> <span class="nav-text">Unpacking</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iterable-unpacking"><span class="nav-number">7.1.</span> <span class="nav-text">Iterable Unpacking</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#args-and-kwargs"><span class="nav-number">7.2.</span> <span class="nav-text">*args and
+**kwargs</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#loops-and-comprehensions"><span class="nav-number">8.</span> <span class="nav-text">Loops and Comprehensions</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#exploring-for-loops"><span class="nav-number">8.1.</span> <span class="nav-text">Exploring for Loops</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#using-comprehensions"><span class="nav-number">8.2.</span> <span class="nav-text">Using Comprehensions</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#decorators"><span class="nav-number">9.</span> <span class="nav-text">Decorators</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#f-string-literals"><span class="nav-number">10.</span> <span class="nav-text">F-String Literals</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#the-yield-from-construct"><span class="nav-number">11.</span> <span class="nav-text">The yield from
+Construct</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#understanding-generators"><span class="nav-number">12.</span> <span class="nav-text">Understanding Generators</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#profiling-generator-performance"><span class="nav-number">12.1.</span> <span class="nav-text">Profiling Generator
+Performance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#understanding-the-python-yield-statement"><span class="nav-number">12.2.</span> <span class="nav-text">Understanding the
+python yield statement</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#using-advanced-generator-methods"><span class="nav-number">12.3.</span> <span class="nav-text">Using Advanced Generator
+Methods</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#the-with-statement"><span class="nav-number">13.</span> <span class="nav-text">The with Statement</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#list-comprehension"><span class="nav-number">14.</span> <span class="nav-text">List Comprehension</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#nested-list-comprehensions"><span class="nav-number">14.1.</span> <span class="nav-text">Nested
+List Comprehensions</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dictionary-and-dict-comprehensions"><span class="nav-number">15.</span> <span class="nav-text">Dictionary And dict
+comprehensions</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Python里的一些语法糖 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python里的一些语法糖
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-05-08 20:02:44" itemprop="dateCreated datePublished" datetime="2025-05-08T20:02:44+08:00">2025-05-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="引用">引用</h2>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/simple_stmts.html#grammar-token-python-grammar-yield_stmt">The
+<code>yield</code> statement</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/python-operators-expressions/">Operators
+and Expressions in Python</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/syntactic-sugar-python/#unpacking-in-python">Syntactic
+Sugar: Why Python Is Sweet and Pythonic</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/introduction-to-python-generators/">How to
+Use Generators and yield in Python</a></li>
+<li><a target="_blank" rel="noopener" href="https://realpython.com/list-comprehension-python/">When to
+Use a List Comprehension in Python</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://realpython.com/python-dictionary-comprehension/">Python
+Dictionary Comprehensions: How and When to Use Them</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://docs.python.org/2/tutorial/datastructures.html#list-comprehensions">List
+Comprehensions</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/tutorial/datastructures.html#dictionaries">Dictionaries</a></li>
+</ul>
+<h2 id="关键词">关键词</h2>
+<ul>
+<li>Syntactic Sugar</li>
+<li>Operators</li>
+<li>Assignment Expressions</li>
+<li>for loops</li>
+<li>comprehensions</li>
+<li>constructor</li>
+</ul>
+<h2 id="operators">Operators</h2>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 88%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Operator</th>
+<th style="text-align: center;">Method</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>+</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__add__"><code>__add__</code></a></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>-</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__sub__"><code>__sub__</code></a></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>*</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__mul__"><code>__mul__</code></a></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>/</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__truediv__"><code>__truediv__</code></a></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>//</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__floordiv__"><code>__floordiv__</code></a></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>**</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__pow__"><code>__pow__</code></a></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>in</code></td>
+<td style="text-align: center;"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/datamodel.html#object.__contains__"><code>__contains__</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>every time we use an operator, Python calls the corresponding special
+method for us. For example: <code>1 + 2</code> equals to
+<code>(1).__add__(2)</code> but way more complex and unreadable.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">NumberOperator</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, number: <span class="built_in">int</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.number = number</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__add__</span>(<span class="params">self, other</span>):</span><br><span class="line">        v = <span class="variable language_">self</span>.number + other.number</span><br><span class="line">        <span class="keyword">return</span> NumberOperator(v)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>():</span><br><span class="line">    one = NumberOperator(<span class="number">1</span>)</span><br><span class="line">    two = NumberOperator(<span class="number">2</span>)</span><br><span class="line">    three = one + two</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;one = <span class="subst">&#123;one.number&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;two = <span class="subst">&#123;two.number&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;three = <span class="subst">&#123;three.number&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="membership-tests">membership tests</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">membership_test</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="number">1</span> <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>])</span><br><span class="line">    <span class="built_in">print</span>(<span class="number">1</span> <span class="keyword">not</span> <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>])</span><br><span class="line">    <span class="built_in">print</span>(<span class="number">3</span> <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>])</span><br><span class="line">    <span class="built_in">print</span>(<span class="number">3</span> <span class="keyword">not</span> <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>])</span><br></pre></td></tr></table></figure>
+<h2 id="chained-conditions">Chained Conditions</h2>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">chained_conditions</span>(<span class="params">number: <span class="built_in">int</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="number">1</span> &lt;= number &lt;= <span class="number">10</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">True</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<h2 id="conditional-expressions"><a
+target="_blank" rel="noopener" href="https://docs.python.org/3/reference/expressions.html#conditional-expressions">Conditional
+expressions</a></h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">or_test  ::= and_test | or_test &quot;or&quot; and_test</span><br><span class="line">and_test ::= not_test | and_test &quot;and&quot; not_test</span><br><span class="line">not_test ::= comparison | &quot;not&quot; not_test</span><br><span class="line"></span><br><span class="line">conditional_expression ::= or_test [&quot;if&quot; or_test &quot;else&quot; expression]</span><br><span class="line">expression             ::= conditional_expression | lambda_expr</span><br></pre></td></tr></table></figure>
+<h2 id="assignment-expressions">Assignment Expressions</h2>
+<blockquote>
+<p>Traditional assignments built with the <code>=</code> operator don’t
+return a value, so they’re <a
+target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-statement">statements</a>
+but not <a
+target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-expression">expressions</a>.
+In contrast, <strong>assignment expressions</strong> are assignments
+that return a value. You can build them with the walrus operator
+(<code>:=</code>).</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># this is an assignment expression, so it&#x27;s syntactically correct.</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">assignment_expression</span>():</span><br><span class="line">    <span class="keyword">while</span> (line := <span class="built_in">input</span>(<span class="string">&quot;Type some text: &quot;</span>)) != <span class="string">&quot;stop&quot;</span>:</span><br><span class="line">        <span class="built_in">print</span>(line)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># this is a normal assignment, it doesn&#x27;t return a value, so it&#x27;s syntactically incorrect</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">assignment</span>():</span><br><span class="line">    <span class="comment"># Unresolved reference &#x27;line&#x27;</span></span><br><span class="line">    <span class="comment"># while (line = input(&quot;Type some text: &quot;)) != &quot;stop&quot;:</span></span><br><span class="line">    <span class="comment">#     print(line)</span></span><br><span class="line">    <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<h2 id="unpacking">Unpacking</h2>
+<blockquote>
+<p>Unpacking an iterable means assigning its values to a series of
+variables one by one.</p>
+</blockquote>
+<h3 id="iterable-unpacking">Iterable Unpacking</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Once Python runs this assignment, the values are unpacked into the corresponding variable by position.</span></span><br><span class="line">one, two three, four = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line"></span><br><span class="line">a = <span class="number">200</span></span><br><span class="line">b = <span class="number">100</span></span><br><span class="line"><span class="comment"># using the unpacking syntactic sugar, we can swap values between variables without assigning temporary variable</span></span><br><span class="line">a, b = b, a</span><br></pre></td></tr></table></figure>
+<h3 id="args-and-kwargs"><code>*args</code> and
+<code>**kwargs</code></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1</span></span><br><span class="line"><span class="comment"># (2, 3, 4)</span></span><br><span class="line"><span class="comment"># &#123;&#x27;hello&#x27;: &#x27;hello&#x27;, &#x27;world&#x27;: &#x27;world&#x27;&#125;</span></span><br><span class="line"><span class="comment"># args will be bound to positional arguments, and kwargs will be bound to keyword arguments</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">args_func</span>(<span class="params">number:<span class="built_in">int</span>, *args, **kwargs</span>):</span><br><span class="line">    <span class="built_in">print</span>(number)</span><br><span class="line">    <span class="built_in">print</span>(args)</span><br><span class="line">    <span class="built_in">print</span>(kwargs)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    args_func(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, hello=<span class="string">&quot;hello&quot;</span>, world=<span class="string">&quot;world&quot;</span>)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># I suppose that there are two different types of arguments in Python&#x27;s arguments,</span></span><br><span class="line"><span class="comment"># The first type is named argument and the other type is anonymous argument.</span></span><br><span class="line"><span class="comment"># In this situation, &quot;name&quot; is a named argument, and &quot;hello&quot; and &quot;world&quot; is anonymous arguments,</span></span><br><span class="line"><span class="comment"># so &quot;**kwargs&quot; will be bound to anonymous arguments rather than being bound to all arguments</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">show_args</span>(<span class="params">number: <span class="built_in">int</span>, *args, name: <span class="built_in">str</span>, **kwargs</span>):</span><br><span class="line">    args_func(number, *args, **kwargs)</span><br><span class="line">    <span class="built_in">print</span>(name)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    <span class="comment"># TypeError: show_args() missing 1 required keyword-only argument: &#x27;name&#x27;</span></span><br><span class="line">    <span class="comment"># show_args(1, 2, 3, &quot;name&quot;, 4, hello=&quot;hello&quot;, world=&quot;world&quot;)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># TypeError: show_args() missing 1 required keyword-only argument: &#x27;name&#x27;</span></span><br><span class="line">    <span class="comment"># show_args(1, 2, 3, 4, &quot;name&quot;, hello=&quot;hello&quot;, world=&quot;world&quot;)</span></span><br><span class="line">    </span><br><span class="line">    show_args(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, name=<span class="string">&quot;name&quot;</span>, hello=<span class="string">&quot;hello&quot;</span>, world=<span class="string">&quot;world&quot;</span>)</span><br><span class="line">    <span class="comment"># 1</span></span><br><span class="line">		<span class="comment"># (2, 3, 4)</span></span><br><span class="line">		<span class="comment"># &#123;&#x27;hello&#x27;: &#x27;hello&#x27;, &#x27;world&#x27;: &#x27;world&#x27;&#125;</span></span><br><span class="line">		<span class="comment"># name</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>What will be happening if we pass a list as a <code>*args</code> and
+pass a dict as a <code>**kwargs</code></p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">show_args2</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">    <span class="built_in">print</span>(args)</span><br><span class="line">    <span class="built_in">print</span>(kwargs)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_show_args2</span>():</span><br><span class="line">    list1 = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line">    list2 = [<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>]</span><br><span class="line"></span><br><span class="line">    dict1 = &#123;<span class="string">&quot;k1&quot;</span>: <span class="string">&quot;v1&quot;</span>, <span class="string">&quot;k2&quot;</span>: <span class="string">&quot;v2&quot;</span>&#125;</span><br><span class="line">    show_args2(list1, list2, dict1=dict1)</span><br><span class="line">    <span class="comment"># both of list1 and list2 are bound to *args, it&#x27;s worth noticing that each list is an entirety which being passed to *args</span></span><br><span class="line">    <span class="comment"># ([1, 2, 3, 4], [3, 4, 5, 6])</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;dict1&#x27;: &#123;&#x27;k1&#x27;: &#x27;v1&#x27;, &#x27;k2&#x27;: &#x27;v2&#x27;&#125;&#125;</span></span><br><span class="line"></span><br><span class="line">    show_args2(list1, dict1=dict1)</span><br><span class="line">    <span class="comment"># ([1, 2, 3, 4],)</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;dict1&#x27;: &#123;&#x27;k1&#x27;: &#x27;v1&#x27;, &#x27;k2&#x27;: &#x27;v2&#x27;&#125;&#125;</span></span><br><span class="line"></span><br><span class="line">    show_args2(*list1, dict1=dict1)</span><br><span class="line">    <span class="comment"># using *list1 will decompose list into a series of variables bound to *args</span></span><br><span class="line">    <span class="comment"># (1, 2, 3, 4)</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;dict1&#x27;: &#123;&#x27;k1&#x27;: &#x27;v1&#x27;, &#x27;k2&#x27;: &#x27;v2&#x27;&#125;&#125;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="loops-and-comprehensions">Loops and Comprehensions</h2>
+<h3 id="exploring-for-loops">Exploring <code>for</code> Loops</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">simple_loops</span>():</span><br><span class="line">    numbers = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span>]</span><br><span class="line">    <span class="keyword">for</span> number <span class="keyword">in</span> numbers:</span><br><span class="line">        <span class="built_in">print</span>(number, end=<span class="string">&#x27;, &#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">iter_loops</span>():</span><br><span class="line">    numbers = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span>]</span><br><span class="line">    it = <span class="built_in">iter</span>(numbers)</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            number = <span class="built_in">next</span>(it)</span><br><span class="line">            <span class="built_in">print</span>(number, end=<span class="string">&#x27; &#x27;</span>)</span><br><span class="line">        <span class="keyword">except</span> StopIteration:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    iter_loops()</span><br></pre></td></tr></table></figure>
+<h3 id="using-comprehensions">Using Comprehensions</h3>
+<blockquote>
+<p>say that we have a list of numbers as strings, and we want to convert
+them into numeric values and build a new list of squared values.</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">square_string_list</span>():</span><br><span class="line">    strings = [<span class="string">&quot;1&quot;</span>, <span class="string">&quot;2&quot;</span>, <span class="string">&quot;3&quot;</span>, <span class="string">&quot;4&quot;</span>, <span class="string">&quot;5&quot;</span>, <span class="string">&quot;6&quot;</span>, <span class="string">&quot;7&quot;</span>, <span class="string">&quot;8&quot;</span>, <span class="string">&quot;9&quot;</span>]</span><br><span class="line">    numbers = [<span class="built_in">int</span>(num)**<span class="number">2</span> <span class="keyword">for</span> num <span class="keyword">in</span> strings]</span><br><span class="line">    <span class="built_in">print</span>(numbers)</span><br><span class="line">    <span class="comment"># [1, 4, 9, 16, 25, 36, 49, 64, 81]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    square_string_list()</span><br></pre></td></tr></table></figure>
+<h2 id="decorators">Decorators</h2>
+<p>Decorators are functions that take another function as an argument
+and extend their behavior dynamically without explicitly modifying it.
+<strong>In Python, you have a dedicated syntax that allows you to apply
+a decorator to a given function</strong>: In this piece of syntax, the
+<code>@decorator</code> part tells Python to call
+<code>decorator()</code> with the <code>func</code> <strong>object as an
+argument</strong>.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@decorator</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">func</span>():</span><br><span class="line">    &lt;body&gt;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>The following code produces a TypeError called ** 'NoneType' object
+is not callable** since decorator function prev returns nothing to be
+executed:</p>
+<ol type="1">
+<li>before <code>f()</code> executing, the decorator <code>prev()</code>
+was executed;</li>
+<li>the execution of <code>prev()</code> returns nothing which means the
+<code>()</code> in <code>f()</code> has nothing to execute;</li>
+</ol>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">prev</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;args = <span class="subst">&#123;args&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;kwargs = <span class="subst">&#123;kwargs&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@prev</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;running&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    f()</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>The following code is correct.</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">prev</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;args = <span class="subst">&#123;args&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;kwargs = <span class="subst">&#123;kwargs&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> args[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"><span class="meta">@prev</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;running&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    f()</span><br><span class="line"></span><br><span class="line"><span class="comment"># args = (&lt;function f at 0x10b944ca0&gt;,)</span></span><br><span class="line"><span class="comment"># kwargs = &#123;&#125;</span></span><br><span class="line"><span class="comment"># running</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>Here is a bizarre statement that we never call <code>f()</code> but
+its decorator <code>prev()</code> was invoked automatically by compiler.
+It's because <strong>decorator is loaded during loading
+modules</strong></p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">prev</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;args = <span class="subst">&#123;args&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;kwargs = <span class="subst">&#123;kwargs&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> args[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"><span class="meta">@prev</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;running&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>decorator with <code>lambda</code></p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">decorator_with_arguments</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">running</span>(<span class="params">name: <span class="built_in">str</span>, age: <span class="built_in">int</span></span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;args = <span class="subst">&#123;args&#125;</span>&#x27;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;kwargs = <span class="subst">&#123;kwargs&#125;</span>&#x27;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;name = <span class="subst">&#123;name&#125;</span>&#x27;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;age = <span class="subst">&#123;age&#125;</span>&#x27;</span>)</span><br><span class="line">        outer = args[<span class="number">0</span>]</span><br><span class="line">        <span class="keyword">return</span> outer(name=name, age=age)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> running</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@decorator_with_arguments</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">func_with_arguments</span>(<span class="params">name: <span class="built_in">str</span>, age: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;name = <span class="subst">&#123;name&#125;</span>, age = <span class="subst">&#123;age&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    func_with_arguments(name=<span class="string">&#x27;tony&#x27;</span>, age=<span class="number">20</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># args = (&lt;function func_with_arguments at 0x10b553ca0&gt;,)</span></span><br><span class="line"><span class="comment"># kwargs = &#123;&#125;</span></span><br><span class="line"><span class="comment"># name = tony</span></span><br><span class="line"><span class="comment"># age = 20</span></span><br><span class="line"><span class="comment"># name = tony, age = 20</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>decorator with <code>lambda</code> two:</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">decorator_with_arguments2</span>(<span class="params">func</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrapper</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;args = <span class="subst">&#123;args&#125;</span>&#x27;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;kwargs = <span class="subst">&#123;kwargs&#125;</span>&#x27;</span>)</span><br><span class="line">        <span class="keyword">return</span> func(*args, **kwargs)</span><br><span class="line">    <span class="keyword">return</span> wrapper</span><br><span class="line"></span><br><span class="line"><span class="meta">@decorator_with_arguments2</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">func_with_arguments2</span>(<span class="params">name: <span class="built_in">str</span>, age: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;func_with_arguments2 : name = <span class="subst">&#123;name&#125;</span>, age = <span class="subst">&#123;age&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    func_with_arguments2(name=<span class="string">&#x27;tony&#x27;</span>, age=<span class="number">20</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># args = ()</span></span><br><span class="line"><span class="comment"># kwargs = &#123;&#x27;name&#x27;: &#x27;tony&#x27;, &#x27;age&#x27;: 20&#125;</span></span><br><span class="line"><span class="comment"># func_with_arguments2 : name = tony, age = 20</span></span><br></pre></td></tr></table></figure>
+<h2 id="f-string-literals">F-String Literals</h2>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">debit = <span class="number">300</span></span><br><span class="line">credit = <span class="number">450</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Debit: $<span class="subst">&#123;debit:<span class="number">.2</span>f&#125;</span>, Credit: $<span class="subst">&#123;credit:<span class="number">.2</span>f&#125;</span>, Balance: $<span class="subst">&#123;credit - debit:<span class="number">.2</span>f&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="the-yield-from-construct">The <code>yield</code> from
+Construct</h2>
+<p>Introduced with <a
+target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0255">PEP 255</a>,
+<strong>generator functions</strong> are a special kind of function that
+return a <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Lazy_evaluation">lazy
+iterator</a>. These are objects that you can loop over like a <a
+target="_blank" rel="noopener" href="https://realpython.com/python-lists-tuples/">list</a>. However,
+unlike lists, lazy iterators do not store their contents in memory.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">gen_infinite_sequence</span>():</span><br><span class="line">    num = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        <span class="keyword">yield</span> num</span><br><span class="line">        num += <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    gen = gen_infinite_sequence()</span><br><span class="line">    <span class="built_in">print</span>(gen)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="built_in">next</span>(gen), end=<span class="string">&#x27; &#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># &lt;generator object gen_infinite_sequence at 0x10be6cf90&gt;</span></span><br><span class="line"><span class="comment"># 0 1 2 3 4</span></span><br></pre></td></tr></table></figure>
+<h2 id="understanding-generators">Understanding Generators</h2>
+<blockquote>
+<p>Python yield statement and the code that follows it.
+<code>yield</code> indicates where a value is sent back to the caller,
+but unlike <code>return</code>, you don’t exit the function
+afterward.</p>
+<p>Instead, the <strong>state</strong> of the function is remembered.
+That way, when <code>next()</code> is called on a generator object
+(either explicitly or implicitly within a <code>for</code> loop), the
+previously yielded variable <code>num</code> is incremented, and then
+yielded again.</p>
+</blockquote>
+<h3 id="profiling-generator-performance">Profiling Generator
+Performance</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">profiling_yield</span>():</span><br><span class="line">    <span class="keyword">import</span> cProfile</span><br><span class="line">    cProfile.run(<span class="string">&#x27;sum([i * 2 for i in range(10000)])&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    profiling_yield()</span><br></pre></td></tr></table></figure>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Ordered</span> by: standard name</span><br><span class="line"></span><br><span class="line"><span class="attribute">ncalls</span>  tottime  percall  cumtime  percall filename:lineno(function)</span><br><span class="line">     <span class="attribute">1</span>    <span class="number">0</span>.<span class="number">001</span>    <span class="number">0</span>.<span class="number">001</span>    <span class="number">0</span>.<span class="number">001</span>    <span class="number">0</span>.<span class="number">001</span> &lt;string&gt;:<span class="number">1</span>(&lt;listcomp&gt;)</span><br><span class="line">     <span class="attribute">1</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">001</span>    <span class="number">0</span>.<span class="number">001</span> &lt;string&gt;:<span class="number">1</span>(&lt;module&gt;)</span><br><span class="line">     <span class="attribute">1</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">001</span>    <span class="number">0</span>.<span class="number">001</span> &#123;built-in method builtins.exec&#125;</span><br><span class="line">     <span class="attribute">1</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span> &#123;built-in method builtins.sum&#125;</span><br><span class="line">     <span class="attribute">1</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span>    <span class="number">0</span>.<span class="number">000</span> &#123;method &#x27;disable&#x27; of &#x27;_lsprof.Profiler&#x27; objects&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="understanding-the-python-yield-statement">Understanding the
+python yield statement</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">multi_yield</span>():</span><br><span class="line">    yield_string = <span class="string">&quot;first string&quot;</span></span><br><span class="line">    <span class="keyword">yield</span> yield_string</span><br><span class="line">    yield_string = <span class="string">&quot;second string&quot;</span></span><br><span class="line">    <span class="keyword">yield</span> yield_string</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    gen = multi_yield()</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">next</span>(gen))</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">next</span>(gen))</span><br><span class="line"><span class="comment"># first string</span></span><br><span class="line"><span class="comment"># second string</span></span><br></pre></td></tr></table></figure>
+<h3 id="using-advanced-generator-methods">Using Advanced Generator
+Methods</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">method</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>generator.send()</code></td>
+<td>Resumes the execution and “sends” a value into the generator
+function. The <code>value</code> argument becomes the result of the
+current <code>yield</code> expression. The <code>send()</code> method
+returns the next value yielded by the generator, or raises
+<code>StopIteration</code> if the generator exits without yielding
+another value.</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>generator.throw()</code></td>
+<td><code>.throw()</code> allows you to throw exceptions with the
+generator. I</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>generator.close()</code></td>
+<td>As its name implies, <code>.close()</code> allows you to stop a
+generator.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-with-statement">The <code>with</code> Statement</h2>
+<p>Python’s <code>with</code> statement is a handy tool that allows you
+to manipulate <a
+target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-context-manager">context
+manager</a> objects. These objects automatically handle the
+<em>setup</em> and <em>teardown</em> phases whenever you’re dealing with
+external resources such as files.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;hello.txt&quot;</span>, mode=<span class="string">&quot;w&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> file:</span><br><span class="line">    file.write(<span class="string">&quot;Hello, World!&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># equals to</span></span><br><span class="line">    </span><br><span class="line">file = <span class="built_in">open</span>(<span class="string">&quot;hello.txt&quot;</span>, mode=<span class="string">&quot;w&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    file.write(<span class="string">&quot;Hello, World!&quot;</span>)</span><br><span class="line"><span class="keyword">finally</span>:</span><br><span class="line">    file.close()</span><br></pre></td></tr></table></figure>
+<h2 id="list-comprehension">List Comprehension</h2>
+<blockquote>
+<p>List comprehensions provide a concise way to create lists. Common
+applications are to make new lists where each element is the result of
+some operations applied to each member of another sequence or iterable,
+or to create a subsequence of those elements that satisfy a certain
+condition.</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">squares = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>):</span><br><span class="line">  	squares.append(x**<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>we can obtain the same result with</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">squares = [x ** <span class="number">2</span> <span class="keyword">for</span> x <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>)]</span><br></pre></td></tr></table></figure>
+<p>This is also simliar to the following code, except that the following
+code return <strong>&lt;map object at 0x100d01760&gt;</strong> which is
+a stream of data that is lazily initiated when the it's called.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">squares = <span class="built_in">map</span>(<span class="keyword">lambda</span> x: x**<span class="number">2</span>, <span class="built_in">range</span>(<span class="number">10</span>))</span><br><span class="line"><span class="built_in">print</span>(squares)</span><br><span class="line"><span class="comment"># &lt;map object at 0x100d01760&gt;</span></span><br><span class="line"><span class="keyword">for</span> s <span class="keyword">in</span> squares:</span><br><span class="line">  <span class="built_in">print</span>(s, end=<span class="string">&#x27; &#x27;</span>)</span><br><span class="line">  <span class="comment"># 0 1 4 9 16 25 36 49 64 81 </span></span><br></pre></td></tr></table></figure>
+<p>A list comprehension consists of brackets containing an expression
+followed by a <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#for"><code>for</code></a>
+clause, then zero or more <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#for"><code>for</code></a>
+or <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#if"><code>if</code></a>
+clauses. The result will be a new list resulting from evaluating the
+expression in the context of the <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#for"><code>for</code></a>
+and <a
+target="_blank" rel="noopener" href="https://docs.python.org/2/reference/compound_stmts.html#if"><code>if</code></a>
+clauses which follow it. For example, this listcomp combines the
+elements of two lists if they are not equal:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">lc2</span>():</span><br><span class="line">    arr = [(x, y)</span><br><span class="line">           <span class="keyword">for</span> x <span class="keyword">in</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]</span><br><span class="line">           <span class="keyword">for</span> y <span class="keyword">in</span> [<span class="number">3</span>, <span class="number">1</span>, <span class="number">4</span>]</span><br><span class="line">           <span class="keyword">if</span> x != y]</span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> arr:</span><br><span class="line">        <span class="built_in">print</span>(item, end=<span class="string">&#x27; &#x27;</span>)</span><br><span class="line">        <span class="comment"># (1, 3) (1, 4) (2, 3) (2, 1) (2, 4) (3, 1) (3, 4)</span></span><br></pre></td></tr></table></figure>
+<p>The forementioned code is equivalent to the following code but way
+more readable:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">for_arr = []</span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>]:</span><br><span class="line">    <span class="keyword">for</span> y <span class="keyword">in</span> [<span class="number">3</span>,<span class="number">1</span>,<span class="number">4</span>]:</span><br><span class="line">        <span class="keyword">if</span> x != y:</span><br><span class="line">            for_arr.append((x, y))</span><br><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> for_arr:</span><br><span class="line">    <span class="built_in">print</span>(item, end=<span class="string">&#x27; &#x27;</span>)</span><br><span class="line"><span class="comment"># (1, 3) (1, 4) (2, 3) (2, 1) (2, 4) (3, 1) (3, 4) </span></span><br></pre></td></tr></table></figure>
+<p>If the expression is a tuple (e.g. the <code>(x, y)</code> in the
+previous example), it must be parenthesized.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[x, x**<span class="number">2</span> <span class="keyword">for</span> x <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">6</span>)]</span><br><span class="line"><span class="comment">#   File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;</span></span><br><span class="line"><span class="comment">#    [x, x**2 for x in range(6)]</span></span><br></pre></td></tr></table></figure>
+<h4 id="nested-list-comprehensions"><a
+target="_blank" rel="noopener" href="https://docs.python.org/2/tutorial/datastructures.html#nested-list-comprehensions">Nested
+List Comprehensions</a></h4>
+<p>The initial expression in a list comprehension can be any arbitrary
+expression, including another list comprehension.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">nested_list_comprehensions</span>():</span><br><span class="line">    matrix = [</span><br><span class="line">        [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>],</span><br><span class="line">        [<span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>],</span><br><span class="line">        [<span class="number">9</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">12</span>],</span><br><span class="line">    ]</span><br><span class="line">    <span class="built_in">print</span>([[row[i] <span class="keyword">for</span> row <span class="keyword">in</span> matrix] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(matrix))])</span><br><span class="line">    <span class="comment"># [[1, 5, 9], [2, 6, 10], [3, 7, 11]]</span></span><br><span class="line">    <span class="built_in">print</span>([[row[i] <span class="keyword">for</span> row <span class="keyword">in</span> matrix] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">4</span>)])</span><br><span class="line">    <span class="comment"># [[1, 5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]]</span></span><br></pre></td></tr></table></figure>
+<h2 id="dictionary-and-dict-comprehensions">Dictionary And dict
+comprehensions</h2>
+<p>In addition, dict comprehensions can be used to create dictionaries
+from arbitrary key and value expressions:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">dictionaries</span>():</span><br><span class="line">    v = &#123;x: x ** <span class="number">2</span> <span class="keyword">for</span> x <span class="keyword">in</span> (<span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>)&#125;</span><br><span class="line">    <span class="built_in">print</span>(v)</span><br><span class="line">    <span class="comment"># &#123;2: 4, 4: 16, 6: 36&#125;</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/" rel="prev" title="一个学习汇编的小游戏：BOX-256">
+                  <i class="fa fa-angle-left"></i> 一个学习汇编的小游戏：BOX-256
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/" rel="next" title="Conclusion of Linear Algebra For Everyone">
+                  Conclusion of Linear Algebra For Everyone <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

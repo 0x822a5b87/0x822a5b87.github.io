@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="前言 最近在学习 RISCV 的过程中，碰见了一个比较奇特的BUG，在下面的代码中，我们出现了一个神秘的未定义行为（Undefined Behavior）： 1234567891011121314#include &lt;stdio.h&gt;void main()&#123;    char a;    unsigned int b;    unsigned long c;    a &#x3D; 0x8">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C99中关于char的一个未定义行为">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="前言 最近在学习 RISCV 的过程中，碰见了一个比较奇特的BUG，在下面的代码中，我们出现了一个神秘的未定义行为（Undefined Behavior）： 1234567891011121314#include &lt;stdio.h&gt;void main()&#123;    char a;    unsigned int b;    unsigned long c;    a &#x3D; 0x8">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-03T08:25:47.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/","path":"2025/11/03/C99中关于char的一个未定义行为/","title":"C99中关于char的一个未定义行为"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>C99中关于char的一个未定义行为 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#x86x86_64"><span class="nav-number">1.1.</span> <span class="nav-text">x86&#x2F;x86_64</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#risc-v"><span class="nav-number">1.2.</span> <span class="nav-text">RISC-V</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E8%BE%93%E5%87%BA"><span class="nav-number">1.3.</span> <span class="nav-text">实际输出</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%A6%E7%BB%86%E8%A7%A3%E9%87%8A"><span class="nav-number">2.</span> <span class="nav-text">详细解释</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFchar"><span class="nav-number">2.1.</span> <span class="nav-text">什么是char</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E4%B8%AD%E7%9A%84%E7%AC%A6%E5%8F%B7"><span class="nav-number">2.2.</span> <span class="nav-text">类型转换中的符号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.3.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/03/C99%E4%B8%AD%E5%85%B3%E4%BA%8Echar%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%AA%E5%AE%9A%E4%B9%89%E8%A1%8C%E4%B8%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="C99中关于char的一个未定义行为 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C99中关于char的一个未定义行为
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-03 16:25:47" itemprop="dateCreated datePublished" datetime="2025-11-03T16:25:47+08:00">2025-11-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="前言">前言</h1>
+<p>最近在学习 RISCV
+的过程中，碰见了一个比较奇特的BUG，在下面的代码中，我们出现了一个神秘的未定义行为（Undefined
+Behavior）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> a;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> b;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> c;</span><br><span class="line"></span><br><span class="line">    a = <span class="number">0x88</span>;</span><br><span class="line">    b = ~a;</span><br><span class="line">    c = ~a;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;a=0x%x, ~a=0x%x, b=0x%x, c=0x%lx\n&quot;</span>, a, ~a, b, c);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>本来是一段很简单的用于测试C语言下的隐式转换规则的代码，结果很神奇的是在两个不同的平台下出现了截然不同的输出！</p>
+<h2 id="x86x86_64">x86/x86_64</h2>
+<p>在 <code>x86/x86_64</code> 平台下，我使用的编译器版本如下：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">gcc</span> (Debian <span class="number">10</span>.<span class="number">3</span>.<span class="number">0</span>-<span class="number">9</span>) <span class="number">10</span>.<span class="number">3</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">Copyright</span> (C) <span class="number">2020</span> Free Software Foundation, Inc.</span><br><span class="line"><span class="attribute">This</span> is free software; see the source for copying conditions.  There is NO</span><br><span class="line"><span class="attribute">warranty</span>; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</span><br></pre></td></tr></table></figure>
+<h2 id="risc-v">RISC-V</h2>
+<p>在 <code>riscv</code> 平台下，我使用的编译器版本如下：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">gcc</span> (Ubuntu <span class="number">9</span>.<span class="number">4</span>.<span class="number">0</span>-<span class="number">1</span>ubuntu1~<span class="number">20</span>.<span class="number">04</span>.<span class="number">2</span>) <span class="number">9</span>.<span class="number">4</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">Copyright</span> (C) <span class="number">2019</span> Free Software Foundation, Inc.</span><br><span class="line"><span class="attribute">This</span> is free software; see the source for copying conditions.  There is NO</span><br><span class="line"><span class="attribute">warranty</span>; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</span><br></pre></td></tr></table></figure>
+<h2 id="实际输出">实际输出</h2>
+<p>在 <code>x86/x86_64</code> 平台下，我们的输出是这样的：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">a</span>=0xffffff88, ~<span class="attribute">a</span>=0x77, <span class="attribute">b</span>=0x77, <span class="attribute">c</span>=0x77</span><br></pre></td></tr></table></figure>
+<p>在 <code>riscv</code> 平台下，我们的输出是这样的：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">a</span>=0x88, ~<span class="attribute">a</span>=0xffffff77, <span class="attribute">b</span>=0xffffff77, <span class="attribute">c</span>=0xffffffffffffff77</span><br></pre></td></tr></table></figure>
+<p>其实观察输出就可以知道一个很明显的结论：在两个平台下，对char类型是有符号还是无符号的实现存在差别！</p>
+<p>在x86平台下，char 是一个有符号的整数：</p>
+<ol type="1">
+<li>a 被<strong>符号扩展</strong>到 0xffffff88；</li>
+<li>~a 先<strong>符号扩展</strong>到int，再取反得到 0x77；</li>
+<li>b 先<strong>符号扩展</strong>到int，再取反得到 0x77；</li>
+<li>c 先<strong>符号扩展</strong>到int，再取反得到 0x77；</li>
+</ol>
+<p>在 riscv 下，char 是一个无符号的整数：</p>
+<ol type="1">
+<li>a 被<strong>零扩展</strong>到 0x88；</li>
+<li>~a 先<strong>零扩展</strong>到int，再取反得到 0xffffff77；</li>
+<li>b 先<strong>零扩展</strong>到int，再取反得到 0xffffff77；</li>
+<li>c 先<strong>零扩展</strong>到int，再取反得到
+0xffffffffffffff77；</li>
+</ol>
+<h1 id="详细解释">详细解释</h1>
+<p>要想知道为什么结果是这样，我们必须先了解清楚几个重要的问题：</p>
+<ol type="1">
+<li><code>char</code> 的定义是什么？</li>
+<li>类型转换的符号规则是什么？</li>
+</ol>
+<h2 id="什么是char">什么是char</h2>
+<p>翻阅C99 SPECIFICATION，我们可以找到一下几个关键结论：</p>
+<blockquote>
+<p>An object declared as type char is large enough to store any member
+of the <strong>basic execution character set</strong>. If a member of
+the basic execution character set is stored in a char object, its value
+is guaranteed to be <code>positive</code>. <strong>If any other
+character is stored in a char object, the resulting value is
+implementation-defined but shall be within the range of values that can
+be represented in that type</strong>.</p>
+</blockquote>
+<p>在 <code>6.2.5 Types - 3</code>
+这一小节中，我们可以得出关于char的几个重要的结论：</p>
+<ol type="1">
+<li>大小必须足够存储基础执行字符集（basic execution character
+set）；</li>
+<li>基础执行字符集存储在char中必须为非负数；</li>
+<li>如果有其他的字符被存储在char中，结果值是<strong>基于实现</strong>的，但是需要可以被char类型的范围所覆盖。</li>
+</ol>
+<p>这是一个比较令我震惊的结论，因为我一直以为char的类型是无符号类型。</p>
+<h2 id="类型转换中的符号">类型转换中的符号</h2>
+<p>在 <code>6.3.1.3 Signed and unsigned integers</code>
+这一小节中，我们可以找到如下内容：</p>
+<blockquote>
+<ol type="1">
+<li>When a value with integer type is converted to another integer type
+other than <code>_Bool</code>, if the value can be represented by the
+new type, it is unchanged.</li>
+<li>Otherwise, if the new type is unsigned, the value is converted by
+repeatedly adding or subtracting one more than the maximum value that
+can be represented in the new type until the value is in the range of
+the new type.</li>
+<li>Otherwise, the new type is signed and the value cannot be
+represented in it; either the result is implementation-defined or an
+implementation-defined signal is raised.</li>
+</ol>
+</blockquote>
+<p>简答来说，就是：</p>
+<ol type="1">
+<li>当一个integer类型被转换为除了 <code>_Bool</code> 类型之外的其他
+integer类型，如果值可以被新的类型表示，那么他不变。例如 integer
+被提升为long。</li>
+<li>当一个值无法被目标无符号类型直接表示时，通过反复加减目标类型的
+“模”（最大值 + 1），将其映射到目标类型的取值范围内。
+<ul>
+<li>例如，将一个int类型的值 <code>300</code> 转换为 unsigned char（范围
+0~255，模 256）时，我们通过 <code>300</code> - <code>256</code> 得到
+<code>44</code>。</li>
+</ul></li>
+<li>如果新值是有符号的并且旧值无法被新值表示，新值是基于实现的或者一个基于实现的信号被发出。</li>
+</ol>
+<h2 id="总结">总结</h2>
+<p>基于以上内容，我们可以得到几个结论：</p>
+<ol type="1">
+<li>char的默认符号是基于实现来确定的，在不同的平台和编译器下会有不同的结果；</li>
+<li>在x86中，char 是有符号的；在riscv中，char是无符号的；</li>
+<li>在对char进行符号扩展的时候： 3.1
+将char视为有符号，变量提升时会进行<strong>符号扩展</strong>； 3.2
+将char视为无符号，变量提升时会进行<strong>零扩展</strong>。</li>
+</ol>
+<p>以上几点，共同决定了对于 <code>0x88</code>
+这个数字的处理，对于将char看做有符号数的平台，他是一个负数。他在扩展的时候得到的也是一个负数；对于将char看做无符号数的平台，他是一个整数，他在扩展的时候按照零扩展，得到了一个同样的正数。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/10/10/%E4%B8%8D%E8%A6%81%E5%8E%BB%E8%A7%A3%E5%86%B3%E4%B8%80%E4%B8%AA%E4%B8%8D%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98/" rel="prev" title="不要去解决一个不存在的问题">
+                  <i class="fa fa-angle-left"></i> 不要去解决一个不存在的问题
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/11/12/ucore%E5%9F%BA%E6%9C%AC%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83/" rel="next" title="uCore基本执行环境">
+                  uCore基本执行环境 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="写golang两个月的一些心得  自从开始负责公司后台的SQL引擎优化之后，时常需要为公司其他同事提供一些SQL解析接口。 由于之前部门大部分的接口开发都使用 cpp&#x2F;golang，而我这边的接口服务主要性能瓶颈都在后台的SQL解析引擎，接口所耗费的资源在整体资源中占比非常小。cpp性能虽然更快，但是在这里并不是我需要考虑的主要因素，很自然的，我选择了golang作为我的后台接口开发语言。 这里就">
+<meta property="og:type" content="article">
+<meta property="og:title" content="写golang两个月的一些心得">
+<meta property="og:url" content="https://0x822a5b87.github.io/2023/11/17/%E5%86%99golang%E4%B8%A4%E4%B8%AA%E6%9C%88%E7%9A%84%E4%B8%80%E4%BA%9B%E5%BF%83%E5%BE%97/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="写golang两个月的一些心得  自从开始负责公司后台的SQL引擎优化之后，时常需要为公司其他同事提供一些SQL解析接口。 由于之前部门大部分的接口开发都使用 cpp&#x2F;golang，而我这边的接口服务主要性能瓶颈都在后台的SQL解析引擎，接口所耗费的资源在整体资源中占比非常小。cpp性能虽然更快，但是在这里并不是我需要考虑的主要因素，很自然的，我选择了golang作为我的后台接口开发语言。 这里就">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-11-17T12:49:51.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2023/11/17/%E5%86%99golang%E4%B8%A4%E4%B8%AA%E6%9C%88%E7%9A%84%E4%B8%80%E4%BA%9B%E5%BF%83%E5%BE%97/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2023/11/17/%E5%86%99golang%E4%B8%A4%E4%B8%AA%E6%9C%88%E7%9A%84%E4%B8%80%E4%BA%9B%E5%BF%83%E5%BE%97/","path":"2023/11/17/写golang两个月的一些心得/","title":"写golang两个月的一些心得"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>写golang两个月的一些心得 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99golang%E4%B8%A4%E4%B8%AA%E6%9C%88%E7%9A%84%E4%B8%80%E4%BA%9B%E5%BF%83%E5%BE%97"><span class="nav-number">1.</span> <span class="nav-text">写golang两个月的一些心得</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#referecnce"><span class="nav-number">1.1.</span> <span class="nav-text">referecnce</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#golang%E5%AE%9E%E7%8E%B0solid%E5%8E%9F%E5%88%99"><span class="nav-number">1.2.</span> <span class="nav-text">golang实现SOLID原则</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E4%B8%80%E8%81%8C%E8%B4%A3%E5%8E%9F%E5%88%99the-single-responsibility-principle"><span class="nav-number">1.2.1.</span> <span class="nav-text">单一职责原则（The
+Single-responsibility principle）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E9%97%AD%E5%8E%9F%E5%88%99"><span class="nav-number">1.2.2.</span> <span class="nav-text">开闭原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8C%E5%BC%8F%E6%9B%BF%E6%8D%A2%E5%8E%9F%E5%88%99"><span class="nav-number">1.2.3.</span> <span class="nav-text">里式替换原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E9%9A%94%E7%A6%BB%E5%8E%9F%E5%88%99"><span class="nav-number">1.2.4.</span> <span class="nav-text">接口隔离原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%80%92%E7%BD%AE%E5%8E%9F%E5%88%99"><span class="nav-number">1.2.5.</span> <span class="nav-text">依赖倒置原则</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2023/11/17/%E5%86%99golang%E4%B8%A4%E4%B8%AA%E6%9C%88%E7%9A%84%E4%B8%80%E4%BA%9B%E5%BF%83%E5%BE%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="写golang两个月的一些心得 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          写golang两个月的一些心得
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2023-11-17 20:49:51" itemprop="dateCreated datePublished" datetime="2023-11-17T20:49:51+08:00">2023-11-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="写golang两个月的一些心得">写golang两个月的一些心得</h1>
+<blockquote>
+<p>自从开始负责公司后台的SQL引擎优化之后，时常需要为公司其他同事提供一些SQL解析接口。</p>
+<p>由于之前部门大部分的接口开发都使用
+cpp/golang，而我这边的接口服务主要性能瓶颈都在后台的SQL解析引擎，接口所耗费的资源在整体资源中占比非常小。cpp性能虽然更快，但是在这里并不是我需要考虑的主要因素，很自然的，我选择了golang作为我的后台接口开发语言。</p>
+<p>这里就对我这两个月的一些开发心得做一些总结。</p>
+</blockquote>
+<h2 id="referecnce">referecnce</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/SOLID">SOLID</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://softwareengineering.stackexchange.com/questions/170138/is-this-a-violation-of-the-liskov-substitution-principle">Is
+this a violation of the Liskov Substitution Principle?</a></li>
+</ul>
+<h2 id="golang实现solid原则">golang实现SOLID原则</h2>
+<blockquote>
+<p>SOLID
+并不算是一个面向golang的原则，而是面向所有<strong>面向对象语言</strong>都可以参考的原则。</p>
+<p>虽然从严格的角度来讲，golang没有<strong>显示继承</strong>，但是golang的接口可以隐式继承，也可以通过struct持有另外一个匿名struct对象来实现隐式继承。</p>
+<p>所以SOLID原则对golang来讲仍然是适用的。</p>
+</blockquote>
+<p>SOLID分别对应于：</p>
+<ol type="1">
+<li>The Single-responsibility principle</li>
+<li>The Open–closed principle</li>
+<li>The Liskov substitution principle</li>
+<li>The Interface segregation principle</li>
+<li>The Dependency inversion principle</li>
+</ol>
+<h3
+id="单一职责原则the-single-responsibility-principle">单一职责原则（The
+Single-responsibility principle）</h3>
+<blockquote>
+<p>A module should be responsible to one, and only
+one,<code>actor</code>. The term <code>actor</code> refers to a group
+(consisting of one or more stakeholders or users) that requires a change
+in the module.</p>
+</blockquote>
+<p>对于<strong>单一职责原则</strong>，有一个比较难理解的术语是
+<code>actor</code>。按照网络上大部分博主的说法，我们可以简单的理解为<strong>会引起变化的原因</strong>。</p>
+<p>我们可以用下面的代码来描述，假设我们存在这样一个struct</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义 Trade 结构体</span></span><br><span class="line"><span class="keyword">type</span> Trade <span class="keyword">struct</span> &#123;</span><br><span class="line">    TradeID <span class="type">int</span></span><br><span class="line">    Symbol <span class="type">string</span></span><br><span class="line">    Quantity <span class="type">float64</span></span><br><span class="line">    Price <span class="type">float64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以声明两个结构体 <code>TradeRepository</code> 和
+<code>TradeValidator</code>分别用于存储Trade，验证Trade是否合法。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义 TradeRepository 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeRepository <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Save 方法用于将 Trade 对象保存到数据库中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tr *TradeRepository)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 TradeValidator 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeValidator <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Validate 方法用于验证 Trade 对象的有效性</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tv *TradeValidator)</span></span> Validate(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// validate trade</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从代码功能的角度讲，我们也可以这样定义，把Save和Validate都放在一个类中。这样带来的最大问题是，当存储逻辑或者验证逻辑要修改时，都会需要修改
+TradeUtil，这违背了单一职责原则。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> TradeUtil <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Save 方法用于将 Trade 对象保存到数据库中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeUtil)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Validate 方法用于验证 Trade 对象的有效性</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeUtil)</span></span> Validate(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// validate trade</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是，我们可以进一步的思考，如果按照这样的单一原则，那是不是我每个struct都只能绑定一个方法呢？比如我现在拥有</p>
+<ol type="1">
+<li>Save</li>
+<li>Update</li>
+<li>Validate</li>
+</ol>
+<p>三个方法，难道我需要声明三个struct并为他们绑定各自的方法吗？此时我们可以将逻辑拆分为：</p>
+<ol type="1">
+<li>第一个struct负责数据库操作</li>
+<li>第二个struct负责Trade验证</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> TradeDb <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Save 方法用于将 Trade 对象保存到数据库中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeDb)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Update 更新</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeDb)</span></span> Update(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 TradeValidator 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeValidator <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Validate 方法用于验证 Trade 对象的有效性</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tv *TradeValidator)</span></span> Validate(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// validate trade</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>而具体的拆分粒度需要根据应用场景来设计，毕竟拆或者不拆都会引入一些问题：</p>
+<ol type="1">
+<li>拆分粒度过细会导致出现大量的struct，并且在这种情况下，绑定方法到struct完全丧失了意义，我们甚至可以声明一个全局的方法，而不是将方法绑定到struct。</li>
+<li>拆分粒度过粗会导致任何外部的需求变更都会有大量的接口/方法可能受到影响。</li>
+</ol>
+</blockquote>
+<h3 id="开闭原则">开闭原则</h3>
+<blockquote>
+<p>software entities (classes, modules, functions, etc.) should be open
+for extension, but closed for modification</p>
+</blockquote>
+<p>开闭原则其实可以简单的描述为，<strong>在需求可能会发生变更的地方，尽可能的使用接口，继承（虽然golang只有隐式继承）来实现</strong>。例如，我们现在有一个如下的交易流程：</p>
+<ol type="1">
+<li>验证Trade</li>
+<li>交易Trade</li>
+<li>存储Trade</li>
+</ol>
+<p>而交易流程中，这个Trade的交易可能是买入或者卖出。如果我们不遵循开闭原则，那么我们的代码实现最开始可能是这样的：我们只需要实现买</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义 TradeRepository 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeDb <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeDb)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DoTrade</span><span class="params">(td *Trade)</span></span>&#123;</span><br><span class="line">  td.Validate()</span><br><span class="line">  td.Buy()</span><br><span class="line">  td.Save()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>随后发现需要新增一个卖</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义 TradeRepository 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeDb <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeDb)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DoTrade</span><span class="params">(td *Trade, tp Type)</span></span>&#123;</span><br><span class="line">  td.Validate()</span><br><span class="line">  <span class="keyword">if</span> tp == Buy &#123;</span><br><span class="line">    td.Buy()</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> tp == Sale &#123;</span><br><span class="line">    td.Sale()</span><br><span class="line">  &#125;</span><br><span class="line">  td.Save()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样明显违背了开闭原则，因为我们的接口修改了，如果我们遵循开闭原则实现则可能是这样的：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TradeProcessor 交易接口</span></span><br><span class="line"><span class="keyword">type</span> TradeProcessor <span class="keyword">interface</span> &#123;</span><br><span class="line">    Process(trade *Trade) <span class="type">error</span></span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 TradeRepository 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeDb <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *TradeDb)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> TradeBuy <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tb *TradeBuy)</span></span> Process(trade *Trade) <span class="type">error</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> TradeSale <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tb *TradeSale)</span></span> Process(trade *Trade) <span class="type">error</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DoTrade</span><span class="params">(td *Trade, tp *TradeProcessor)</span></span>&#123;</span><br><span class="line">  td.Validate()</span><br><span class="line">  tp.Process(td)</span><br><span class="line">  td.Save()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这种情况下，在流程不变的情况下，我们不需要修改 <code>DoTrade</code>
+方法，只需要只对与 <code>TradeProcessor</code>
+进行扩展，我们即可实现买或卖。</p>
+<h3 id="里式替换原则">里式替换原则</h3>
+<blockquote>
+<p>里式替换原则表明，所有引用父类的地方必须能透明的使用其子类。也就是说，程序的正确性不应该依赖于子类的实现。</p>
+<p>由于golang没有提供继承，只是通过接口提供了一个类似于父类-子类的继承关系。</p>
+</blockquote>
+<p>对于里式替换原则，我们可以看看他的反例（这里是基于 <a
+target="_blank" rel="noopener" href="https://softwareengineering.stackexchange.com/questions/170138/is-this-a-violation-of-the-liskov-substitution-principle">Is
+this a violation of the Liskov Substitution Principle?</a>
+这个例子的，就懒得翻译成 go，直接使用问题中的代码了。）</p>
+<blockquote>
+<p>在下面的例子中，Task 可能在任意时间被 Close，而 ProjectTask
+则不一样，当他的 Status == Status.Started 时会直接抛出异常。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Task</span></span><br><span class="line">&#123;</span><br><span class="line">     <span class="keyword">public</span> Status Status &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">public</span> virtual <span class="keyword">void</span> <span class="title function_">Close</span><span class="params">()</span></span><br><span class="line">     &#123;</span><br><span class="line">         Status = Status.Closed;</span><br><span class="line">     &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ProjectTask</span> : Task</span><br><span class="line">&#123;</span><br><span class="line">     <span class="keyword">public</span> override <span class="keyword">void</span> <span class="title function_">Close</span><span class="params">()</span></span><br><span class="line">     &#123;</span><br><span class="line">          <span class="keyword">if</span> (Status == Status.Started) </span><br><span class="line">              <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">Exception</span>(<span class="string">&quot;Cannot close a started Project Task&quot;</span>);</span><br><span class="line"></span><br><span class="line">          base.Close();</span><br><span class="line">     &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>第一个优化方案是，我们新增加一个CanClose函数</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Task</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> Status Status &#123; get; set; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">virtual</span> <span class="type">bool</span> <span class="title">CanClose</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Status = Status.Closed;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ProjectTask</span> : Task &#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">override</span> <span class="type">bool</span> <span class="title">CanClose</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Status != Status.Started;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">override</span> <span class="type">void</span> <span class="title">Close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="built_in">CanClose</span>()) </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Exception</span>(<span class="string">&quot;Cannot close a started Project Task&quot;</span>);</span><br><span class="line">        base.<span class="built_in">Close</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>第二个优化方案是，这个方案下 Close 不在是 <code>virtual</code>
+的。这样设计相对于之前的好处是：</p>
+<ol type="1">
+<li>任何其他的类型都可以判断此任务的状态是否可以关闭；</li>
+<li>可以提供原因。</li>
+</ol>
+<p>为什么这样设计？因为当引入了一个额外的 Status
+之后，我们的流程其实已经发生了改变，新的流程是：</p>
+<ol type="1">
+<li>是否可以关闭；</li>
+<li>如果可以关闭则进入关闭流程；</li>
+</ol>
+<p>而关闭的流程（在目前而言）对于所有的Task都是一样的：就是将Status设置为Closed。这样对于用户来讲，只需要实现CanClose即可。</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Task</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> Status Status &#123; get; <span class="keyword">private</span> set; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">virtual</span> <span class="type">bool</span> <span class="title">CanClose</span><span class="params">(out String reason)</span> </span>&#123;</span><br><span class="line">        reason = null;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="type">void</span> <span class="title">Close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        String reason;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="built_in">CanClose</span>(out reason))</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Exception</span>(reason);</span><br><span class="line"></span><br><span class="line">        Status = Status.Closed;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ProjectTask</span> : Task &#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">override</span> <span class="type">bool</span> <span class="title">CanClose</span><span class="params">(out String reason)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (Status != Status.Started)</span><br><span class="line">        &#123;</span><br><span class="line">            reason = <span class="string">&quot;Cannot close a started Project Task&quot;</span>;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> base.<span class="built_in">CanClose</span>(out reason);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="接口隔离原则">接口隔离原则</h3>
+<blockquote>
+<p>Clients should not be forced to depend upon interfaces that they do
+not use.</p>
+</blockquote>
+<p>简单理解就是，应该建立单一接口，而不是臃肿庞大的接口，例如当我们进行跨国交易的时候，我们可能会希望交易包含一些汇率信息，那么我们可以这样实现：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义 Trade 接口，要求实现 Process() 方法</span></span><br><span class="line"><span class="keyword">type</span> Trade <span class="keyword">interface</span> &#123;</span><br><span class="line">  <span class="comment">// Process 交易接口  </span></span><br><span class="line">  Process() <span class="type">error</span></span><br><span class="line">  <span class="comment">// CalculateImpliedVolatility 计算汇率</span></span><br><span class="line">  CalculateImpliedVolatility() <span class="type">error</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这种情况下，<strong>那些不依赖于汇率的交易，也必须去实现这个计算汇率的接口</strong>。更好的实现是，我们去定义两个不同的接口。<strong>然后再为每个不同的子类去绑定不同的实现。</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义 Trade 接口，要求实现 Process() 方法</span></span><br><span class="line"><span class="keyword">type</span> Trade <span class="keyword">interface</span> &#123;</span><br><span class="line">    Process() <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 OptionTrade 接口，要求实现 CalculateImpliedVolatility() 方法</span></span><br><span class="line"><span class="keyword">type</span> OptionTrade <span class="keyword">interface</span> &#123;</span><br><span class="line">    CalculateImpliedVolatility() <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 FutureTrade 结构体，继承自 Trade 接口</span></span><br><span class="line"><span class="keyword">type</span> FutureTrade <span class="keyword">struct</span> &#123;</span><br><span class="line">    Trade</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ft *FutureTrade)</span></span> Process() <span class="type">error</span> &#123;</span><br><span class="line">    <span class="comment">// process future trade</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 OptionTrade 结构体，继承自 Trade 接口</span></span><br><span class="line"><span class="keyword">type</span> OptionTrade <span class="keyword">struct</span> &#123;</span><br><span class="line">    Trade</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// OptionTrade 实现 Process() 方法，用于处理期权交易</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ot *OptionTrade)</span></span> Process() <span class="type">error</span> &#123;</span><br><span class="line">    <span class="comment">// process option trade</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// OptionTrade 实现 CalculateImpliedVolatility() 方法，用于计算隐含波动率</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ot *OptionTrade)</span></span> CalculateImpliedVolatility() <span class="type">error</span> &#123;</span><br><span class="line">    <span class="comment">// calculate implied volatility</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="依赖倒置原则">依赖倒置原则</h3>
+<blockquote>
+<p>Depend upon abstractions, [not] concretions</p>
+</blockquote>
+<p>这个比较好理解：依赖接口，不依赖实例。假设我们已经实现了我们存储Trade的代码，这样的代码更不容易扩展，因为他依赖于
+<code>TradeMysql</code> 或者
+<code>TradeOracle</code>。这是一个实例。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> TradeMysql <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tr *TradeMysql)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// save trade to mysql</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 TradeOracle 结构体</span></span><br><span class="line"><span class="keyword">type</span> TradeOracle <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tr *TradeOracle)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// save trade to oracle</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  td := Trade&#123;&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// save to mysql</span></span><br><span class="line">  tm := TradeMysql&#123;&#125;</span><br><span class="line">  tm.Save(&amp;td)</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// save to oracle</span></span><br><span class="line">  to := TradeOracle&#123;&#125;</span><br><span class="line">  to.Save(&amp;td)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以使用接口来将他们解耦，我们定义了 <code>TradeService</code>
+接口处理 <code>Trade</code>。同时定义了
+<code>TradeProcessor</code>，<strong>依赖于<code>TradeService</code>
+接口，而不是 TradeService 的具体实现。 </strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> TradeService <span class="keyword">interface</span> &#123;</span><br><span class="line">    Save(trade *Trade) <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 TradeProcessor 结构体，它包含一个 TradeService 接口</span></span><br><span class="line"><span class="keyword">type</span> TradeProcessor <span class="keyword">struct</span> &#123;</span><br><span class="line">    tradeService TradeService</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Process 方法接收一个 Trade 接口类型的参数，并调用 TradeService 接口的 Save 方法保存数据</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tp *TradeProcessor)</span></span> Process(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">    err := tp.tradeService.Save(trade)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> err</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// process trade</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 SqlServerTradeRepository 结构体，它包含一个 SqlServer 数据源的 DB 连接</span></span><br><span class="line"><span class="keyword">type</span> SqlServerTradeRepository <span class="keyword">struct</span> &#123;</span><br><span class="line">    db *sql.DB</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Save 方法接收一个 Trade 接口类型的参数，然后使用 SqlServer 的 INSERT 语句将数据插入到 trades 表中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(str *SqlServerTradeRepository)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义 MongoDbTradeRepository 结构体，它包含一个 MongoDb 数据源的 Session</span></span><br><span class="line"><span class="keyword">type</span> MongoDbTradeRepository <span class="keyword">struct</span> &#123;</span><br><span class="line">    session *mgo.Session</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Save 方法接收一个 Trade 接口类型的参数，然后使用 MongoDb 的 Insert 语句将数据插入到 trades 表中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(mdtr *MongoDbTradeRepository)</span></span> Save(trade *Trade) <span class="type">error</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/10/12/%E7%AE%80%E8%BF%B0disruptor%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" rel="prev" title="简述disruptor线程模型">
+                  <i class="fa fa-angle-left"></i> 简述disruptor线程模型
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/04/24/hello-world/" rel="next" title="Hello World">
+                  Hello World <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

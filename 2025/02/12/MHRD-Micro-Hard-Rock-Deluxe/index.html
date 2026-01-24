@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="最近因为开了两个 操作系统 和 linkers 的新坑，一直在学习硬件和汇编相关的知识，所以这里找了一个简单的小游戏 MHRD(Micro Hard Rock Deluxe) 用来复习一些基础的CPU相关的知识，以下是官方的描述：  MHRD is a hardware design game, in which you design various hardware circuits in a">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MHRD(Micro Hard Rock Deluxe)">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="最近因为开了两个 操作系统 和 linkers 的新坑，一直在学习硬件和汇编相关的知识，所以这里找了一个简单的小游戏 MHRD(Micro Hard Rock Deluxe) 用来复习一些基础的CPU相关的知识，以下是官方的描述：  MHRD is a hardware design game, in which you design various hardware circuits in a">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-02-12T03:23:29.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="CPU">
+<meta property="article:tag" content="assmebly">
+<meta property="article:tag" content="hardware">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/","path":"2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/","title":"MHRD(Micro Hard Rock Deluxe)"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>MHRD(Micro Hard Rock Deluxe) | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">2.</span> <span class="nav-text">基础知识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tasks"><span class="nav-number">3.</span> <span class="nav-text">tasks</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#nand"><span class="nav-number">3.1.</span> <span class="nav-text">NAND</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#not"><span class="nav-number">3.2.</span> <span class="nav-text">NOT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#and"><span class="nav-number">3.3.</span> <span class="nav-text">AND</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#or"><span class="nav-number">3.4.</span> <span class="nav-text">OR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#xorexclusive-or"><span class="nav-number">3.5.</span> <span class="nav-text">XOR(Exclusive-Or)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#xor-%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">3.5.1.</span> <span class="nav-text">XOR 的优化</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/02/12/MHRD-Micro-Hard-Rock-Deluxe/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="MHRD(Micro Hard Rock Deluxe) | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MHRD(Micro Hard Rock Deluxe)
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-02-12 11:23:29" itemprop="dateCreated datePublished" datetime="2025-02-12T11:23:29+08:00">2025-02-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>最近因为开了两个 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/Ardi">操作系统</a> 和 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-linkers">linkers</a>
+的新坑，一直在学习硬件和汇编相关的知识，所以这里找了一个简单的小游戏 <a
+target="_blank" rel="noopener" href="https://store.steampowered.com/app/576030/MHRD/">MHRD(Micro Hard
+Rock Deluxe)</a> 用来复习一些基础的CPU相关的知识，以下是官方的描述：</p>
+<blockquote>
+<p>MHRD is a hardware design game, in which you design various hardware
+circuits in a hardware description language. The hardware circuits you
+design get more complex as you go until you create a fully functional
+CPU design.</p>
+</blockquote>
+<h2 id="语法">语法</h2>
+<p>A design consists of the <code>Inputs</code>, <code>Outputs</code>,
+<code>Parts</code> and <code>Wires</code> section:</p>
+<pre><code class="highlight mermaid">---
+title: GRAMMER
+---
+flowchart LR
+
+design(&quot;design&quot;):::pink
+
+subgraph grammer
+	direction LR
+	input_section(&quot;input_section&quot;):::green
+	output_section(&quot;output_section&quot;):::green
+	part_section(&quot;part_section&quot;):::green
+	wire_section(&quot;wire_section&quot;):::green
+end
+
+design --&gt; grammer
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</code></pre>
+<p>Each section starts with a corresponding section identifier, followed
+by a <code>colon</code>, one or more of its corresponding elements and
+ends with a <code>semicolon</code>:</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[input_section] = <span class="string">&quot;Inputs:&quot;</span> [input] (, [input])* <span class="string">&quot;;&quot;</span></span><br><span class="line">  </span><br><span class="line">[output_section] = <span class="string">&quot;Outputs:&quot;</span> [output] (, [output])* <span class="string">&quot;;&quot;</span></span><br><span class="line">  </span><br><span class="line">[part_section] = <span class="string">&quot;Parts:&quot;</span> [part] (, [part])* <span class="string">&quot;;&quot;</span></span><br><span class="line">  </span><br><span class="line">[wire_section] = <span class="string">&quot;Wires:&quot;</span> [wire] (, [wire])* <span class="string">&quot;;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>Inputs and outputs can be either single pins or a busses</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// single pin</span><br><span class="line">[input] = [input_pin_id]</span><br><span class="line">  </span><br><span class="line">// busses</span><br><span class="line">[input] = [input_bus_id][bus_size]</span><br></pre></td></tr></table></figure>
+<p>Identifiers have to start with a letter optionally followed by an
+arbitrary amount of letters or numbers:</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[id] = [letter] ([letter | digit])*</span><br><span class="line">  </span><br><span class="line">[letter] = [a-zA-Z]</span><br><span class="line">[digit] = [<span class="number">0</span>-<span class="number">9</span>]</span><br></pre></td></tr></table></figure>
+<p>A bus size is given as a number in square brackets. A number has at
+least one digit.</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[bus_size] = <span class="string">&quot;[&quot;</span> [number] <span class="string">&quot;]&quot;</span></span><br><span class="line">[number] = [digit]+</span><br></pre></td></tr></table></figure>
+<p>Parts can be written as pairs of part identifiers and part types.
+<strong>Part types are always upper-case</strong>:</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[part] = [part_id] [part_type]</span><br><span class="line"></span><br><span class="line">[part_id] = [id]</span><br><span class="line">  </span><br><span class="line">[part_type] = [uppercase_letter] ([uppercase_letter | digit])*</span><br><span class="line">  </span><br><span class="line">[uppercase_letter] = [A-Z]</span><br></pre></td></tr></table></figure>
+<p>Wires have a start and end. Start and end can be regular pins, busses
+of the designed elements or of its parts:</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[wire] = [start] <span class="string">&quot;-&gt;&quot;</span> [<span class="keyword">end</span>]</span><br><span class="line"></span><br><span class="line">[start] = [pin_value] | [input_pin] | [input_bus] | [part_id]<span class="string">&quot;.&quot;</span>[output_pin] | [part_id]<span class="string">&quot;.&quot;</span>[output_bus]</span><br><span class="line">  </span><br><span class="line">[<span class="keyword">end</span>] = [output_pin] | [output_bus] | [part_id]<span class="string">&quot;.&quot;</span>[input_pin] | [part_id]<span class="string">&quot;.&quot;</span>[input_bus]</span><br></pre></td></tr></table></figure>
+<p>A pin can be either a reference to a reference to a pin id or a
+specific pin inside a bus :</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[pin_value] = <span class="string">&quot;0&quot;</span> | <span class="string">&quot;1&quot;</span></span><br><span class="line"></span><br><span class="line">[input_pin] = [input_pin_id] | [input_bus_id][pin_selection]</span><br><span class="line">  </span><br><span class="line">[output_pin] = [output_pin_id] | [output_bus_id][pin_selection]</span><br><span class="line">  </span><br><span class="line">[pin_selection] = <span class="string">&quot;[&quot;</span> [number] <span class="string">&quot;]&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="基础知识">基础知识</h2>
+<blockquote>
+<p>在正式开始之前，我们需要了解一些必要的知识以方便于我们进行简单的数学计算</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">name</th>
+<th style="text-align: center;">formulation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">德摩根第一定律</td>
+<td style="text-align: center;"><span class="math inline">\(\neg(A \land
+B) = \neg A \lor \neg B\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">德摩根第一定律逆定律</td>
+<td style="text-align: center;"><span class="math inline">\(A \lor B =
+\lnot(\lnot A \land \lnot B)\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">德摩根第二定律</td>
+<td style="text-align: center;"><span class="math inline">\(\neg(A \lor
+B) \equiv \neg A \land \neg B\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">德摩根第二定律逆定律</td>
+<td style="text-align: center;"><span class="math inline">\(A \land B =
+\lnot(\lnot A \lor \lnot B)\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">逻辑与结合律</td>
+<td style="text-align: center;"><span class="math inline">\((A \land B)
+\land C = A \land (B \land C)\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">逻辑或结合律</td>
+<td style="text-align: center;"><span class="math inline">\((A \lor B)
+\lor C = A \lor (B \lor C)\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">逻辑与交换律</td>
+<td style="text-align: center;"><span class="math inline">\(A \land B =
+B \land A\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">逻辑或交换律</td>
+<td style="text-align: center;"><span class="math inline">\(A \lor B = B
+\lor A\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">逻辑与分配率</td>
+<td style="text-align: center;"><span class="math inline">\(A \land (B
+\lor C) = (A \land B) \lor (A \land C)\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">逻辑或分配率</td>
+<td style="text-align: center;"><span class="math inline">\(A \lor (B
+\land C) = (A \lor B) \land (A \lor C)\)</span></td>
+</tr>
+</tbody>
+</table>
+<h2 id="tasks">tasks</h2>
+<blockquote>
+<p>在游戏刚开始的时候，我们只有一个默认的 <code>NAND（Not AND）</code>
+模块，模块声明如下</p>
+</blockquote>
+<h3 id="nand">NAND</h3>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// Interface Specification:</span><br><span class="line">// <span class="comment">-----------------------</span></span><br><span class="line">Inputs: in1, in2;</span><br><span class="line">Outputs: <span class="keyword">out</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="not">NOT</h3>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Inputs: <span class="keyword">in</span>;</span><br><span class="line">Outputs: <span class="keyword">out</span>;</span><br><span class="line"></span><br><span class="line">// <span class="keyword">use</span> <span class="keyword">NAND</span></span><br><span class="line">Parts: myNand <span class="keyword">NAND</span>;</span><br><span class="line"></span><br><span class="line">Wires:</span><br><span class="line">	<span class="keyword">in</span> -&gt; myNand.in1,</span><br><span class="line">  <span class="keyword">in</span> -&gt; myNand.in2,</span><br><span class="line">  myNand.<span class="keyword">out</span> -&gt; <span class="keyword">out</span></span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+<h3 id="and">AND</h3>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Inputs: in1, in2;</span><br><span class="line">Outputs: <span class="keyword">out</span>;</span><br><span class="line"></span><br><span class="line">Parts: myNand <span class="keyword">NAND</span>, myNot <span class="keyword">NOT</span>;</span><br><span class="line"></span><br><span class="line">Wires:</span><br><span class="line">in1 -&gt; myNand.in1,</span><br><span class="line">in2 -&gt; myNand.in2,</span><br><span class="line">myNand.<span class="keyword">out</span> -&gt; myNot.<span class="keyword">in</span>,</span><br><span class="line">myNot.<span class="keyword">out</span> -&gt; <span class="keyword">out</span></span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+<h3 id="or">OR</h3>
+<p>我们简单的画一下 <code>OR</code> 的真值表：</p>
+<table>
+<thead>
+<tr class="header">
+<th>in1</th>
+<th>in2</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>我们观察到，<code>OR</code> 的真值表可以通过转换 <code>NAND</code>
+的真值表来得到</p>
+<table>
+<thead>
+<tr class="header">
+<th>in1</th>
+<th>in2</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Inputs: ini, in2;</span><br><span class="line">Outputs: <span class="keyword">out</span>;</span><br><span class="line"></span><br><span class="line">Parts: <span class="keyword">nand</span> <span class="keyword">NAND</span>, notl <span class="keyword">NOT</span>, not2 <span class="keyword">NOT</span>;</span><br><span class="line"></span><br><span class="line">Wires:</span><br><span class="line">  inl -&gt; notl.<span class="string">&quot;in,</span></span><br><span class="line"><span class="string">  in2 -&gt; not2.&quot;</span><span class="keyword">in</span>,</span><br><span class="line">  notl.<span class="keyword">out</span> -&gt; <span class="keyword">nand</span>.ini,</span><br><span class="line">  not2.<span class="keyword">out</span> -&gt; <span class="keyword">nand</span>.in2,</span><br><span class="line">  <span class="keyword">nand</span>.<span class="keyword">out</span> -&gt; <span class="keyword">out</span></span><br></pre></td></tr></table></figure>
+<h3 id="xorexclusive-or">XOR(<code>Exclusive-Or</code>)</h3>
+<blockquote>
+<p>If <em>exactly</em> one input is 1, the output is 1. Otherwise the
+output is 0.</p>
+</blockquote>
+<p>两个输入中一个为 <code>1</code>，另一个为
+<code>0</code>，可以转换为：</p>
+<ol type="1">
+<li><code>in1</code> AND <code>in2</code> = <code>0</code></li>
+<li><code>in1</code> OR <code>in2</code> = <code>1</code></li>
+</ol>
+<p>所以，我们要判断 XOR 可以表示为 <span class="math inline">\(XOR(in1,
+in2) \equiv (\lnot (in1 \land in2)) \land (in1 \lor in2)\)</span></p>
+<h4 id="xor-的优化">XOR 的优化</h4>
+<p>前面的公式虽然可以实现 <code>XOR</code>
+的功能，但是相对来说性能较差，我们可以通过以下方式来进行优化： <span
+class="math display">\[
+\begin{aligned}
+XOR(in1, in2) &amp; = (in1 \land \lnot in2) \lor (in2 \land \lnot in1)
+\\
+  &amp; = \lnot(\lnot(in1 \land \lnot in2) \land \lnot(in2 \land \lnot
+in1))
+\end{aligned}
+\]</span> 假设 <span class="math display">\[
+A = \lnot(in1 \land \lnot in2)\\
+B = \lnot(in2 \land \lnot in1)
+\]</span></p>
+<p>那么此时我们知道 <span class="math display">\[
+XOR(in1, in2) = NAND(A, B)
+\]</span> 现在我们需要用尽可能少的门来表示B和C： <span
+class="math display">\[
+\begin{aligned}
+A &amp; = \lnot(in1 \land \lnot in2)\\
+&amp; = \lnot((in1 \land \lnot in2) \lor (in1 \land \lnot in1))\\
+&amp; = \lnot(in1 \land (\lnot in2 \lor \lnot in1)) \\
+&amp; = \lnot (in1 \land (\lnot(in2 \land in1)))
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+B &amp;= \lnot(in2 \land \lnot in1) \\
+&amp;= \lnot((in2 \land \lnot in1) \lor (in2 \land \lnot in2))\\
+&amp;= \lnot(in2 \land (\lnot in1 \lor \lnot in2)) \\
+&amp;= \lnot(in2 \land (\lnot(in1 \land in2)))
+\end{aligned}
+\]</span></p>
+<p>此时，我们只需要假设： <span class="math display">\[
+C = (\lnot(in1 \land in2))
+\]</span> 我们即可得到如下，<strong>总计使用四个
+<code>NAND</code></strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">C = NAND(in1, in2);</span><br><span class="line">A = NAND(in1, C);</span><br><span class="line">B = NAND(in2, C);</span><br><span class="line">XOR(in1, in2) = NAND(A, B)</span><br></pre></td></tr></table></figure>
+<p>我们的设计代码也可以转换为如下：</p>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Inputs: in1, in2;</span><br><span class="line">Outputs: <span class="keyword">out</span>;</span><br><span class="line"></span><br><span class="line">Parts: a <span class="keyword">NAND</span>, b <span class="keyword">NAND</span>, c <span class="keyword">NAND</span>, d <span class="keyword">NAND</span>;</span><br><span class="line"></span><br><span class="line">Wires:</span><br><span class="line">	in1 -&gt; a.in1,</span><br><span class="line">  in2 -&gt; a.in2,</span><br><span class="line">	in1 -&gt; b.in1,</span><br><span class="line">	a.<span class="keyword">out</span> -&gt; b.in2,</span><br><span class="line">	in2 -&gt; c.in1,</span><br><span class="line">	a.<span class="keyword">out</span> -&gt; c.in2,</span><br><span class="line">	b.<span class="keyword">out</span> -&gt; d.in1,</span><br><span class="line">  c.<span class="keyword">out</span> -&gt; d.in2,</span><br><span class="line">	d.<span class="keyword">out</span> -&gt; <span class="keyword">out</span>;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/assmebly/" rel="tag"># assmebly</a>
+              <a href="/tags/CPU/" rel="tag"># CPU</a>
+              <a href="/tags/hardware/" rel="tag"># hardware</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/01/18/%E5%85%B3%E4%BA%8EB%E6%A0%91%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" rel="prev" title="关于B树的一些思考">
+                  <i class="fa fa-angle-left"></i> 关于B树的一些思考
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/03/12/game-log-%E5%BC%80%E6%BA%90%E5%95%A6/" rel="next" title="game log 开源啦">
+                  game log 开源啦 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

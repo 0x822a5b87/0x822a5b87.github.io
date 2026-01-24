@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="A Simple Conclusion for Ownership in Rust Warm Up What&#39;s my type? Before we divi into the ownership, there is a essential problem we have to figure out beforehead: What&#39;s the type of the variable we j">
+<meta property="og:type" content="article">
+<meta property="og:title" content="A simple conclusion for ownership in Rust">
+<meta property="og:url" content="https://0x822a5b87.github.io/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="A Simple Conclusion for Ownership in Rust Warm Up What&#39;s my type? Before we divi into the ownership, there is a essential problem we have to figure out beforehead: What&#39;s the type of the variable we j">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-25T02:43:33.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="Ownership">
+<meta property="article:tag" content="Rust">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/","path":"2024/10/25/A-simple-conclusion-for-ownership-in-Rust/","title":"A simple conclusion for ownership in Rust"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>A simple conclusion for ownership in Rust | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#a-simple-conclusion-for-ownership-in-rust"><span class="nav-number">1.</span> <span class="nav-text">A Simple Conclusion
+for Ownership in Rust</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#warm-up"><span class="nav-number">1.1.</span> <span class="nav-text">Warm Up</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#whats-my-type"><span class="nav-number">1.1.1.</span> <span class="nav-text">What&#39;s my type?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#type-with-pattern-matching"><span class="nav-number">1.1.2.</span> <span class="nav-text">Type with Pattern Matching</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#utility"><span class="nav-number">1.2.</span> <span class="nav-text">Utility</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ownership-and-borrowing"><span class="nav-number">1.3.</span> <span class="nav-text">Ownership and Borrowing</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#the-primary-principle-of-ownership"><span class="nav-number">1.4.</span> <span class="nav-text">the Primary principle of
+Ownership</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#assignment"><span class="nav-number">1.4.1.</span> <span class="nav-text">Assignment</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#borrowing"><span class="nav-number">1.4.2.</span> <span class="nav-text">Borrowing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#move-semantics-and-ownership-transfer"><span class="nav-number">1.4.3.</span> <span class="nav-text">Move Semantics and
+Ownership Transfer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mutable-reference-will-invalidate-every-preceding-defined-reference"><span class="nav-number">1.4.4.</span> <span class="nav-text">Mutable
+Reference will invalidate every preceding defined reference</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#references-must-last-shorter-than-their-owners"><span class="nav-number">1.4.5.</span> <span class="nav-text">References must
+last shorter than their owners</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#structs-can-be-passed-via-move-or-borrow"><span class="nav-number">1.4.6.</span> <span class="nav-text">structs can be passed
+via move or borrow</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#a-more-complicated-example"><span class="nav-number">1.4.7.</span> <span class="nav-text">A more complicated example</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ownership-with-trait"><span class="nav-number">1.5.</span> <span class="nav-text">Ownership with trait</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#references"><span class="nav-number">1.6.</span> <span class="nav-text">References</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2024/10/25/A-simple-conclusion-for-ownership-in-Rust/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="A simple conclusion for ownership in Rust | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          A simple conclusion for ownership in Rust
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-10-25 10:43:33" itemprop="dateCreated datePublished" datetime="2024-10-25T10:43:33+08:00">2024-10-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="a-simple-conclusion-for-ownership-in-rust">A Simple Conclusion
+for Ownership in Rust</h1>
+<h2 id="warm-up">Warm Up</h2>
+<h3 id="whats-my-type">What's my type?</h3>
+<p>Before we divi into the ownership, there is a essential problem we
+have to figure out beforehead: <strong>What's the type of the variable
+we just define</strong>? Considering the following code snippet:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">what_is_my_type</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">num0</span> = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">first_value</span>: &amp;<span class="keyword">mut</span> <span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;first_value&#125;&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">second_value</span>: &amp;<span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;second_value&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">third_value</span>: &amp;<span class="keyword">mut</span> <span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;third_value&#125;&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">fourth_value</span>: &amp;<span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;fourth_value&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> &amp;<span class="keyword">mut</span> fifth_value: &amp;<span class="keyword">mut</span> <span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">    <span class="keyword">let</span> &amp;<span class="keyword">mut</span> sixth_value = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The question looks quiet simple:</p>
+<table>
+<thead>
+<tr class="header">
+<th>variable</th>
+<th>type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>first_value</code></td>
+<td>&amp;mut i32</td>
+</tr>
+<tr class="even">
+<td><code>second_value</code></td>
+<td>&amp;32</td>
+</tr>
+<tr class="odd">
+<td><code>third_value</code></td>
+<td>&amp;mut i32</td>
+</tr>
+<tr class="even">
+<td><code>fourth_value</code></td>
+<td>&amp;i32</td>
+</tr>
+<tr class="odd">
+<td><code>fifth_value</code></td>
+<td>&amp;mut i32</td>
+</tr>
+<tr class="even">
+<td><code>sixth_value</code></td>
+<td>i32</td>
+</tr>
+</tbody>
+</table>
+<p>However, there are some subtle differences between these six
+variables, just look at this:</p>
+<ol type="1">
+<li>First_value can't be modified becasue it is a
+<code>immutable reference</code> refer to a
+<code>mutable reference i32</code></li>
+<li>Third_value can be modified because it is a
+`<code>mutable reference</code> refer to a
+<code>mutable reference i32</code></li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">the_type_is_not_the_same</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">num0</span> = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">first_value</span>: &amp;<span class="keyword">mut</span> <span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">third_value</span>: &amp;<span class="keyword">mut</span> <span class="type">i32</span> = &amp;<span class="keyword">mut</span> num0;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">num1</span> = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// until then, the first value and third value looks like have the same type</span></span><br><span class="line">    first_value = &amp;<span class="keyword">mut</span> num1; <span class="comment">// Cannot assign a new value to an immutable variable more than once [E0384]</span></span><br><span class="line">    third_value = &amp;<span class="keyword">mut</span> num1; <span class="comment">// valid</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Now we can determine the final result:</p>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>variable</th>
+<th>type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>first_value</code></td>
+<td><code>immutable reference</code> refer to a
+<code>mutable reference i32</code></td>
+</tr>
+<tr class="even">
+<td><code>second_value</code></td>
+<td><code>immutable reference</code> refer to a
+<code>immutable reference i32</code></td>
+</tr>
+<tr class="odd">
+<td><code>third_value</code></td>
+<td><code>mutable reference</code> refer to a
+<code>mutable reference i32</code></td>
+</tr>
+<tr class="even">
+<td><code>fourth_value</code></td>
+<td><code>mutable reference</code> refer to a
+<code>immutable reference i32</code></td>
+</tr>
+<tr class="odd">
+<td><code>fifth_value</code></td>
+<td><code>i32</code></td>
+</tr>
+<tr class="even">
+<td><code>sixth_value</code></td>
+<td><code>i32</code></td>
+</tr>
+</tbody>
+</table>
+<p>That's kind of confusing result, but I won't elaborate it because
+this isn't what the article is going to do. So just simplely keep things
+in mind and keep going. If you are still confusing with it and aspire to
+figure it out, please refer to this articles:</p>
+<ul>
+<li><a
+target="_blank" rel="noopener" href="https://stackoverflow.com/questions/31298802/let-mut-syntax">Let
+&amp;mut syntax</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://stackoverflow.com/questions/56005131/how-to-interpret-immutable-references-to-mutable-types-in-rust">How
+to interpret immutable references to mutable types in Rust?</a></li>
+</ul>
+<h3 id="type-with-pattern-matching">Type with Pattern Matching</h3>
+<p>Compiling the following function will generate a typical <a
+target="_blank" rel="noopener" href="https://doc.rust-lang.org/error_codes/E0507.html">Error code
+E0507</a>, how can this be? That's what we called <strong>Pattern
+Matching</strong>.</p>
+<ol type="1">
+<li><code>&amp;mut val : &amp;mut String</code> indicate the function
+receives a parameter of type <code>&amp;mut String</code> which is a
+borrowed value;</li>
+<li><code>&amp;mut val</code> indicate that <code>val</code> is a
+<code>String</code> so the left-hand-side is euqal to the
+right-hand-side;</li>
+<li>In this case, <code>val</code> appears to take the ownership away
+from <code>&amp;mut String</code>, which is disallowed in rust.</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">cannot_move_out_of_a_mutable_reference</span>(&amp;<span class="keyword">mut</span> val: &amp;<span class="keyword">mut</span> <span class="type">String</span>) &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="utility">Utility</h2>
+<p>This is a struct which providing impelementation of
+<code>Clone</code> trait</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">VecWithClone</span> &#123;</span><br><span class="line">    data: [<span class="type">i32</span>; <span class="number">3</span>],</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Clone</span> <span class="keyword">for</span> <span class="title class_">VecWithClone</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">clone</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">data</span>: [<span class="type">i32</span>; <span class="number">3</span>] = <span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>();</span><br><span class="line">        <span class="keyword">for</span> (i, v) <span class="keyword">in</span> <span class="keyword">self</span>.data.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">enumerate</span>() &#123;</span><br><span class="line">            data[i] = *v</span><br><span class="line">        &#125;</span><br><span class="line">        VecWithClone &#123;</span><br><span class="line">            data</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="ownership-and-borrowing">Ownership and Borrowing</h2>
+<p>In Rust, the ownership concept is a set of rules that applies to all
+values.These rules dictate that each value in Rust has the
+following:</p>
+<ol type="1">
+<li>Each value in Rust has a owner responsible for the value;</li>
+<li>Only one owner at a time;</li>
+<li>When the owner goes out of scope, the value will be dropped : mabey
+exit the frame of scope for a stack value or calling the
+<code>Drop</code> for a heap value;</li>
+<li>Ownership can be borrowing by refenrece
+<ol type="1">
+<li>Any number of immutable reference;</li>
+<li>Any number of immutable reference and <strong>exactly one single
+mutable reference at the same time</strong>, this is very trivial so I'd
+like to elaborate it in the subsequent contents.</li>
+</ol></li>
+</ol>
+<h2 id="the-primary-principle-of-ownership">the Primary principle of
+Ownership</h2>
+<p>Ownership transfer in Rust happens when a value is <code>moved</code>
+from one variable or binding to another. This typically occurs in the
+following scenarios:</p>
+<ol type="1">
+<li>Assignment for variable with a type does not implement the
+<code>Copy</code> trait, When you assign a value to a new variable,
+ownership of the value is transferred to the new variable.</li>
+<li>Function calls (which is also sort of special assignment) : When you
+pass a value as an argument to a function, ownership of the value is
+transferred to the function</li>
+<li>Returning from a function: When a function returns a value,
+ownership of the value is transferred to the calling code.</li>
+</ol>
+<h3 id="assignment">Assignment</h3>
+<p>Assignment for variable with a type does not implement the
+<code>Copy</code> trait will lead to ownership transfer.</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">assignment</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">hello0</span> = <span class="type">String</span>::<span class="title function_ invoke__">from</span>(<span class="string">&quot;hello&quot;</span>); <span class="comment">//  move occurs because `hello0` has type `String`, which does not implement the `Copy` trait</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">hello1</span> = hello0; <span class="comment">// value moved here</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;hello0 = &#123;hello0&#125;&quot;</span>) <span class="comment">// error[E0382]: borrow of moved value: `hello0`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>here is another more precise example, we defined a simple struct
+containts <code>[i32; 3]</code>, and doesn't implement a
+<code>Copy</code> trait:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">assigment_with_struct</span>() &#123;</span><br><span class="line">    <span class="meta">#[derive(Debug)]</span></span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">VecWithoutCopy</span> &#123;</span><br><span class="line">        data: [<span class="type">i32</span>; <span class="number">3</span>],</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v1</span> = VecWithoutCopy &#123; data: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>] &#125;; <span class="comment">// move occurs because `v1` has type `VecWithoutCopy`, which does not implement the `Copy` trait</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v2</span> = v1; <span class="comment">// value moved here</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;v1 = &#123;:?&#125;, v2 = &#123;:?&#125;&quot;</span>, v1, v2) <span class="comment">// value borrowed here after move</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>If you implement the <code>Copy</code> trait for the struct,
+ownership transfer will not occur. Instead, the <code>Copy</code> trait
+will be invoked to create a new struct.</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">assigment_with_copyable_struct</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v1</span> = VecWithClone &#123; data: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>] &#125;;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v2</span> = v1;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;v1 = &#123;:?&#125;, v2 = &#123;:?&#125;&quot;</span>, v1, v2) <span class="comment">// v1 = VecWithClone &#123; data: [1, 2, 3] &#125;, v2 = VecWithClone &#123; data: [1, 2, 3] &#125;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Incidentally, assigment for primitives doesn't require explictly
+implementation of the Copy trait to avoid ownership transfer.</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">assignment_with_primitive</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">x</span> = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">y</span> = x;</span><br><span class="line">    x = <span class="number">20</span>;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;x = &#123;x&#125;, y = &#123;y&#125;&quot;</span>) <span class="comment">// x = 20, y = 10</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="borrowing">Borrowing</h3>
+<p>Borrowing in Rust refers to the mechanism that allows
+<strong>multiple references</strong> to access a value without
+transferring ownership. When you borrow a value in Rust, you create a
+<strong>reference</strong> to that value. Reference can be either
+immtuable(<code>&amp;T</code>) or mutable(<code>&amp;mut T</code>),
+Here's are a few important aspects of borrowing in Rust:</p>
+<ol type="1">
+<li>Borrowing rules: Rust's borrowing rules ensure that there is only
+one mutable reference (<code>&amp;mut T</code>) or any number of
+immutable references (<code>&amp;T</code>) to a value in a particular
+scope.</li>
+<li>Borrow checker: The Rust compiler has a borrow checker that analyzes
+your code and ensures that all borrows are valid and adhere to the
+borrowing rules. If your code violates these rules, the compiler will
+raise compilation errors.</li>
+<li>Borrow scopes: The <code>lifetime</code> of a borrow is determined
+by its scope. A borrow cannot outlive the value it refers to. This
+ensures that borrowed references are always valid and do not become
+dangling references.</li>
+<li><strong>No simultaneous mutable and immutable borrows</strong>: Rust
+does not allow simultaneous mutable and immutable borrows of the same
+value. This prevents potential data races, as having both mutable and
+immutable access to a value can lead to undefined behavior.</li>
+</ol>
+<h3 id="move-semantics-and-ownership-transfer">Move Semantics and
+Ownership Transfer</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">multiple_immutable_reference_is_allowed</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">x</span> = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">y</span> = &amp;x; <span class="comment">// first immutable reference</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">z</span> = &amp;x; <span class="comment">// second immutable reference</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;y = &#123;y&#125;, z = &#123;z&#125;&quot;</span>); <span class="comment">// multiple immutable reference is allowed</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3
+id="mutable-reference-will-invalidate-every-preceding-defined-reference">Mutable
+Reference will invalidate every preceding defined reference</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">mut_reference_will_invalidate_preceding_defined_reference</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">x</span> = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">first_immutable</span> = &amp;x; <span class="comment">// first immutable reference</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;first_immutable = &#123;first_immutable&#125;&quot;</span>); <span class="comment">// valid</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">first_mutable</span> = &amp;<span class="keyword">mut</span> x; <span class="comment">// first mutable reference</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;first_mutable = &#123;first_mutable&#125;&quot;</span>); <span class="comment">// valid</span></span><br><span class="line">    <span class="comment">// unfortunately, the reference is invalidated immediately when we define a mutable reference</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">second_mutable</span> = &amp;<span class="keyword">mut</span> x; <span class="comment">// second mutable reference which will destroy all preceding reference to variable `x`</span></span><br><span class="line">    <span class="comment">// println!(&quot;first_mutable = &#123;first_mutable&#125;&quot;); // cannot borrow `x` as mutable more than once at a time</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;second_mutable = &#123;second_mutable&#125;&quot;</span>); <span class="comment">// valid</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">second_immutable</span> = &amp;x; <span class="comment">// Yes! This is valid!</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;second_immutable = &#123;second_immutable&#125;&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="references-must-last-shorter-than-their-owners">References must
+last shorter than their owners</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">references_must_last_shorter_than_their_owns</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">longer_reference</span>:&amp;<span class="keyword">mut</span> <span class="type">i32</span>; <span class="comment">// longer_reference is an immutable reference refer to a mutable reference i32</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">ten</span> = <span class="number">10</span>;</span><br><span class="line">        longer_reference = &amp;<span class="keyword">mut</span> ten;</span><br><span class="line">    &#125; <span class="comment">// temporary value `10` is freed at the end of this statement</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// println!(&quot;longer_reference = &#123;longer_reference&#125;&quot;); // error[E0716]: temporary value dropped while borrowed</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">twenty</span> = <span class="number">20</span>;</span><br><span class="line">    longer_reference = &amp;<span class="keyword">mut</span> twenty;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;longer_reference = &#123;longer_reference&#125;&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="structs-can-be-passed-via-move-or-borrow">structs can be passed
+via move or borrow</h3>
+<p>One thing we should notice is that <code>VecWithCopy</code> and
+<code>&amp;mut VecWithCopy</code> is not the same type. That's why
+<code>let v4 = v1</code> will encounter a ownership transfer.You may
+want to implement the <code>Copy</code> trait for
+<code>&amp;mut VecWithCopy</code>, but unfortunately, it is not possible
+due to <a target="_blank" rel="noopener" href="https://doc.rust-lang.org/error_codes/E0206.html">Error
+code E0206</a></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">struct_can_be_passed_via_move_or_borrow</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v1</span> = &amp;<span class="keyword">mut</span> VecWithCopy &#123; data: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>] &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v2</span> = &amp;v1;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v3</span> = &amp;v1;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;v1 = &#123;:?&#125;, v2 = &#123;:?&#125;, v3 = &#123;:?&#125;&quot;</span>, v1, v2, v3);</span><br><span class="line">    <span class="comment">// v1 = VecWithCopy &#123; data: [1, 2, 3] &#125;, v2 = VecWithCopy &#123; data: [1, 2, 3] &#125;, v3 = VecWithCopy &#123; data: [1, 2, 3] &#125;</span></span><br><span class="line"></span><br><span class="line">    v1.data = [<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>];</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;v1 = &#123;:?&#125;&quot;</span>, v1);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// error[E0506]: cannot assign to `v1.data` because it is borrowed</span></span><br><span class="line">    <span class="comment">// println!(&quot;v1 = &#123;:?&#125;, v2 = &#123;:?&#125;, v3 = &#123;:?&#125;&quot;, v1, v2, v3);</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">v4</span> = v1; <span class="comment">// move occurs because `v1` has type `&amp;mut VecWithCopy`, which does not implement the `Copy` trait</span></span><br><span class="line">    <span class="comment">// error[E0382]: borrow of moved value: `v1`</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;v1 = &#123;:?&#125;&quot;</span>, v1);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="a-more-complicated-example">A more complicated example</h3>
+<p>Assuming that we are going to build an HTTP server, here is the
+procedure of how the server processes a HTTP request:</p>
+<pre><code class="highlight mermaid">---
+title: http server
+---
+flowchart BT
+
+TcpListener --&gt;|bind| Listener --&gt;|incoming| TcpStream
+
+subgraph TcpStream
+	direction LR
+	BufReader --&gt;|process request| TcpStream::write_all
+end</code></pre>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="title function_ invoke__">connect</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">connect</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tcp_listener</span> = TcpListener::<span class="title function_ invoke__">bind</span>(<span class="string">&quot;127.0.0.1:7878&quot;</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">stream</span> <span class="keyword">in</span> tcp_listener.<span class="title function_ invoke__">incoming</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">stream</span> = stream.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="title function_ invoke__">handle_connection</span>(stream);</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Connection closed.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">handle_connection</span>(<span class="keyword">mut</span> stream: TcpStream) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">reader</span> = BufReader::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">mut</span> stream);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">http_request</span> = reader.<span class="title function_ invoke__">lines</span>()</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(<span class="type">Result</span>::unwrap)</span><br><span class="line">        .<span class="title function_ invoke__">take_while</span>(|line| !line.<span class="title function_ invoke__">is_empty</span>())</span><br><span class="line">        .collect::&lt;<span class="type">Vec</span>&lt;<span class="type">String</span>&gt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Request: &#123;http_request:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">match</span> stream.<span class="title function_ invoke__">write_all</span>(HTTP_200_RSP.<span class="title function_ invoke__">as_bytes</span>()) &#123;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(_) =&gt; <span class="built_in">println!</span>(<span class="string">&quot;response!&quot;</span>),</span><br><span class="line">        <span class="title function_ invoke__">Err</span>(err) =&gt; <span class="built_in">println!</span>(<span class="string">&quot;response error : &#123;err&#125;&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="ownership-with-trait">Ownership with trait</h2>
+<p>In Rust, regular values and reference values have significant
+differences. Let's consider the following situation:</p>
+<ol type="1">
+<li>we have a <code>trait</code> called SimpleTrait that does not have
+any methods.</li>
+<li>we have a <code>function</code> called <code>new</code> that
+receives a <code>trait</code> SimpleTrait as an argument;</li>
+<li>we have a <code>struct</code> called <code>SimpleStruct</code>. Both
+<code>SimpleStruct</code> and <code>&amp;SimpleStruct</code> implement
+the trait SimpleTrait.</li>
+</ol>
+<p>When you call the function <code>new</code>, you will witness
+something truly magical: for the same function call, some of them take
+ownership while others do not. This is because Rust creates a
+corresponding function instance for each generic function during
+compilation, using a technique called monomorphization.</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">ownership_with_trait</span>() &#123;</span><br><span class="line">    <span class="keyword">trait</span> <span class="title class_">SimpleTrait</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">StructWithTrait</span> &#123;</span><br><span class="line">        id: <span class="type">i32</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">impl</span> <span class="title class_">SimpleTrait</span> <span class="keyword">for</span> <span class="title class_">StructWithTrait</span> &#123;&#125;</span><br><span class="line">    <span class="keyword">impl</span> <span class="title class_">SimpleTrait</span> <span class="keyword">for</span> &amp;StructWithTrait &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>&lt;T&gt;(t: T)</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        T: SimpleTrait,</span><br><span class="line">    &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">instance</span> = &amp;StructWithTrait &#123;id:<span class="number">10</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// error[E0382]: borrow of moved value: `instance`</span></span><br><span class="line">    <span class="comment">// new(instance);</span></span><br><span class="line">    <span class="comment">// println!(&quot;&#123;&#125;&quot;, instance.id);</span></span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">new</span>(instance);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, instance.id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="references">References</h2>
+<ul>
+<li><p><a
+target="_blank" rel="noopener" href="https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html#understanding-ownership">Understanding
+Ownership</a></p></li>
+<li><p><a
+target="_blank" rel="noopener" href="https://medium.com/@TechSavvyScribe/ownership-and-borrowing-in-rust-a-comprehensive-guide-1400d2bae02a">Ownership
+and Borrowing in Rust: A Comprehensive Guide</a></p></li>
+<li><p><a
+target="_blank" rel="noopener" href="https://medium.com/coinmonks/understanding-ownership-in-rust-with-examples-73835ba931b1">Understanding
+Ownership in Rust with Examples</a></p></li>
+<li><p><a
+target="_blank" rel="noopener" href="https://www.integralist.co.uk/posts/rust-ownership/">Rust
+Ownership, Borrowing, and Lifetimes</a></p></li>
+<li><p><a
+target="_blank" rel="noopener" href="https://stackoverflow.com/questions/31298802/let-mut-syntax">Let
+&amp;mut syntax</a></p></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/Ownership/" rel="tag"># Ownership</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/10/14/The-Crate-Package-and-Moudle-in-Rust/" rel="prev" title="The Crate, Package, and Moudle in Rust">
+                  <i class="fa fa-angle-left"></i> The Crate, Package, and Moudle in Rust
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/10/28/Draw-Diagrams-in-Markdown/" rel="next" title="Draw Diagrams in Markdown">
+                  Draw Diagrams in Markdown <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

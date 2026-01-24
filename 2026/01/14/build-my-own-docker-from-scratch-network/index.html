@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="需要注意的是，linux下的网络编程是一个非常琐碎的过程，所以我们在这里只是实现了最简单的版本：  只支持 IPv4； 只支持通过 Linux Bridge&#x2F;Veth Pari； 对 Subnet 的网段进行了限制，并且只允许通过后台默认分配，不允许用户自定义；  在实现的过程中，我们也有很多的地方因为太过于繁琐直接省略了：  对于我们分配网段&#x2F;分配IP的管理，只记录在内存中，并没有做持久化；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="build my own docker from scratch: network">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/01/14/build-my-own-docker-from-scratch-network/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="需要注意的是，linux下的网络编程是一个非常琐碎的过程，所以我们在这里只是实现了最简单的版本：  只支持 IPv4； 只支持通过 Linux Bridge&#x2F;Veth Pari； 对 Subnet 的网段进行了限制，并且只允许通过后台默认分配，不允许用户自定义；  在实现的过程中，我们也有很多的地方因为太过于繁琐直接省略了：  对于我们分配网段&#x2F;分配IP的管理，只记录在内存中，并没有做持久化；">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-14T08:45:18.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.113Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="docker">
+<meta property="article:tag" content="go">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/01/14/build-my-own-docker-from-scratch-network/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/01/14/build-my-own-docker-from-scratch-network/","path":"2026/01/14/build-my-own-docker-from-scratch-network/","title":"build my own docker from scratch: network"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>build my own docker from scratch: network | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%9A%84%E7%BD%91%E7%BB%9C"><span class="nav-number">1.</span> <span class="nav-text">容器的网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E8%99%9A%E6%8B%9F%E5%8C%96%E6%8A%80%E6%9C%AF"><span class="nav-number">1.1.</span> <span class="nav-text">网络虚拟化技术</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">1.1.1.</span> <span class="nav-text">一个简单的例子</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-bridge-%E7%BD%91%E7%BB%9Cdocker-network-create"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">创建 bridge
+网络（docker network create）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">启动容器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87veth%E5%92%8Cbridge%E5%AE%9E%E7%8E%B0%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1%E5%91%BD%E4%BB%A4%E8%A1%8C"><span class="nav-number">1.2.</span> <span class="nav-text">如何通过veth和bridge实现网络通信（命令行）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E8%84%9A%E6%9C%AC%E5%AE%9E%E7%8E%B0ns%E4%B9%8B%E9%97%B4%E7%9A%84%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1"><span class="nav-number">1.2.1.</span> <span class="nav-text">使用脚本实现ns之间的网络通信</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-network-namesace"><span class="nav-number">1.2.2.</span> <span class="nav-text">创建 network namesace</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAlinux-bridge"><span class="nav-number">1.2.3.</span> <span class="nav-text">创建linux bridge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BAns1%E5%88%9B%E5%BB%BAveth-pair%E5%B9%B6%E6%8E%A5%E5%85%A5bridge"><span class="nav-number">1.2.4.</span> <span class="nav-text">为ns1创建veth
+pair并接入bridge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BAns2%E5%88%9B%E5%BB%BAveth-pair%E5%B9%B6%E6%8E%A5%E5%85%A5bridge"><span class="nav-number">1.2.5.</span> <span class="nav-text">为ns2创建veth
+pair并接入bridge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E8%B7%A8ns%E9%80%9A%E4%BF%A1"><span class="nav-number">1.2.6.</span> <span class="nav-text">验证跨ns通信</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.2.7.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87veth%E5%92%8Cbridge%E5%AE%9E%E7%8E%B0%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1golang"><span class="nav-number">1.3.</span> <span class="nav-text">通过veth和bridge实现网络通信（golang）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-network-namesace-1"><span class="nav-number">1.3.1.</span> <span class="nav-text">创建 network namesace</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-linux-bridge"><span class="nav-number">1.3.2.</span> <span class="nav-text">创建 linux bridge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAveth-pair"><span class="nav-number">1.3.3.</span> <span class="nav-text">创建Veth Pair</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86vethhost%E7%BB%91%E5%AE%9A%E5%88%B0bridge"><span class="nav-number">1.3.4.</span> <span class="nav-text">将vethHost绑定到bridge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86%E6%89%80%E6%9C%89%E7%9A%84%E8%AE%BE%E5%A4%87%E7%8A%B6%E6%80%81%E8%AE%BE%E7%BD%AE%E4%B8%BAup"><span class="nav-number">1.3.5.</span> <span class="nav-text">将所有的设备状态设置为UP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96bridge%E5%92%8Cvethns%E7%9A%84ip"><span class="nav-number">1.3.6.</span> <span class="nav-text">初始化bridge和vethNs的IP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8"><span class="nav-number">1.3.7.</span> <span class="nav-text">启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">1.3.8.</span> <span class="nav-text">测试</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%BD%91%E7%BB%9C%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.4.</span> <span class="nav-text">容器网络的设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%BD%91%E7%BB%9C%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="nav-number">1.4.1.</span> <span class="nav-text">容器网络的操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%BD%91%E7%BB%9C%E7%9A%84%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90"><span class="nav-number">1.4.2.</span> <span class="nav-text">容器网络的需求分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E4%BD%93%E4%BB%A3%E7%A0%81"><span class="nav-number">1.4.3.</span> <span class="nav-text">实体代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-number">1.4.4.</span> <span class="nav-text">持久化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E4%BF%A1"><span class="nav-number">1.4.5.</span> <span class="nav-text">通信</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">2.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#netlink%E5%92%8Cnetns%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">netlink和netns的使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AAbridge"><span class="nav-number">2.1.1.</span> <span class="nav-text">创建一个bridge</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%93%8D%E4%BD%9Cns"><span class="nav-number">2.1.2.</span> <span class="nav-text">操作ns</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vetheth"><span class="nav-number">2.2.</span> <span class="nav-text">veth&#x2F;eth</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89"><span class="nav-number">2.2.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E6%80%A7"><span class="nav-number">2.2.2.</span> <span class="nav-text">特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8C%BA%E5%88%AB"><span class="nav-number">2.2.3.</span> <span class="nav-text">核心区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E5%9C%BA%E6%99%AF%E4%B8%8B%E4%BD%BF%E7%94%A8veth%E7%9A%84%E5%AE%9E%E4%BE%8B"><span class="nav-number">2.2.4.</span> <span class="nav-text">容器场景下使用Veth的实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E9%9C%80%E8%A6%81veth"><span class="nav-number">2.2.5.</span> <span class="nav-text">为什么我们需要veth</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux-bridge"><span class="nav-number">2.3.</span> <span class="nav-text">linux bridge</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD"><span class="nav-number">2.3.1.</span> <span class="nav-text">核心功能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E7%9A%84%E7%BD%91%E7%BB%9C"><span class="nav-number">2.4.</span> <span class="nav-text">linux的网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#veth-pair"><span class="nav-number">2.4.1.</span> <span class="nav-text">Veth Pair</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-1"><span class="nav-number">2.4.1.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">2.4.1.2.</span> <span class="nav-text">特点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-bridge-1"><span class="nav-number">2.4.2.</span> <span class="nav-text">Linux Bridge</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-2"><span class="nav-number">2.4.2.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%89%B9%E7%82%B9-1"><span class="nav-number">2.4.2.2.</span> <span class="nav-text">特点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#taptun"><span class="nav-number">2.4.3.</span> <span class="nav-text">Tap&#x2F;Tun</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-3"><span class="nav-number">2.4.3.1.</span> <span class="nav-text">定义</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#open-vswitch"><span class="nav-number">2.4.4.</span> <span class="nav-text">Open vSwitch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vxlan"><span class="nav-number">2.4.5.</span> <span class="nav-text">VXLAN</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables"><span class="nav-number">2.5.</span> <span class="nav-text">iptables</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%E5%9B%9B%E8%A1%A8%E4%BA%94%E9%93%BE"><span class="nav-number">2.5.1.</span> <span class="nav-text">核心概念（四表五链）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E5%B1%82%E5%8D%8F%E8%AE%AE%E4%B8%AD%E7%9A%84ip%E5%9C%B0%E5%9D%80"><span class="nav-number">2.6.</span> <span class="nav-text">二层协议中的IP地址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81mac%E9%80%9A%E4%BF%A1%E9%80%BB%E8%BE%91"><span class="nav-number">2.6.1.</span> <span class="nav-text">验证MAC通信逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%AE%BF%E4%B8%BB%E6%9C%BA%E4%B8%8A%E8%AE%BE%E5%A4%87%E4%BF%A1%E6%81%AF"><span class="nav-number">2.6.1.1.</span> <span class="nav-text">查看宿主机上设备信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8Bns%E4%B8%8B%E8%AE%BE%E5%A4%87%E4%BF%A1%E6%81%AF"><span class="nav-number">2.6.1.2.</span> <span class="nav-text">查看ns下设备信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E8%BF%9E%E6%8E%A5"><span class="nav-number">2.6.1.3.</span> <span class="nav-text">查看连接</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#ip-link"><span class="nav-number">2.6.1.3.1.</span> <span class="nav-text">ip link</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ethtool"><span class="nav-number">2.6.1.3.2.</span> <span class="nav-text">ethtool</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E8%BF%98%E8%A6%81%E7%BB%99%E5%AE%B9%E5%99%A8%E9%85%8D%E7%BD%AEip%E5%9C%B0%E5%9D%80"><span class="nav-number">2.6.2.</span> <span class="nav-text">为什么我们还要给容器配置IP地址</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ip%E5%9C%B0%E5%9D%80%E5%88%86%E7%B1%BB"><span class="nav-number">2.7.</span> <span class="nav-text">IP地址分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E5%88%86%E7%B1%BB%E6%9C%89%E7%B1%BB%E8%B7%AF%E7%94%B1"><span class="nav-number">2.7.1.</span> <span class="nav-text">传统分类（有类路由）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cidr%E6%97%A0%E7%B1%BB%E5%9F%9F%E8%B7%AF%E7%94%B1"><span class="nav-number">2.7.2.</span> <span class="nav-text">CIDR（无类域路由）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker%E4%B8%AD%E7%9A%84ip%E5%9C%B0%E5%9D%80%E5%88%86%E7%B1%BB"><span class="nav-number">2.7.3.</span> <span class="nav-text">docker中的IP地址分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E5%B1%82%E7%BA%A7%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-number">2.8.</span> <span class="nav-text">网络层级的划分</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E5%90%8C%E7%82%B9"><span class="nav-number">2.8.1.</span> <span class="nav-text">共同点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%88%AB"><span class="nav-number">2.8.2.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90-1"><span class="nav-number">2.8.3.</span> <span class="nav-text">一个简单的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ipam%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-number">2.9.</span> <span class="nav-text">IPAM的实现逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#network%E5%8F%AA%E4%BF%9D%E5%AD%98%E5%85%83%E6%95%B0%E6%8D%AE"><span class="nav-number">2.9.1.</span> <span class="nav-text">Network只保存元数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#network%E4%BF%9D%E5%AD%98%E5%85%83%E6%95%B0%E6%8D%AE%E5%92%8C%E8%BF%90%E8%A1%8C%E6%97%B6%E4%BF%A1%E6%81%AF"><span class="nav-number">2.9.2.</span> <span class="nav-text">Network保存元数据和运行时信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker%E7%9A%84ipam%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.9.3.</span> <span class="nav-text">Docker的IPAM实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6"><span class="nav-number">2.9.3.1.</span> <span class="nav-text">核心组件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%80%E5%8C%96%E7%9A%84%E6%A0%B8%E5%BF%83%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.9.3.2.</span> <span class="nav-text">简化的核心接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91%E5%88%86%E6%9E%90"><span class="nav-number">2.9.3.3.</span> <span class="nav-text">实现逻辑分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%A7%84%E9%81%BF%E7%AD%96%E7%95%A5%E5%88%87%E6%8D%A2%E9%9A%BE%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.9.3.4.</span> <span class="nav-text">如何规避「策略切换难」的问题？</span></a></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/01/14/build-my-own-docker-from-scratch-network/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="build my own docker from scratch: network | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          build my own docker from scratch: network
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-01-14 16:45:18" itemprop="dateCreated datePublished" datetime="2026-01-14T16:45:18+08:00">2026-01-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p><strong>需要注意的是，linux下的网络编程是一个非常琐碎的过程，所以我们在这里只是实现了最简单的版本：</strong></p>
+<ul>
+<li>只支持 <code>IPv4</code>；</li>
+<li>只支持通过 <code>Linux Bridge</code>/<code>Veth Pari</code>；</li>
+<li>对 <code>Subnet</code>
+的网段进行了限制，并且只允许通过后台默认分配，不允许用户自定义；</li>
+</ul>
+<p>在实现的过程中，我们也有很多的地方因为太过于繁琐直接省略了：</p>
+<ul>
+<li>对于我们分配网段/分配IP的管理，只记录在内存中，并没有做持久化；</li>
+<li>虽然根据职责对系统进行了分层，但是整个的架构和接口设计都比较随意；</li>
+<li><code>EndpointId</code> 和 <code>ContainerId</code>
+没有分开，也就限制了我们每个容器只能接入一个网络；</li>
+<li>虽然对各个组件之间通过接口做了解耦，但是实际在代码实现中未实现完全解耦；</li>
+<li>错误处理不严谨，很多地方在失败时都没有进行回滚操作；</li>
+<li>没有增加跨子网路由，所以现在只能容器之间通信，而不能实现容器通过宿主机的网卡与外网通信。</li>
+</ul>
+</blockquote>
+<p>在我们前面的文章 <a
+href="https://0x822a5b87.github.io/2025/12/18/build-my-own-docker-from-scratch/">build
+my own docker from scratch</a> 中，我们实现了：</p>
+<ul>
+<li>通过 <code>namespace</code> 对容器实现资源虚拟化；</li>
+<li>通过 <code>cgroup</code> 对容器的资源进行限制和管理；</li>
+<li>通过 <code>daemon</code> 进程来实现对整体资源的管理；</li>
+</ul>
+<p>今天我们要开始实现一个对 <code>docker</code>
+来说至关重要的特性：<code>network namespace</code>
+的管理。从这一节，我们也可以体会到为什么我们要使用一个额外的
+<code>daemon</code> 进程来对我们容器进行管理 --
+从之前的视角中，我们可以看到大量的缺点：</p>
+<ul>
+<li>引入了额外的复杂性；</li>
+<li>大量通过 <code>UDS</code>
+通信导致的异步行为使得程序的编码和DEBUG都更加困难；</li>
+<li>中心化的服务降低了程序的健壮性。</li>
+</ul>
+<p>而这一切都是因为，<strong>docker并不是一个无状态的程序</strong>。在之前的逻辑中（<code>namespace</code>
+和 <code>cgroup</code>），容器的 <code>UTS/挂载/进程</code> 等
+namespace，以及 <code>CPU/内存</code> 等 cgroup
+限制，<strong>状态是「容器内局部的」</strong>——
+每个容器的状态独立，全局仅需记录「容器 ID ↔︎
+资源句柄」的简单映射，甚至可以用 UUID 规避冲突，无需常驻进程维护。</p>
+<p>此时即使没有 daemon，每次操作时从文件加载少量状态也完全可行。</p>
+<p>而当我们引入到 <code>network</code> 之后，容器就从一个个
+<code>孤岛</code> 变成了一个连通的结构，我们涉及到大量的状态：</p>
+<ul>
+<li>网络是<strong>全局共享资源</strong>（如网桥、veth
+对、路由表），不是某个容器的私有资源；</li>
+<li>容器与网络的「接入关系」是<strong>双向关联的</strong>（网络要知道哪些容器接入，容器要知道自己属于哪些网络）；</li>
+<li>IP 分配是<strong>排他性的</strong>（一个 IP
+只能分给一个容器，需全局维护「IP ↔︎ 容器」的映射，避免冲突）。</li>
+</ul>
+<p>这种全局、关联、排他的状态，<strong>无法靠「每次启动加载文件」高效管理</strong>——
+每次操作容器网络前，都要扫描全量文件、校验 IP
+冲突、检查网络类型，这会导致操作延迟指数级上升；而 daemon
+作为常驻进程，<strong>将全量状态缓存在内存中</strong>，可以实现毫秒级的状态查询和修改，这是文件存储无法替代的。</p>
+<h1 id="容器的网络">容器的网络</h1>
+<p>在一起开始之前，我们可以参考下面的一些关于linux的网络了解一下相关的基础知识：</p>
+<ul>
+<li><a href="#veth/eth">veth/eth</a></li>
+<li><a href="#linux%20bridge">linux bridge</a></li>
+<li><a href="#linux的网络">linux的网络</a></li>
+<li><a href="#网络层级的划分">网络层级的划分</a></li>
+<li><a href="#iptables">iptables</a></li>
+<li><a href="#二层协议中的IP地址">二层协议中的IP地址</a></li>
+<li><a href="#netlink和netns的使用">netlink和netns的使用</a></li>
+</ul>
+<h3 id="网络虚拟化技术">网络虚拟化技术</h3>
+<p>容器的网络虚拟化技术是基于
+<code>veth</code>/<code>bridge</code>/<code>iptables</code>
+等组件合作实现的，简单来说就是一个如下流程：</p>
+<ol type="1">
+<li>为容器初始化 <code>network namespace</code>；</li>
+<li>在宿主机初始化 <code>linux bridge</code>；</li>
+<li>初始化一个 <code>Veth Pair</code>，假设他们分别是
+<code>veth-host</code> 和 <code>veth-ns</code>：
+<ul>
+<li>将 <code>veth-ns</code> 移入 <code>ns</code>，初始化并启动；</li>
+<li>将 <code>veth-host</code> 初始化并启动，并接入到
+<code>bridge</code>；</li>
+<li>注意，这里只需要把 <code>veth-host</code> 接入到
+<code>bridge</code>；</li>
+</ul></li>
+<li><strong>开启内核的 IP 转发功能</strong>，否则
+<code>iptables FORWARD</code> 链会默认拒绝转发流量；</li>
+<li>为我们的 <code>bridge</code> 配置 <code>iptables</code> 策略：
+<ul>
+<li>配置 <code>MASQUERADE</code> ，它 属于 <code>nat</code> 表的
+<code>POSTROUTING</code>
+链，匹配容器网段的流量，且指定宿主机的出口网卡。该策略可以将请求包中的源地址转换成一个网络设备的地址，我们需要通过该策略将容器的IP（只在宿主机的bridge可用）转换为宿主机的真实IP；</li>
+<li>配置 <code>DNAT</code>，它属于 <code>nat</code> 表的
+<code>PREROUTING</code> 链，匹配宿主机的监听端口，转发到容器的 IP
+和端口。该策略可以更换目标地址，经常用于将内部网络地址的端口映射到外部，docker
+中的绑定容器的虚拟端口到宿主机的物理端口就是通过它来实现的。</li>
+<li>配置 <code>filter</code> 表 <code>FORWARD</code>
+链允许容器网段的流量转发。</li>
+</ul></li>
+</ol>
+<h4 id="一个简单的例子">一个简单的例子</h4>
+<p>我们使用下面的命令在 <code>docker</code> 下初始化一个容器：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker network create -d bridge my-net</span><br><span class="line">docker run --network=my-net -it busybox</span><br></pre></td></tr></table></figure>
+<p>那么，<code>docker</code> 的实际操作流程如下：</p>
+<h5 id="创建-bridge-网络docker-network-create">创建 bridge
+网络（<code>docker network create</code>）</h5>
+<p>当我们执行 <code>docker network create -d bridge my-net</code>
+的时候，我们会做几件事：</p>
+<ul>
+<li>在宿主机创建一个名为 <code>br-&lt;network_id前12位&gt;</code> 的
+linux bridge，注意，bridge 的后缀是网格ID而不是容器ID；</li>
+<li>将这个 bridge 注册到 <code>docker</code> 中；</li>
+<li>Docker 对 bridge 网络的网段分配遵循「从 <code>172.17.0.0/16</code>
+开始，依次递增第二个八位组」，规则是
+<ul>
+<li>第一个 bridge 网络（默认 bridge）：<code>172.17.0.0/16</code>；</li>
+<li>第二个 bridge 网络（my-net）：<code>172.18.0.0/16</code>；</li>
+<li>第三个 bridge 网络：<code>172.19.0.0/16</code>；</li>
+<li>本质是<code>172.x.0.0/16</code> 中 <code>x</code> 从 17
+开始递增</li>
+</ul></li>
+<li>开启 <code>bridge</code>；</li>
+<li>配置 <code>iptables</code> 的基础规则；</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看 my-net 相关信息</span></span><br><span class="line">docker network inspect my-net</span><br></pre></td></tr></table></figure>
+<p>这里需要注意的有几个地方：</p>
+<ol type="1">
+<li><code>Id</code> 字段是该网络的唯一标识，宿主机网桥名 =
+<code>br-</code> + <code>Id的前12位</code>，这是关联 Docker
+网络名和宿主机网桥的关键；</li>
+<li><code>Subnet</code> 是该网络的私有网段，<code>Gateway</code>
+是网桥的 IP（容器的默认网关会指向该地址）；</li>
+</ol>
+<p>这里我们简单描述一下 <code>Subnet</code> 和 <code>Gateway</code>
+的区别：</p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 43%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th><strong>Subnet（子网）</strong></th>
+<th><strong>Gateway（网关）</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>本质</strong></td>
+<td>一个<strong>连续的 IP 地址集合</strong>，划定网络的地址边界</td>
+<td>子网内的一个<strong>具体 IP 地址</strong>，是子网的「进出口」</td>
+</tr>
+<tr class="even">
+<td><strong>作用</strong></td>
+<td>1. 限定该网络内容器可分配的 IP 范围；<br/>2.
+同一子网内的容器可直接通过二层（MAC 地址）通信，无需路由</td>
+<td>1. 作为子网内设备访问<strong>外网 /
+其他子网</strong>的转发节点；<br/>2.
+作为外网数据包进入子网的接收节点；<br/>3. 在 Docker 中，网关 IP 就是
+<code>bridge</code> 网桥的 IP</td>
+</tr>
+<tr class="odd">
+<td><strong>是否是具体 IP</strong></td>
+<td>否，是一个范围（如 <code>172.18.0.0/16</code>）</td>
+<td>是，且必须属于当前子网（如 <code>172.18.0.1</code>）</td>
+</tr>
+<tr class="even">
+<td><strong>是否分配给容器</strong></td>
+<td>不直接分配，容器 IP 是从这个范围里选取的<strong>可用
+IP</strong></td>
+<td>不会分配给容器，是网桥的专属 IP，保留作为转发入口</td>
+</tr>
+</tbody>
+</table>
+<ol type="1">
+<li><code>Subnet</code> 是一个子网访问，例如 <code>172.18.0.0/16</code>
+表示的就是 <code>172.18.0.1</code> 到 <code>172.18.255.254</code>
+这个范围，同一子网内的容器（如 <code>172.18.0.2</code> 和
+<code>172.18.0.3</code>）通信时，直接通过 <code>bridge</code> 的二层 MAC
+转发，不需要经过网关：
+<ul>
+<li>在 IPv4 中，<code>Subnet</code> 的第一个子网地址
+<code>172.18.0.0</code>
+是<strong>网络地址</strong>，它的作用是<strong>标识整个子网</strong>，而非给单个设备使用；对于
+<code>172.18.0.0/16</code> 这个子网：
+<ul>
+<li>子网掩码是 <code>255.255.0.0</code>；</li>
+<li>把 IP
+地址和子网掩码做<strong>按位与运算</strong>，得到的结果就是网络地址；</li>
+<li>示例：<code>172.18.0.2 &amp; 255.255.0.0 = 172.18.0.0</code>。</li>
+</ul></li>
+<li>子网的<strong>最后一个 IP 地址 -- 在这里是
+<code>172.18.255.255</code>
+，它是「广播地址」</strong>，它的作用是<strong>向子网内所有设备发送消息</strong>，同样不能分配给单个设备。同样对于
+<code>172.18.0.0/16</code> 子网：
+<ul>
+<li>广播地址的特点：<strong>主机位全为
+1</strong>（<code>172.18.255.255</code> 的后 16 位全为 1）。</li>
+<li>作用：当设备发送数据包到 <code>172.18.255.255</code>
+时，子网内所有设备都会收到这个数据包（比如 ARP 广播请求）。</li>
+<li>注意：如果把这个地址分配给网卡，设备会收到大量无关的广播包，同时自身发送的数据包也会被识别为广播流量，导致网络混乱。</li>
+</ul></li>
+</ul></li>
+<li><code>Gateway</code> 是这个子网的网关 -- 他是宿主机
+<code>br-01077ba8fade</code> 的 bridge 的IP地址：
+<ul>
+<li>当容器要访问外网（比如 <code>8.8.8.8</code>）时，因为目标 IP 不在
+<code>172.18.0.0/16</code> 子网内，容器会把数据包发给网关
+<code>172.18.0.1</code>；</li>
+<li>网关（网桥）收到数据包后，通过宿主机的 <code>iptables</code>
+规则（<code>MASQUERADE</code>）做源地址转换，再转发到外网；</li>
+<li>外网的响应数据包返回时，会先到达网关，网关再把数据包转发给对应的容器；</li>
+<li><strong>也就是说，网关是这个子网和外网通信时所有数据包的入口和出口</strong>；</li>
+</ul></li>
+<li>一个简单的比喻：
+<ul>
+<li>我们可以把 <code>Subnet</code>
+看做一个小区，小区的门牌号就是我们的IP地址；</li>
+<li>当我们在小区内通信时，可以通过IP地址直接进行通信；</li>
+<li>但是，当我们要和其他的小区通信时，所有的用户都必须先从小区大门 --
+<code>Gateway</code> 出去，也就是
+<code>172.18.0.1</code>。而当有人要向小区内的其他人发送信息；也必须先将数据发送到小区大门
+-- <code>Gateway</code>，由 <code>Gateway</code> 转发给其他的用户。</li>
+</ul></li>
+</ol>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;Name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;my-net&quot;</span><span class="punctuation">,</span></span><br><span class="line marked">        <span class="attr">&quot;Id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;01077ba8fade93b848c68610838382d86fd75256e186e5843837bab8b604655f&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Driver&quot;</span><span class="punctuation">:</span> <span class="string">&quot;bridge&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;IPAM&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;Driver&quot;</span><span class="punctuation">:</span> <span class="string">&quot;default&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;Options&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;Config&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line marked">                <span class="punctuation">&#123;</span></span><br><span class="line marked">                    <span class="attr">&quot;Subnet&quot;</span><span class="punctuation">:</span> <span class="string">&quot;172.18.0.0/16&quot;</span><span class="punctuation">,</span></span><br><span class="line marked">                    <span class="attr">&quot;IPRange&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line marked">                    <span class="attr">&quot;Gateway&quot;</span><span class="punctuation">:</span> <span class="string">&quot;172.18.0.1&quot;</span></span><br><span class="line marked">                <span class="punctuation">&#125;</span></span><br><span class="line">            <span class="punctuation">]</span></span><br><span class="line">        <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Status&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;IPAM&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;Subnets&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                    <span class="attr">&quot;172.18.0.0/16&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                        <span class="attr">&quot;IPsInUse&quot;</span><span class="punctuation">:</span> <span class="number">3</span><span class="punctuation">,</span></span><br><span class="line">                        <span class="attr">&quot;DynamicIPsAvailable&quot;</span><span class="punctuation">:</span> <span class="number">65533</span></span><br><span class="line">                    <span class="punctuation">&#125;</span></span><br><span class="line">                <span class="punctuation">&#125;</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+<p>随后，我们可以使用我们得到的信息去查找宿主机的
+<code>bridge</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BR_NAME=<span class="string">&quot;br-<span class="subst">$(docker network inspect my-net -f &#x27;&#123;&#123;.Id&#125;&#125;&#x27; | cut -c1-12)</span>&quot;</span></span><br><span class="line"></span><br><span class="line">ip <span class="built_in">link</span> show <span class="variable">$BR_NAME</span></span><br></pre></td></tr></table></figure>
+<p>就可以得到宿主机 bridge 的信息了：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">55</span>: br-<span class="number">01077</span>ba8fade: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu <span class="number">1500</span> qdisc noqueue state DOWN mode DEFAULT group default</span><br><span class="line">    <span class="attribute">link</span>/ether <span class="number">52</span>:<span class="number">21</span>:<span class="number">8</span>a:<span class="number">86</span>:<span class="number">24</span>:<span class="number">87</span> brd ff:ff:ff:ff:ff:ff</span><br></pre></td></tr></table></figure>
+<h5 id="启动容器">启动容器</h5>
+<ul>
+<li>为容器创建独立的
+<code>network namespace</code>（路径：<code>/var/run/docker/netns/xxxxxx</code>）；</li>
+<li>创建 veth pair（如 <code>vethxxxx</code>/<code>eth0</code>）；</li>
+<li>将 veth pair 的一端（<code>eth0</code>）移入容器 ns，配置 IP（如
+<code>172.18.0.2/16</code>）、网关（<code>172.18.0.1</code>，即 bridge
+的 IP）；</li>
+<li>将 veth pair 的另一端（<code>vethxxxx</code>）留在宿主机 ns，接入
+<code>br-xxxxxx</code> bridge 并启动；</li>
+<li>自动开启内核 <code>ip_forward</code>；</li>
+<li>配置 iptables 规则：
+<ul>
+<li><code>nat</code> 表 <code>POSTROUTING</code> 链添加
+<code>MASQUERADE</code>（容器上网）；</li>
+<li><code>filter</code> 表 <code>FORWARD</code>
+链允许容器流量转发。</li>
+</ul></li>
+</ul>
+<h3
+id="如何通过veth和bridge实现网络通信命令行">如何通过veth和bridge实现网络通信（命令行）</h3>
+<p>在 <code>linux</code> 中，由于 <code>network namespace</code>
+的存在，在不同的 <code>network namespace</code>
+下他们可能出现使用同一个端口的情况：</p>
+<pre><code class="highlight mermaid">---
+title: Network In Linux
+---
+
+flowchart LR
+
+    subgraph pm[&quot;Physical Machine&quot;]
+        subgraph ns1[&quot;network namespace 1&quot;]
+            ssh1(&quot;ssh(localhost:22)&quot;)
+            http1(&quot;http(localhost:80)&quot;)
+            https1(&quot;https(localhost:443)&quot;)
+        end
+
+        subgraph ns2[&quot;network namespace 2&quot;]
+            ssh2(&quot;ssh(localhost:22)&quot;)
+            http2(&quot;http(localhost:80)&quot;)
+            https2(&quot;https(localhost:443)&quot;)
+        end
+
+        subgraph ns3[&quot;other namespaces&quot;]
+            ssh3(&quot;ssh(localhost:22)&quot;)
+            http3(&quot;http(localhost:80)&quot;)
+            https3(&quot;https(localhost:443)&quot;)
+        end
+    end</code></pre>
+<p>然而，这也引入了一些问题：</p>
+<ol type="1">
+<li>通常来说，一个虚拟的端口一定会需要绑定到一个物理机上的物理端口（这里暂时不考虑处于负载均衡目的的开启
+<code>SO_REUSEPORT</code> 的情况），不同的 network namespace
+下直接去绑定到同一个物理端会引起端口冲突；</li>
+<li>假设进程间需要和物理机内部的其他进程通信，或者和物理机外部的其他物理机通信，他自身又不存在一个物理网卡，他应该怎么确定自己的地址呢？他应该怎么确定通信的目标机器的地址呢？（这里需要注意的是，对于这个虚拟出来的容器来说，和物理机内部的其他容器通信以及和物理机外部的其他物理机通信，这两个场景它是不需要区分的
+-- 通过 veth 它可以把两种场景都看做是和外部机器通信）；</li>
+</ol>
+<p>在这种场景下，<code>linux</code> 可以使用 <code>veth</code> +
+<code>linux bridge</code> 的方式来解决这些问题。</p>
+<ol type="1">
+<li>首先是
+<code>veth</code>，对容器而言，就是它的「虚拟网卡」，且有全局唯一的 MAC
+地址
+<ul>
+<li>容器的 <code>network namespace</code> 里，被移入的 <code>veth</code>
+一端会被重命名为 <code>eth0</code>，对容器来说，它就是一块「物理网卡」——
+有自己的 <strong>MAC
+地址</strong>（由内核随机生成，物理机内全局唯一），也会配置独立的 IP
+地址。</li>
+<li>这个 MAC 地址是 Linux Bridge 转发数据包的核心依据（就像物理交换机靠
+MAC 地址识别物理机一样）。</li>
+</ul></li>
+<li>Bridge 是物理机内的「二层消息中转站」，转发目标是物理机内的网络设备
+<ul>
+<li>容器的数据包会先发送到 Bridge，Bridge 会查询自己的 <strong>MAC
+地址表</strong>：
+<ul>
+<li>如果找到目标 MAC 对应的设备（比如另一容器的 Veth
+宿主机端），就直接转发给该设备；</li>
+<li>如果没找到，就向所有接入 Bridge 的设备泛洪（除了源设备）；</li>
+</ul></li>
+<li><strong>注意</strong>：Bridge
+本身只负责<strong>物理机内的二层转发</strong>，无法直接把数据包发到其他物理机。想要跨物理机通信，需要宿主机的三层转发能力（IP
+转发 + 路由表），或者叠加 VXLAN 这类隧道技术。</li>
+</ul></li>
+<li>外部消息到达物理网卡后，转发逻辑分两种情况：
+<ul>
+<li><strong>情况
+1：目标是物理机内的容器</strong>：外部数据包到达物理网卡后，内核会先判断目标
+IP 属于容器网段。此时内核会通过 <code>iptables</code> 的 DNAT
+规则（如果配置了端口映射），将数据包的目标地址转换为容器的 IP，再交给
+Bridge，由 Bridge 转发到对应容器的 Veth 设备。</li>
+<li><strong>情况 2：目标是外网</strong>：容器的数据包通过 Bridge
+到达宿主机后，内核会开启 IP 转发，将数据包从 Bridge
+转发到物理网卡，再发送到外部网络（这个过程需要 <code>iptables</code> 的
+SNAT/MASQUERADE 规则做地址转换）。</li>
+</ul></li>
+</ol>
+<p>在引入了 <code>veth</code> 和 <code>linux bridge</code>
+之后，我们的网络架构图就变成了这样：</p>
+<pre><code class="highlight mermaid">flowchart TB
+
+    subgraph pm[&quot;Physical Machine&quot;]
+        direction TB
+        subgraph container_env[&quot;Container Network Env&quot;]
+            direction LR
+            subgraph ns1[&quot;network namespace 1&quot;]
+                direction LR
+                veth1(&quot;veth1 &lt;br/&gt;(Unique MAC Addr) &lt;br/&gt;(peer: veth1-host)&quot;):::green
+
+                subgraph process1[&quot;process&quot;]
+                    direction LR
+                    ssh1(&quot;ssh(localhost:22)&quot;)
+                    http1(&quot;http(localhost:80)&quot;)
+                    https1(&quot;https(localhost:443)&quot;)
+                end
+
+                ssh1 &lt;--&gt; veth1
+                http1 &lt;--&gt; veth1
+                https1 &lt;--&gt; veth1
+            end
+
+            subgraph ns2[&quot;network namespace 2&quot;]
+                direction LR
+                veth2(&quot;veth2 &lt;br/&gt;(Unique MAC Addr) &lt;br/&gt;(peer: veth2-host)&quot;):::green
+
+                subgraph process2[&quot;process&quot;]
+                    direction LR
+                    ssh2(&quot;ssh(localhost:22)&quot;)
+                    http2(&quot;http(localhost:80)&quot;)
+                    https2(&quot;https(localhost:443)&quot;)
+                end
+
+                ssh2 &lt;--&gt; veth2
+                http2 &lt;--&gt; veth2
+                https2 &lt;--&gt; veth2
+            end
+        end
+        subgraph bridge[&quot;Linux Bridge&quot;]
+            direction TB
+            device(&quot;Bridge Device &lt;br/&gt;(e.g. tiny0)&quot;):::pale_pink
+            port(&quot;Bridge Port &lt;br/&gt;(veth-host 接入点)&quot;):::pale_pink
+            mac_table(&quot;MAC Address Table&quot;):::pale_pink
+            device --&gt; port
+            device --&gt; mac_table
+        end
+        subgraph eth[&quot;物理网卡 (eth0)&quot;]
+        end
+    end
+
+    veth1 -.-&gt;|&quot;Veth Pair 直通 Bridge Port&quot;| bridge
+    veth2 -.-&gt;|&quot;Veth Pair 直通 Bridge Port&quot;| bridge
+    bridge &lt;--&gt; eth:::purple
+
+    classDef pale_pink fill:#E1BEE7,color:#000000;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;</code></pre>
+<h4 id="使用脚本实现ns之间的网络通信">使用脚本实现ns之间的网络通信</h4>
+<blockquote>
+<p><code>ip</code>
+是一个比较实用比较复杂的工具，涉及到大量的不同协议，可以参考官方文档：<a
+target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man8/ip-link.8.html">ip-link(8)</a>
+以及 <a
+target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man8/ip-netns.8.html">ip-netns(8)</a></p>
+</blockquote>
+<h4 id="创建-network-namesace">创建 network namesace</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> ip netns add ns1</span><br><span class="line"><span class="built_in">sudo</span> ip netns add ns2</span><br><span class="line"></span><br><span class="line"><span class="built_in">sudo</span> ip netns list</span><br><span class="line"><span class="comment"># ns2</span></span><br><span class="line"><span class="comment"># ns1</span></span><br></pre></td></tr></table></figure>
+<h4 id="创建linux-bridge">创建linux bridge</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># create bridge tiny0</span></span><br><span class="line"><span class="built_in">sudo</span> brctl addbr tiny0</span><br><span class="line"><span class="comment"># start bridge tiny0</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> <span class="built_in">set</span> tiny0 up</span><br><span class="line"><span class="comment"># set ip addr for bridge(as container gateway)</span></span><br><span class="line"><span class="built_in">sudo</span> ip addr add 172.17.0.1/24 dev tiny0</span><br><span class="line"></span><br><span class="line"><span class="comment"># check if the bridge is setup successively</span></span><br><span class="line"><span class="built_in">sudo</span> brctl show</span><br><span class="line"><span class="comment"># bridge name	bridge id		STP enabled	interfaces</span></span><br><span class="line"><span class="comment"># docker0		8000.de62ddc504d4	no		veth2c5eba7</span></span><br><span class="line"><span class="comment"># 							veth5e9a68c</span></span><br><span class="line"><span class="comment"># tiny0		8000.5e1c0d0486be	no</span></span><br></pre></td></tr></table></figure>
+<h4 id="为ns1创建veth-pair并接入bridge">为ns1创建veth
+pair并接入bridge</h4>
+<p>这里值得注意的几点是：</p>
+<ol type="1">
+<li><code>ip link</code> 创建 <code>veth</code>
+的最开始，只是创建了一个双向的 <code>veth</code>：
+<ul>
+<li>一端是 <code>veth1-host</code>，还没有接入到 bridge；</li>
+<li>一端是 <code>veth1-ns</code>，还没有移入命名空间；</li>
+</ul></li>
+<li><code>network namespace</code> 中的 <code>veth1-ns</code>，在移动到
+<code>ns1</code> 之后，它就必须通过 <code>ip netns exec ns</code>
+先切换到 <code>ns1</code> 这个 namespace 之后才能操作；这个和
+<code>docker exec</code> 其实异曲同工；</li>
+<li>为 <code>eth0</code> 绑定IP地址：
+<ul>
+<li><code>172.17.0.x</code> 属于 <strong>RFC 1918 定义的私有 IP
+网段</strong>（仅内网使用，无法直接访问公网）：
+<ul>
+<li>范围：<code>172.16.0.0 - 172.31.255.255</code>；</li>
+<li>选择这个网段的原因：Docker 官方默认的容器网段就是
+<code>172.17.0.0/16</code>，属于行业通用习惯，避免和宿主机 / 公网 IP
+冲突。</li>
+</ul></li>
+<li><code>172.17.0.1</code> 是<strong>Linux Bridge（tiny0）的 IP
+地址</strong>，也是容器的「默认网关」：
+<ul>
+<li>容器发往「非本网段」的数据包（比如访问外网
+<code>220.181.38.148</code>），会默认发给
+<code>172.17.0.1</code>（网桥），由网桥 / 宿主机负责转发；</li>
+<li>是该网段的「网关地址」，通常网段的第一个可用
+IP（<code>.1</code>）会分配给网关，属于行业通用约定。</li>
+</ul></li>
+<li><code>172.17.0.2/24</code> 这个地址中，<code>2</code> 是该 IP
+地址的<strong>主机位</strong>，用于在同一网段内唯一标识这个容器（类比小区门牌号，<code>172.17.0</code>
+是小区名，<code>2</code> 是具体户号）；</li>
+<li><code>24</code> 是<strong>子网掩码的简写</strong>（也叫 CIDR
+标识），表示 <code>255.255.255.0</code>—— 意味着 <code>172.17.0.0</code>
+到 <code>172.17.0.255</code> 都属于同一个二层网段，这个范围内的 IP
+可直接互通（无需路由器转发）。</li>
+<li><code>172.17.0.0/16</code> 和 <code>172.17.0.2/24</code> 中的
+<code>16</code> 和 <code>24</code>
+表示<strong>子网掩码的二进制位数</strong>：
+<ul>
+<li>IP 地址本质是 32 位二进制数（如 <code>172.17.0.0</code> =
+10101100.00010001.00000000.00000000）；</li>
+<li><code>/16</code> 表示：前 16
+位是「网络位」（固定不变，标识网段），后 16
+位是「主机位」（可分配给设备）；</li>
+<li>对应子网掩码：<code>255.255.0.0</code>，该网段范围是
+<code>172.17.0.0 - 172.17.255.255</code>（共 65534 个可用主机
+IP）。</li>
+</ul></li>
+</ul></li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建一个类型为 veth 的设备， 其中一端是 veth1-host，另一端是 veth1-ns </span></span><br><span class="line"><span class="comment"># 注意，这里只是创建了一个双向的 veth，未移入网络命名空间、未接入网桥。</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line"><span class="comment"># ip link add DEVICE type &#123; veth | vxcan &#125; [ peer name NAME ]</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> add veth1-host <span class="built_in">type</span> veth peer name veth1-ns</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将设备 veth1-ns 移入 namespace ns1</span></span><br><span class="line"><span class="comment"># ip link set &#123; DEVICE | group GROUP &#125; [ netns &#123; PID | NETNSNAME | NETNSFILE &#125; ]</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> <span class="built_in">set</span> veth1-ns netns ns1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 接下来的命令：</span></span><br><span class="line"><span class="comment"># 1. 前面的 ip netns exec `ns1` 是 ip-netns 的命令，切换到 `ns1` 这个隔离的网络命名空间中执行后续命令；</span></span><br><span class="line"><span class="comment"># 2. 跟在 `ns1` 后面的是 ip-link ip 相关的命令。</span></span><br><span class="line"><span class="comment"># ip [-all] netns exec [ NETNSNAME ] command...</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 将 ns1 内的 veth1-ns 改名为 eth0</span></span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns1 ip <span class="built_in">link</span> <span class="built_in">set</span> veth1-ns name eth0</span><br><span class="line"><span class="comment"># 启用 eth0</span></span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns1 ip <span class="built_in">link</span> <span class="built_in">set</span> eth0 up</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这里又变成 ip-addr 的命令了</span></span><br><span class="line"><span class="comment"># ip address &#123; add | change | replace &#125; IFADDR dev IFNAME [ LIFETIME ] [ CONFFLAG-LIST ]</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 为 eth0 绑定 IP 地址</span></span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns1 ip addr add 172.17.0.2/24 dev eth0</span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns1 ip route add default via 172.17.0.1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动 veth1-host</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> <span class="built_in">set</span> veth1-host up</span><br><span class="line"><span class="comment"># 接入 veth1-host 到 bridge tiny0</span></span><br><span class="line"><span class="built_in">sudo</span> brctl addif tiny0 veth1-host</span><br></pre></td></tr></table></figure>
+<h4 id="为ns2创建veth-pair并接入bridge">为ns2创建veth
+pair并接入bridge</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 创建 Veth Pair</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> add veth2-host <span class="built_in">type</span> veth peer name veth2-ns</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 移入 ns2</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> <span class="built_in">set</span> veth2-ns netns ns2</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 配置 ns2 内的网卡</span></span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns2 ip <span class="built_in">link</span> <span class="built_in">set</span> veth2-ns name eth0</span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns2 ip <span class="built_in">link</span> <span class="built_in">set</span> eth0 up</span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns2 ip addr add 172.17.0.3/24 dev eth0</span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns2 ip route add default via 172.17.0.1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 接入网桥</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> <span class="built_in">set</span> veth2-host up</span><br><span class="line"><span class="built_in">sudo</span> brctl addif tiny0 veth2-host</span><br></pre></td></tr></table></figure>
+<h4 id="验证跨ns通信">验证跨ns通信</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns1 ping 172.17.0.3</span><br><span class="line"><span class="comment"># PING 172.17.0.3 (172.17.0.3) 56(84) bytes of data.</span></span><br><span class="line"><span class="comment"># 64 bytes from 172.17.0.3: icmp_seq=1 ttl=64 time=0.052 ms</span></span><br><span class="line"><span class="comment"># 64 bytes from 172.17.0.3: icmp_seq=2 ttl=64 time=0.063 ms</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> ns2 ping 172.17.0.2</span><br><span class="line"><span class="comment"># PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.</span></span><br><span class="line"><span class="comment"># 64 bytes from 172.17.0.2: icmp_seq=1 ttl=64 time=0.033 ms</span></span><br><span class="line"><span class="comment"># 64 bytes from 172.17.0.2: icmp_seq=2 ttl=64 time=0.050 ms</span></span><br></pre></td></tr></table></figure>
+<h4 id="总结">总结</h4>
+<ul>
+<li>将一个veth接入到bridge的过程可以简述为：
+<ol type="1">
+<li>创建 namespace；</li>
+<li>创建 bridge；</li>
+<li>创建双端veth；</li>
+<li>分别将veth的两端移入ns、接入bridge。</li>
+</ol></li>
+<li><code>172.16.0.0 - 172.31.255.255</code> 这个地址段是<strong>RFC
+1918 定义的私有 IP
+网段</strong>（仅内网使用，无法直接访问公网），但是Docker
+官方默认的容器网段就是
+<code>172.17.0.0/16</code>（他在这个网段之内），所以一般来说当实现veth时都以这个网段作为地址，通常按照以下约定：
+<ul>
+<li><code>172.17.0.1</code> 作为 bridge 的网关地址；</li>
+<li><code>veth</code> 地址从 <code>172.17.0.2</code>
+开始向上递增分配。</li>
+</ul></li>
+</ul>
+<h3
+id="通过veth和bridge实现网络通信golang">通过veth和bridge实现网络通信（golang）</h3>
+<p>在 <a
+href="#如何通过veth和bridge实现网络通信（命令行）">如何通过veth和bridge实现网络通信（命令行）</a>
+这一小节中，我们通过 <code>shell</code>
+实现了这个网络通信的逻辑，现在我们通过 <code>golang</code>
+代码来实现这个逻辑。</p>
+<ul>
+<li><code>Veth Pair</code>
+是在两层网络上通信，它们使用的是MAC地址。需要注意的是，我们在程序里分配了IP地址，只是因为很多
+<code>PING</code> 之类的程序依赖，并不意味着 <code>Veth Pair</code>
+需要这个MAC地址；</li>
+</ul>
+<h4 id="创建-network-namesace-1">创建 network namesace</h4>
+<p>创建 <code>ns</code> 和脚本直接基于 <code>ip netns exec</code>
+来实现不一样，<code>netns</code> 需要如下操作：</p>
+<ol type="1">
+<li>获取当前所在的 <code>ns</code>；</li>
+<li>创建新的 <code>ns</code>，这里 <code>netns</code>
+在创建后会自动切换到这个创建的 <code>ns</code>；</li>
+<li>回到开始的 <code>ns</code>；</li>
+</ol>
+<figure class="highlight go"><figcaption><span>14, 18</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">CreateNs</span><span class="params">(newNsName <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Lock the OS Thread so we don&#x27;t accidentally switch namespaces</span></span><br><span class="line">	runtime.LockOSThread()</span><br><span class="line">	<span class="keyword">defer</span> runtime.UnlockOSThread()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Save the current network namespace</span></span><br><span class="line marked">	origins, err := netns.Get()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; _ = origins.Close() &#125;()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Create a new network namespace</span></span><br><span class="line">	newNs, _ := netns.NewNamed(newNsName)</span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; _ = newNs.Close() &#125;()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// return to origin ns</span></span><br><span class="line">	<span class="keyword">if</span> err = netns.Set(origins); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="创建-linux-bridge">创建 linux bridge</h4>
+<p>创建 <code>bridge</code> 的逻辑非常简单，只需要通过
+<code>netlink</code> 库提供的 <code>LinkAdd</code> 创建即可：</p>
+<figure class="highlight go"><figcaption><span>mark: 10</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">CreateBridge</span><span class="params">(name <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	link, _ := netlink.LinkByName(name)</span><br><span class="line">	<span class="keyword">if</span> link != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	attrs := netlink.NewLinkAttrs()</span><br><span class="line">	attrs.Name = name</span><br><span class="line">	bridge := &amp;netlink.Bridge&#123;LinkAttrs: attrs&#125;</span><br><span class="line">	<span class="keyword">if</span> err := netlink.LinkAdd(bridge); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="创建veth-pair">创建Veth Pair</h4>
+<p>这里是和通过脚本创建差别最大的一步：</p>
+<ul>
+<li>通过脚本创建：我们是分别创建 <code>ns1</code> 和 <code>ns2</code>
+接入到 <code>bridge</code>；</li>
+<li>通过go创建：这里为了简化逻辑，我们先创建了一个 <code>vethNs</code>
+，并且将它和 <code>ns</code> 的 <code>NsFd</code>
+绑定作为一个参数传递给了 <code>vethHost</code>。这样
+<code>netlink</code> 会自动的为我们处理将 <code>vethNs</code> 移动到
+<code>ns</code> 的操作以及 <code>Veth Pari</code> 的构造；</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">CreateVethPair</span><span class="params">(vethNs, vethHost, nsName <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	ns, err := netns.GetFromName(nsName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line marked">	la := netlink.LinkAttrs&#123;</span><br><span class="line marked">		Name:      vethNs,</span><br><span class="line marked">		Namespace: netlink.NsFd(ns),</span><br><span class="line marked">	&#125;</span><br><span class="line marked">	veth := &amp;netlink.Veth&#123;</span><br><span class="line marked">		LinkAttrs: la,</span><br><span class="line marked">		PeerName:  vethHost,</span><br><span class="line marked">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err = netlink.LinkAdd(veth); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	log.Printf(<span class="string">&quot;Created veth pair: %s and %s\n&quot;</span>, vethNs, vethHost)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="将vethhost绑定到bridge">将vethHost绑定到bridge</h4>
+<p>随后，我们需要将 <code>vethHost</code> 绑定到
+<code>bridge</code>，<strong>简单来说，就是将 <code>bridge</code> 设置为
+<code>vethHost</code> 的 <code>master</code></strong>：</p>
+<ul>
+<li><strong>master 设备</strong>：通常是具备「转发 /
+交换能力」的网络设备（比如
+<code>bridge</code>、<code>bond</code>、<code>vlan</code> 等）；</li>
+<li><strong>slave 设备</strong>：普通的网络接口（比如
+<code>eth1</code>、<code>veth-host</code>），被挂载到 master
+设备下，其所有网络流量都会由 master 设备接管处理。</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SetMaster</span><span class="params">(vethName <span class="type">string</span>, bridgeName <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">	link, err := netlink.LinkByName(bridgeName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	bridge, ok := link.(*netlink.Bridge)</span><br><span class="line">	<span class="keyword">if</span> !ok &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%s is not bridge&quot;</span>, bridgeName)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	veth, err := netlink.LinkByName(vethName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	err = netlink.LinkSetMaster(veth, bridge)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;%v\n&quot;</span>, err)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="将所有的设备状态设置为up">将所有的设备状态设置为UP</h4>
+<p>这里唯一需要注意的就是：<strong>必须先启动bridge。</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SetUpStatus</span><span class="params">(bridgeName, vethHost, vethNs, nsName <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> err := setupLinkByName(bridgeName); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := setupLinkByName(vethHost); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	runtime.LockOSThread()</span><br><span class="line">	<span class="keyword">defer</span> runtime.UnlockOSThread()</span><br><span class="line"></span><br><span class="line">	origins, newNs, err := enterNs(nsName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; _ = exitNs(origins, newNs) &#125;()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> setupLinkByName(vethNs)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="初始化bridge和vethns的ip">初始化bridge和vethNs的IP</h4>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SetBridgeIP</span><span class="params">(bridgeName, ipWithCIDR <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	bridge, err := netlink.LinkByName(bridgeName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	ipNet, err := netlink.ParseIPNet(ipWithCIDR)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	ipAddr := &amp;netlink.Addr&#123;</span><br><span class="line">		IPNet: ipNet,</span><br><span class="line">		Peer:  <span class="literal">nil</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	_ = netlink.AddrDel(bridge, ipAddr)</span><br><span class="line marked">	<span class="keyword">return</span> netlink.AddrAdd(bridge, ipAddr)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SetVethIPInNS</span><span class="params">(nsName, vethName, ipWithCIDR <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	targetNS, err := netns.GetFromName(nsName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> targetNS.Close()</span><br><span class="line"></span><br><span class="line">	currentNS, err := netns.Get()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> currentNS.Close()</span><br><span class="line"></span><br><span class="line">	runtime.LockOSThread()</span><br><span class="line">	<span class="keyword">defer</span> runtime.UnlockOSThread()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := netns.Set(targetNS); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> netns.Set(currentNS)</span><br><span class="line"></span><br><span class="line">	veth, err := netlink.LinkByName(vethName)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	ipNet, err := netlink.ParseIPNet(ipWithCIDR)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	ipAddr := &amp;netlink.Addr&#123;</span><br><span class="line">		IPNet: ipNet,</span><br><span class="line">		Peer:  <span class="literal">nil</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line marked">	_ = netlink.AddrDel(veth, ipAddr)</span><br><span class="line marked">	<span class="keyword">return</span> netlink.AddrAdd(veth, ipAddr)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="启动">启动</h4>
+<p>使用如下参数启动我们的程序</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	bridge := <span class="string">&quot;my-bridge&quot;</span></span><br><span class="line">	ns := <span class="string">&quot;my-ns&quot;</span></span><br><span class="line">	vethHost := <span class="string">&quot;my-veth-host&quot;</span></span><br><span class="line">	vethNs := <span class="string">&quot;my-veth-ns&quot;</span></span><br><span class="line">	bridgeIP := <span class="string">&quot;10.200.0.1/16&quot;</span></span><br><span class="line">	vethNsIP := <span class="string">&quot;10.200.0.2/16&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="测试">测试</h4>
+<p>现在我们的全部逻辑已经完成了，我们可以开启两个终端进行测试：</p>
+<p>在第一个终端中：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> my-ns nc -ul 10.200.0.2 8080</span><br></pre></td></tr></table></figure>
+<p>在第二个终端中：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;hello from host&quot;</span> | nc -u 10.200.0.2 8080</span><br></pre></td></tr></table></figure>
+<h3 id="容器网络的设计">容器网络的设计</h3>
+<h4 id="容器网络的操作">容器网络的操作</h4>
+<p>当我们在创建并使用一个容器的网络时，我们的操作流程大概是这样的：</p>
+<ol type="1">
+<li>通过 <code>docker network create</code> 一个子网网络：
+<ol type="1">
+<li>和内核通信，向内核申请一个尚未被占用的 <code>Subnet</code>；
+<ul>
+<li>优先从 <strong>RFC 1918
+私有网段</strong>中选择（<code>10.0.0.0/8</code>、<code>172.16.0.0/12</code>、<code>192.168.0.0/16</code>）；</li>
+<li>会扫描宿主机已有的网络设备、路由表，<strong>避开已占用的网段</strong>；</li>
+<li>存储时，通常会把子网、网关、网桥名称、网络模式等信息存在本地数据库（比如
+Docker 的
+<code>/var/lib/docker/network/files/local-kv.db</code>），供后续容器复用。</li>
+</ul></li>
+<li>使用我们申请的这个 <code>Subnet</code>
+创建目标网络，例如docker支持了
+<code>bridge</code>，<code>host</code>，<code>none</code>
+等不同的网络模式，在我们的 <code>mini-docker</code> 中，我们只提供
+<code>Linux Bridge</code> 支持；</li>
+<li>初始化 <code>bridge</code>，并为它分配 <code>Subnet</code> 中的
+<code>Gateway</code> 地址；</li>
+<li>将我们申请得到的
+<code>Subnet</code>，网络模式等信息存储下来留给后续的容器复用；</li>
+</ol></li>
+<li>通过 <code>docker run --network &lt;network&gt;</code>
+指定容器连接的网络：
+<ol type="1">
+<li>和 <code>docker</code> 通信，申请得到一个对应网络下的
+<code>Subnet</code> 的 IP；</li>
+<li>启动容器；</li>
+<li>生成一个 <code>Veth Pair</code>
+对，将其中一端移入容器的ns，另外一端绑定到
+<code>bridge</code>。注意，这里我们可以只为 <code>ns</code> 中的
+<code>veth</code> 分配IP地址；
+<ul>
+<li>容器内的 <code>veth-ns</code>：必须分配
+IP（同子网内的独立地址），用于三层通信；</li>
+<li>宿主机侧的 <code>veth-host</code>：<strong>无需分配
+IP</strong>，因为它被绑定为网桥的 <code>slave</code> 设备（通过
+<code>netlink.LinkSetMaster</code> 实现），流量由网桥（网关）接管。</li>
+<li>这样做的好处：减少 IP 资源浪费，避免宿主机侧的 IP
+冲突，同时简化网络配置。</li>
+</ul></li>
+<li>对 <code>Veth Pair</code> 执行其他相关的初始化。</li>
+</ol></li>
+</ol>
+<p>这样，我们就为我们的容器实现了一个网络分配策略。</p>
+<pre><code class="highlight mermaid">sequenceDiagram
+    participant User
+    participant MiniDocker as mini-docker
+    participant Kernel as Linux内核
+    participant Storage as 本地存储(如local-kv.db)
+    participant Container as 容器(NetNS)
+
+    Note over User,MiniDocker: 阶段1: 创建子网网络(docker network create)
+    User-&gt;&gt;MiniDocker: 执行 network create --driver bridge &lt;network-name&gt;
+    MiniDocker-&gt;&gt;Kernel: 1. 扫描宿主机网络设备/路由表
+    Kernel--&gt;&gt;MiniDocker: 返回已占用网段列表
+    MiniDocker-&gt;&gt;MiniDocker: 2. 从RFC1918私有网段中选择未占用Subnet
+    MiniDocker-&gt;&gt;Kernel: 3. 创建Linux Bridge设备(如my-bridge)
+    Kernel--&gt;&gt;MiniDocker: Bridge创建成功
+    MiniDocker-&gt;&gt;Kernel: 4. 为Bridge分配Subnet网关IP(如10.200.0.1/16)
+    Kernel--&gt;&gt;MiniDocker: 网关IP绑定成功
+    MiniDocker-&gt;&gt;Storage: 5. 存储网络元数据(名称/Subnet/网关/模式)
+    Storage--&gt;&gt;MiniDocker: 元数据存储完成
+    MiniDocker--&gt;&gt;User: 网络创建成功，返回网络信息
+
+    Note over User,MiniDocker: 阶段2: 启动容器并绑定网络(docker run --network)
+    User-&gt;&gt;MiniDocker: 执行 run --network &lt;network-name&gt; &lt;image&gt;
+    MiniDocker-&gt;&gt;Storage: 1. 查询目标网络的Subnet/网关/Bridge信息
+    Storage--&gt;&gt;MiniDocker: 返回网络元数据
+    MiniDocker-&gt;&gt;MiniDocker: 2. 从Subnet中分配空闲IP(如10.200.0.2/16)
+    MiniDocker-&gt;&gt;Kernel: 3. 创建容器NetNS + 启动容器
+    Kernel--&gt;&gt;MiniDocker: 容器NetNS创建成功，容器启动完成
+    MiniDocker-&gt;&gt;Kernel: 4. 创建Veth Pair(veth-host &lt;-&gt; veth-ns)
+    Kernel--&gt;&gt;MiniDocker: Veth Pair创建成功
+    MiniDocker-&gt;&gt;Kernel: 5. 将veth-ns移入容器NetNS
+    Kernel--&gt;&gt;MiniDocker: veth-ns移入完成
+    MiniDocker-&gt;&gt;Kernel: 6. 将veth-host绑定为Bridge的slave设备
+    Kernel--&gt;&gt;MiniDocker: veth-host绑定Bridge成功
+    MiniDocker-&gt;&gt;Container: 7. 为容器内veth-ns分配IP(同子网独立地址)
+    Container--&gt;&gt;MiniDocker: veth-ns IP配置完成
+    MiniDocker-&gt;&gt;Kernel: 8. 启动Bridge/veth-host/veth-ns设备
+    Kernel--&gt;&gt;MiniDocker: 所有网络设备UP成功
+    MiniDocker--&gt;&gt;User: 容器启动成功，网络绑定完成</code></pre>
+<h4 id="容器网络的需求分析">容器网络的需求分析</h4>
+<p>按照我们在 <a href="#容器网络的操作">容器网络的操作</a>
+中的描述，我们可以抽象出一下几个模块：</p>
+<ul>
+<li><code>Endpoint</code>
+每个容器，如果它想要接入到网络，那就必须为他分配
+<code>IP</code>，<code>MAC</code>，<code>PortMapping</code>
+等信息，我们将这些信息组合起来放在一起；</li>
+<li><code>Network</code> 我们申请的
+<code>Subnet</code>，我们需要记录它的名字，网段（IPRange）等信息；</li>
+<li><code>NetworkDriver</code>
+这个模块会负责和内核通信来实现：网络的创建、连接、销毁，不同的类型会有不同的策略，对于
+<code>mini-docker</code> 来说，只支持 <code>bridge</code> 类型：
+<ul>
+<li>创建时，先读取内部已分配的 <code>Subnet</code>，并根据内部已经分配的
+<code>Subnet</code> 来避免和其他的网段冲突，最终会返回一个包含了当前
+<code>Subnet</code> 全部信息的结构体
+<code>Network</code>，我们还需要将这些信息存到我们本地的数据库；</li>
+<li>销毁时，我们需要断开所有已连接的 <code>Endpoint</code>，并将
+<code>Network</code> 中所有的 <code>IP</code>
+释放，这样后续新的网段建立时可以复用；</li>
+<li>连接时，将我们 <code>Endpoint</code> 中的 <code>Device</code>
+接入网络，对于 <code>bridge</code>，就是我们前面提到的
+<code>Veth Pair</code> 的建立和初始化。这里指的注意的是，每个
+<code>Network</code> 只会有一个
+<code>bridge</code>，只需要在创建时初始化，后续 <code>Endpoint</code>
+接入时只需要把一端移入ns，另外一端设置为 <code>bridge</code> 的 slave
+即可；</li>
+<li>删除节点时，我们将 <code>Endpoint</code> 从 <code>Network</code>
+中断开，回收它的IP地址，并将 Veth Pair 删除即可。</li>
+</ul></li>
+<li><code>IPAM</code> 这个模块负责IP的分配和回收，通常来说，他会和
+<code>Network</code> 协作，他需要记录当前 <code>Network</code>
+下可用的IP地址，随着容器的创建和销毁动态的更新。</li>
+</ul>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 43%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">模块</th>
+<th style="text-align: left;">设计目标</th>
+<th style="text-align: left;">核心价值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>Endpoint</strong></td>
+<td style="text-align: left;">1. 容器网络的 “最小接入单元”，聚合
+IP/MAC/PortMapping 等核心属性；<br/>2. 符合 “一个容器一个 Endpoint”
+的直观逻辑；<br/>3. 天然适配 “多网卡容器”（一个容器可绑定多个 Endpoint
+接入不同 Network）</td>
+<td
+style="text-align: left;">避免零散管理网络配置，所有和容器网络接入相关的信息都收敛到一个结构体，便于操作和追溯</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>Network</strong></td>
+<td style="text-align: left;">1. 抽象为 “网段 + 网络属性”
+的集合，对应物理网络中的 “子网”；<br/>2. 绑定唯一 bridge（bridge
+驱动），符合 “一个子网一个网桥” 的底层逻辑；<br/>3.
+存储到本地数据库，实现网络元数据持久化</td>
+<td style="text-align: left;">作为网络资源的
+“顶层抽象”，隔离不同子网的资源（IP/bridge/Endpoint），避免跨网段冲突</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>NetworkDriver</strong></td>
+<td style="text-align: left;">1. 职责收敛到 “网络生命周期管理”（创建 /
+销毁 / 连接 / 删除节点），符合 “单一职责原则”；<br/>2. bridge
+驱动的实现逻辑完全对齐 Linux 网络底层（veth+bridge+slave）；<br/>3.
+销毁时回收全量资源，避免内存泄漏</td>
+<td style="text-align: left;">解耦 “网络驱动逻辑” 和 “IP 管理 /
+元数据存储”，后续扩展驱动（如 macvlan）只需新增 Driver
+实现，无需改动其他模块</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>IPAM</strong></td>
+<td style="text-align: left;">1. 独立负责 IP 分配 / 回收，和 Network
+解耦（IPAM 只关注 IP 池，不关心网络类型）；<br/>2. 动态更新 IP
+状态，适配容器的创建 / 销毁；<br/>3. 可复用不同 Network 的 IP
+管理逻辑</td>
+<td style="text-align: left;">避免 NetworkDriver 混入 IP
+管理的复杂逻辑，同时支持 “自定义 IPAM 策略”（比如预分配 /
+动态分配）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="实体代码">实体代码</h4>
+<p>这是对我们操作的两个对象：接入容器的网络和bridge网络的实体抽象；</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Endpoint <span class="keyword">struct</span> &#123;</span><br><span class="line">	Id      EndpointId <span class="string">`json:&quot;id&quot;`</span></span><br><span class="line">	Name    <span class="type">string</span>     <span class="string">`json:&quot;name&quot;`</span></span><br><span class="line">	MAC     <span class="type">string</span>     <span class="string">`json:&quot;mac&quot;`</span></span><br><span class="line">	IP      *net.IP    <span class="string">`json:&quot;ip&quot;`</span></span><br><span class="line">	Network *Network   <span class="string">`json:&quot;network&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Network <span class="keyword">struct</span> &#123;</span><br><span class="line">	Id      NetworkId   <span class="string">`json:&quot;id&quot;`</span></span><br><span class="line">	Name    <span class="type">string</span>      <span class="string">`json:&quot;name&quot;`</span></span><br><span class="line">	Type    NetworkType <span class="string">`json:&quot;type&quot;`</span></span><br><span class="line">	Gateway *net.IPNet  <span class="string">`json:&quot;gateway&quot;`</span></span><br><span class="line">	IPNet   *net.IPNet  <span class="string">`json:&quot;ip_net&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以及我们对网络分配，网络驱动等的抽象：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IPAM <span class="keyword">interface</span> &#123;</span><br><span class="line">	AllocateIP() (*net.IPNet, <span class="type">error</span>)</span><br><span class="line">	ReleaseIP(*net.IPNet) <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> NetworkDriver <span class="keyword">interface</span> &#123;</span><br><span class="line">	Create(name <span class="type">string</span>, subnet *net.IPNet) (*entity.Network, <span class="type">error</span>)</span><br><span class="line">	Delete(network *entity.Network) <span class="type">error</span></span><br><span class="line">	Connect(network *entity.Network, endpoint *entity.Endpoint) <span class="type">error</span></span><br><span class="line">	Disconnect(network *entity.Network, endpoint *entity.Endpoint) <span class="type">error</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="持久化">持久化</h4>
+<p>此外，我们希望将我们的容器的状态是持久化的，所以我们抽象了额外了IO层来隔离实体和持久化操作：</p>
+<ul>
+<li>上层的应用，只需要调用 <code>Get</code> 和 <code>Update</code>
+等方法，就好像所有的数据全部在内存中；</li>
+<li>当应用启动时， <code>Store</code>
+的初始化会负责从文件或者其他的持久化设备加载被持久化的状态。</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> NetworkStore <span class="keyword">interface</span> &#123;</span><br><span class="line">	GetAll() ([]*entity.Network, <span class="type">error</span>)</span><br><span class="line">	Get(networkId entity.NetworkId) (*entity.Network, <span class="type">error</span>)</span><br><span class="line">	Update(networkId entity.NetworkId, network *entity.Network) <span class="type">error</span></span><br><span class="line">	Delete(networkId entity.NetworkId) <span class="type">error</span></span><br><span class="line">	GetByName(name <span class="type">string</span>) (*entity.Network, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> EndpointStore <span class="keyword">interface</span> &#123;</span><br><span class="line">	Get(endpointId entity.EndpointId) (*entity.Endpoint, <span class="type">error</span>)</span><br><span class="line">	Update(endpointId entity.EndpointId, endpoint *entity.Endpoint) <span class="type">error</span></span><br><span class="line">	Delete(endpointId entity.EndpointId) <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> IPAMStore <span class="keyword">interface</span> &#123;</span><br><span class="line">	Get(networkId entity.NetworkId) (IPAM, <span class="type">error</span>)</span><br><span class="line">	Update(networkId entity.NetworkId, ipam IPAM) <span class="type">error</span></span><br><span class="line">	Delete(networkId entity.NetworkId) <span class="type">error</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样，结合我们前面的 <code>Veth</code> 和 <code>Linux Bridge</code>
+我们就可以实现网络通信了。</p>
+<h4 id="通信">通信</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动进程</span></span><br><span class="line">go build -o mini-docker . &amp;&amp; ./restart_daemon.sh</span><br></pre></td></tr></table></figure>
+<p>初始化一个网络，这里我们使用的 <code>docker</code> 的默认规则，以
+<code>172.16.0.0/16</code> 作为初始子网向后递增：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker network create --name mini-nw-1</span><br></pre></td></tr></table></figure>
+<p>查看我们的状态，应该已经正常拉起一个网络：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker network inspect --name mini-nw-1 | jq</span><br></pre></td></tr></table></figure>
+<p>得到：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ab8f772817ce478ca0635d5573eb5bce&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;mini-nw-1&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;bridge&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;gateway&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;IP&quot;</span><span class="punctuation">:</span> <span class="string">&quot;172.19.0.1&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;Mask&quot;</span><span class="punctuation">:</span> <span class="string">&quot;//8AAA==&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;ip_net&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;IP&quot;</span><span class="punctuation">:</span> <span class="string">&quot;172.19.0.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;Mask&quot;</span><span class="punctuation">:</span> <span class="string">&quot;//8AAA==&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>查看我们的状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip addr show mini-nw-1</span><br></pre></td></tr></table></figure>
+<p>我们的状态应该还是
+<code>UNKNOWN</code>，因为我们还没有完全正常的初始化它。</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">14</span>: mini-nw-<span class="number">1</span>: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span class="number">1500</span> qdisc noqueue state UNKNOWN group default qlen <span class="number">1000</span></span><br><span class="line">    <span class="attribute">link</span>/ether <span class="number">5</span>e:<span class="number">4</span>a:<span class="number">52</span>:<span class="number">1</span>b:<span class="number">45</span>:<span class="number">53</span> brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    <span class="attribute">inet</span> <span class="number">172.19.0.1</span>/<span class="number">16</span> brd <span class="number">172.19.255.255</span> scope global mini-nw-<span class="number">1</span></span><br><span class="line">       <span class="attribute">valid_lft</span> forever preferred_lft forever</span><br><span class="line">    <span class="attribute">inet6</span> fe80::<span class="number">5</span>c4a:<span class="number">52</span>ff:fe1b:<span class="number">4553</span>/<span class="number">64</span> scope link proto kernel_ll</span><br><span class="line">       <span class="attribute">valid_lft</span> forever preferred_lft forever</span><br></pre></td></tr></table></figure>
+<p>我们需要手动的将我们的容器连接到网络：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./mini-docker network connect --network mini-nw-1 --container cf46d83277464108a410bc16d335d8a3</span><br></pre></td></tr></table></figure>
+<p>此时，通过 <code>exec</code> 进入到我们的容器，就可以通信了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在容器中</span></span><br><span class="line">nc -l 8080</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在宿主机</span></span><br><span class="line">nc -zv 172.21.0.2 8080</span><br></pre></td></tr></table></figure>
+<p>会得到HTTP连接成功的信息。</p>
+<h1 id="qa">QA</h1>
+<h2 id="netlink和netns的使用">netlink和netns的使用</h2>
+<h3 id="创建一个bridge">创建一个bridge</h3>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="string">&quot;github.com/vishvananda/netlink&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    la := netlink.NewLinkAttrs()</span><br><span class="line">    la.Name = <span class="string">&quot;foo&quot;</span></span><br><span class="line">    myBridge := &amp;netlink.Bridge&#123;LinkAttrs: la&#125;</span><br><span class="line">    err := netlink.LinkAdd(myBridge)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        fmt.Printf(<span class="string">&quot;could not add %s: %v\n&quot;</span>, la.Name, err)</span><br><span class="line">    &#125;</span><br><span class="line">    eth1, err := netlink.LinkByName(<span class="string">&quot;eth1&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(err)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> err = netlink.LinkSetMaster(eth1, myBridge); err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(err)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这段代码中，我们主要实现了：</p>
+<ol type="1">
+<li>创建了名为 foo 的 bridge，使用la中的参数初始化；</li>
+<li>将 eth1 设置为 bridge 的 master。</li>
+</ol>
+<p>这里，我们需要先了解，什么是所谓的 <code>master</code>：在 Linux
+网络设备的关系中，<code>master</code>（主设备）和
+<code>slave</code>（从设备）是一对「隶属关系」：</p>
+<ul>
+<li><strong>master 设备</strong>：通常是具备「转发 /
+交换能力」的网络设备（比如
+<code>bridge</code>、<code>bond</code>、<code>vlan</code> 等）；</li>
+<li><strong>slave 设备</strong>：普通的网络接口（比如
+<code>eth1</code>、<code>veth-host</code>），被挂载到 master
+设备下，其所有网络流量都会由 master 设备接管处理。</li>
+</ul>
+<p>对你这段代码来说：</p>
+<ul>
+<li><code>foo</code> 网桥是
+<strong>master（主设备）</strong>：它是一个二层交换机，负责转发挂载到它身上的所有
+slave 设备的流量；</li>
+<li><code>eth1</code> 是 <strong>slave（从设备）</strong>：挂载到
+<code>foo</code> 网桥后，<code>eth1</code> 的所有入 / 出流量都会经过
+<code>foo</code> 网桥的二层转发逻辑。</li>
+</ul>
+<p>再结合我们前面的描述：</p>
+<ol type="1">
+<li>挂载前：eth1 是独立网卡
+<ul>
+<li><code>eth1</code> 有自己的 IP 地址、MAC 地址，流量直接通过
+<code>eth1</code> 进出，和其他网卡无关联；</li>
+<li>比如 <code>eth1</code> 收到一个目标 MAC 为
+<code>00:11:22:33:44:55</code> 的数据包，会直接丢弃（因为不是自己的
+MAC）。</li>
+</ul></li>
+<li>挂载后：eth1 成为网桥的「端口」
+<ul>
+<li><code>eth1</code> 会<strong>失去独立的三层能力</strong>（即使配置了
+IP 也会失效，IP 应该配置在网桥上）；</li>
+<li><code>foo</code> 网桥会接管 <code>eth1</code> 的所有二层流量：
+<ul>
+<li>当 <code>eth1</code> 收到数据包时，网桥会查看自己的「MAC
+地址表」，如果目标 MAC 对应其他 slave 端口（比如后续挂载的
+<code>eth2</code>），就把数据包转发到该端口；</li>
+<li>如果目标 MAC 不在表中，网桥会通过所有 slave 端口（包括
+<code>eth1</code>）广播这个数据包；</li>
+<li>最终实现「挂载到同一网桥的所有网卡（eth1、eth2
+等）」在二层互通（相当于接入同一个交换机）。</li>
+</ul></li>
+</ul></li>
+</ol>
+<blockquote>
+<p>可以说，这段代码和 <code>docker</code> 把 <code>veth-host</code>
+接入到 <code>br-xxx</code> 网桥的逻辑完全一致。</p>
+</blockquote>
+<ul>
+<li>Docker 中的 <code>br-xxx</code> 网桥 = 代码中的 <code>foo</code>
+网桥（master）；</li>
+<li>Docker 中的 <code>veth-host</code> 网卡 = 代码中的
+<code>eth1</code>（slave）；</li>
+<li>容器内的 <code>eth0</code> 能和其他容器通信，本质就是它们的
+<code>veth-host</code>
+都挂载到同一个网桥（master）下，由网桥转发流量。</li>
+</ul>
+<p>但是我们这里机器上只有一个eth0，那就是我们的物理网卡，所以我们可以这样来做：</p>
+<ol type="1">
+<li>创建一个ns命名空间 ns1；</li>
+<li>创建一个 Veth Pair，分别是 Veth-host 和 Veth-ns；</li>
+<li>将 Veth-ns 移入 ns1；</li>
+<li>使用我们前面的代码，将 Veth-host 设置为我们的网桥 foo 的
+<code>master</code>；</li>
+</ol>
+<p>这样我们就可以通过foo来实现宿主机和ns1的通信了。</p>
+<h3 id="操作ns">操作ns</h3>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">&quot;fmt&quot;</span></span><br><span class="line">    <span class="string">&quot;net&quot;</span></span><br><span class="line">    <span class="string">&quot;runtime&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="string">&quot;github.com/vishvananda/netns&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// Lock the OS Thread so we don&#x27;t accidentally switch namespaces</span></span><br><span class="line">    runtime.LockOSThread()</span><br><span class="line">    <span class="keyword">defer</span> runtime.UnlockOSThread()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Save the current network namespace</span></span><br><span class="line">    origins, _ := netns.Get()</span><br><span class="line">    <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; _ = origins.Close() &#125;()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Create a new network namespace</span></span><br><span class="line">    newNs, _ := netns.New()</span><br><span class="line">    <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; _ = newNs.Close() &#125;()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Do something with the network namespace</span></span><br><span class="line">    ifaces, _ := net.Interfaces()</span><br><span class="line">    <span class="keyword">for</span> _, v := <span class="keyword">range</span> ifaces &#123;</span><br><span class="line">        fmt.Printf(<span class="string">&quot;Interfaces of new namespace: name = %v\n&quot;</span>, v.Name)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Switch back to the original namespace</span></span><br><span class="line">    _ = netns.Set(origins)</span><br><span class="line"></span><br><span class="line">    ifaces, _ = net.Interfaces()</span><br><span class="line">    <span class="keyword">for</span> _, v := <span class="keyword">range</span> ifaces &#123;</span><br><span class="line">        fmt.Printf(<span class="string">&quot;Interfaces of host: name = %v\n&quot;</span>, v.Name)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="vetheth">veth/eth</h2>
+<h3 id="定义">定义</h3>
+<ul>
+<li><strong>Veth</strong>：全称 <strong>Virtual Ethernet
+Pair</strong>，直译是「虚拟以太网对」，是 Linux
+内核提供的<strong>纯软件虚拟网络设备</strong>，没有对应的物理硬件（比如网卡芯片、网线）。</li>
+<li><strong>普通 Eth</strong>：比如
+<code>eth0</code>、<code>ens33</code>，是<strong>物理网卡对应的系统设备</strong>，底层关联真实的硬件网卡，负责在主机和外部网络之间收发电信号
+/ 光信号。</li>
+</ul>
+<h3 id="特性">特性</h3>
+<p>Veth 设备永远是<strong>成对创建</strong>的（比如 <code>veth-a</code>
+和 <code>veth-b</code>），它的工作逻辑像一根「虚拟网线」：</p>
+<ul>
+<li>数据从 <code>veth-a</code> 一端输入，会<strong>无条件从
+<code>veth-b</code> 另一端输出</strong></li>
+<li>反之，数据从 <code>veth-b</code> 输入，也会从 <code>veth-a</code>
+输出。</li>
+</ul>
+<h3 id="核心区别">核心区别</h3>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 47%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">特性</th>
+<th style="text-align: center;">Veth（虚拟以太网对）</th>
+<th style="text-align: center;">Eth（物理网卡设备）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>硬件依赖</strong></td>
+<td style="text-align: center;">纯软件实现，无物理硬件</td>
+<td style="text-align: center;">依赖物理网卡（芯片、天线、网线等）</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>存在形式</strong></td>
+<td style="text-align: center;">成对出现（必须两个一组）</td>
+<td style="text-align: center;">单独存在（一个物理网卡对应一个 Eth
+设备）</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>核心作用</strong></td>
+<td
+style="text-align: center;">连接<strong>同一主机内的不同网络命名空间</strong>（比如容器和宿主机）</td>
+<td
+style="text-align: center;">连接<strong>主机和外部网络</strong>（比如交换机、路由器）</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>数据转发逻辑</strong></td>
+<td style="text-align: center;">成对直通：一端进 → 另一端出</td>
+<td style="text-align: center;">收发外部网络的真实数据包（电 /
+光信号转数据包）</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>典型场景</strong></td>
+<td
+style="text-align: center;">容器网络（Docker/K8s）、虚拟机内部通信</td>
+<td style="text-align: center;">主机上网、服务器接入机房网络</td>
+</tr>
+</tbody>
+</table>
+<h3 id="容器场景下使用veth的实例">容器场景下使用Veth的实例</h3>
+<p>当 Docker 启动一个容器时，会做这些操作：</p>
+<ol type="1">
+<li>在宿主机创建一对 Veth 设备：<code>veth-xxx</code>（宿主机端）和
+<code>eth0</code>（容器端）；</li>
+<li>将 <code>eth0</code>
+移动到容器的<strong>独立网络命名空间</strong>中，作为容器的网卡；</li>
+<li>将宿主机端的 <code>veth-xxx</code> 桥接到宿主机的网桥（比如
+<code>docker0</code>）；</li>
+<li>这样，容器的数据包通过 <code>eth0</code> → <code>veth-xxx</code> →
+<code>docker0</code> → 宿主机物理网卡，就能访问外网了。</li>
+</ol>
+<p>如果没有 Veth，容器的网络命名空间就无法和宿主机的网络打通 —— 这就是
+Veth 作为容器网络「基石」的原因。</p>
+<h3 id="为什么我们需要veth">为什么我们需要veth</h3>
+<p>容器在运行时，由于启用了 Linux 的
+<code>net namespace</code>（网络命名空间），每个容器都拥有<strong>完全独立的网络环境</strong>：</p>
+<ol type="1">
+<li><strong>端口独立性</strong>：容器会认为自己独占了所有端口资源（比如
+80、8080 等）—— 这些端口并非宿主机的物理端口，而是
+<code>net namespace</code> 内的「虚拟端口」。因此同一台宿主机上，容器 A
+和容器 B 可以同时监听 80 端口，彼此互不冲突（就像两台独立的物理机都能用
+80 端口一样）。</li>
+<li><strong>网络隔离与通信需求</strong>：<code>net namespace</code>
+让容器 A 和容器 B 完全隔离，互相感知不到对方的存在（都认为自己是
+“独立机器”）；同时容器本身没有物理网卡，只有 <code>net namespace</code>
+内的虚拟网卡（如 <code>eth0</code>），无法直接和其他容器 /
+外部通信。</li>
+<li><strong>Veth 的核心作用</strong>：为了解决隔离后的通信问题，Linux
+提供了 <code>Veth Pair</code>（虚拟以太网对）——
+它就像一根「虚拟网线」，核心作用是<strong>连接不同的
+<code>net namespace</code></strong>：
+<ul>
+<li>若要让容器 A 和容器 B 通信，可通过「Veth + 虚拟网桥（Linux
+Bridge）」实现：给容器 A、B 各创建一对 Veth，将每个容器的 Veth
+一端放入自身 <code>net namespace</code>（作为容器的
+<code>eth0</code>），另一端桥接到宿主机的虚拟网桥（如
+<code>docker0</code>），相当于把两台 “独立机器”
+接入同一个虚拟交换机，从而实现二层互通。</li>
+<li>简言之：Veth 只负责打通不同 <code>net namespace</code>
+的网络通路，不涉及端口映射。</li>
+</ul></li>
+<li><strong>端口绑定的本质</strong>：我们常说的
+“容器端口绑定到宿主机端口”（如 <code>docker run -p 8080:80</code>），和
+Veth 无直接关系 —— 这个功能是通过 Linux 的 <code>iptables</code> 配置
+<strong>NAT 转发规则</strong> 实现的：
+<ul>
+<li>宿主机收到外部对 8080 端口的请求时，<code>iptables</code>
+会将请求转发到目标容器 <code>net namespace</code> 内的 80 端口；</li>
+<li>容器的响应数据包则通过 iptables
+做反向转换，以宿主机的身份发回外部。</li>
+</ul></li>
+</ol>
+<h2 id="linux-bridge">linux bridge</h2>
+<p>Linux Bridge（Linux
+网桥）是内核原生实现的<strong>二层虚拟交换机</strong>，核心作用是将同一主机上的多个网络设备（物理网卡、Veth、TAP/TUN
+等）连接到同一个二层广播域，实现它们之间的以太网帧转发。</p>
+<p>Linux Bridge 是 Linux
+内核原生提供的<strong>纯软件二层虚拟交换机</strong>，其核心作用和物理机房中的硬件交换机完全类比：</p>
+<ul>
+<li><strong>硬件交换机</strong>：作用于「物理机之间」——
+将多台物理机的物理网卡通过网线接入交换机，当某台物理机向其他物理机发数据包时，数据包先到交换机，交换机根据
+MAC 地址表将帧转发到目标物理机的物理网卡；</li>
+<li><strong>Linux Bridge</strong>：作用于「单台物理机内部」——
+将物理机内的各类网络设备（物理网卡、Veth 虚拟设备、TAP/TUN
+虚拟设备等）“接入” 这个虚拟交换机，当物理机内的某个网络设备（比如容器的
+Veth 端）发数据包时，数据包先到 Linux Bridge，Bridge 同样根据 MAC
+地址表将帧转发到目标网络设备（比如另一容器的 Veth 端）。</li>
+</ul>
+<p>此外，Linux Bridge
+不仅能转发物理机内虚拟设备之间的流量，还能实现「虚拟设备 ↔︎
+物理网卡」的流量转发 —— 比如容器的数据包通过 Bridge
+转发到宿主机物理网卡，就能访问外网；反之，外部数据包通过物理网卡到
+Bridge，再转发到容器的 Veth 设备，就能访问容器。</p>
+<h3 id="核心功能">核心功能</h3>
+<ul>
+<li><strong>MAC
+地址学习</strong>：当网桥收到一个以太网帧时，会记录帧的<strong>源 MAC
+地址</strong>和对应的接入端口，生成 MAC 地址表；</li>
+<li><strong>帧转发</strong>：收到帧后，查询 MAC 地址表，若找到目的 MAC
+对应的端口，则只向该端口转发；若未找到，则向所有端口泛洪（除源端口外）；</li>
+<li><strong>帧过滤</strong>：若目的 MAC
+是广播地址（<code>ff:ff:ff:ff:ff:ff</code>）或组播地址，则向所有端口泛洪；</li>
+<li><strong>端口隔离</strong>：可配置端口的隔离模式，限制某些端口之间的通信（高级功能）。</li>
+</ul>
+<h2 id="linux的网络">linux的网络</h2>
+<h3 id="veth-pair">Veth Pair</h3>
+<h4 id="定义-1">定义</h4>
+<blockquote>
+<p>A Veth Pair (<code>Virtual Ethernet Pair</code>) in Linux networking
+<strong>creates two connected virtual network interfaces</strong>,
+acting like a virtual Ethernet cable where data sent to one end
+instantly appears at the other, commonly used to link network <a
+target="_blank" rel="noopener" href="https://www.google.com/search?q=namespaces&amp;oq=what+is+Veth+Pair&amp;gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIKCAEQABiABBiiBDIHCAIQABjvBTIKCAMQABiABBiiBNIBCDQxNDBqMGoxqAIAsAIA&amp;sourceid=chrome&amp;ie=UTF-8&amp;mstk=AUtExfACA6dt5PZO5T1DBV-cRAgv28xYDZjNsP0yPsB-BlJBqWs6G8zQb1SZfCd8DEPWdSC8GFwV4SSd4zWZIuOgS4gK3FIB_aVUfBGadKRYYq3sNEgYm8BWI9ma3eYM8-uMWnI_LFub2Z23pdBVveXx91Q35_BfOmXk6SujeA8mVNPaLvk&amp;csui=3&amp;ved=2ahUKEwj8zM_sloOSAxUKlFYBHXc5Ei4QgK4QegQIARAE">namespaces</a>,
+<a
+target="_blank" rel="noopener" href="https://www.google.com/search?q=containers&amp;oq=what+is+Veth+Pair&amp;gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIKCAEQABiABBiiBDIHCAIQABjvBTIKCAMQABiABBiiBNIBCDQxNDBqMGoxqAIAsAIA&amp;sourceid=chrome&amp;ie=UTF-8&amp;mstk=AUtExfACA6dt5PZO5T1DBV-cRAgv28xYDZjNsP0yPsB-BlJBqWs6G8zQb1SZfCd8DEPWdSC8GFwV4SSd4zWZIuOgS4gK3FIB_aVUfBGadKRYYq3sNEgYm8BWI9ma3eYM8-uMWnI_LFub2Z23pdBVveXx91Q35_BfOmXk6SujeA8mVNPaLvk&amp;csui=3&amp;ved=2ahUKEwj8zM_sloOSAxUKlFYBHXc5Ei4QgK4QegQIARAF">containers</a>
+(like Docker), or connect containers to bridges, forming essential
+components for virtual networking and containerization.</p>
+</blockquote>
+<h4 id="特点">特点</h4>
+<ul>
+<li>成对创建的虚拟设备（如 <code>veth0</code> 和
+<code>veth1</code>），数据从一端进入，必然从另一端流出；</li>
+<li>容器场景中，一端（<code>vethXXX</code>）被放入容器的
+<code>net</code> 命名空间作为容器的网卡（如
+<code>eth0</code>），另一端桥接到宿主机的网桥（如
+<code>docker0</code>/<code>cni0</code>）。</li>
+<li><strong>Kubernetes / 容器网络</strong>：CNI 插件（如
+Calico、Flannel、Weave）的基础组件，所有容器的网络互通都依赖
+<code>Veth Pair</code> 实现命名空间隔离与数据转发；</li>
+<li>轻量级、零拷贝转发，性能接近物理网卡；</li>
+<li>与 Linux
+网络命名空间（<code>net ns</code>）深度集成，是容器网络隔离的
+“标配”。</li>
+</ul>
+<h3 id="linux-bridge-1">Linux Bridge</h3>
+<h4 id="定义-2">定义</h4>
+<p><code>Linux Bridge</code>
+是<strong>二层虚拟交换机</strong>，用于连接同一主机上的多个虚拟设备（Veth、Tap/Tun、物理网卡），实现二层数据转发。</p>
+<h4 id="特点-1">特点</h4>
+<ul>
+<li>模拟物理交换机的功能，支持 MAC 地址学习、转发、泛洪；</li>
+<li>可配置 IP 地址，作为桥接设备的三层网关。</li>
+<li><strong>容器网络桥接</strong>：宿主机默认网桥（如
+<code>docker0</code>、<code>cni0</code>），负责将容器的
+<code>Veth</code> 端点与宿主机网络打通；</li>
+<li><strong>虚拟机网络</strong>：KVM/QEMU
+虚拟机的默认网络方案，连接虚拟机的 <code>tap</code>
+设备与宿主机物理网卡；</li>
+</ul>
+<h3 id="taptun">Tap/Tun</h3>
+<h4 id="定义-3">定义</h4>
+<ul>
+<li><strong>TAP</strong>：二层虚拟设备，模拟以太网帧，用于虚拟机（KVM/QEMU）、VPN
+等场景；</li>
+<li><strong>TUN</strong>：三层虚拟设备，模拟 IP 数据包，用于 VPN（如
+OpenVPN、WireGuard）、网络代理。</li>
+</ul>
+<h3 id="open-vswitch">Open vSwitch</h3>
+<ul>
+<li><code>OVS</code> 是<strong>企业级开源虚拟交换机</strong>，是 SDN
+和云数据中心的核心组件，功能远超 Linux Bridge。</li>
+<li>支持 OpenFlow 协议，可通过控制器（如
+OpenDaylight）实现灵活的流量调度、策略控制；</li>
+<li>支持 VLAN、VXLAN、GRE 等隧道技术，跨主机网络互通的核心。</li>
+<li><strong>Kubernetes 大规模集群</strong>：Calico、OVN-Kubernetes 等
+CNI 插件的底层依赖，实现跨节点 Pod
+互通、网络策略（NetworkPolicy）；</li>
+<li><strong>云数据中心 SDN</strong>：替代传统物理交换机，实现虚拟机 /
+容器的网络虚拟化、流量监控与隔离；</li>
+<li><strong>NFV（网络功能虚拟化）</strong>：部署防火墙、负载均衡等网络功能，支持流量镜像、QoS
+等高级特性。</li>
+</ul>
+<h3 id="vxlan">VXLAN</h3>
+<ul>
+<li><code>VXLAN</code>（虚拟可扩展局域网）是<strong>三层网络上的二层隧道技术</strong>，解决了传统
+VLAN 4094 数量限制的问题，是跨主机容器 / 虚拟机网络的核心。</li>
+<li>将二层以太网帧封装在 UDP 数据包中（默认端口
+4789），通过三层网络传输；</li>
+<li>每个 VXLAN 对应一个 <code>VNI</code>（虚拟网络标识），理论支持 1600
+万 + 虚拟网络。</li>
+<li><strong>Kubernetes 跨节点网络</strong>：几乎所有主流 CNI
+插件（Calico、Flannel VXLAN 模式、OVN）都基于 VXLAN 实现跨节点 Pod
+互通；</li>
+<li><strong>云数据中心多租户隔离</strong>：不同租户的虚拟机 /
+容器分配不同 VNI，实现二层隔离；</li>
+</ul>
+<h2 id="iptables">iptables</h2>
+<p>iptables 是 <strong>Linux
+内核提供的包过滤防火墙工具</strong>，本质是通过操作内核的
+<code>netfilter</code>
+框架，实现对网络数据包的<strong>过滤、转发、修改</strong>等功能。它是容器网络（如
+Docker 端口映射、NAT 转发）、服务器防火墙配置的核心工具。</p>
+<h3 id="核心概念四表五链">核心概念（四表五链）</h3>
+<p>iptables 的核心是 <strong>表（tables）</strong> 和
+<strong>链（chains）</strong>，表是功能分类，链是数据包的处理流程节点。</p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 37%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">表名</th>
+<th style="text-align: left;">核心功能</th>
+<th style="text-align: left;">常用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>filter</strong></td>
+<td style="text-align: left;">数据包过滤（允许 / 拒绝）</td>
+<td style="text-align: left;">服务器防火墙、容器访问控制</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>nat</strong></td>
+<td style="text-align: left;">网络地址转换（源 / 目的地址修改）</td>
+<td
+style="text-align: left;">容器端口映射（<code>-p 8080:80</code>）、外网访问（SNAT）</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>mangle</strong></td>
+<td style="text-align: left;">数据包标记 / 修改（TTL、TOS 等）</td>
+<td style="text-align: left;">流量整形、QoS 控制</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>raw</strong></td>
+<td style="text-align: left;">关闭连接跟踪（conntrack）</td>
+<td style="text-align: left;">高性能场景（如大流量容器集群）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>优先级顺序</strong>：<code>raw</code> → <code>mangle</code> →
+<code>nat</code> → <code>filter</code>。</p>
+<p>链是数据包在内核中经过的<strong>预设处理节点</strong>，不同链对应数据包的不同生命周期阶段：</p>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 26%" />
+<col style="width: 11%" />
+<col style="width: 49%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">链名</th>
+<th>触发时机</th>
+<th style="text-align: center;">对应表</th>
+<th style="text-align: left;">容器场景作用</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>PREROUTING</strong></td>
+<td>数据包进入网卡后、路由选择前</td>
+<td style="text-align: center;">nat/mangle/raw</td>
+<td style="text-align: left;">目标地址转换（DNAT）：如把宿主机 8080
+端口映射到容器 80 端口</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>INPUT</strong></td>
+<td>数据包路由后、进入本机用户空间</td>
+<td style="text-align: center;">filter/mangle</td>
+<td style="text-align: left;">过滤发往宿主机的数据包：如允许 /
+拒绝容器访问宿主机 22 端口</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>FORWARD</strong></td>
+<td>数据包路由后、转发到其他网卡</td>
+<td style="text-align: center;">filter/mangle</td>
+<td
+style="text-align: left;">过滤容器之间、容器与外网的转发流量：如允许容器访问外网</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>OUTPUT</strong></td>
+<td>本机用户空间生成的数据包、路由前</td>
+<td style="text-align: center;">nat/mangle/raw</td>
+<td
+style="text-align: left;">处理宿主机发出的数据包：如修改宿主机访问外网的源地址</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>POSTROUTING</strong></td>
+<td>数据包离开网卡前</td>
+<td style="text-align: center;">nat/mangle</td>
+<td style="text-align: left;">源地址转换（SNAT）：如容器访问外网时，把源
+IP 换成宿主机 IP</td>
+</tr>
+</tbody>
+</table>
+<h2 id="二层协议中的ip地址">二层协议中的IP地址</h2>
+<p>在 <a
+href="#如何通过veth和bridge实现网络通信（命令行）">如何通过veth和bridge实现网络通信（命令行）</a>
+这个小节中，我们注意到一个问题：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 为 ns1 中 eth0 绑定 IP 地址</span></span><br><span class="line">sudo<span class="built_in"> ip </span>netns exec ns1<span class="built_in"> ip </span>addr <span class="built_in">add</span> 172.17.0.2/24 dev eth0</span><br><span class="line"><span class="comment"># 为 ns2 中 eth0 绑定 IP 地址</span></span><br><span class="line">sudo<span class="built_in"> ip </span>netns exec ns2<span class="built_in"> ip </span>addr <span class="built_in">add</span> 172.17.0.3/24 dev eth0</span><br><span class="line"></span><br><span class="line">sudo<span class="built_in"> ip </span>netns exec ns1<span class="built_in"> ping </span>172.17.0.3</span><br><span class="line">sudo<span class="built_in"> ip </span>netns exec ns2<span class="built_in"> ping </span>172.17.0.2</span><br></pre></td></tr></table></figure>
+<p>这里，我们给 <code>ns1</code> 和 <code>ns2</code>
+的域名都绑定了IP地址，并且通过IP地址通信，那为什么还说 <code>veth</code>
+是二层协议呢？</p>
+<p>这里核心原因是容器间的互通<strong>底层转发靠的是二层（MAC 地址 +
+Bridge）</strong>，而 IP
+地址是为了满足<strong>应用层程序的通信习惯</strong>和<strong>跨网段转发的需求</strong>，属于「二层之上的补充配置」。</p>
+<p><strong>这里我们先明确一个逻辑：二层互通的本质是「MAC
+地址转发」</strong>。也就是说Linux Bridge
+是二层虚拟交换机，它的转发决策<strong>只看 MAC 地址，不看 IP
+地址</strong>—— 哪怕容器没有配置 IP 地址，只要 Veth 接入
+Bridge，也能通过 MAC 地址通信。</p>
+<h3 id="验证mac通信逻辑">验证MAC通信逻辑</h3>
+<p>我们以 <a
+href="#使用脚本实现ns之间的网络通信">使用脚本实现ns之间的网络通信</a>
+中配置的 <code>tiny0</code> 为例子：</p>
+<h4 id="查看宿主机上设备信息">查看宿主机上设备信息</h4>
+<ul>
+<li><code>fdb</code> 这里表示的是
+<code>Forwarding DataBase</code>，也就是哦我们常说的 「MAC地址表」 --
+它是 Linux Bridge 维护的<strong>MAC
+地址→端口映射表</strong>，作用等同于物理交换机的 MAC 地址表：
+<ul>
+<li>Bridge 收到以太网帧后，会查询 FDB 表，找到目标 MAC
+地址对应的端口（如 veth1-host），然后只向该端口转发帧；</li>
+<li>FDB
+表中的条目分为「静态条目（<code>permanent</code>）」和「动态条目（<code>dynamic</code>）」：静态条目手动配置
+/ 系统默认，动态条目由 Bridge 自动学习生成。</li>
+</ul></li>
+<li>这里还有几个设备通用的固定MAC地址，我特意把他使用一个空行和其他的输出隔开了：
+<ul>
+<li><code>33:33:00:00:00:01</code>：IPv6 组播 MAC
+地址（所有节点组播）；</li>
+<li><code>33:33:00:00:00:6a</code>：IPv6 组播 MAC 地址（对应组播 IP
+<code>ff02::6a</code>）；</li>
+<li><code>01:00:5e:00:00:01</code>：IPv4 组播 MAC
+地址（所有主机组播，对应组播 IP <code>224.0.0.1</code>）；</li>
+<li><code>01:00:5e:00:00:6a</code>：IPv4 组播 MAC 地址（对应组播 IP
+<code>224.0.0.106</code>）；</li>
+</ul></li>
+<li>此外，还有一个特殊的地址 -- IPv6 邻居发现（NDP）的组播 MAC
+地址，这个地址有一个特定的生成规则，就是把自身的 <code>MAC</code>
+地址的高24位设置为 <code>33:33:ff</code>：
+<ul>
+<li><code>5e:1c:0d:04:86:be</code> 被设置为
+<code>33:33:ff:04:86:be</code>；</li>
+<li><code>aa:8b:ce:0a:15:55</code> 被设置为
+<code>33:33:ff:0a:15:55</code>；</li>
+<li><code>fe:0e:52:64:84:c2</code> 被设置为
+<code>33:33:ff:64:84:c2</code>；</li>
+</ul></li>
+<li>可以注意到 <code>33:33:00:00:00:6a</code> 和
+<code>01:00:5e:00:00:6a</code> 这两个MAC地址，只存在于
+<code>tiny0</code>，这是因为这两个MAC地址是 IPv6 中<strong>为特定协议 /
+服务预留的组播地址</strong>（比如某些路由协议、管理服务会使用这个地址），veth
+不会使用到这个地址。</li>
+<li><code>vlan 1 master tiny0 permanent</code>
+<ul>
+<li><code>vlan 1</code>：属于 VLAN 1（默认 VLAN）；</li>
+<li><code>master tiny0</code>：归属于 tiny0 网桥；</li>
+</ul></li>
+</ul>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看 bridge </span></span><br><span class="line">sudo <span class="keyword">bridge </span>fdb <span class="keyword">show </span>dev tiny0</span><br><span class="line"><span class="comment"># 33:33:00:00:00:01 self permanent</span></span><br><span class="line"><span class="comment"># 33:33:00:00:00:6a self permanent</span></span><br><span class="line"><span class="comment"># 01:00:5e:00:00:01 self permanent</span></span><br><span class="line"><span class="comment"># 01:00:5e:00:00:6a self permanent</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 33:33:ff:04:86:be self permanent</span></span><br><span class="line"><span class="comment"># 5e:1c:0d:04:86:be vlan 1 master tiny0 permanent</span></span><br><span class="line"><span class="comment"># 5e:1c:0d:04:86:be master tiny0 permanent</span></span><br><span class="line"></span><br><span class="line">sudo <span class="keyword">bridge </span>fdb <span class="keyword">show </span>dev veth1-host</span><br><span class="line"><span class="comment"># 33:33:00:00:00:01 self permanent</span></span><br><span class="line"><span class="comment"># 01:00:5e:00:00:01 self permanent</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 33:33:ff:0a:15:55 self permanent</span></span><br><span class="line"><span class="comment"># aa:8b:ce:0a:15:55 vlan 1 master tiny0 permanent</span></span><br><span class="line"><span class="comment"># aa:8b:ce:0a:15:55 master tiny0 permanent</span></span><br><span class="line"></span><br><span class="line">sudo <span class="keyword">bridge </span>fdb <span class="keyword">show </span>dev veth2-host</span><br><span class="line"><span class="comment"># 33:33:00:00:00:01 self permanent</span></span><br><span class="line"><span class="comment"># 01:00:5e:00:00:01 self permanent</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 33:33:ff:64:84:c2 self permanent</span></span><br><span class="line"><span class="comment"># fe:0e:52:64:84:c2 vlan 1 master tiny0 permanent</span></span><br><span class="line"><span class="comment"># fe:0e:52:64:84:c2 master tiny0 permanent</span></span><br></pre></td></tr></table></figure>
+<h4 id="查看ns下设备信息">查看ns下设备信息</h4>
+<ul>
+<li>可以看到 <code>ns1</code> 中的 <code>eth0</code> 的 MAC 地址是
+<code>fa:53:f9:da:d6:c7</code>，而和他关联的 <code>veth1-host</code> 的
+MAC 地址是 <code>aa:8b:ce:0a:15:55</code>，他们是不一样的。这是因为
+<code>veth</code> 实际上是
+<code>Veth Pair</code>，它是「一对虚拟网卡」，两端有各自的MAC地址，我们可以认为他是一个双线的管道。</li>
+</ul>
+<figure class="highlight x86asm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sudo <span class="built_in">ip</span> netns exec ns1 <span class="built_in">ip</span> link show eth0</span><br><span class="line"># <span class="number">50</span>: eth0@if51: &lt;BROADCAST,MULTICAST,<span class="meta">UP</span>,LOWER_UP&gt; mtu <span class="number">1500</span> qdisc noqueue state <span class="meta">UP</span> mode <span class="meta">DEFAULT</span> group <span class="meta">default</span> qlen <span class="number">1000</span></span><br><span class="line">#    link/ether fa:<span class="number">53</span>:f9:da:d6:c7 brd ff:ff:ff:ff:ff:ff link-netnsid <span class="number">0</span></span><br><span class="line"></span><br><span class="line">sudo <span class="built_in">ip</span> netns exec ns2 <span class="built_in">ip</span> link show eth0</span><br><span class="line"># <span class="number">53</span>: eth0@if54: &lt;BROADCAST,MULTICAST,<span class="meta">UP</span>,LOWER_UP&gt; mtu <span class="number">1500</span> qdisc noqueue state <span class="meta">UP</span> mode <span class="meta">DEFAULT</span> group <span class="meta">default</span> qlen <span class="number">1000</span></span><br><span class="line">#    link/ether ae:<span class="number">56</span>:<span class="number">1d</span>:0c:a5:4e brd ff:ff:ff:ff:ff:ff link-netnsid <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<h4 id="查看连接">查看连接</h4>
+<p>现在，我们知道了宿主机上的设备信息 <code>tiny0</code>，
+<code>veth1-host</code>，<code>veth2-host</code>，以及 <code>ns1</code>
+和 <code>ns2</code> 的设备
+<code>eth0</code>（两个设备在各自的namespace所以可以重名），我们需要找到他们的连接信息。</p>
+<h5 id="ip-link">ip link</h5>
+<ul>
+<li><code>ns1</code> 显示 <code>veth1-host</code> 连接到的
+namespace；</li>
+<li><code>51: veth1-host@if50</code> 这里：
+<ul>
+<li><code>veth1-host@if50</code>：表示 <code>veth1-host</code> 的 peer
+网卡索引是 <code>50</code>；</li>
+<li><code>51</code> 是 <code>veth1-host</code> 的 peer
+的网卡索引，而我们之前看到的 <code>ns1</code> 的 <code>eth0</code>
+的输出是 <code>50: eth0@if51</code>；</li>
+</ul></li>
+</ul>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ip link show veth1-host</span><br><span class="line"><span class="comment"># 51: veth1-host<span class="doctag">@if</span>50: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master tiny0 state UP mode DEFAULT group default qlen 1000</span></span><br><span class="line"><span class="comment">#     link/ether aa:8b:ce:0a:15:55 brd ff:ff:ff:ff:ff:ff link-netns ns1</span></span><br></pre></td></tr></table></figure>
+<h5 id="ethtool">ethtool</h5>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> dnf install -y ethtool</span><br><span class="line"></span><br><span class="line"><span class="built_in">sudo</span> ethtool -S veth1-host</span><br><span class="line"><span class="comment"># NIC statistics:</span></span><br><span class="line"><span class="comment">#      peer_ifindex: 50</span></span><br><span class="line"><span class="comment">#      ...</span></span><br></pre></td></tr></table></figure>
+<h3
+id="为什么我们还要给容器配置ip地址">为什么我们还要给容器配置IP地址</h3>
+<p>虽然二层互通不需要 IP，但<strong>应用层程序的通信依赖 IP
+地址</strong>，这是 TCP/IP 协议栈的设计决定的：</p>
+<ol type="1">
+<li><strong>应用程序只认 IP，不认 MAC</strong>：我们日常使用的
+<code>ping</code>、<code>curl</code>、<code>ssh</code> 等工具，都是基于
+IP 地址通信的 —— 比如 <code>ping 172.17.0.3</code>，本质是先通过 ARP
+协议，将目标 IP 转换为 MAC 地址，再通过二层转发数据。
+<ul>
+<li>ARP 协议的作用就是 <strong>「IP 地址 → MAC 地址」的映射</strong>
+，是二层和三层之间的桥梁；</li>
+<li>如果没有 IP 地址，应用程序无法发起通信请求。</li>
+</ul></li>
+<li><strong>为了支持跨网段访问（三层转发）</strong>：容器不仅需要和同网段的其他容器通信，还需要访问外网
+—— 此时就需要 IP 地址和默认网关：
+<ul>
+<li>容器发往外网的数据包，会先根据 IP
+路由表，发送到网关（<code>172.17.0.1</code>，即 Bridge 的 IP）；</li>
+<li>网关再通过三层转发（IP 转发 + NAT），将数据包发送到外网。</li>
+</ul></li>
+</ol>
+<p>以
+<code>ns1</code>（<code>172.17.0.2</code>）<code>ping ns2</code>（<code>172.17.0.3</code>）为例，完整流程是：</p>
+<ol type="1">
+<li><strong>应用层</strong>：<code>ping</code> 命令发起请求，目标是
+<code>172.17.0.3</code>（IP 地址）；</li>
+<li><strong>ARP 协议解析</strong>：<code>ns1</code> 发送 ARP
+请求：<code>谁的 IP 是 172.17.0.3？请告诉我你的 MAC 地址</code>；</li>
+<li><strong>二层广播</strong>：ARP 请求通过 Veth 发送到 Bridge，Bridge
+向所有接入端口泛洪（二层操作）；</li>
+<li><strong><code>ns2</code> 响应</strong>：<code>ns2</code> 收到 ARP
+请求，回复自己的 MAC 地址 <code>02:42:ac:11:00:03</code>；</li>
+<li><strong>Bridge 学习 MAC</strong>：Bridge 记录
+<code>172.17.0.3 → MAC → veth2-host</code> 的映射关系；</li>
+<li><strong>二层转发 ICMP 包</strong>：<code>ns1</code> 封装 ICMP
+数据包（含 IP 头），并封装成以太网帧（目的 MAC 是 <code>ns2</code> 的
+MAC），发送到 Bridge；</li>
+<li><strong>Bridge 直接转发</strong>：Bridge 查询 MAC
+地址表，直接将帧转发到 <code>veth2-host</code>，最终到达
+<code>ns2</code>。</li>
+</ol>
+<p>从流程可以看出：<strong>这里的IP地址只是为了实现IP地址到MAC地址的查询，实际上veth1和veth2的通信是通过MAC地址和bridge实现的</strong>。</p>
+<h2 id="ip地址分类">IP地址分类</h2>
+<p>IP地址分类有两个区别非常大的「流派」：</p>
+<ul>
+<li>传统的 A/B/C 类地址分类，它的特点是基于前几位固定比特；</li>
+<li>无类域间路由（CIDR）：<code>CIDR</code> 的全称是
+<code>Classless Inter-Domain Routing</code>，它允许使用任意长度的网络前缀来划分网络，从而提高了IP地址分配的灵活性、效率，并减少了互联网路由表的大小，使互联网路由更有效率。它通过在IP地址后加上一个斜杠“/”和数字（表示网络前缀的位数）的“斜线记法”来表示，例如
+<code>192.168.1.0/24</code>；</li>
+</ul>
+<h3 id="传统分类有类路由">传统分类（有类路由）</h3>
+<p>这是早期 IPv4 设计的 “固定分类” 规则，仅通过 IP
+前几位比特划分网段大小，掩码是固定的：</p>
+<table>
+<colgroup>
+<col style="width: 4%" />
+<col style="width: 28%" />
+<col style="width: 32%" />
+<col style="width: 22%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">类别</th>
+<th style="text-align: center;">首位比特</th>
+<th style="text-align: center;">范围</th>
+<th style="text-align: center;">固定默认掩码</th>
+<th style="text-align: center;">可用主机数</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">A</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1.0.0.0 - 127.255.255.255</td>
+<td style="text-align: center;">/8 (255.0.0.0)</td>
+<td style="text-align: center;">约 1600 万</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">B</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">128.0.0.0 - 191.255.255.255</td>
+<td style="text-align: center;">/16 (255.255.0.0)</td>
+<td style="text-align: center;">约 6.5 万</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">C</td>
+<td style="text-align: center;">110（<code>2^7 + 2^6 = 192</code>）</td>
+<td style="text-align: center;">192.0.0.0 - 223.255.255.255</td>
+<td style="text-align: center;">/24 (255.255.255.0)</td>
+<td style="text-align: center;">254 台</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cidr无类域路由">CIDR（无类域路由）</h3>
+<p>为了灵活划分网段，现代网络已抛弃 “固定分类”，改用 <strong>CIDR
+掩码（/xx）</strong> 直接定义 “网络位长度”：</p>
+<ul>
+<li><code>/8</code> = 前 8 位是网络位，后 24 位是主机位（对应 A
+类默认掩码）；</li>
+<li><code>/16</code> = 前 16 位是网络位，后 16 位是主机位（对应 B
+类默认掩码）；</li>
+<li><code>/24</code> = 前 24 位是网络位，后 8 位是主机位（对应 C
+类默认掩码）；</li>
+<li>核心：<strong>CIDR 掩码可以脱离 A/B/C 类限制，给任意 IP
+段配任意掩码</strong>。</li>
+</ul>
+<h3 id="docker中的ip地址分类">docker中的IP地址分类</h3>
+<p>在 <code>docker</code> 中使用了 <code>CIDR</code>
+来做IP地址分类，并且使用 <code>172.17.0.0/16</code>
+作为默认开始的地址，而这个地址是归属在 <code>B</code>
+类之内的。<strong>docker使用这个网络划分主要是出于容器网络的实用性</strong>：<code>/16</code>
+掩码的网段范围共 65534 个可用
+IP，这个规模刚好适配：一台主机上可能运行成百上千个容器，/24（仅 254 个
+IP）不够用，/12（约 100 万 IP）又太浪费；</p>
+<h2 id="网络层级的划分">网络层级的划分</h2>
+<blockquote>
+<p>在我们前面的描述中，我们多次提到了所谓的 <code>二层模型</code> 和
+<code>三层模型</code>，这里我们对这两个模型进行一些粗略的分析。</p>
+</blockquote>
+<p>二层网络和三层网络的划分，源于 <strong>TCP/IP 五层模型</strong>（对应
+OSI
+七层模型的下两层），二者是网络通信的基础分层，<strong>共同点是都为数据传输提供通路</strong>，但在<strong>通信范围、核心标识、转发依据</strong>等方面有本质区别。</p>
+<p>这里可以参考 <a
+target="_blank" rel="noopener" href="https://www.reddit.com/r/explainlikeimfive/comments/83z54v/eli5_the_difference_between_layer_2_and_layer_3/">ELI5:
+The difference between Layer 2 and Layer 3 in the OSI model.</a>
+这个帖子中的高赞回答：</p>
+<ul>
+<li>Layer 1 is <code>physical signalling</code> - what does a sequence
+of changing voltages on a wire mean as a sequence of bits.</li>
+<li>Layer 2 takes those sequences of bits and
+<code>assigns meaning</code> to them - <code>packets</code>,
+<code>destinations</code> and whatnot but it's <strong>only designed to
+handle a single physical network at a time</strong>.</li>
+<li>Layer 3 builds on top of that by adding <em>another</em> layer of
+<code>addresses</code> and <code>packets</code> that's designed to be
+<strong>carried across multiple different types of layer 2
+networks</strong>.</li>
+</ul>
+<h3 id="共同点">共同点</h3>
+<ul>
+<li><code>目标一致</code>：都是为了实现网络设备之间的数据传输，是数据从源端到目的端的必经环节。</li>
+<li><code>依赖硬件载体</code>：都需要网络设备（网卡、交换机、路由器）和传输介质（网线、光纤、无线信号）的支持，没有硬件无法完成数据转发。</li>
+<li><code>数据封装基础</code>：二层网络封装的<strong>以太网帧</strong>，是三层网络<strong>IP
+数据包</strong>的传输载体 ——IP
+数据包会被完整包裹在以太网帧的「数据区」中进行传输。</li>
+<li><code>单机 / 集群内协同工作</code>：在容器、虚拟机等场景中，二层和三层网络必须配合使用：
+<ul>
+<li>容器间的互通靠 <strong>Veth+Bridge</strong>（二层）；</li>
+<li>容器访问外网靠 <strong>IP 转发 + NAT</strong>（三层）。</li>
+</ul></li>
+</ul>
+<h3 id="区别">区别</h3>
+<p>我们用表格清晰对比二者的关键差异，我们可以这么尝试去理解它：</p>
+<ul>
+<li>核心标识：假设我们把一个机房中的所有机器看做一个二层网络结构，那么他们之间的通信可以通过MAC地址来识别。但是如果我们把他扩展到更高层次：我部署了一个分布式的服务，我有多台机器运行着同一个HTTP服务，并且当我对外的时候，把所有的机器的MAC地址都告诉别人显然是不合理的。那么我们可以做一个为整个集群分配一个对外的IP地址，外部的机器只需要向这个对外
+IP 地址发送消息，<strong>收到消息后由三层交换机 / 负载均衡器先解析 IP
+地址，再通过后端机器的 MAC
+地址将数据转发到某台机器</strong>。在这个过程中，<strong>IP
+地址是网络层（三层）的核心标识</strong>，用于跨广播域定位服务；而内部的
+<strong>MAC
+地址是数据链路层（二层）的核心标识</strong>，用于同一广播域内定位具体机器。</li>
+<li>通信范围：这个很好理解，当我想要访问一个服务：比如说使用谷歌搜索 --
+我并不知道谷歌的服务器的MAC地址，那我只能使用IP地址来访问了；这里也催生出了一个服务，那就是IP地址并不好记，那我就可以使用一个容易记住的域名绑定到某些IP，在访问的时候使用域名访问，并在实际传输数据时转换为IP
+-- 这就是DNS服务。</li>
+</ul>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 45%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">特性维度</th>
+<th style="text-align: left;">二层网络（数据链路层）</th>
+<th style="text-align: left;">三层网络（网络层）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>核心标识</strong></td>
+<td
+style="text-align: left;"><code>MAC 地址</code>（物理地址，网卡出厂固化，全球唯一）</td>
+<td style="text-align: left;"><code>IP 地址</code>（逻辑地址，人工 /
+动态分配，可修改）</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>通信范围</strong></td>
+<td
+style="text-align: left;">同一广播域内（局域网内，如同一交换机下的设备）</td>
+<td style="text-align: left;">跨广播域 /
+跨互联网（如家庭网访问公司网、访问百度）</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>转发依据</strong></td>
+<td style="text-align: left;">以太网帧头中的 <strong>目的 MAC
+地址</strong></td>
+<td style="text-align: left;">IP 数据包头中的 <strong>目的 IP
+地址</strong> + 路由表</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>核心设备</strong></td>
+<td style="text-align: left;">二层交换机、Linux
+Bridge（虚拟二层设备）</td>
+<td style="text-align: left;">路由器、三层交换机、开启 IP
+转发的主机</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>核心协议</strong></td>
+<td style="text-align: left;">以太网协议（Ethernet）、ARP 协议（IP 转
+MAC）</td>
+<td style="text-align: left;">IP 协议、ICMP 协议（ping
+命令）、路由协议（OSPF/BGP）</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>典型应用场景</strong></td>
+<td style="text-align: left;">1.
+同一主机内容器互通（Veth+Bridge）<br/>2. 家庭交换机连接多台电脑</td>
+<td style="text-align: left;">1. 容器访问外网（宿主机做路由器）<br/>2.
+跨城市访问服务器</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>数据单位</strong></td>
+<td style="text-align: left;">以太网帧（Frame）</td>
+<td style="text-align: left;">IP 数据包（Packet）</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>是否需要网关</strong></td>
+<td style="text-align: left;">不需要，直接通过 MAC 地址通信</td>
+<td style="text-align: left;">需要，非本网段数据必须发往网关</td>
+</tr>
+</tbody>
+</table>
+<h3 id="一个简单的例子-1">一个简单的例子</h3>
+<p>假设我住在<strong>幸福小区（高新区创业路1号）221B</strong>，那在这个场景下：</p>
+<ul>
+<li><code>幸福小区</code> 就是我的域名；</li>
+<li><code>高新区创业路1号</code> 就是我的IP地址；</li>
+<li><code>221B</code> 就是我的MAC地址；</li>
+</ul>
+<p>这和计算机的三层网络/二层网络有一些共同点：</p>
+<ol type="1">
+<li>当我需要和外界通信时，<code>幸福小区</code>
+是我的域名，首先快递员需要通过地图来查询到 <code>高新区创业路1号</code>
+-- 这是我的IP地址；只有知道了我的IP地址才能给我发送快递；</li>
+<li>快递员送货到 <code>幸福小区</code> 后他将快递放到保安室；</li>
+<li>保安只需要知道 <code>221B</code> 就可以把快递送给我，它并不需要知道
+<code>幸福小区</code> 这个IP地址；</li>
+<li>当我在小区内通信时，<code>幸福小区</code>是没有意义的 -- 快递员只认
+<code>221B</code> 这个MAC地址；</li>
+</ol>
+<p>而这也正对应于了网络协议的转换：</p>
+<ol type="1">
+<li>对应于DNS服务将域名转换为IP地址；</li>
+<li>对应于通过<strong>网络层</strong>的IP地址进行<strong>逻辑寻址</strong>，使用<strong>路由器</strong>进行跨网络<strong>路由</strong>；</li>
+<li>对应于 <code>ARP</code> 协议将IP地址转换为MAC地址；</li>
+</ol>
+<p>但是它和实际的协议也有许多区别，这里因为只是做一个简单的类比，就不做赘述了。</p>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 26%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">现实快递场景</th>
+<th style="text-align: center;">网络协议栈</th>
+<th style="text-align: center;">核心对应关系</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">幸福小区（易记的名字）</td>
+<td style="text-align: center;">域名（如
+<code>www.baidu.com</code>）</td>
+<td
+style="text-align: center;">解决「地址难记」的问题，非必需，但方便人类使用</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">高新区创业路 1 号（区域唯一标识）</td>
+<td style="text-align: center;">IP 地址（如
+<code>172.17.0.2</code>）</td>
+<td
+style="text-align: center;">跨区域<strong>逻辑寻址</strong>的核心，相当于「城市级地址」，路由器靠它判断转发方向</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">幸福小区 221B（小区内唯一标识）</td>
+<td style="text-align: center;">MAC 地址（如
+<code>02:42:ac:11:00:02</code>）</td>
+<td
+style="text-align: center;">同一区域<strong>物理寻址</strong>的核心，相当于「门牌号」，交换机
+/ Bridge 靠它精准投递数据</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">快递员查地图（域名→实际地址）</td>
+<td style="text-align: center;">DNS 解析</td>
+<td
+style="text-align: center;">完成「域名→IP」的映射，是三层寻址的前置步骤</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">快递员送货到小区门口（跨区域运输）</td>
+<td style="text-align: center;">路由器三层转发</td>
+<td style="text-align: center;">基于 IP
+地址把数据包从一个网段送到目标网段，相当于「跨城市物流」</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">保安送快递到 221B（小区内投递）</td>
+<td style="text-align: center;">ARP 协议 + 二层转发</td>
+<td style="text-align: center;">先通过 ARP
+完成「IP→MAC」的转换，再由交换机 / Bridge 基于 MAC
+地址转发，相当于「小区内跑腿」</td>
+</tr>
+</tbody>
+</table>
+<h2 id="ipam的实现逻辑">IPAM的实现逻辑</h2>
+<p>在我们为network分配IP的时候，我们还需要抽象一个IPAM应用于不同的IP分配策略：</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="type">Network</span> struct &#123;</span><br><span class="line">     <span class="type">Id</span>      <span class="type">NetworkId</span>   `json:&quot;id&quot;`</span><br><span class="line">     <span class="type">Type</span>    <span class="type">NetworkType</span> `json:&quot;type&quot;`</span><br><span class="line">     <span class="type">Gateway</span> *net.<span class="type">IP</span>     `json:&quot;gateway&quot;`</span><br><span class="line">     <span class="type">IPNet</span>   *net.<span class="type">IPNet</span>  `json:&quot;ip_net&quot;`</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里实现有多个策略：</p>
+<h3 id="network只保存元数据">Network只保存元数据</h3>
+<p>我们在Network中只保存元数据，并不保存任何运行时信息（例如可用的IP）。我们将所有的运行时信息保存在
+<code>IPAM</code> 的实例中，并且增加一个额外的
+<code>map[string]IPAM</code> 通过 network 的 ID 和 IPAM
+关联；这样IPAM的接口不需要知道Network的信息；</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="type">IPAM</span> interface &#123;</span><br><span class="line">     <span class="type">AllocateIP</span>() (*net.<span class="type">IP</span>, error)</span><br><span class="line">     <span class="type">ReleaseIP</span>(*net.<span class="type">IP</span>) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3
+id="network保存元数据和运行时信息">Network保存元数据和运行时信息</h3>
+<p>我们在Network中保存元数据和运行时信息，IPAM
+只负责IP分配的策略，在这种情况下，IPAM就需要在参数中显示的传递Network值；</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="type">IPAM</span> interface &#123;</span><br><span class="line">     <span class="type">AllocateIP</span>(network *<span class="type">Network</span>) (*net.<span class="type">IP</span>, error)</span><br><span class="line">     <span class="type">ReleaseIP</span>(network *<span class="type">Network</span>, *net.<span class="type">IP</span>,) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一种方案的优点是：<code>Network</code>
+更加的轻量级；缺点是：一旦IPAM确定就可能无法再更改，因为不同的IPAM内部的实现对于Network来说是不透明的，Network拿不到当前的运行时信息；
+第二种方案的优点是：IPAM可以动态的切换，因为 <code>Network</code>
+的存储是固定的，只需要IPAM根据Network内部的元数据和运行时信息进行分配即可；缺点是
+Network
+的逻辑变得更复杂，并且需要额外的关注IPAM的信息--因为他需要根据IPAM的分配规则来动态的更改元数据。</p>
+<p>这里的分歧点在于：「<strong>IP
+分配的运行时状态该由谁持有</strong>」—— 方案 1 是「IPAM
+实例持有状态，Network 仅存元数据」，方案 2 是「Network 持有状态，IPAM
+仅做策略逻辑」。</p>
+<h3 id="docker的ipam实现">Docker的IPAM实现</h3>
+<p><strong>Docker 是「方案 1 + 方案 2 的混合变种」，但核心骨架更贴近方案
+1，同时吸收了方案 2 的部分优势</strong>—— 既保证 IPAM
+策略的独立性，又通过中心化存储解决了方案 1 的状态分散问题。</p>
+<h4 id="核心组件">核心组件</h4>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 82%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">组件</th>
+<th style="text-align: center;">职责</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>Network</code></td>
+<td
+style="text-align: center;">仅保存<strong>元数据</strong>（ID、类型、网段、网关、驱动名），<strong>不保存运行时
+IP 状态</strong>（可用 IP / 已分配 IP）→ 贴近方案 1</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>IPAM Driver</code></td>
+<td style="text-align: center;">独立的 IPAM 驱动实例（如
+<code>default</code>/<code>host-local</code>/<code>dhcp</code>），负责
+IP 分配 / 释放逻辑，且<strong>持有（或关联）IP 运行时状态</strong> →
+贴近方案 1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>IPAM Store</code></td>
+<td style="text-align: center;">中心化存储（本地文件 / 分布式 KV），按
+Network ID 存储 IP 分配状态 → 解决方案 1「map [string]
+IPAM」的状态分散问题</td>
+</tr>
+</tbody>
+</table>
+<h4 id="简化的核心接口">简化的核心接口</h4>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">// 无需感知 <span class="type">Network</span> 详情，仅通过 <span class="type">Network</span> <span class="type">ID</span> 关联</span><br><span class="line"><span class="keyword">type</span> <span class="type">IPAMDriver</span> interface &#123;</span><br><span class="line">    // 为指定 <span class="type">Network</span> <span class="type">ID</span> 初始化 <span class="type">IPAM</span> 状态</span><br><span class="line">    <span class="type">Init</span>(networkID string, options map[string]string) error</span><br><span class="line">    // 分配 <span class="type">IP</span>（仅需 <span class="type">Network</span> <span class="type">ID</span>，无需完整 <span class="type">Network</span> 结构体）</span><br><span class="line">    <span class="type">Allocate</span>(networkID string, pool string) (*net.<span class="type">IP</span>, error)</span><br><span class="line">    // 释放 <span class="type">IP</span></span><br><span class="line">    <span class="type">Release</span>(networkID string, ip *net.<span class="type">IP</span>) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="实现逻辑分析">实现逻辑分析</h4>
+<ul>
+<li><strong>Network 极致轻量化</strong>：Docker 的 Network
+仅作为「网络元数据载体」，运行时 IP 状态完全交给 IPAM Driver 管理，避免
+Network 结构体膨胀（Docker 需支持数千个网络，轻量化是关键）；</li>
+<li><strong>IPAM 驱动完全解耦</strong>：不同 IPAM 驱动（如
+<code>host-local</code> 本地分配、<code>dhcp</code> 动态分配）无需适配
+Network 结构体，只需通过 Network ID 即可完成 IP 管理，新增 IPAM
+驱动时无需修改 Network 定义；</li>
+<li><strong>状态中心化存储</strong>：Docker 没有用简单的
+<code>map[string]IPAM</code>，而是通过 <code>IPAM Store</code>
+中心化存储 IP 状态（如 <code>host-local</code> 驱动将 IP 状态存在
+<code>/var/lib/docker/network/ipam</code>），解决了方案
+1「状态分散」的问题。</li>
+</ul>
+<h4 id="如何规避策略切换难的问题">如何规避「策略切换难」的问题？</h4>
+<p>Docker 并未完全规避方案 1
+的缺点，但通过「<strong>状态标准化</strong>」解决：</p>
+<ul>
+<li>所有 IPAM 驱动都需遵循 Docker 定义的「IP 状态存储格式」（如按
+Network ID 存储
+<code>available_ips</code>/<code>allocated_ips</code>）；</li>
+<li>切换 IPAM 驱动时，可通过 <code>docker network recreate</code>
+重新初始化 IP 状态，或通过 <code>IPAM Store</code>
+迁移状态，降低切换成本。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/docker/" rel="tag"># docker</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/" rel="prev" title="Go&#x2F;Rust&#x2F;CPP的Covariance&#x2F;Contravariance&#x2F;Invariance">
+                  <i class="fa fa-angle-left"></i> Go/Rust/CPP的Covariance/Contravariance/Invariance
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/01/16/build-my-own-raft-from-scratch/" rel="next" title="build my own raft from scratch">
+                  build my own raft from scratch <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

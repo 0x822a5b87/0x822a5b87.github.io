@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="早上逛 reddit rust 时偶然看到了 Ian Lance Taylor 介绍 linkers 的系列文章，觉得很有意思，决定开一个新坑来看看能不能自己实现一个简单的 linkers，目前找了一些资料，看起来工作量并不小。这里先做个简单的记录，参考的文章和书籍：  linkers by Ian Lance Taylor byo-linker Linkers and Loaders  可能会">
+<meta property="og:type" content="article">
+<meta property="og:title" content="开了一个linkers的新坑">
+<meta property="og:url" content="https://0x822a5b87.github.io/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="早上逛 reddit rust 时偶然看到了 Ian Lance Taylor 介绍 linkers 的系列文章，觉得很有意思，决定开一个新坑来看看能不能自己实现一个简单的 linkers，目前找了一些资料，看起来工作量并不小。这里先做个简单的记录，参考的文章和书籍：  linkers by Ian Lance Taylor byo-linker Linkers and Loaders  可能会">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-01-15T03:37:54.000Z">
+<meta property="article:modified_time" content="2026-01-22T03:59:57.117Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="compiler">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/","path":"2025/01/15/开了一个linkers的新坑/","title":"开了一个linkers的新坑"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>开了一个linkers的新坑 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E5%8D%B0%E8%B1%A1"><span class="nav-number">1.</span> <span class="nav-text">第一印象</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E9%93%BE%E6%8E%A5%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">一个最简单的链接过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5%E8%BF%87%E7%A8%8B%E5%8F%AF%E8%83%BD%E6%B6%89%E5%8F%8A%E5%88%B0%E7%9A%84%E4%BA%A7%E7%89%A9"><span class="nav-number">1.2.</span> <span class="nav-text">链接过程可能涉及到的产物</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elf"><span class="nav-number">1.3.</span> <span class="nav-text">ELF</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/01/15/%E5%BC%80%E4%BA%86%E4%B8%80%E4%B8%AAlinkers%E7%9A%84%E6%96%B0%E5%9D%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="开了一个linkers的新坑 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          开了一个linkers的新坑
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-01-15 11:37:54" itemprop="dateCreated datePublished" datetime="2025-01-15T11:37:54+08:00">2025-01-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>早上逛 <a target="_blank" rel="noopener" href="https://www.reddit.com/r/rust/">reddit rust</a>
+时偶然看到了 <a target="_blank" rel="noopener" href="https://www.airs.com/blog">Ian Lance Taylor</a>
+介绍 <a target="_blank" rel="noopener" href="https://a3f.at/lists/linkers">linkers</a>
+的系列文章，觉得很有意思，决定开一个新坑来看看能不能自己实现一个简单的
+linkers，目前找了一些资料，看起来工作量并不小。这里先做个简单的记录，参考的文章和书籍：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://a3f.at/lists/linkers">linkers by Ian Lance
+Taylor</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/andrewhalle/byo-linker">byo-linker</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://www.amazon.com/Linkers-Kaufmann-Software-Engineering-Programming/dp/1558604960/ref=sr_1_1?crid=24DJPGT6TCPSU&amp;dib=eyJ2IjoiMSJ9.blypyivja49kN_oMLeGvLUYdmuxfh0xHvWmmz6FjaF-covkmqayhb5XmNBBIwDAbisFkJaB2k580X2V6D8nWuopCyzyijCWFM05AuAiNzMgaERzu_oxeZ8xEEIpl8vXed5zSGn5h8GXGtkBQX7THg0RltzVDWOPkMugTdtoG-9F-9i_407kB3K0tgLCeSnNq2B6MimVn2yD1KmgLnL-XlE5JnCQcS8qh1C0h6KY4hWA.uWjN7FnLv144NGBHfuKQYTUYvP0gr-bw8yJMFd3qvO4&amp;dib_tag=se&amp;keywords=linkers+and&amp;qid=1736912625&amp;sprefix=linkers+and+l%2Caps%2C430&amp;sr=8-1">Linkers
+and Loaders</a></li>
+</ul>
+<p>可能会涉及到的基础知识包括：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/SPARC"><strong>SPARC</strong>
+(<strong>Scalable Processor ARChitecture</strong>)</a></li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/X86_instruction_listings">x86
+instruction listings</a></li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Executable">Executable
+file</a>: <code>ELF</code>, <code>PE</code>, <code>OMF</code></li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Symbol_table">Symbol
+table</a></li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Shared_library">shared
+libraries</a></li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Static_library">Static
+library</a></li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Dynamic_linker">dynamic
+linker</a></li>
+<li>其他待总结</li>
+</ul>
+</blockquote>
+<h2 id="第一印象">第一印象</h2>
+<h3 id="一个最简单的链接过程">一个最简单的链接过程</h3>
+<pre><code class="highlight mermaid">---
+title: 一个简单的链接过程
+---
+flowchart LR
+
+source1(&quot;source1&quot;):::purple
+of1(&quot;object_file1.o&quot;):::purple
+
+source2(&quot;source2&quot;):::purple
+of2(&quot;object_file2.o&quot;):::purple
+
+linkers(&quot;linkers&quot;):::pink
+
+executable(&quot;executable&quot;):::green
+
+source1 --&gt;|gcc -o| of1
+source2 --&gt;|gcc -o| of2
+
+of1 --&gt; linkers
+of2 --&gt; linkers
+
+linkers --&gt; executable
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</code></pre>
+<h3 id="链接过程可能涉及到的产物">链接过程可能涉及到的产物</h3>
+<pre><code class="highlight mermaid">---
+title: 一个简单的链接过程
+---
+flowchart TB
+
+source_code(&quot;source_code&quot;)
+object_file(&quot;object_file.o&quot;)
+executable(&quot;executable&quot;)
+shared_lib(&quot;shared libraries&quot;)
+dynamic_linker(&quot;dynamic linker&quot;)
+program_linker(&quot;program linker&quot;)
+
+ELF(&quot;ELF(on SVR4/GNU/Linux)&quot;)
+DLLs(&quot;DLLs(on windows)&quot;)
+GOT(&quot;GOT:Global Offset Table&quot;)
+PLT(&quot;PLT:Procedure Linkage Table&quot;)
+
+shared_lib --&gt; ELF:::purple
+shared_lib --&gt; DLLs:::purple
+shared_lib --&gt; GOT:::pink
+shared_lib --&gt; PLT:::pink
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</code></pre>
+<h3 id="elf">ELF</h3>
+<blockquote>
+<ol type="1">
+<li><code>section</code> 表示的二进制文件中的代码段；</li>
+<li><code>weak</code>
+类型的绑定可以允许被覆盖，可以理解为给了某个symbol一个默认值 --
+在没有找到其他的同名symbol的情况下，使用weak绑定的symbol；</li>
+<li><code>visibility</code> 提供了对 symbol 在 shared library
+外可访问性的控制 -- 例如，我们可能希望某个 symbol 在 shared library 内是
+global 的，但是在外部是 local 的。</li>
+</ol>
+</blockquote>
+<pre><code class="highlight mermaid">---
+title:  go over ELF symbols in more details
+---
+flowchart LR
+
+entry(&quot;entry in an ELF symbole&quot;):::green
+
+name(&quot;a name&quot;):::pink
+value(&quot;a value&quot;):::pink
+size(&quot;a size&quot;):::pink
+section(&quot;a section&quot;):::pink
+binding(&quot;a binding&quot;):::pink
+type(&quot;a type&quot;):::pink
+visibility(&quot;a visibility&quot;):::pink
+undefined(&quot;undefined additional information&quot;):::pink
+
+text(&quot;.text&quot;)
+data(&quot;.data&quot;)
+rodata(&quot;.rodata&quot;)
+symtab(&quot;.symtab&quot;)
+
+global(&quot;global&quot;)
+local(&quot;local&quot;)
+weak(&quot;weak&quot;)
+
+entry --&gt; name
+entry --&gt; value
+entry --&gt; size
+entry --&gt; section
+entry --&gt; binding
+entry --&gt; type
+entry --&gt; visibility
+entry --&gt; undefined
+
+section --&gt; text
+section --&gt; data
+section --&gt; rodata
+section --&gt; symtab
+
+binding --&gt; global
+binding --&gt; local
+binding --&gt; weak
+
+classDef pink 1,fill:#FFCCCC,stroke:#333;
+classDef green fill: #696,color: #fff,font-weight: bold;
+classDef purple fill:#969,stroke:#333;
+classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5</code></pre>
+<blockquote>
+<p>这里需要注意一下，C
+可以支持通过如下的方式来提示编译器生成指定的代码。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> __attribute__((weak)) foo() &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Default foo\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    foo();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rust/" rel="tag"># rust</a>
+              <a href="/tags/compiler/" rel="tag"># compiler</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/12/26/%E5%9F%BA%E4%BA%8E%E7%AE%80%E5%8D%95%E7%8A%B6%E6%80%81%E6%9C%BA%E7%9A%84%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97/" rel="prev" title="基于简单状态机的四则运算">
+                  <i class="fa fa-angle-left"></i> 基于简单状态机的四则运算
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/01/18/%E5%85%B3%E4%BA%8EB%E6%A0%91%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" rel="next" title="关于B树的一些思考">
+                  关于B树的一些思考 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>
