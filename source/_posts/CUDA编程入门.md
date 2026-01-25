@@ -656,7 +656,7 @@ classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 ```
 
-# 第一次优化
+# 第一次优化（Threads）
 
 > 现在，我们知道了GPU的结构以及CUDA怎么调度任务，那我们现在可以开启第一次优化，目标是将我们的 `<<<1, 1>>>` 改成多线程版本 `<<<1, 256>>>`；
 
@@ -1032,7 +1032,7 @@ __global__ void atomic_add(float* x, float* y , float* r, int n) {
 
 可以看到：我们在 `memcpy` 没有变化不大的情况下，`Kernels` 的执行时间大幅下降，因为我们并行执行能更好的利用GPU的并行计算能力，也就是说，我们的性能瓶颈由SM计算变成了我们的VRAM访问。
 
-# 第二次优化
+# 第二次优化（Blocks）
 
 > 我们之前使用了多线程对并行计算进行优化，现在我们开始使用 `grid `来继续优化。
 
@@ -1206,7 +1206,7 @@ classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 | CUDA memcpy DtoH | 409ms           | 456ms                    | 386ms                      |
 | CUDA memcpy HtoD | 134ms           | 137ms                    | 131ms                      |
 
-# 第三次优化
+# 第三次优化（Pinned Memory）
 
 现在，我们的程序核心总耗时为：
 
@@ -1304,12 +1304,215 @@ int main(int argc, char const *argv[])
 }
 ```
 
+## 性能指标
+
 | 指标             | `add<<<1, 1>>>` | `add_stride<<<1, 256>>>` | add_parallel<<<136, 256>>> | 锁页内存       |
 | ---------------- | --------------- | ------------------------ | -------------------------- | -------------- |
 | Kernels & Memory | `89.0%`/`11.0%` | `14.5%`/`85.5%`          | `1.0%`/`99.0%`             | `6.2%`/`93.8%` |
 | Kernal执行时间   | 4984ms          | 104ms                    | 6ms                        | 6ms            |
 | CUDA memcpy DtoH | 409ms           | 456ms                    | 386ms                      | 61ms           |
 | CUDA memcpy HtoD | 134ms           | 137ms                    | 131ms                      | 30ms           |
+
+# 第四次优化（Overlap）
+
+## Overlap的原理和限制
+
+在经过我们一系列的优化之后，我们的计算逻辑已经被优化很多了，现在我们本次教程的最后一次优化逻辑是：**使用流水线模式来优化我们的计算。**
+
+我们目前的计算逻辑是：
+
+```mermaid
+block-beta
+
+columns 8
+
+%% 时间轴标题
+t0 t1 t2 t3 t4 space:3
+
+%% PCIe 上行 (H2D)
+x0("cudaMemcpy(x)") y0("cudaMemcpy(y)") space:6
+
+%% SM 计算单元
+space:2 add0("add_parallel") space:5
+
+%% PCIe 下行 (D2H)
+space:3 res0("cudaMemcpy(r)")
+
+class x0,y0,x1,y1 green
+class add0,add1 pink
+class res0,res1 blue
+class t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11 purple
+
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+
+
+而在我们的GPU中：
+
+- 由于 `cudaMemcpy(x)` 和 `cudataMemcpy(y)` 共享 PCIe 总线，所以他们只能串行执行；
+- 但是 `cudaMemcpy` 和 `SM计算` 则可以实现真正的并行，就像我们CPU的流水线；
+
+最优的执行逻辑应该是如下所示：
+
+```mermaid
+block-beta
+columns 12
+
+%% 时间轴
+t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11
+
+%% PCIe 搬运流 (H2D)
+x0("x[0..]") y0("y[0..]") x1("x[32..]") y1("y[32..]") x2("x[64..]") y2("y[64..]") x3("x[96..]") y3("y[96..]") space:4
+
+%% SM 计算流
+space:2 ker0("Add(0)") space:1 ker1("Add(1)") space:1 ker2("Add(2)") space:1 ker3("Add(3)") space:4
+
+%% 结果回传流 (D2H)
+space:3 d2h_0("r[0..]") space:1 d2h_1("r[32..]") space:1 d2h_2("r[64..]") space:1 d2h_3("r[96..]") space:2
+
+class x0,x1,x2,x3,y0,y1,y2,y3 green
+class ker0,ker1,ker2,ker3 pink
+class d2h_0,d2h_1,d2h_2,d2h_3 blue
+class t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11 purple
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+这种流水线的优化存在一些限制和特点：
+
+1. `PCIe` 是一个全双工的总线，所以可以看到在 `t4` 时刻，我们的读数据，计算数据，写输出是并行执行的；
+2. **只能使用 Pinned Memory**，**如果使用普通 `malloc` 的内存，`cudaMemcpyAsync` 会退化为同步传输。** 因为 DMA 只有在锁页内存上才能保证在 CPU 继续运行的同时，安全地自主搬运。
+3. `cudaMemcpyAsync` 是异步调用函数，它将传输任务排队进指定的 `stream` 中，在调用中立即返回；而在计算时也需要从流中去读取数据；我们使用 `cudaMemcpyAsync(x, stream[i])` he  ``add_parallel<<<..., stream[i]>>>(x)`` 来实现这个逻辑 -- 所以，**流（Stream）本身就是一个硬件级的 FIFO（先入先出）队列**。
+4. 只能优化 `IO Bound` 的应用，考虑一下场景：
+   - `IO Bound`：我们读和写IO需要100ms，计算需要10ms；优化前后所需的时间分别是 210ms 和 100ms；
+   - `Compute Bound`：我们读和写IO需要10ms，计算需要100ms；优化前后所需的时间分别是 120ms 和 100ms；
+5. 在引入并行后的时间通常取决于系统中最慢的逻辑：$Total \approx \max(T_{h2d}, T_{compute}, T_{d2h})$；
+
+## 优化后的代码
+
+使用 `stream` 优化的代码逻辑流程如下：
+
+1. 初始化 `hostMemory` 和 `deviceMemory`；
+2. 初始化 `start` 和 `stop` 时间，这个是我们用来记录 CUDA 的真正执行时间的；
+3. 初始化 `streams`，这里需要注意的是，如果我们要真正的使用CUDA的并行能力，那么我们就不能只创建一个 `stream`，而需要创建一个 `stream[]`。在 CUDA 中，如果不指定 Stream，所有的操作都会进入**默认流（Default Stream）**。默认流是一个同步流，它遵循严格的“串行”逻辑，也就是说，我们生命单个流的话，我们的执行方式其实和不使用流是完全一样的：
+   - **任务 A (Memcpy)** 没做完，**任务 B (Kernel)** 就绝对不会开始。
+   - **第 0 块数据**没处理完，**第 1 块数据**的指令甚至不会被下发。
+4. 根据流的数据量，将我们的数据拆分为多个块。在我们的例子中，我们使用4个stream，那么每个stream负责的应该是 `[0, 25m)`/`[25m, 50m)`/`[50m, 75m)`/`[75m, 100m)`；我们使用 `cudaMemcpyAsync` 将这四个块复制到 `stream` 中；
+5. 根据我们的参数，让每个线程负责自己所在区域的值的计算：
+   - 每个 `block` 负责的区域应该为：$[N / TotalBlockCount \times BlockId, min((N / TotalBlockCount) \times (BlockId + 1), N)$；
+   - 在 `block` 内部，以 `BlockThreadCount` 作为 `stride`，让线程在调度时负责自己区域的 ${threadId, threadId + BlockThreadCount, ...}$ 的集合，以便于 `warp` 在并行执行时可以一次总线访问拿到足量数据；
+   - 那 $TotaolBlockCount$ 应该设置多少呢？这里我们需要先理清 `block` 的含义：`block` 为一个逻辑概念，它只是指的是数据被拆分为多少个块，每个块启动多少线程去处理这个块里面的数据。在排队中的 `block` 并不会像 `thread` 一样占据实体资源，也就是 `block` 的数量并不会像 `thread` 数量一样，设置过大的指会影响任务执行速度。相反，由于SM处理速度远超VRAM访问，所以我们正确的策略是让一个SM负责多个 `block`。**那么，对于每个 stream，我们可以设置 TotalBlockCount 为 $(streamSize + threadsPerBlock- 1) / threadsPerBlock$**；
+   - 现在，我们可以使用我们的这些参数加上 `stream` 来计算我们的结果了 `add_parallel<<<blocksPerGrid, threadsPerBlock, 0, streams[i]>>>(ctx.d_x + offset, ctx.d_y + offset, ctx.d_r + offset, streamSize);`。这里每个 `stream` 对应一个 `add_parallel()`，函数中我们会发现，我们只做一件事 `r[i] = x[i] + y[i];`，其中 `i = blockIdx.x * blockDim.x + threadIdx.x;`。这里我们的 `block` 一直在流转调度。
+6. 复制数据到 host。
+
+```c++ mark:26-45
+#include <iostream>
+#include <vector>
+#include <cuda_runtime.h>
+
+__global__ void add_parallel(const float* x, const float* y, float* r, int n) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        r[i] = x[i] + y[i];
+    }
+}
+
+// ...
+
+int main() {
+    const int N = 100000000;
+    const size_t total_bytes = N * sizeof(float);
+
+    add_ctx_t ctx = init_add_ctx(N, total_bytes);
+
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    const int nStreams = 4;
+    const int streamSize = N / nStreams;
+    const size_t streamBytes = streamSize * sizeof(float);
+    cudaStream_t streams[nStreams];
+    for (int i = 0; i < nStreams; i++) {
+        cudaStreamCreate(&streams[i]);
+    }
+    for (int i = 0; i < nStreams; i++) {
+        int offset = i * streamSize;
+
+        cudaMemcpyAsync(ctx.d_x + offset, ctx.h_x + offset, streamBytes, cudaMemcpyHostToDevice, streams[i]);
+        cudaMemcpyAsync(ctx.d_y + offset, ctx.h_y + offset, streamBytes, cudaMemcpyHostToDevice, streams[i]);
+
+        int threadsPerBlock = 256;
+        int blocksPerGrid = (streamSize + threadsPerBlock - 1) / threadsPerBlock;
+        std::cout << "blocksPerGrid: " << blocksPerGrid << std::endl;
+        add_parallel<<<blocksPerGrid, threadsPerBlock, 0, streams[i]>>>(ctx.d_x + offset, ctx.d_y + offset, ctx.d_r + offset, streamSize);
+
+        cudaMemcpyAsync(ctx.h_r + offset, ctx.d_r + offset, streamBytes, cudaMemcpyDeviceToHost, streams[i]);
+    }
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaDeviceSynchronize();
+
+    int count = 0;
+    for (int i = 0; i < N; ++i) {
+        if (*(ctx.h_r + i) != 3) {
+            count++;
+        }
+    }
+
+    if (count != 0) {
+        std::cout << "Error count : " << count << std::endl;
+    }
+
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << "Pipeline Execution Time (GPU Hardware): " << milliseconds << " ms" << std::endl;
+
+    for (int i = 0; i < nStreams; i++) {
+        cudaStreamDestroy(streams[i]);
+    }
+    destroy_add_ctx(ctx);
+    cudaEventDestroy(start); cudaEventDestroy(stop);
+
+    return 0;
+}
+```
+
+## 性能指标
+
+| 指标             | `add<<<1, 1>>>` | `add_stride<<<1, 256>>>` | add_parallel<<<136, 256>>> | 锁页内存       | async          |
+| ---------------- | --------------- | ------------------------ | -------------------------- | -------------- | -------------- |
+| Kernels & Memory | `89.0%`/`11.0%` | `14.5%`/`85.5%`          | `1.0%`/`99.0%`             | `6.2%`/`93.8%` | `5.0%`/`95.0%` |
+| Kernal执行时间   | 4984ms          | 104ms                    | 6ms                        | 6ms            | 4ms            |
+| CUDA memcpy DtoH | 409ms           | 456ms                    | 386ms                      | 61ms           | 61ms           |
+| CUDA memcpy HtoD | 134ms           | 137ms                    | 131ms                      | 30ms           | 30ms           |
+
+虽然从性能指标上，没有看到有明显的提升，但是如果我们打开 `nsys` 的图，我们会发现现在已经是多个 `stream` 并行执行了：
+
+![cuda-parallel](\images\cuda\cuda-stream-parallel.png)
 
 # QA
 
