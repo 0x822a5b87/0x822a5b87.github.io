@@ -29,8 +29,9 @@
 <meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/%E6%95%88%E6%9E%9C%E5%9B%BE.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/nsys-profile.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/grid-and-block.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/cuda-stream-parallel.png">
 <meta property="article:published_time" content="2026-01-23T01:09:55.000Z">
-<meta property="article:modified_time" content="2026-01-24T15:40:55.236Z">
+<meta property="article:modified_time" content="2026-01-25T06:11:51.597Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="CUDA">
 <meta property="article:tag" content="GPU">
@@ -142,10 +143,10 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E4%BE%9D%E8%B5%96"><span class="nav-number">1.1.</span> <span class="nav-text">所有依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cuda%E5%92%8Cwindows"><span class="nav-number">1.1.1.</span> <span class="nav-text">CUDA和windows</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wsl"><span class="nav-number">1.1.2.</span> <span class="nav-text">WSL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vscode"><span class="nav-number">1.1.3.</span> <span class="nav-text">VSCode</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83"><span class="nav-number">1.2.</span> <span class="nav-text">测试环境</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cuda%E7%A8%8B%E5%BA%8F%E7%9A%84%E7%BC%96%E8%AF%91"><span class="nav-number">2.</span> <span class="nav-text">CUDA程序的编译</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nvcc-%E7%9A%84%E6%A0%B8%E5%BF%83%E7%BC%96%E8%AF%91%E9%80%BB%E8%BE%91"><span class="nav-number">2.1.</span> <span class="nav-text">nvcc 的核心编译逻辑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E4%B8%AAcuda%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.</span> <span class="nav-text">第一个CUDA程序</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.1.</span> <span class="nav-text">CPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.2.</span> <span class="nav-text">GPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nsys"><span class="nav-number">4.</span> <span class="nav-text">nsys</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E7%9A%84%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">初步的性能分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E4%BB%AC%E7%9A%84%E7%A8%8B%E5%BA%8F%E5%9C%A8%E5%B9%B2%E4%BB%80%E4%B9%88"><span class="nav-number">4.2.</span> <span class="nav-text">我们的程序在干什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%A4%A7%E7%9A%84%E4%BC%98%E5%8C%96%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">最大的优化点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%A6%E4%B8%80%E4%B8%AA%E8%A7%92%E5%BA%A6%E6%9F%A5%E7%9C%8B%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.4.</span> <span class="nav-text">另一个角度查看性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%89%8D%E7%9A%84%E5%87%86%E5%A4%87"><span class="nav-number">5.</span> <span class="nav-text">优化前的准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%AE%8F%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">显卡的宏观结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%BE%AE%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">显卡的微观结构</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96"><span class="nav-number">6.</span> <span class="nav-text">第一次优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access"><span class="nav-number">6.1.</span> <span class="nav-text">Coalesced Access</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access-%E7%9A%84%E7%A4%BA%E6%84%8F%E5%9B%BE"><span class="nav-number">6.2.</span> <span class="nav-text">Coalesced Access 的示意图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-number">6.3.</span> <span class="nav-text">优化后的代码逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%A5%9E%E5%A5%87%E7%9A%84%E7%8E%B0%E8%B1%A1"><span class="nav-number">6.4.</span> <span class="nav-text">一个神奇的现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">6.5.</span> <span class="nav-text">第一次优化后的性能对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E4%BC%98%E5%8C%96"><span class="nav-number">7.</span> <span class="nav-text">第二次优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%9D%E8%B7%AF"><span class="nav-number">7.1.</span> <span class="nav-text">优化思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="nav-number">7.2.</span> <span class="nav-text">优化后的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1%E4%BC%98%E5%8C%96"><span class="nav-number">8.</span> <span class="nav-text">第三次优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-1"><span class="nav-number">8.1.</span> <span class="nav-text">优化后的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">9.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">9.1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">9.2.</span> <span class="nav-text">GPU的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu-%E7%9A%84%E7%A1%AC%E4%BB%B6%E6%94%AF%E6%92%91%E7%BB%84%E4%BB%B6"><span class="nav-number">9.2.1.</span> <span class="nav-text">GPU 的硬件支撑组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu-%E4%B8%8E-gpu-%E7%9A%84%E9%A2%86%E5%9C%B0%E5%B7%AE%E5%BC%82"><span class="nav-number">9.2.2.</span> <span class="nav-text">CPU 与 GPU 的领地差异</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E6%A8%A1%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">9.2.3.</span> <span class="nav-text">内存访问模式的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E6%96%B9%E5%BC%8F%E6%89%8B%E5%8A%A8%E6%90%AC%E8%BF%90-explicit-copy"><span class="nav-number">9.2.3.1.</span> <span class="nav-text">传统方式：手动搬运 (Explicit
-Copy)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%AA%E7%9B%B4%E6%8E%A5%E8%AE%BF%E9%97%AE%E7%BB%9F%E4%B8%80%E5%86%85%E5%AD%98-unified-memory"><span class="nav-number">9.2.3.2.</span> <span class="nav-text">“伪”直接访问：统一内存
-(Unified Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98zero-copy-memory-pinned-memory"><span class="nav-number">9.2.3.3.</span> <span class="nav-text">锁页内存：Zero-Copy
-Memory (Pinned Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%88%E6%9E%81%E5%8A%A0%E9%80%9Fgpudirect-%E6%97%8F%E6%8A%80%E6%9C%AF"><span class="nav-number">9.2.3.4.</span> <span class="nav-text">终极加速：GPUDirect 族技术</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98dma"><span class="nav-number">9.3.</span> <span class="nav-text">锁页内存&#x2F;DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dma"><span class="nav-number">9.3.1.</span> <span class="nav-text">DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E7%94%B3%E8%AF%B7%E7%89%B9%E6%AE%8A%E5%86%85%E5%AD%98"><span class="nav-number">9.3.1.1.</span> <span class="nav-text">为什么必须申请“特殊内存”</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="nav-number">9.3.1.2.</span> <span class="nav-text">DMA是如何工作的</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma-%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">9.3.1.3.</span> <span class="nav-text">DMA 的限制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98"><span class="nav-number">9.3.2.</span> <span class="nav-text">锁页内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E7%9A%84%E7%BB%93%E6%9E%9C"><span class="nav-number">9.3.3.</span> <span class="nav-text">最后的结果</span></a></li></ol></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E4%BE%9D%E8%B5%96"><span class="nav-number">1.1.</span> <span class="nav-text">所有依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cuda%E5%92%8Cwindows"><span class="nav-number">1.1.1.</span> <span class="nav-text">CUDA和windows</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wsl"><span class="nav-number">1.1.2.</span> <span class="nav-text">WSL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vscode"><span class="nav-number">1.1.3.</span> <span class="nav-text">VSCode</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83"><span class="nav-number">1.2.</span> <span class="nav-text">测试环境</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cuda%E7%A8%8B%E5%BA%8F%E7%9A%84%E7%BC%96%E8%AF%91"><span class="nav-number">2.</span> <span class="nav-text">CUDA程序的编译</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nvcc-%E7%9A%84%E6%A0%B8%E5%BF%83%E7%BC%96%E8%AF%91%E9%80%BB%E8%BE%91"><span class="nav-number">2.1.</span> <span class="nav-text">nvcc 的核心编译逻辑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E4%B8%AAcuda%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.</span> <span class="nav-text">第一个CUDA程序</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.1.</span> <span class="nav-text">CPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.2.</span> <span class="nav-text">GPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nsys"><span class="nav-number">4.</span> <span class="nav-text">nsys</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E7%9A%84%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">初步的性能分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E4%BB%AC%E7%9A%84%E7%A8%8B%E5%BA%8F%E5%9C%A8%E5%B9%B2%E4%BB%80%E4%B9%88"><span class="nav-number">4.2.</span> <span class="nav-text">我们的程序在干什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%A4%A7%E7%9A%84%E4%BC%98%E5%8C%96%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">最大的优化点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%A6%E4%B8%80%E4%B8%AA%E8%A7%92%E5%BA%A6%E6%9F%A5%E7%9C%8B%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.4.</span> <span class="nav-text">另一个角度查看性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%89%8D%E7%9A%84%E5%87%86%E5%A4%87"><span class="nav-number">5.</span> <span class="nav-text">优化前的准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%AE%8F%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">显卡的宏观结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%BE%AE%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">显卡的微观结构</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96threads"><span class="nav-number">6.</span> <span class="nav-text">第一次优化（Threads）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access"><span class="nav-number">6.1.</span> <span class="nav-text">Coalesced Access</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access-%E7%9A%84%E7%A4%BA%E6%84%8F%E5%9B%BE"><span class="nav-number">6.2.</span> <span class="nav-text">Coalesced Access 的示意图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-number">6.3.</span> <span class="nav-text">优化后的代码逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%A5%9E%E5%A5%87%E7%9A%84%E7%8E%B0%E8%B1%A1"><span class="nav-number">6.4.</span> <span class="nav-text">一个神奇的现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">6.5.</span> <span class="nav-text">第一次优化后的性能对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E4%BC%98%E5%8C%96blocks"><span class="nav-number">7.</span> <span class="nav-text">第二次优化（Blocks）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%9D%E8%B7%AF"><span class="nav-number">7.1.</span> <span class="nav-text">优化思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="nav-number">7.2.</span> <span class="nav-text">优化后的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1%E4%BC%98%E5%8C%96pinned-memory"><span class="nav-number">8.</span> <span class="nav-text">第三次优化（Pinned Memory）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-1"><span class="nav-number">8.1.</span> <span class="nav-text">优化后的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87"><span class="nav-number">8.2.</span> <span class="nav-text">性能指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E6%AC%A1%E4%BC%98%E5%8C%96overlap"><span class="nav-number">9.</span> <span class="nav-text">第四次优化（Overlap）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#overlap%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E9%99%90%E5%88%B6"><span class="nav-number">9.1.</span> <span class="nav-text">Overlap的原理和限制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-2"><span class="nav-number">9.2.</span> <span class="nav-text">优化后的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87-1"><span class="nav-number">9.3.</span> <span class="nav-text">性能指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">10.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">10.1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">10.2.</span> <span class="nav-text">GPU的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu-%E7%9A%84%E7%A1%AC%E4%BB%B6%E6%94%AF%E6%92%91%E7%BB%84%E4%BB%B6"><span class="nav-number">10.2.1.</span> <span class="nav-text">GPU 的硬件支撑组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu-%E4%B8%8E-gpu-%E7%9A%84%E9%A2%86%E5%9C%B0%E5%B7%AE%E5%BC%82"><span class="nav-number">10.2.2.</span> <span class="nav-text">CPU 与 GPU 的领地差异</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E6%A8%A1%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">10.2.3.</span> <span class="nav-text">内存访问模式的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E6%96%B9%E5%BC%8F%E6%89%8B%E5%8A%A8%E6%90%AC%E8%BF%90-explicit-copy"><span class="nav-number">10.2.3.1.</span> <span class="nav-text">传统方式：手动搬运 (Explicit
+Copy)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%AA%E7%9B%B4%E6%8E%A5%E8%AE%BF%E9%97%AE%E7%BB%9F%E4%B8%80%E5%86%85%E5%AD%98-unified-memory"><span class="nav-number">10.2.3.2.</span> <span class="nav-text">“伪”直接访问：统一内存
+(Unified Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98zero-copy-memory-pinned-memory"><span class="nav-number">10.2.3.3.</span> <span class="nav-text">锁页内存：Zero-Copy
+Memory (Pinned Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%88%E6%9E%81%E5%8A%A0%E9%80%9Fgpudirect-%E6%97%8F%E6%8A%80%E6%9C%AF"><span class="nav-number">10.2.3.4.</span> <span class="nav-text">终极加速：GPUDirect 族技术</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98dma"><span class="nav-number">10.3.</span> <span class="nav-text">锁页内存&#x2F;DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dma"><span class="nav-number">10.3.1.</span> <span class="nav-text">DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E7%94%B3%E8%AF%B7%E7%89%B9%E6%AE%8A%E5%86%85%E5%AD%98"><span class="nav-number">10.3.1.1.</span> <span class="nav-text">为什么必须申请“特殊内存”</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="nav-number">10.3.1.2.</span> <span class="nav-text">DMA是如何工作的</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma-%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">10.3.1.3.</span> <span class="nav-text">DMA 的限制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98"><span class="nav-number">10.3.2.</span> <span class="nav-text">锁页内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E7%9A%84%E7%BB%93%E6%9E%9C"><span class="nav-number">10.3.3.</span> <span class="nav-text">最后的结果</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -226,7 +227,7 @@ Memory (Pinned Memory)</span></a></li><li class="nav-item nav-level-4"><a class=
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-24 23:40:55" itemprop="dateModified" datetime="2026-01-24T23:40:55+08:00">2026-01-24</time>
+      <time title="修改时间：2026-01-25 14:11:51" itemprop="dateModified" datetime="2026-01-25T14:11:51+08:00">2026-01-25</time>
     </span>
 
   
@@ -820,7 +821,7 @@ classDef gray fill:#ccc,stroke:#333,font-weight:bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
 classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
-<h1 id="第一次优化">第一次优化</h1>
+<h1 id="第一次优化threads">第一次优化（Threads）</h1>
 <blockquote>
 <p>现在，我们知道了GPU的结构以及CUDA怎么调度任务，那我们现在可以开启第一次优化，目标是将我们的
 <code>&lt;&lt;&lt;1, 1&gt;&gt;&gt;</code> 改成多线程版本
@@ -1218,7 +1219,7 @@ Kernels &amp; Memory | <code>89.0%</code>/<code>11.0%</code> |
 <p>可以看到：我们在 <code>memcpy</code>
 没有变化不大的情况下，<code>Kernels</code>
 的执行时间大幅下降，因为我们并行执行能更好的利用GPU的并行计算能力，也就是说，我们的性能瓶颈由SM计算变成了我们的VRAM访问。</p>
-<h1 id="第二次优化">第二次优化</h1>
+<h1 id="第二次优化blocks">第二次优化（Blocks）</h1>
 <blockquote>
 <p>我们之前使用了多线程对并行计算进行优化，现在我们开始使用
 <code>grid</code>来继续优化。</p>
@@ -1439,7 +1440,7 @@ class="math inline">\(gridDim.x \times blockDim.x\)</span></li>
 </tr>
 </tbody>
 </table>
-<h1 id="第三次优化">第三次优化</h1>
+<h1 id="第三次优化pinned-memory">第三次优化（Pinned Memory）</h1>
 <p>现在，我们的程序核心总耗时为：</p>
 <p><span class="math display">\[131\text{ms (HtoD)} + 6\text{ms
 (Kernel)} + 386\text{ms (DtoH)} \approx 523\text{ms}\]</span></p>
@@ -1476,6 +1477,7 @@ Memory）时，由于内存已经“锁死”在物理地址上，不会被系�
 控制器可以直接访问这块内存地址，<strong>跳过 CPU 中转</strong>。</li>
 </ol>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">add_parallel</span><span class="params">(<span class="type">float</span>* x, <span class="type">float</span>* y , <span class="type">float</span>* r, <span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> index = blockDim.x * blockIdx.x + threadIdx.x;</span><br><span class="line">    <span class="type">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = index; i &lt; n; i += stride) &#123;</span><br><span class="line">        *(r + i) += *(x + i) + *(y + i);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">call_add</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> n = <span class="number">100000000</span>;</span><br><span class="line">    <span class="type">int</span> mem_size = <span class="built_in">sizeof</span>(<span class="type">float</span>) * n;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> *x, *y, *r;</span><br><span class="line">    <span class="built_in">cudaMallocHost</span>((<span class="type">void</span>**)&amp;x, mem_size);</span><br><span class="line">    <span class="built_in">cudaMallocHost</span>((<span class="type">void</span>**)&amp;y, mem_size);</span><br><span class="line">    <span class="built_in">cudaMallocHost</span>((<span class="type">void</span>**)&amp;r, mem_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        *(x + i) = <span class="number">1</span>;</span><br><span class="line">        *(y + i) = <span class="number">2</span>;</span><br><span class="line">        *(r + i) = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> *d_x, *d_y, *d_r;</span><br><span class="line marked">    <span class="built_in">cudaMalloc</span>((<span class="type">void</span>**)&amp;d_x, mem_size);</span><br><span class="line marked">    <span class="built_in">cudaMalloc</span>((<span class="type">void</span>**)&amp;d_y, mem_size);</span><br><span class="line marked">    <span class="built_in">cudaMalloc</span>((<span class="type">void</span>**)&amp;d_r, mem_size);</span><br><span class="line marked">    <span class="built_in">cudaMemcpy</span>(d_x, x, mem_size, cudaMemcpyHostToDevice);</span><br><span class="line marked">    <span class="built_in">cudaMemcpy</span>(d_y, y, mem_size, cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">    add_parallel&lt;&lt;&lt;<span class="number">136</span>, <span class="number">256</span>&gt;&gt;&gt;(d_x, d_y, d_r, n);</span><br><span class="line marked">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line marked">    <span class="built_in">cudaMemcpy</span>(r, d_r, mem_size, cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (*(r + i) != <span class="number">3</span>) &#123;</span><br><span class="line">            count++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (count != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Total errors: %d\n&quot;</span>, count);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">cudaFreeHost</span>(r);</span><br><span class="line">    <span class="built_in">cudaFreeHost</span>(y);</span><br><span class="line">    <span class="built_in">cudaFreeHost</span>(x);</span><br><span class="line">    <span class="built_in">cudaFree</span>(d_r);</span><br><span class="line">    <span class="built_in">cudaFree</span>(d_y);</span><br><span class="line">    <span class="built_in">cudaFree</span>(d_x);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> <span class="type">const</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="built_in">call_add</span>();</span><br><span class="line">    <span class="keyword">auto</span> end = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    std::chrono::duration&lt;<span class="type">double</span>, std::milli&gt; elapsed = end - start;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Execution time: %f ms\n&quot;</span>, elapsed.<span class="built_in">count</span>());</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="性能指标">性能指标</h2>
 <table>
 <colgroup>
 <col style="width: 16%" />
@@ -1524,6 +1526,221 @@ Memory）时，由于内存已经“锁死”在物理地址上，不会被系�
 </tr>
 </tbody>
 </table>
+<h1 id="第四次优化overlap">第四次优化（Overlap）</h1>
+<h2 id="overlap的原理和限制">Overlap的原理和限制</h2>
+<p>在经过我们一系列的优化之后，我们的计算逻辑已经被优化很多了，现在我们本次教程的最后一次优化逻辑是：<strong>使用流水线模式来优化我们的计算。</strong></p>
+<p>我们目前的计算逻辑是：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 8
+
+%% 时间轴标题
+t0 t1 t2 t3 t4 space:3
+
+%% PCIe 上行 (H2D)
+x0(&quot;cudaMemcpy(x)&quot;) y0(&quot;cudaMemcpy(y)&quot;) space:6
+
+%% SM 计算单元
+space:2 add0(&quot;add_parallel&quot;) space:5
+
+%% PCIe 下行 (D2H)
+space:3 res0(&quot;cudaMemcpy(r)&quot;)
+
+class x0,y0,x1,y1 green
+class add0,add1 pink
+class res0,res1 blue
+class t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11 purple
+
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而在我们的GPU中：</p>
+<ul>
+<li>由于 <code>cudaMemcpy(x)</code> 和 <code>cudataMemcpy(y)</code> 共享
+PCIe 总线，所以他们只能串行执行；</li>
+<li>但是 <code>cudaMemcpy</code> 和 <code>SM计算</code>
+则可以实现真正的并行，就像我们CPU的流水线；</li>
+</ul>
+<p>最优的执行逻辑应该是如下所示：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 12
+
+%% 时间轴
+t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11
+
+%% PCIe 搬运流 (H2D)
+x0(&quot;x[0..]&quot;) y0(&quot;y[0..]&quot;) x1(&quot;x[32..]&quot;) y1(&quot;y[32..]&quot;) x2(&quot;x[64..]&quot;) y2(&quot;y[64..]&quot;) x3(&quot;x[96..]&quot;) y3(&quot;y[96..]&quot;) space:4
+
+%% SM 计算流
+space:2 ker0(&quot;Add(0)&quot;) space:1 ker1(&quot;Add(1)&quot;) space:1 ker2(&quot;Add(2)&quot;) space:1 ker3(&quot;Add(3)&quot;) space:4
+
+%% 结果回传流 (D2H)
+space:3 d2h_0(&quot;r[0..]&quot;) space:1 d2h_1(&quot;r[32..]&quot;) space:1 d2h_2(&quot;r[64..]&quot;) space:1 d2h_3(&quot;r[96..]&quot;) space:2
+
+class x0,x1,x2,x3,y0,y1,y2,y3 green
+class ker0,ker1,ker2,ker3 pink
+class d2h_0,d2h_1,d2h_2,d2h_3 blue
+class t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11 purple
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>这种流水线的优化存在一些限制和特点：</p>
+<ol type="1">
+<li><code>PCIe</code> 是一个全双工的总线，所以可以看到在 <code>t4</code>
+时刻，我们的读数据，计算数据，写输出是并行执行的；</li>
+<li><strong>只能使用 Pinned Memory</strong>，<strong>如果使用普通
+<code>malloc</code> 的内存，<code>cudaMemcpyAsync</code>
+会退化为同步传输。</strong> 因为 DMA 只有在锁页内存上才能保证在 CPU
+继续运行的同时，安全地自主搬运。</li>
+<li><code>cudaMemcpyAsync</code>
+是异步调用函数，它将传输任务排队进指定的 <code>stream</code>
+中，在调用中立即返回；而在计算时也需要从流中去读取数据；我们使用
+<code>cudaMemcpyAsync(x, stream[i])</code> he
+<code>add_parallel&lt;&lt;&lt;..., stream[i]&gt;&gt;&gt;(x)</code>
+来实现这个逻辑 -- 所以，<strong>流（Stream）本身就是一个硬件级的
+FIFO（先入先出）队列</strong>。</li>
+<li>只能优化 <code>IO Bound</code> 的应用，考虑一下场景：
+<ul>
+<li><code>IO Bound</code>：我们读和写IO需要100ms，计算需要10ms；优化前后所需的时间分别是
+210ms 和 100ms；</li>
+<li><code>Compute Bound</code>：我们读和写IO需要10ms，计算需要100ms；优化前后所需的时间分别是
+120ms 和 100ms；</li>
+</ul></li>
+<li>在引入并行后的时间通常取决于系统中最慢的逻辑：<span
+class="math inline">\(Total \approx \max(T_{h2d}, T_{compute},
+T_{d2h})\)</span>；</li>
+</ol>
+<h2 id="优化后的代码-2">优化后的代码</h2>
+<p>使用 <code>stream</code> 优化的代码逻辑流程如下：</p>
+<ol type="1">
+<li>初始化 <code>hostMemory</code> 和 <code>deviceMemory</code>；</li>
+<li>初始化 <code>start</code> 和 <code>stop</code>
+时间，这个是我们用来记录 CUDA 的真正执行时间的；</li>
+<li>初始化
+<code>streams</code>，这里需要注意的是，如果我们要真正的使用CUDA的并行能力，那么我们就不能只创建一个
+<code>stream</code>，而需要创建一个 <code>stream[]</code>。在 CUDA
+中，如果不指定 Stream，所有的操作都会进入<strong>默认流（Default
+Stream）</strong>。默认流是一个同步流，它遵循严格的“串行”逻辑，也就是说，我们生命单个流的话，我们的执行方式其实和不使用流是完全一样的：
+<ul>
+<li><strong>任务 A (Memcpy)</strong> 没做完，<strong>任务 B
+(Kernel)</strong> 就绝对不会开始。</li>
+<li><strong>第 0 块数据</strong>没处理完，<strong>第 1
+块数据</strong>的指令甚至不会被下发。</li>
+</ul></li>
+<li>根据流的数据量，将我们的数据拆分为多个块。在我们的例子中，我们使用4个stream，那么每个stream负责的应该是
+<code>[0, 25m)</code>/<code>[25m, 50m)</code>/<code>[50m, 75m)</code>/<code>[75m, 100m)</code>；我们使用
+<code>cudaMemcpyAsync</code> 将这四个块复制到 <code>stream</code>
+中；</li>
+<li>根据我们的参数，让每个线程负责自己所在区域的值的计算：
+<ul>
+<li>每个 <code>block</code> 负责的区域应该为：<span
+class="math inline">\([N / TotalBlockCount \times BlockId, min((N /
+TotalBlockCount) \times (BlockId + 1), N)\)</span>；</li>
+<li>在 <code>block</code> 内部，以 <code>BlockThreadCount</code> 作为
+<code>stride</code>，让线程在调度时负责自己区域的 <span
+class="math inline">\({threadId, threadId + BlockThreadCount,
+...}\)</span> 的集合，以便于 <code>warp</code>
+在并行执行时可以一次总线访问拿到足量数据；</li>
+<li>那 <span class="math inline">\(TotaolBlockCount\)</span>
+应该设置多少呢？这里我们需要先理清 <code>block</code>
+的含义：<code>block</code>
+为一个逻辑概念，它只是指的是数据被拆分为多少个块，每个块启动多少线程去处理这个块里面的数据。在排队中的
+<code>block</code> 并不会像 <code>thread</code> 一样占据实体资源，也就是
+<code>block</code> 的数量并不会像 <code>thread</code>
+数量一样，设置过大的指会影响任务执行速度。相反，由于SM处理速度远超VRAM访问，所以我们正确的策略是让一个SM负责多个
+<code>block</code>。<strong>那么，对于每个 stream，我们可以设置
+TotalBlockCount 为 <span class="math inline">\((streamSize +
+threadsPerBlock- 1) / threadsPerBlock\)</span></strong>；</li>
+<li>现在，我们可以使用我们的这些参数加上 <code>stream</code>
+来计算我们的结果了
+<code>add_parallel&lt;&lt;&lt;blocksPerGrid, threadsPerBlock, 0, streams[i]&gt;&gt;&gt;(ctx.d_x + offset, ctx.d_y + offset, ctx.d_r + offset, streamSize);</code>。这里每个
+<code>stream</code> 对应一个
+<code>add_parallel()</code>，函数中我们会发现，我们只做一件事
+<code>r[i] = x[i] + y[i];</code>，其中
+<code>i = blockIdx.x * blockDim.x + threadIdx.x;</code>。这里我们的
+<code>block</code> 一直在流转调度。</li>
+</ul></li>
+<li>复制数据到 host。</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">add_parallel</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* x, <span class="type">const</span> <span class="type">float</span>* y, <span class="type">float</span>* r, <span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) &#123;</span><br><span class="line">        r[i] = x[i] + y[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> N = <span class="number">100000000</span>;</span><br><span class="line">    <span class="type">const</span> <span class="type">size_t</span> total_bytes = N * <span class="built_in">sizeof</span>(<span class="type">float</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">add_ctx_t</span> ctx = <span class="built_in">init_add_ctx</span>(N, total_bytes);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    cudaEvent_t start, stop;</span><br><span class="line">    <span class="built_in">cudaEventCreate</span>(&amp;start);</span><br><span class="line">    <span class="built_in">cudaEventCreate</span>(&amp;stop);</span><br><span class="line">    <span class="built_in">cudaEventRecord</span>(start);</span><br><span class="line"></span><br><span class="line marked">    <span class="type">const</span> <span class="type">int</span> nStreams = <span class="number">4</span>;</span><br><span class="line marked">    <span class="type">const</span> <span class="type">int</span> streamSize = N / nStreams;</span><br><span class="line marked">    <span class="type">const</span> <span class="type">size_t</span> streamBytes = streamSize * <span class="built_in">sizeof</span>(<span class="type">float</span>);</span><br><span class="line marked">    cudaStream_t streams[nStreams];</span><br><span class="line marked">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nStreams; i++) &#123;</span><br><span class="line marked">        <span class="built_in">cudaStreamCreate</span>(&amp;streams[i]);</span><br><span class="line marked">    &#125;</span><br><span class="line marked">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nStreams; i++) &#123;</span><br><span class="line marked">        <span class="type">int</span> offset = i * streamSize;</span><br><span class="line marked"></span><br><span class="line marked">        <span class="built_in">cudaMemcpyAsync</span>(ctx.d_x + offset, ctx.h_x + offset, streamBytes, cudaMemcpyHostToDevice, streams[i]);</span><br><span class="line marked">        <span class="built_in">cudaMemcpyAsync</span>(ctx.d_y + offset, ctx.h_y + offset, streamBytes, cudaMemcpyHostToDevice, streams[i]);</span><br><span class="line marked"></span><br><span class="line marked">        <span class="type">int</span> threadsPerBlock = <span class="number">256</span>;</span><br><span class="line marked">        <span class="type">int</span> blocksPerGrid = (streamSize + threadsPerBlock - <span class="number">1</span>) / threadsPerBlock;</span><br><span class="line marked">        std::cout &lt;&lt; <span class="string">&quot;blocksPerGrid: &quot;</span> &lt;&lt; blocksPerGrid &lt;&lt; std::endl;</span><br><span class="line marked">        add_parallel&lt;&lt;&lt;blocksPerGrid, threadsPerBlock, <span class="number">0</span>, streams[i]&gt;&gt;&gt;(ctx.d_x + offset, ctx.d_y + offset, ctx.d_r + offset, streamSize);</span><br><span class="line marked"></span><br><span class="line marked">        <span class="built_in">cudaMemcpyAsync</span>(ctx.h_r + offset, ctx.d_r + offset, streamBytes, cudaMemcpyDeviceToHost, streams[i]);</span><br><span class="line marked">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">cudaEventRecord</span>(stop);</span><br><span class="line">    <span class="built_in">cudaEventSynchronize</span>(stop);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; N; ++i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (*(ctx.h_r + i) != <span class="number">3</span>) &#123;</span><br><span class="line">            count++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (count != <span class="number">0</span>) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Error count : &quot;</span> &lt;&lt; count &lt;&lt; std::endl;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">cudaEventElapsedTime</span>(&amp;milliseconds, start, stop);</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Pipeline Execution Time (GPU Hardware): &quot;</span> &lt;&lt; milliseconds &lt;&lt; <span class="string">&quot; ms&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nStreams; i++) &#123;</span><br><span class="line">        <span class="built_in">cudaStreamDestroy</span>(streams[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">destroy_add_ctx</span>(ctx);</span><br><span class="line">    <span class="built_in">cudaEventDestroy</span>(start); <span class="built_in">cudaEventDestroy</span>(stop);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="性能指标-1">性能指标</h2>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 13%" />
+<col style="width: 22%" />
+<col style="width: 23%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>指标</th>
+<th><code>add&lt;&lt;&lt;1, 1&gt;&gt;&gt;</code></th>
+<th><code>add_stride&lt;&lt;&lt;1, 256&gt;&gt;&gt;</code></th>
+<th>add_parallel&lt;&lt;&lt;136, 256&gt;&gt;&gt;</th>
+<th>锁页内存</th>
+<th>async</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Kernels &amp; Memory</td>
+<td><code>89.0%</code>/<code>11.0%</code></td>
+<td><code>14.5%</code>/<code>85.5%</code></td>
+<td><code>1.0%</code>/<code>99.0%</code></td>
+<td><code>6.2%</code>/<code>93.8%</code></td>
+<td><code>5.0%</code>/<code>95.0%</code></td>
+</tr>
+<tr class="even">
+<td>Kernal执行时间</td>
+<td>4984ms</td>
+<td>104ms</td>
+<td>6ms</td>
+<td>6ms</td>
+<td>4ms</td>
+</tr>
+<tr class="odd">
+<td>CUDA memcpy DtoH</td>
+<td>409ms</td>
+<td>456ms</td>
+<td>386ms</td>
+<td>61ms</td>
+<td>61ms</td>
+</tr>
+<tr class="even">
+<td>CUDA memcpy HtoD</td>
+<td>134ms</td>
+<td>137ms</td>
+<td>131ms</td>
+<td>30ms</td>
+<td>30ms</td>
+</tr>
+</tbody>
+</table>
+<p>虽然从性能指标上，没有看到有明显的提升，但是如果我们打开
+<code>nsys</code> 的图，我们会发现现在已经是多个 <code>stream</code>
+并行执行了：</p>
+<figure>
+<img src="\images\cuda\cuda-stream-parallel.png" alt="cuda-parallel" />
+<figcaption aria-hidden="true">cuda-parallel</figcaption>
+</figure>
 <h1 id="qa">QA</h1>
 <h2 id="术语">术语</h2>
 <table>
