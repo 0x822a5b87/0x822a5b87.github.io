@@ -30,8 +30,9 @@
 <meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/nsys-profile.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/grid-and-block.png">
 <meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/cuda-stream-parallel.png">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/cuda/%E7%BA%BF%E7%A8%8B%E7%B2%97%E5%8C%96.png">
 <meta property="article:published_time" content="2026-01-23T01:09:55.000Z">
-<meta property="article:modified_time" content="2026-01-25T06:11:51.597Z">
+<meta property="article:modified_time" content="2026-01-29T10:39:39.706Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="CUDA">
 <meta property="article:tag" content="GPU">
@@ -143,10 +144,11 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E4%BE%9D%E8%B5%96"><span class="nav-number">1.1.</span> <span class="nav-text">所有依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cuda%E5%92%8Cwindows"><span class="nav-number">1.1.1.</span> <span class="nav-text">CUDA和windows</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wsl"><span class="nav-number">1.1.2.</span> <span class="nav-text">WSL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vscode"><span class="nav-number">1.1.3.</span> <span class="nav-text">VSCode</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83"><span class="nav-number">1.2.</span> <span class="nav-text">测试环境</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cuda%E7%A8%8B%E5%BA%8F%E7%9A%84%E7%BC%96%E8%AF%91"><span class="nav-number">2.</span> <span class="nav-text">CUDA程序的编译</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nvcc-%E7%9A%84%E6%A0%B8%E5%BF%83%E7%BC%96%E8%AF%91%E9%80%BB%E8%BE%91"><span class="nav-number">2.1.</span> <span class="nav-text">nvcc 的核心编译逻辑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E4%B8%AAcuda%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.</span> <span class="nav-text">第一个CUDA程序</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.1.</span> <span class="nav-text">CPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.2.</span> <span class="nav-text">GPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nsys"><span class="nav-number">4.</span> <span class="nav-text">nsys</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E7%9A%84%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">初步的性能分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E4%BB%AC%E7%9A%84%E7%A8%8B%E5%BA%8F%E5%9C%A8%E5%B9%B2%E4%BB%80%E4%B9%88"><span class="nav-number">4.2.</span> <span class="nav-text">我们的程序在干什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%A4%A7%E7%9A%84%E4%BC%98%E5%8C%96%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">最大的优化点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%A6%E4%B8%80%E4%B8%AA%E8%A7%92%E5%BA%A6%E6%9F%A5%E7%9C%8B%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.4.</span> <span class="nav-text">另一个角度查看性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%89%8D%E7%9A%84%E5%87%86%E5%A4%87"><span class="nav-number">5.</span> <span class="nav-text">优化前的准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%AE%8F%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">显卡的宏观结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%BE%AE%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">显卡的微观结构</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96threads"><span class="nav-number">6.</span> <span class="nav-text">第一次优化（Threads）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access"><span class="nav-number">6.1.</span> <span class="nav-text">Coalesced Access</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access-%E7%9A%84%E7%A4%BA%E6%84%8F%E5%9B%BE"><span class="nav-number">6.2.</span> <span class="nav-text">Coalesced Access 的示意图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-number">6.3.</span> <span class="nav-text">优化后的代码逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%A5%9E%E5%A5%87%E7%9A%84%E7%8E%B0%E8%B1%A1"><span class="nav-number">6.4.</span> <span class="nav-text">一个神奇的现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">6.5.</span> <span class="nav-text">第一次优化后的性能对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E4%BC%98%E5%8C%96blocks"><span class="nav-number">7.</span> <span class="nav-text">第二次优化（Blocks）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%9D%E8%B7%AF"><span class="nav-number">7.1.</span> <span class="nav-text">优化思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="nav-number">7.2.</span> <span class="nav-text">优化后的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1%E4%BC%98%E5%8C%96pinned-memory"><span class="nav-number">8.</span> <span class="nav-text">第三次优化（Pinned Memory）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-1"><span class="nav-number">8.1.</span> <span class="nav-text">优化后的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87"><span class="nav-number">8.2.</span> <span class="nav-text">性能指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E6%AC%A1%E4%BC%98%E5%8C%96overlap"><span class="nav-number">9.</span> <span class="nav-text">第四次优化（Overlap）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#overlap%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E9%99%90%E5%88%B6"><span class="nav-number">9.1.</span> <span class="nav-text">Overlap的原理和限制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-2"><span class="nav-number">9.2.</span> <span class="nav-text">优化后的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87-1"><span class="nav-number">9.3.</span> <span class="nav-text">性能指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">10.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">10.1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">10.2.</span> <span class="nav-text">GPU的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu-%E7%9A%84%E7%A1%AC%E4%BB%B6%E6%94%AF%E6%92%91%E7%BB%84%E4%BB%B6"><span class="nav-number">10.2.1.</span> <span class="nav-text">GPU 的硬件支撑组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu-%E4%B8%8E-gpu-%E7%9A%84%E9%A2%86%E5%9C%B0%E5%B7%AE%E5%BC%82"><span class="nav-number">10.2.2.</span> <span class="nav-text">CPU 与 GPU 的领地差异</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E6%A8%A1%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">10.2.3.</span> <span class="nav-text">内存访问模式的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E6%96%B9%E5%BC%8F%E6%89%8B%E5%8A%A8%E6%90%AC%E8%BF%90-explicit-copy"><span class="nav-number">10.2.3.1.</span> <span class="nav-text">传统方式：手动搬运 (Explicit
-Copy)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%AA%E7%9B%B4%E6%8E%A5%E8%AE%BF%E9%97%AE%E7%BB%9F%E4%B8%80%E5%86%85%E5%AD%98-unified-memory"><span class="nav-number">10.2.3.2.</span> <span class="nav-text">“伪”直接访问：统一内存
-(Unified Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98zero-copy-memory-pinned-memory"><span class="nav-number">10.2.3.3.</span> <span class="nav-text">锁页内存：Zero-Copy
-Memory (Pinned Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%88%E6%9E%81%E5%8A%A0%E9%80%9Fgpudirect-%E6%97%8F%E6%8A%80%E6%9C%AF"><span class="nav-number">10.2.3.4.</span> <span class="nav-text">终极加速：GPUDirect 族技术</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98dma"><span class="nav-number">10.3.</span> <span class="nav-text">锁页内存&#x2F;DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dma"><span class="nav-number">10.3.1.</span> <span class="nav-text">DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E7%94%B3%E8%AF%B7%E7%89%B9%E6%AE%8A%E5%86%85%E5%AD%98"><span class="nav-number">10.3.1.1.</span> <span class="nav-text">为什么必须申请“特殊内存”</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="nav-number">10.3.1.2.</span> <span class="nav-text">DMA是如何工作的</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma-%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">10.3.1.3.</span> <span class="nav-text">DMA 的限制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98"><span class="nav-number">10.3.2.</span> <span class="nav-text">锁页内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E7%9A%84%E7%BB%93%E6%9E%9C"><span class="nav-number">10.3.3.</span> <span class="nav-text">最后的结果</span></a></li></ol></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">环境配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E4%BE%9D%E8%B5%96"><span class="nav-number">1.1.</span> <span class="nav-text">所有依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cuda%E5%92%8Cwindows"><span class="nav-number">1.1.1.</span> <span class="nav-text">CUDA和windows</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wsl"><span class="nav-number">1.1.2.</span> <span class="nav-text">WSL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vscode"><span class="nav-number">1.1.3.</span> <span class="nav-text">VSCode</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83"><span class="nav-number">1.2.</span> <span class="nav-text">测试环境</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cuda%E7%A8%8B%E5%BA%8F%E7%9A%84%E7%BC%96%E8%AF%91"><span class="nav-number">2.</span> <span class="nav-text">CUDA程序的编译</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nvcc-%E7%9A%84%E6%A0%B8%E5%BF%83%E7%BC%96%E8%AF%91%E9%80%BB%E8%BE%91"><span class="nav-number">2.1.</span> <span class="nav-text">nvcc 的核心编译逻辑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E4%B8%AAcuda%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.</span> <span class="nav-text">第一个CUDA程序</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.1.</span> <span class="nav-text">CPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%89%88%E6%9C%AC"><span class="nav-number">3.2.</span> <span class="nav-text">GPU版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nsys"><span class="nav-number">4.</span> <span class="nav-text">nsys</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E7%9A%84%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">初步的性能分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E4%BB%AC%E7%9A%84%E7%A8%8B%E5%BA%8F%E5%9C%A8%E5%B9%B2%E4%BB%80%E4%B9%88"><span class="nav-number">4.2.</span> <span class="nav-text">我们的程序在干什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%A4%A7%E7%9A%84%E4%BC%98%E5%8C%96%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">最大的优化点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%A6%E4%B8%80%E4%B8%AA%E8%A7%92%E5%BA%A6%E6%9F%A5%E7%9C%8B%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.4.</span> <span class="nav-text">另一个角度查看性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ncu"><span class="nav-number">5.</span> <span class="nav-text">ncu</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%89%8D%E7%9A%84%E5%87%86%E5%A4%87"><span class="nav-number">6.</span> <span class="nav-text">优化前的准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%AE%8F%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">6.1.</span> <span class="nav-text">显卡的宏观结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E7%9A%84%E5%BE%AE%E8%A7%82%E7%BB%93%E6%9E%84"><span class="nav-number">6.2.</span> <span class="nav-text">显卡的微观结构</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96threads"><span class="nav-number">7.</span> <span class="nav-text">第一次优化（Threads）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access"><span class="nav-number">7.1.</span> <span class="nav-text">Coalesced Access</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#coalesced-access-%E7%9A%84%E7%A4%BA%E6%84%8F%E5%9B%BE"><span class="nav-number">7.2.</span> <span class="nav-text">Coalesced Access 的示意图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-number">7.3.</span> <span class="nav-text">优化后的代码逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%A5%9E%E5%A5%87%E7%9A%84%E7%8E%B0%E8%B1%A1"><span class="nav-number">7.4.</span> <span class="nav-text">一个神奇的现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">7.5.</span> <span class="nav-text">第一次优化后的性能对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E4%BC%98%E5%8C%96blocks"><span class="nav-number">8.</span> <span class="nav-text">第二次优化（Blocks）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%9D%E8%B7%AF"><span class="nav-number">8.1.</span> <span class="nav-text">优化思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="nav-number">8.2.</span> <span class="nav-text">优化后的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1%E4%BC%98%E5%8C%96pinned-memory"><span class="nav-number">9.</span> <span class="nav-text">第三次优化（Pinned Memory）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-1"><span class="nav-number">9.1.</span> <span class="nav-text">优化后的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87"><span class="nav-number">9.2.</span> <span class="nav-text">性能指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E6%AC%A1%E4%BC%98%E5%8C%96overlap"><span class="nav-number">10.</span> <span class="nav-text">第四次优化（Overlap）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#overlap%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E9%99%90%E5%88%B6"><span class="nav-number">10.1.</span> <span class="nav-text">Overlap的原理和限制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%90%8E%E7%9A%84%E4%BB%A3%E7%A0%81-2"><span class="nav-number">10.2.</span> <span class="nav-text">优化后的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87-1"><span class="nav-number">10.3.</span> <span class="nav-text">性能指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cuda%E7%9A%84%E4%BA%8C%E7%BB%B4%E8%AE%A1%E7%AE%97"><span class="nav-number">11.</span> <span class="nav-text">CUDA的二维计算</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%B4%E5%BA%A6%E5%B1%82%E7%BA%A7%E4%BB%8E%E7%82%B9%E5%88%B0%E4%BD%93"><span class="nav-number">11.1.</span> <span class="nav-text">维度层级：从点到体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%98%A0%E5%B0%84"><span class="nav-number">11.2.</span> <span class="nav-text">为什么需要映射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#matrix-transpose"><span class="nav-number">11.3.</span> <span class="nav-text">Matrix Transpose</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%89%B2%E4%B8%80%E4%B8%AA%E7%9F%A9%E9%98%B5%E7%9A%84%E6%80%9D%E8%B7%AF"><span class="nav-number">11.3.1.</span> <span class="nav-text">分割一个矩阵的思路</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E6%9C%AC%E8%B4%A8%E4%B8%80%E7%BB%B4%E7%9A%84%E9%95%BF%E9%98%B5"><span class="nav-number">11.3.1.1.</span> <span class="nav-text">物理本质：一维的长阵</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E9%87%8D%E5%A1%91"><span class="nav-number">11.3.1.2.</span> <span class="nav-text">逻辑重塑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E7%BA%A7%E7%9F%A9%E9%98%B5block%E6%9C%80%E5%B0%8F%E5%88%86%E9%85%8D%E5%8D%95%E5%85%83"><span class="nav-number">11.3.1.3.</span> <span class="nav-text">二级矩阵（Block）：最小分配单元</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E7%BA%A7%E7%9F%A9%E9%98%B5grid%E5%85%A8%E5%B1%80%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86"><span class="nav-number">11.3.1.4.</span> <span class="nav-text">一级矩阵（Grid）：全局任务划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9D%90%E6%A0%87%E5%90%88%E6%88%90%E4%B8%8E%E7%B4%A2%E5%BC%95%E8%BF%98%E5%8E%9F"><span class="nav-number">11.3.1.5.</span> <span class="nav-text">坐标合成与索引还原</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5%E5%88%86%E5%89%B2%E7%9A%84%E5%AE%9E%E4%BE%8B"><span class="nav-number">11.3.2.</span> <span class="nav-text">矩阵分割的实例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E4%BB%A3%E7%A0%81"><span class="nav-number">11.4.</span> <span class="nav-text">最后代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8sharedmemory%E4%BC%98%E5%8C%96%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE"><span class="nav-number">12.</span> <span class="nav-text">使用SharedMemory优化矩阵转置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E5%87%BA%E7%8E%B0%E4%B8%8D%E8%83%BD%E5%90%88%E5%B9%B6%E8%AE%BF%E9%97%AE%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">12.1.</span> <span class="nav-text">为什么会出现不能合并访问的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%90%88%E5%B9%B6%E8%AE%BF%E9%97%AE%E5%BC%82%E5%B8%B8"><span class="nav-number">12.2.</span> <span class="nav-text">如何处理合并访问异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E4%BB%A3%E7%A0%81"><span class="nav-number">12.3.</span> <span class="nav-text">实际代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sharedmemory%E4%B8%8B%E7%9A%84%E7%9F%A9%E9%98%B5%E8%BD%AC%E6%8D%A2%E5%AE%9E%E4%BE%8B"><span class="nav-number">12.4.</span> <span class="nav-text">SharedMemory下的矩阵转换实例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">12.5.</span> <span class="nav-text">优化性能对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sgemm"><span class="nav-number">13.</span> <span class="nav-text">SGEMM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#sgemm%E7%9A%84%E5%B7%A5%E5%85%B7%E5%87%BD%E6%95%B0"><span class="nav-number">13.1.</span> <span class="nav-text">SGEMM的工具函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sgemm-%E7%9A%84%E7%BB%93%E6%9E%9C%E9%AA%8C%E8%AF%81"><span class="nav-number">13.2.</span> <span class="nav-text">SGEMM 的结果验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#naive-sgemm"><span class="nav-number">13.3.</span> <span class="nav-text">Naive SGEMM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#shared-memory-sgemm"><span class="nav-number">13.4.</span> <span class="nav-text">Shared Memory SGEMM</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#index_a"><span class="nav-number">13.4.1.</span> <span class="nav-text">index_a</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#index_b"><span class="nav-number">13.4.2.</span> <span class="nav-text">index_b</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%AF%B9%E6%AF%94"><span class="nav-number">13.5.</span> <span class="nav-text">第一次性能优化对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu%E8%BF%90%E8%A1%8C%E6%95%88%E7%8E%87%E5%AF%B9%E6%AF%94"><span class="nav-number">13.5.1.</span> <span class="nav-text">GPU运行效率对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E5%AF%B9%E6%AF%94"><span class="nav-number">13.5.2.</span> <span class="nav-text">任务调度对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%8D%A0%E7%94%A8%E7%8E%87"><span class="nav-number">13.5.3.</span> <span class="nav-text">硬件占用率</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%B2%97%E5%8C%962d-thread-tiling"><span class="nav-number">13.6.</span> <span class="nav-text">线程粗化（2D Thread Tiling）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%B2%97%E5%8C%96%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-number">13.6.1.</span> <span class="nav-text">线程粗化的实现逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E4%BB%A3%E7%A0%81"><span class="nav-number">13.6.2.</span> <span class="nav-text">实现代码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%AF%B9%E6%AF%94"><span class="nav-number">13.7.</span> <span class="nav-text">第二次性能优化对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90-1"><span class="nav-number">13.7.1.</span> <span class="nav-text">性能分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#sm%E4%BD%BF%E7%94%A8%E7%8E%87"><span class="nav-number">13.7.1.1.</span> <span class="nav-text">SM使用率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#syncthreads"><span class="nav-number">13.7.1.2.</span> <span class="nav-text">__syncthreads</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#theoretical-occupancy"><span class="nav-number">13.7.1.3.</span> <span class="nav-text">theoretical occupancy</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%9D%E8%B7%AF-1"><span class="nav-number">13.7.2.</span> <span class="nav-text">优化思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E6%A0%87%E5%AF%B9%E6%AF%94"><span class="nav-number">13.7.3.</span> <span class="nav-text">指标对比</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#gpu%E8%BF%90%E8%A1%8C%E6%95%88%E7%8E%87%E5%AF%B9%E6%AF%94-1"><span class="nav-number">13.7.3.1.</span> <span class="nav-text">GPU运行效率对比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E5%AF%B9%E6%AF%94-1"><span class="nav-number">13.7.3.2.</span> <span class="nav-text">任务调度对比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%8D%A0%E7%94%A8%E7%8E%87-1"><span class="nav-number">13.7.3.3.</span> <span class="nav-text">硬件占用率</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">14.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">14.1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ncu%E7%9A%84%E6%8C%87%E6%A0%87"><span class="nav-number">14.2.</span> <span class="nav-text">ncu的指标</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu-speed-of-light-sol-throughput"><span class="nav-number">14.2.1.</span> <span class="nav-text">GPU Speed Of Light (SOL)
+Throughput</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#launch-statistics"><span class="nav-number">14.2.2.</span> <span class="nav-text">Launch Statistics</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#occupation"><span class="nav-number">14.2.3.</span> <span class="nav-text">Occupation</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#warp"><span class="nav-number">14.3.</span> <span class="nav-text">warp</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-warp"><span class="nav-number">14.3.1.</span> <span class="nav-text">什么是 Warp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88warp%E6%98%AF32%E4%B8%AA%E7%BA%BF%E7%A8%8B"><span class="nav-number">14.3.2.</span> <span class="nav-text">为什么warp是32个线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#warp%E5%92%8Cblock"><span class="nav-number">14.3.3.</span> <span class="nav-text">warp和block</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#warp%E5%92%8C%E5%90%88%E5%B9%B6%E8%AE%BF%E9%97%AE"><span class="nav-number">14.3.4.</span> <span class="nav-text">warp和合并访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#warp-%E7%9A%84%E6%A0%B8%E5%BF%83%E5%8E%9F%E5%88%99"><span class="nav-number">14.3.5.</span> <span class="nav-text">warp 的核心原则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%9A%84%E6%95%B0%E6%8D%AE%E6%80%BB%E7%BA%BF"><span class="nav-number">14.4.</span> <span class="nav-text">GPU的数据总线</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#memory-burst"><span class="nav-number">14.4.1.</span> <span class="nav-text">Memory Burst</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpu%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">14.5.</span> <span class="nav-text">GPU的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu-%E7%9A%84%E7%A1%AC%E4%BB%B6%E6%94%AF%E6%92%91%E7%BB%84%E4%BB%B6"><span class="nav-number">14.5.1.</span> <span class="nav-text">GPU 的硬件支撑组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu-%E4%B8%8E-gpu-%E7%9A%84%E9%A2%86%E5%9C%B0%E5%B7%AE%E5%BC%82"><span class="nav-number">14.5.2.</span> <span class="nav-text">CPU 与 GPU 的领地差异</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E6%A8%A1%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">14.5.3.</span> <span class="nav-text">内存访问模式的演进</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E6%96%B9%E5%BC%8F%E6%89%8B%E5%8A%A8%E6%90%AC%E8%BF%90-explicit-copy"><span class="nav-number">14.5.3.1.</span> <span class="nav-text">传统方式：手动搬运 (Explicit
+Copy)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%AA%E7%9B%B4%E6%8E%A5%E8%AE%BF%E9%97%AE%E7%BB%9F%E4%B8%80%E5%86%85%E5%AD%98-unified-memory"><span class="nav-number">14.5.3.2.</span> <span class="nav-text">“伪”直接访问：统一内存
+(Unified Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98zero-copy-memory-pinned-memory"><span class="nav-number">14.5.3.3.</span> <span class="nav-text">锁页内存：Zero-Copy
+Memory (Pinned Memory)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%88%E6%9E%81%E5%8A%A0%E9%80%9Fgpudirect-%E6%97%8F%E6%8A%80%E6%9C%AF"><span class="nav-number">14.5.3.4.</span> <span class="nav-text">终极加速：GPUDirect 族技术</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98dma"><span class="nav-number">14.6.</span> <span class="nav-text">锁页内存&#x2F;DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dma"><span class="nav-number">14.6.1.</span> <span class="nav-text">DMA</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E7%94%B3%E8%AF%B7%E7%89%B9%E6%AE%8A%E5%86%85%E5%AD%98"><span class="nav-number">14.6.1.1.</span> <span class="nav-text">为什么必须申请“特殊内存”</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="nav-number">14.6.1.2.</span> <span class="nav-text">DMA是如何工作的</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#dma-%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">14.6.1.3.</span> <span class="nav-text">DMA 的限制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E9%A1%B5%E5%86%85%E5%AD%98"><span class="nav-number">14.6.2.</span> <span class="nav-text">锁页内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E7%9A%84%E7%BB%93%E6%9E%9C"><span class="nav-number">14.6.3.</span> <span class="nav-text">最后的结果</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -227,7 +229,7 @@ Memory (Pinned Memory)</span></a></li><li class="nav-item nav-level-4"><a class=
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-25 14:11:51" itemprop="dateModified" datetime="2026-01-25T14:11:51+08:00">2026-01-25</time>
+      <time title="修改时间：2026-01-29 18:39:39" itemprop="dateModified" datetime="2026-01-29T18:39:39+08:00">2026-01-29</time>
     </span>
 
   
@@ -665,6 +667,9 @@ Allocator)</strong>。程序启动时一次性申请一大块显存，后续使�
 float；</li>
 </ol>
 <figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">[<span class="number">4</span>/<span class="number">8</span>] Executing &#x27;osrt_sum&#x27; stats report</span><br><span class="line"></span><br><span class="line"> Time (%)  Total Time (ns)  Num Calls   Avg (ns)    Med (ns)   Min (ns)  Max (ns)  StdDev (ns)           Name</span><br><span class="line"> --------  ---------------  ---------  ----------  ----------  --------  --------  -----------  ----------------------</span><br><span class="line">     <span class="number">46</span>.<span class="number">7</span>        <span class="number">125586682</span>          <span class="number">5</span>  <span class="number">25117336.4</span>  <span class="number">14348158.0</span>      <span class="number">1623</span>  <span class="number">80863774</span>   <span class="number">31945408.5</span>  poll</span><br><span class="line">     <span class="number">42</span>.<span class="number">3</span>        <span class="number">113634498</span>        <span class="number">467</span>    <span class="number">243328.7</span>     <span class="number">21812.0</span>      <span class="number">1003</span>   <span class="number">8033042</span>     <span class="number">865567.7</span>  ioctl</span><br><span class="line">      <span class="number">9</span>.<span class="number">5</span>         <span class="number">25480839</span>          <span class="number">7</span>   <span class="number">3640119.9</span>     <span class="number">94518.0</span>      <span class="number">1275</span>  <span class="number">13140210</span>    <span class="number">6074492.7</span>  fread</span><br><span class="line">      <span class="number">0</span>.<span class="number">4</span>          <span class="number">1005425</span>         <span class="number">26</span>     <span class="number">38670.2</span>      <span class="number">2694</span>.<span class="number">5</span>      <span class="number">1056</span>    <span class="number">458091</span>     <span class="number">116303.8</span>  fopen</span><br><span class="line">      <span class="number">0</span>.<span class="number">4</span>           <span class="number">975468</span>          <span class="number">7</span>    <span class="number">139352.6</span>      <span class="number">2636</span>.<span class="number">0</span>      <span class="number">1508</span>    <span class="number">366719</span>     <span class="number">172996.9</span>  read</span><br><span class="line">      <span class="number">0</span>.<span class="number">2</span>           <span class="number">607168</span>          <span class="number">3</span>    <span class="number">202389.3</span>    <span class="number">105488.0</span>     <span class="number">57359</span>    <span class="number">444321</span>     <span class="number">210896.4</span>  sem_timedwait</span><br><span class="line">      <span class="number">0</span>.<span class="number">1</span>           <span class="number">309841</span>          <span class="number">7</span>     <span class="number">44263.0</span>      <span class="number">8282</span>.<span class="number">0</span>      <span class="number">1238</span>    <span class="number">143976</span>      <span class="number">61918.4</span>  open</span><br><span class="line">      <span class="number">0</span>.<span class="number">1</span>           <span class="number">285645</span>          <span class="number">3</span>     <span class="number">95215.0</span>     <span class="number">92495.0</span>     <span class="number">73967</span>    <span class="number">119183</span>      <span class="number">22730.4</span>  pthread_create</span><br><span class="line">      <span class="number">0</span>.<span class="number">1</span>           <span class="number">255878</span>         <span class="number">22</span>     <span class="number">11630.8</span>     <span class="number">11779.0</span>      <span class="number">2899</span>     <span class="number">24350</span>       <span class="number">6170</span>.<span class="number">4</span>  mmap</span><br><span class="line">      <span class="number">0</span>.<span class="number">1</span>           <span class="number">186824</span>          <span class="number">8</span>     <span class="number">23353.0</span>      <span class="number">2378</span>.<span class="number">5</span>      <span class="number">1044</span>    <span class="number">134238</span>      <span class="number">45896.9</span>  fclose</span><br><span class="line">      <span class="number">0</span>.<span class="number">1</span>           <span class="number">159524</span>          <span class="number">1</span>    <span class="number">159524.0</span>    <span class="number">159524.0</span>    <span class="number">159524</span>    <span class="number">159524</span>          <span class="number">0</span>.<span class="number">0</span>  pthread_join</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>            <span class="number">66661</span>          <span class="number">1</span>     <span class="number">66661.0</span>     <span class="number">66661.0</span>     <span class="number">66661</span>     <span class="number">66661</span>          <span class="number">0</span>.<span class="number">0</span>  pthread_cond_wait</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>            <span class="number">45821</span>          <span class="number">3</span>     <span class="number">15273.7</span>     <span class="number">15690.0</span>     <span class="number">14163</span>     <span class="number">15968</span>        <span class="number">971</span>.<span class="number">9</span>  write</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>            <span class="number">26925</span>          <span class="number">1</span>     <span class="number">26925.0</span>     <span class="number">26925.0</span>     <span class="number">26925</span>     <span class="number">26925</span>          <span class="number">0</span>.<span class="number">0</span>  fgets</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>            <span class="number">20878</span>          <span class="number">3</span>      <span class="number">6959</span>.<span class="number">3</span>      <span class="number">6837</span>.<span class="number">0</span>      <span class="number">2532</span>     <span class="number">11509</span>       <span class="number">4489</span>.<span class="number">8</span>  pipe2</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>            <span class="number">11803</span>          <span class="number">1</span>     <span class="number">11803.0</span>     <span class="number">11803.0</span>     <span class="number">11803</span>     <span class="number">11803</span>          <span class="number">0</span>.<span class="number">0</span>  pthread_cond_broadcast</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>             <span class="number">8656</span>          <span class="number">5</span>      <span class="number">1731</span>.<span class="number">2</span>      <span class="number">1253</span>.<span class="number">0</span>      <span class="number">1141</span>      <span class="number">3658</span>       <span class="number">1080</span>.<span class="number">1</span>  fcntl</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>             <span class="number">7971</span>          <span class="number">4</span>      <span class="number">1992</span>.<span class="number">8</span>      <span class="number">2025</span>.<span class="number">5</span>      <span class="number">1015</span>      <span class="number">2905</span>        <span class="number">920</span>.<span class="number">3</span>  close</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>             <span class="number">4842</span>          <span class="number">2</span>      <span class="number">2421</span>.<span class="number">0</span>      <span class="number">2421</span>.<span class="number">0</span>      <span class="number">1372</span>      <span class="number">3470</span>       <span class="number">1483</span>.<span class="number">5</span>  fwrite</span><br><span class="line"></span><br><span class="line">[<span class="number">5</span>/<span class="number">8</span>] Executing &#x27;cuda_api_sum&#x27; stats report</span><br><span class="line"></span><br><span class="line"> Time (%)  Total Time (ns)  Num Calls   Avg (ns)   Med (ns)   Min (ns)  Max (ns)   StdDev (ns)           Name</span><br><span class="line"> --------  ---------------  ---------  ----------  ---------  --------  ---------  -----------  ----------------------</span><br><span class="line">     <span class="number">71</span>.<span class="number">6</span>        <span class="number">140866925</span>          <span class="number">3</span>  <span class="number">46955641.7</span>   <span class="number">307899.0</span>    <span class="number">257351</span>  <span class="number">140301675</span>   <span class="number">80840040.2</span>  cudaMalloc</span><br><span class="line">     <span class="number">27</span>.<span class="number">1</span>         <span class="number">53235196</span>          <span class="number">4</span>  <span class="number">13308799.0</span>   <span class="number">637978.5</span>    <span class="number">445941</span>   <span class="number">51513298</span>   <span class="number">25469846.2</span>  cudaMemcpy</span><br><span class="line">      <span class="number">1</span>.<span class="number">0</span>          <span class="number">1919198</span>          <span class="number">1</span>   <span class="number">1919198.0</span>  <span class="number">1919198.0</span>   <span class="number">1919198</span>    <span class="number">1919198</span>          <span class="number">0</span>.<span class="number">0</span>  cudaLaunchKernel</span><br><span class="line">      <span class="number">0</span>.<span class="number">4</span>           <span class="number">725322</span>          <span class="number">3</span>    <span class="number">241774.0</span>   <span class="number">201415.0</span>    <span class="number">166258</span>     <span class="number">357649</span>     <span class="number">101878.7</span>  cudaFree</span><br><span class="line">      <span class="number">0</span>.<span class="number">0</span>              <span class="number">680</span>          <span class="number">1</span>       <span class="number">680</span>.<span class="number">0</span>      <span class="number">680</span>.<span class="number">0</span>       <span class="number">680</span>        <span class="number">680</span>          <span class="number">0</span>.<span class="number">0</span>  cuModuleGetLoadingMode</span><br><span class="line"></span><br><span class="line">[<span class="number">6</span>/<span class="number">8</span>] Executing &#x27;cuda_gpu_kern_sum&#x27; stats report</span><br><span class="line"></span><br><span class="line"> Time (%)  Total Time (ns)  Instances   Avg (ns)    Med (ns)   Min (ns)  Max (ns)  StdDev (ns)                 Name</span><br><span class="line"> --------  ---------------  ---------  ----------  ----------  --------  --------  -----------  -----------------------------------</span><br><span class="line">    <span class="number">100</span>.<span class="number">0</span>         <span class="number">47248532</span>          <span class="number">1</span>  <span class="number">47248532.0</span>  <span class="number">47248532.0</span>  <span class="number">47248532</span>  <span class="number">47248532</span>          <span class="number">0</span>.<span class="number">0</span>  add(float *, float *, float *, int)</span><br><span class="line"></span><br><span class="line">[<span class="number">7</span>/<span class="number">8</span>] Executing &#x27;cuda_gpu_mem_time_sum&#x27; stats report</span><br><span class="line"></span><br><span class="line"> Time (%)  Total Time (ns)  Count  Avg (ns)   Med (ns)   Min (ns)  Max (ns)  StdDev (ns)           Operation</span><br><span class="line"> --------  ---------------  -----  ---------  ---------  --------  --------  -----------  ----------------------------</span><br><span class="line">     <span class="number">66</span>.<span class="number">9</span>          <span class="number">2346695</span>      <span class="number">1</span>  <span class="number">2346695.0</span>  <span class="number">2346695.0</span>   <span class="number">2346695</span>   <span class="number">2346695</span>          <span class="number">0</span>.<span class="number">0</span>  [CUDA memcpy Device-to-Host]</span><br><span class="line">     <span class="number">33</span>.<span class="number">1</span>          <span class="number">1162276</span>      <span class="number">3</span>   <span class="number">387425.3</span>   <span class="number">336623.0</span>    <span class="number">334351</span>    <span class="number">491302</span>      <span class="number">89967.0</span>  [CUDA memcpy Host-to-Device]</span><br><span class="line"></span><br><span class="line">[<span class="number">8</span>/<span class="number">8</span>] Executing &#x27;cuda_gpu_mem_size_sum&#x27; stats report</span><br><span class="line"></span><br><span class="line"> Total (MB)  Count  Avg (MB)  Med (MB)  Min (MB)  Max (MB)  StdDev (MB)           Operation</span><br><span class="line"> ----------  -----  --------  --------  --------  --------  -----------  ----------------------------</span><br><span class="line">     <span class="number">12</span>.<span class="number">000</span>      <span class="number">3</span>     <span class="number">4</span>.<span class="number">000</span>     <span class="number">4</span>.<span class="number">000</span>     <span class="number">4</span>.<span class="number">000</span>     <span class="number">4</span>.<span class="number">000</span>        <span class="number">0</span>.<span class="number">000</span>  [CUDA memcpy Host-to-Device]</span><br></pre></td></tr></table></figure>
+<h1 id="ncu">ncu</h1>
+<p>参考 <a href="#ncu的指标">ncu的指标</a> 和 <a href="#sgemm">sgemm</a>
+中对 ncu 的使用。</p>
 <h1 id="优化前的准备">优化前的准备</h1>
 <blockquote>
 <p>在我们开始之前，我们需要搞清楚GPU的组成以及它是如何调度我们的线程的，我们可以查看
@@ -1741,6 +1746,1932 @@ threadsPerBlock- 1) / threadsPerBlock\)</span></strong>；</li>
 <img src="\images\cuda\cuda-stream-parallel.png" alt="cuda-parallel" />
 <figcaption aria-hidden="true">cuda-parallel</figcaption>
 </figure>
+<h1 id="cuda的二维计算">CUDA的二维计算</h1>
+<p>CUDA 的维度设计（1D, 2D,
+3D）本质上是提供了一套<strong>内置的坐标换算器</strong>。虽然 GPU
+的内存空间在物理上永远是一维（线性）的地址，但现实世界中的数据往往是多维的。</p>
+<h2 id="维度层级从点到体">维度层级：从点到体</h2>
+<p>CUDA 使用 <code>dim3</code> 结构体来定义维度。如果我们不显式定义
+<code>y</code> 和 <code>z</code>，它们默认就是 1。</p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 16%" />
+<col style="width: 38%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>维度</strong></th>
+<th><strong>逻辑抽象</strong></th>
+<th><strong>典型应用场景</strong></th>
+<th><strong>定义方式 (示例)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>1D</strong></td>
+<td>向量 / 数组</td>
+<td>向量加法、数据转换</td>
+<td><code>dim3 block(256, 1, 1);</code></td>
+</tr>
+<tr class="even">
+<td><strong>2D</strong></td>
+<td>矩阵 / 图像</td>
+<td>照片滤镜、矩阵乘法</td>
+<td><code>dim3 block(16, 16, 1);</code></td>
+</tr>
+<tr class="odd">
+<td><strong>3D</strong></td>
+<td>体素 / 空间</td>
+<td>气象模拟、CT 影像、流体力学</td>
+<td><code>dim3 block(8, 8, 8);</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="为什么需要映射">为什么需要映射</h2>
+<p>在 <code>kernel</code> 内部，我们会得到两组坐标：</p>
+<ul>
+<li><code>blockIdx</code> 我们的在哪个块；</li>
+<li><code>threadIdx</code> 我们在块里哪个位置；</li>
+</ul>
+<h2 id="matrix-transpose">Matrix Transpose</h2>
+<blockquote>
+<p>给定一个二维矩阵 <code>in</code>，我们需要对矩阵进行转置：把坐标
+<span class="math inline">\((x, y)\)</span> 变成 <span
+class="math inline">\((y, x)\)</span></p>
+</blockquote>
+<p>首先，我们需要清楚一个定义是：<strong>内存里没有真正的
+<code>二维数组</code>，它永远是一维线性排列的</strong>，例如假设我们声明一个
+<span class="math inline">\(2 \times 3\)</span> 的矩阵：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 7
+
+memory(&quot;memory&quot;) m0(&quot;matrix[0][0]&quot;) m1(&quot;matrix[0][1]&quot;) m2(&quot;matrix[1][0]&quot;) m3(&quot;matrix[1][1]&quot;) m4(&quot;matrix[2][0]&quot;) m5(&quot;matrix[2][1]&quot;)
+
+row1(&quot;row1&quot;) r0(&quot;matrix[0][0]&quot;) r1(&quot;matrix[0][1]&quot;) space:4
+row2(&quot;row2&quot;) r2(&quot;matrix[1][0]&quot;) r3(&quot;matrix[1][1]&quot;) space:4
+row3(&quot;row3&quot;) r4(&quot;matrix[2][0]&quot;) r5(&quot;matrix[2][1]&quot;)
+
+class memory,row1,row2,row3 purple
+
+class m0,m1,r0,r1 green
+class m2,m3,r2,r3 blue
+class m4,m5,r4,r5 yellow
+
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>按照我们在 <a href="#第四次优化">第四次优化</a> 中的代码逻辑：</p>
+<ol type="1">
+<li>将这个矩阵分成多个 <code>block</code>
+以便于我们可以并行的执行；</li>
+<li>为每个 <code>block</code> 分配合理的 <code>threads</code>
+以便于可以最大化的利用GPU的并行能力；</li>
+<li><strong>每个核函数只处理它所在的 <code>block</code> 和
+<code>thread</code> 应该负责的点，通过 <code>block</code>
+的调度来处理整个矩阵。</strong></li>
+<li>那么我们调用核函数
+<code>transpose_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;</code>
+，此时我们会面临一个问题，<strong>当前线程只知道 blockId 和
+threadId，而处理矩阵需要的是当前元素在矩阵中的 <code>row</code> 和
+<code>column</code>。</strong>我们可以去计算这个值，公式并不复杂：<code>row = (blockId * blocksPerBlock + threadId) / width</code>，<code>column = (blockId * blocksPerBlock + threadId) % width</code>，但是使得程序不直观，并且引入极大的额外开销（整数除法和取模是非常“昂贵”的操作，它们需要消耗数十个时钟周期）。所以
+CUDA 引入了 <code>dim3 grid(x, y)</code> 来对这个逻辑进行抽象。</li>
+<li>在引入 <code>dim3</code>
+之后，我们可以通过更便捷的方式来访问我们的矩阵：
+<ul>
+<li><code>x = blockIdx.x * blockDim.x + threadIdx.x;</code></li>
+<li><code>y = blockIdx.y * blockDim.y + threadIdx.y;</code></li>
+</ul></li>
+<li>此时，我们的核函数就会存在如下调用形式
+<code>transpose_kernel&lt;&lt;&lt;grid, block&gt;&gt;&gt;</code>，其中
+<code>grid</code> 和 <code>block</code> 都是 <code>dim3</code>
+矩阵，当我们调用
+<code>transpose_kernel&lt;&lt;&lt;grid, block&gt;&gt;&gt;</code>
+时，我们通过 <code>dim3</code>
+将原本一维的索引空间<strong>‘重塑’（Reshape）</strong>成了多维的坐标系。此时，<strong>Grid</strong>
+不再是一条长线，而是一个由多个 Block
+组成的<strong>网格阵列</strong>；每个 <strong>Block</strong>
+内部也不再是简单的序号，而是一群拥有 <code>(x, y)</code>
+坐标的<strong>线程矩阵</strong>。</li>
+</ol>
+<h3 id="分割一个矩阵的思路">分割一个矩阵的思路</h3>
+<p>我们可以这样理解 CUDA 的多维处理逻辑：</p>
+<h4 id="物理本质一维的长阵">物理本质：一维的长阵</h4>
+<p>首先必须明确：内存中不存在真正的二维矩阵，它在物理上是一个<strong>超长的线性数组</strong>。如果我们要处理一个宽度为
+<code>w</code>、高度为 <code>h</code>
+的矩阵，在显存里它就是一段连续的、长度为 <code>w * h</code> 的空间。</p>
+<h4 id="逻辑重塑">逻辑重塑</h4>
+<p>在之前的一维处理逻辑中，如果我们决定使用 256 个线程作为一个
+<strong>Block</strong>（线程块），那么所需的 Block 数量就是
+<code>(w * h + 255) / 256</code>。此时核函数的启动方式为：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">transpose</span>&lt;&lt;&lt;(w * h + <span class="number">255</span>) / <span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+<p>这种方式虽然可行，但在处理二维矩阵数据时，我们需要在核函数内部进行大量代价高昂的<strong>除法（<code>/</code>）和取余（<code>%</code>）</strong>操作来反推行列坐标，这会严重拖累
+GPU 性能。</p>
+<h4 id="二级矩阵block最小分配单元">二级矩阵（Block）：最小分配单元</h4>
+<p>为了优化逻辑，CUDA 引入了 <code>dim3</code> 结构。我们仍然维持每个
+Block 包含 256 个线程，但将其重塑为一个 <strong><span
+class="math inline">\(16 \times 16\)</span> 的二级矩阵</strong>：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">dim3</span> block(<span class="number">16</span>, <span class="number">16</span>);</span><br></pre></td></tr></table></figure>
+<p>此时，这 256 个线程中的每一个都对应这个二级矩阵中的一个点。CUDA
+会自动为每个线程生成内置变量 <strong><code>threadIdx.x</code></strong>
+和
+<strong><code>threadIdx.y</code></strong>，用来表示该线程在小组内部的坐标。这个“线程方阵”是
+GPU 调度的最小单元，会被整体绑定到 SM（流式多处理器）上执行。</p>
+<h4 id="一级矩阵grid全局任务划分">一级矩阵（Grid）：全局任务划分</h4>
+<p>接着，我们将整个大矩阵按照这个 <span class="math inline">\(16 \times
+16\)</span>
+的尺寸进行切割。我们不再计算总数，而是分别计算横向和纵向需要多少个
+Block：</p>
+<ul>
+<li><strong>水平方向（列数）所需 Block
+数</strong>：<code>grid_x = (w + block.x - 1) / block.x;</code></li>
+<li><strong>垂直方向（行数）所需 Block
+数</strong>：<code>grid_y = (h + block.y - 1) / block.y;</code></li>
+</ul>
+<p>这就构成了 <strong>一级矩阵（Grid）</strong>：</p>
+<figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dim3 <span class="attribute">grid</span>(grid_x, grid_y);</span><br></pre></td></tr></table></figure>
+<p>此时，我们的核函数调用变为：</p>
+<figure class="highlight maxima"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">transpose</span>&lt;&lt;&lt;<span class="built_in">grid</span>, <span class="built_in">block</span>&gt;&gt;&gt;;</span><br></pre></td></tr></table></figure>
+<h4 id="坐标合成与索引还原">坐标合成与索引还原</h4>
+<p>现在的任务被我们划分成了：<strong>一个由 Block 组成的大矩阵，而每个
+Block 内部又是一个由 Thread 组成的子矩阵。</strong></p>
+<p>在核函数执行时，定位过程如下：</p>
+<ol type="1">
+<li><strong>一级定位</strong>：通过
+<strong><code>blockIdx.x</code></strong> 和
+<strong><code>blockIdx.y</code></strong>
+找到当前线程所属的“一级矩阵”（Block）在大网格中的位置。</li>
+<li><strong>二级定位</strong>：通过
+<strong><code>threadIdx.x</code></strong> 和
+<strong><code>threadIdx.y</code></strong>
+找到当前线程在“二级矩阵”（小组）内部的精确坐标。</li>
+<li><strong>合成全局坐标</strong>：
+<ul>
+<li><code>element_x = blockIdx.x * blockDim.x + threadIdx.x;</code></li>
+<li><code>element_y = blockIdx.y * blockDim.y + threadIdx.y;</code></li>
+</ul></li>
+</ol>
+<p>最后，通过这两个逻辑坐标，我们就能避开复杂的算术运算，直接计算出元素在物理数组中的实际索引，从而完成高效的数据处理。</p>
+<h3 id="矩阵分割的实例">矩阵分割的实例</h3>
+<p>假设，我们存在一个 <code>7 * 7</code>
+的矩阵，我们现在需要使用我们的矩阵分割逻辑来处理这个矩阵，我们使用
+<code>2 * 2</code> 的线程矩阵来对它进行第一次分割：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+%% 定义表头（列坐标轴 x）
+space:1 c0(&quot;0&quot;) c1(&quot;1&quot;) c2(&quot;2&quot;) c3(&quot;3&quot;) c4(&quot;4&quot;) c5(&quot;5&quot;) c6(&quot;6&quot;) c7(&quot;7&quot;)
+
+%% 第一行 (y=0)
+r0(&quot;0&quot;) 
+r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;6&quot;) e0(&quot;IndexOut&quot;)
+
+%% 第二行 (y=1)
+r1(&quot;1&quot;) 
+r1c0(&quot;7&quot;) r1c1(&quot;8&quot;) r1c2(&quot;9&quot;) r1c3(&quot;10&quot;) r1c4(&quot;11&quot;) r1c5(&quot;12&quot;) r1c6(&quot;13&quot;) e1(&quot;IndexOut&quot;)
+
+%% 第三行 (y=2)
+r2(&quot;2&quot;) 
+r2c0(&quot;14&quot;) r2c1(&quot;15&quot;) r2c2(&quot;16&quot;) r2c3(&quot;17&quot;) r2c4(&quot;18&quot;) r2c5(&quot;19&quot;) r2c6(&quot;20&quot;) e2(&quot;IndexOut&quot;)
+
+%% 第四行 (y=3)
+r3(&quot;3&quot;) 
+r3c0(&quot;21&quot;) r3c1(&quot;22&quot;) r3c2(&quot;23&quot;) r3c3(&quot;24&quot;) r3c4(&quot;25&quot;) r3c5(&quot;26&quot;) r3c6(&quot;27&quot;) e3(&quot;IndexOut&quot;)
+
+%% 第五行 (y=4)
+r4(&quot;4&quot;) 
+r4c0(&quot;28&quot;) r4c1(&quot;29&quot;) r4c2(&quot;30&quot;) r4c3(&quot;31&quot;) r4c4(&quot;32&quot;) r4c5(&quot;33&quot;) r4c6(&quot;34&quot;) e4(&quot;IndexOut&quot;)
+
+%% 第六行 (y=5)
+r5(&quot;5&quot;) 
+r5c0(&quot;35&quot;) r5c1(&quot;36&quot;) r5c2(&quot;37&quot;) r5c3(&quot;38&quot;) r5c4(&quot;39&quot;) r5c5(&quot;40&quot;) r5c6(&quot;41&quot;) e5(&quot;IndexOut&quot;)
+
+%% 第七行 (y=6)
+r6(&quot;6&quot;) 
+r6c0(&quot;42&quot;) r6c1(&quot;43&quot;) r6c2(&quot;44&quot;) r6c3(&quot;45&quot;) r6c4(&quot;46&quot;) r6c5(&quot;47&quot;) r6c6(&quot;48&quot;) e6(&quot;IndexOut&quot;)
+
+r7(&quot;7&quot;) e7(&quot;IndexOut&quot;) e8(&quot;IndexOut&quot;) e9(&quot;IndexOut&quot;) e10(&quot;IndexOut&quot;) e11(&quot;IndexOut&quot;) e12(&quot;IndexOut&quot;) e13(&quot;IndexOut&quot;) e14(&quot;IndexOut&quot;)
+
+class r0c0,r0c1,r1c0,r1c1 light_green
+class r0c2,r0c3,r1c2,r1c3 gray
+class r0c4,r0c5,r1c4,r1c5 content
+class r0c6,e0,r1c6,e1 blue
+class r2c0,r2c1,r3c0,r3c1 yellow
+class r2c2,r2c3,r3c2,r3c3 orange
+class r2c4,r2c5,r3c4,r3c5 pink
+class r2c6,e2,r3c6,e3 green
+class r4c0,r4c1,r5c0,r5c1 light_green
+class r4c2,r4c3,r5c2,r5c3 gray
+class r4c4,r4c5,r5c4,r5c5 content
+class r4c6,e4,r5c6,e5 blue
+class r6c0,r6c1,e7,e8 yellow
+class r6c2,r6c3,e9,e10 orange
+class r6c4,r6c5,e11,e12 pink
+class r6c6,e13,e14,e6 green
+
+class r0,r1,r2,r3,r4,r5,r6,r7,c0,c1,c2,c3,c4,c5,c6,c7 purple
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>随后，我们使用 <code>grid</code> 来对我们的线性矩阵进行一次分割：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 9
+
+space:1 
+c0(&quot;0&quot;):2 
+c1(&quot;1&quot;):2 
+c2(&quot;2&quot;):2 
+c3(&quot;3&quot;):2
+
+%% 第一大行 r0
+r0(&quot;0&quot;)
+block:b01:2
+    columns 2
+    0(&quot;0&quot;) 1(&quot;1&quot;)
+    7(&quot;7&quot;) 8(&quot;8&quot;)
+end
+block:b02:2
+    columns 2
+    2(&quot;2&quot;) 3(&quot;3&quot;)
+    9(&quot;9&quot;) 10(&quot;10&quot;)
+end
+block:b03:2
+    columns 2
+    4(&quot;4&quot;) 5(&quot;5&quot;)
+    11(&quot;11&quot;) 12(&quot;12&quot;)
+end
+block:b04:2
+    columns 2
+    6(&quot;6&quot;) e1(&quot;IndexOut&quot;)
+    13(&quot;13&quot;) e2(&quot;IndexOut&quot;)
+end
+
+%% 第二大行 r1
+r1(&quot;1&quot;)
+block:b11:2
+    columns 2
+    14(&quot;14&quot;) 15(&quot;15&quot;)
+    21(&quot;21&quot;) 22(&quot;22&quot;)
+end
+block:b12:2
+    columns 2
+    16(&quot;16&quot;) 17(&quot;17&quot;)
+    23(&quot;23&quot;) 24(&quot;24&quot;)
+end
+block:b13:2
+    columns 2
+    18(&quot;18&quot;) 19(&quot;19&quot;)
+    25(&quot;25&quot;) 26(&quot;26&quot;)
+end
+block:b14:2
+    columns 2
+    20(&quot;20&quot;) e3(&quot;IndexOut&quot;)
+    27(&quot;27&quot;) e4(&quot;IndexOut&quot;)
+end
+
+%% 第三大行 r2
+r2(&quot;2&quot;)
+block:b21:2
+    columns 2
+    28(&quot;28&quot;) 29(&quot;29&quot;)
+    35(&quot;35&quot;) 36(&quot;36&quot;)
+end
+block:b22:2
+    columns 2
+    30(&quot;30&quot;) 31(&quot;31&quot;)
+    37(&quot;37&quot;) 38(&quot;38&quot;)
+end
+block:b23:2
+    columns 2
+    32(&quot;32&quot;) 33(&quot;33&quot;)
+    39(&quot;39&quot;) 40(&quot;40&quot;)
+end
+block:b24:2
+    columns 2
+    34(&quot;34&quot;) e5(&quot;IndexOut&quot;)
+    41(&quot;41&quot;) e6(&quot;IndexOut&quot;)
+end
+
+%% 第四大行 r3 (纵向越界层)
+r3(&quot;3&quot;)
+block:b31:2
+    columns 2
+    42(&quot;42&quot;) 43(&quot;43&quot;)
+    e7(&quot;IndexOut&quot;) e8(&quot;IndexOut&quot;)
+end
+block:b32:2
+    columns 2
+    44(&quot;44&quot;) 45(&quot;45&quot;)
+    e9(&quot;IndexOut&quot;) e10(&quot;IndexOut&quot;)
+end
+block:b33:2
+    columns 2
+    46(&quot;46&quot;) 47(&quot;47&quot;)
+    e11(&quot;IndexOut&quot;) e12(&quot;IndexOut&quot;)
+end
+block:b34:2
+    columns 2
+    48(&quot;48&quot;) e13(&quot;IndexOut&quot;)
+    e14(&quot;IndexOut&quot;) e15(&quot;IndexOut&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+class b01,b02,b03,b04,b11,b12,b13,b14,b21,b22,b23,b24,b31,b32,b33,b34 blockContainer
+class 0,1,7,8 light_green
+class 2,3,9,10 gray
+class 4,5,11,12 content
+class 6,e1,13,e2 blue
+
+class 14,15,21,22 yellow
+class 16,17,23,24 orange
+class 18,19,25,26 pink
+class 20,27,e3,e4 green
+class 28,29,35,36 light_green
+class 30,31,37,38 gray
+class 32,33,39,40 content
+class 34,41,e5,e6 blue
+class 42,43,e7,e8 yellow
+class 44,45,e9,e10 orange
+class 46,47,e11,e12 pink
+class 48,e13,e14,e15 green
+
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef axis fill:#f9f9f9,stroke:#333,stroke-width:2px,font-weight:bold;</code></pre>
+<p>现在，对于任意一个节点，我们都可以知道：</p>
+<ul>
+<li><code>x = blockIdx.x * blockDim.x + threadIdx.x</code></li>
+<li><code>y = blockId.y * blockDim.y + threadIdx.y</code></li>
+<li>例如对于 <code>9</code>，它的实际索引是 <code>(1, 2)</code> =
+<code>(0 * 2 + 1, 1 * 2 + 0)</code></li>
+<li>而它的的在内存的实际索引也可以通过 <code>x * width + y</code>
+计算</li>
+</ul>
+<h2 id="最后代码">最后代码</h2>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">transpose_kernel</span><span class="params">(<span class="type">float</span> *out, <span class="type">const</span> <span class="type">float</span> *in, <span class="type">int</span> width, <span class="type">int</span> height)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> x = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="type">int</span> y = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (x &lt; width &amp;&amp; y &lt; height)</span><br><span class="line">    &#123;</span><br><span class="line">        out[x * height + y] = in[y * width + x];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> <span class="type">const</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> nx = <span class="number">1024</span>;</span><br><span class="line">    <span class="type">int</span> ny = <span class="number">512</span>;</span><br><span class="line">    <span class="type">size_t</span> total_bytes = nx * ny * <span class="built_in">sizeof</span>(<span class="type">int</span>);</span><br><span class="line">    <span class="type">float</span> *h_in, *h_out;</span><br><span class="line">    <span class="built_in">cudaHostAlloc</span>(&amp;h_in, total_bytes, cudaHostAllocDefault);</span><br><span class="line">    <span class="built_in">cudaHostAlloc</span>(&amp;h_out, total_bytes, cudaHostAllocDefault);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nx * ny; i++) &#123;</span><br><span class="line">        h_in[i] = i;</span><br><span class="line">        h_out[i] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">16</span>, <span class="number">16</span>)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">grid</span><span class="params">((nx + block.x - <span class="number">1</span>) / block.x, (ny + block.y - <span class="number">1</span>) / block.y)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> *d_in;</span><br><span class="line">    <span class="type">float</span> *d_out;</span><br><span class="line">    <span class="built_in">cudaMalloc</span>(&amp;d_in, total_bytes);</span><br><span class="line">    <span class="built_in">cudaMalloc</span>(&amp;d_out, total_bytes);</span><br><span class="line">    <span class="built_in">cudaMemcpy</span>(d_in, h_in, total_bytes, cudaMemcpyHostToDevice);</span><br><span class="line">    transpose_kernel&lt;&lt;&lt;grid, block&gt;&gt;&gt;(d_out, d_in, nx, ny);</span><br><span class="line">    <span class="built_in">cudaMemcpy</span>(h_out, d_out, total_bytes, cudaMemcpyDeviceToHost);</span><br><span class="line">    <span class="type">int</span> errorCount = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> r = <span class="number">0</span>; r &lt; ny; r++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> c = <span class="number">0</span>; c &lt; nx; c++) &#123;</span><br><span class="line">            <span class="type">int</span> index_in = r * nx + c;</span><br><span class="line">            <span class="type">int</span> index_out = c * ny + r;</span><br><span class="line">            <span class="keyword">if</span> (h_in[index_in] != h_out[index_out]) &#123;</span><br><span class="line">                errorCount++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (errorCount &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;error count: &quot;</span> &lt;&lt; errorCount &lt;&lt; std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="使用sharedmemory优化矩阵转置">使用SharedMemory优化矩阵转置</h1>
+<p>在我们的矩阵转置实现中，我们很容易发现有个严重拉低我们性能的点，那就是我们在数据读取时是合并访问的，<strong>然而我们数据在输出时，因为我们已经不是合并输出的了。</strong></p>
+<p>这里，我们需要先理清楚一个逻辑：参考 <a
+href="#矩阵分割的实例">矩阵分割的实例</a> 中的描述，如果CUDA在调度时以
+<code>block</code> 作为块输入，那么我们的第一个 <code>block</code>
+应该是 <code>{0, 1, 7, 8}</code> --
+这是否意味着我们的输入也没有合并输入呢？答案是：<strong>CUDA
+既抽象了矩阵逻辑，又严格按照线程束（Warp）的线性顺序执行。</strong></p>
+<p>在我们这个为了演示的例子中，我们的这个 <code>block</code> 中：</p>
+<ul>
+<li><code>{0, 1}</code> 是合并访问的， <code>{7, 8}</code>
+也是合并访问的；</li>
+<li><code>{0, 1}</code> 和 <code>{7, 8}</code> 则是不合并访问的。</li>
+</ul>
+<p>但是这个逻辑很好解决，我们只需要优化我们的核函数的参数到
+<code>&lt;&lt;&lt;32, y, z&gt;&gt;&gt;</code> 即可。现在我们需要使用
+<code>SharedMemory</code> 来优化我们的写入。</p>
+<h2
+id="为什么会出现不能合并访问的问题">为什么会出现不能合并访问的问题</h2>
+<p>假设原矩阵是 <span class="math inline">\(A\)</span>，转置后的矩阵是
+<span class="math inline">\(B\)</span>。根据定义，如果 <span
+class="math inline">\(A\)</span> 中的一个点坐标是 <span
+class="math inline">\((Global\_X, Global\_Y)\)</span>，那么它在 <span
+class="math inline">\(B\)</span> 中的位置必须是 <span
+class="math inline">\((Global\_Y, Global\_X)\)</span>。</p>
+<p>在读取阶段，一个线程处理的原始全局坐标是：</p>
+<ul>
+<li><span class="math inline">\(Global\_X_{in} = blockIdx.x \times
+blockDim.x + threadIdx.x\)</span></li>
+<li><span class="math inline">\(Global\_Y_{in} = blockIdx.y \times
+blockDim.y + threadIdx.y\)</span></li>
+</ul>
+<p>我们要把这个点搬到新矩阵 <span class="math inline">\(B\)</span>
+的对称位置：</p>
+<ul>
+<li><span class="math inline">\(Global\_X_{out} =
+Global\_Y_{in}\)</span></li>
+<li><span class="math inline">\(Global\_Y_{out} =
+Global\_X_{in}\)</span></li>
+</ul>
+<p>如果我们直接代入，会得到：</p>
+<ul>
+<li><span class="math inline">\(Global\_X_{out} = blockIdx.y \times
+blockDim.y + \mathbf{threadIdx.y}\)</span></li>
+<li><span class="math inline">\(Global\_Y_{out} = blockIdx.x \times
+blockDim.x + \mathbf{threadIdx.x}\)</span></li>
+</ul>
+<p><strong>此时，问题出现，我们没有办法合并访问了：</strong></p>
+<ul>
+<li>通常，为了能够合并访问，我们的每个 warp 会处理 block
+中的同一行，而矩阵中的同一行的特点是：<code>y</code>
+不变，<code>x</code> 递增；</li>
+<li><strong>而我们的 <span
+class="math inline">\(Global\_Y_{out}\)</span> 依赖于
+<code>x</code>，这表示我们出现了行偏移，也就说我们的全局地址将不再连续。</strong></li>
+</ul>
+<p>解决方案是：<strong>我们变化的只能是 <span
+class="math inline">\(Global\_X_{out}\)</span>，只有这样才能保证我们的全局地址连续以便于我们可以合并访问</strong>。这个逻辑很好理解，因为全局地址是
+<span class="math inline">\(y * width + x\)</span>，任意的
+<code>y</code> 变化都会使得我们的索引直接偏移出一次 Memory Burst
+的可读范围。<strong>无论逻辑上我们在算什么，我们必须强行分配任务，让
+<code>threadIdx.x</code>
+永远与地址计算公式中权重最小的那个项绑定。</strong>这个结论及时扩展到三维一样成立，因为三维的空间中，全局索引等于
+<span class="math inline">\(z * width * height + y * width +
+x\)</span>。</p>
+<h2 id="如何处理合并访问异常">如何处理合并访问异常</h2>
+<p>正如我们前面提到的，在任何计算中，<code>threadIdx.x</code>
+永远与地址计算公式中权重最小的那个项绑定，也就是，我们要通过某种方式，将我们的公式转换为：</p>
+<ul>
+<li><span class="math inline">\(Global\_X_{out} = blockIdx.y \times
+blockDim.y + \mathbf{threadIdx.x}\)</span></li>
+<li><span class="math inline">\(Global\_Y_{out} = blockIdx.x \times
+blockDim.x + \mathbf{threadIdx.y}\)</span></li>
+</ul>
+<p>而这个逻辑实现并不复杂，我们知道，我们是矩阵嵌套，而外层的矩阵对应的是
+<code>block</code>，它的先后执行顺序对我们的结果和性能不会有影响。我们只需要预先将内层矩阵进行一次矩阵转置，此时我们便可以将我们的索引绑定到
+<code>threadIdx.x</code>。</p>
+<h2 id="实际代码">实际代码</h2>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">transpose_tiled_kernel</span><span class="params">(<span class="type">float</span> *out, <span class="type">const</span> <span class="type">float</span> *in, <span class="type">int</span> width, <span class="type">int</span> height)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __shared__ <span class="type">float</span> tile[<span class="number">32</span>][<span class="number">32</span>];</span><br><span class="line">    <span class="type">int</span> x = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="type">int</span> y = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="keyword">if</span> (x &lt; width &amp;&amp; y &lt; height) &#123;</span><br><span class="line">        tile[threadIdx.y][threadIdx.x] = in[y * width + x];</span><br><span class="line">    &#125;</span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="comment">// Assuming that we have a 4 * 4 matrix, the matrix is:</span></span><br><span class="line">    <span class="comment">// 0 1 2 3</span></span><br><span class="line">    <span class="comment">// 4 5 6 7</span></span><br><span class="line">    <span class="comment">// 8 9 a b</span></span><br><span class="line">    <span class="comment">// c d e f</span></span><br><span class="line">    <span class="comment">// Assuming that we&#x27;re running block 0, so the tile will be :</span></span><br><span class="line">    <span class="comment">// 0 4</span></span><br><span class="line">    <span class="comment">// 1 5</span></span><br><span class="line">    <span class="comment">// Now the submatrix is updated in shared memory, what we have to do now is to update the value in current block to the new block.</span></span><br><span class="line">    <span class="type">int</span> new_x = blockIdx.y * blockDim.y+ threadIdx.x;</span><br><span class="line">    <span class="type">int</span> new_y = blockIdx.x * blockDim.x + threadIdx.y;</span><br><span class="line">    out[new_y * height + new_x] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sharedmemory下的矩阵转换实例">SharedMemory下的矩阵转换实例</h2>
+<blockquote>
+<p>假设一次 <code>Memory Burst</code> 读取到的是两个
+<code>float</code>。</p>
+</blockquote>
+<p>我们的初始矩阵如下，我们读取时是可以合并访问的，因为
+<code>block</code> 中的每行的全局索引中是连续的：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;]
+block:s1:2
+    0(&quot;0&quot;) 1(&quot;1&quot;)
+end
+block:s2:2
+    2(&quot;2&quot;) 3(&quot;3&quot;)
+end
+r1[&quot;1&quot;]
+block:s3:2
+    4(&quot;4&quot;) 5(&quot;5&quot;)
+end
+block:s4:2
+    6(&quot;6&quot;) 7(&quot;7&quot;)
+end
+r2[&quot;2&quot;]
+block:s5:2
+    8(&quot;8&quot;) 9(&quot;9&quot;)
+end
+block:s6:2
+    a(&quot;a&quot;) b(&quot;b&quot;)
+end
+r3[&quot;3&quot;]
+block:s7:2
+    c(&quot;c&quot;) d(&quot;d&quot;)
+end
+block:s8:2
+    e(&quot;e&quot;) f(&quot;f&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>如果我们直接在
+<code>block</code>的线程中使用矩阵转置，我们每次的写入都相当于是一次随机的内存访问，并不能实现合并访问：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+block:columns:5
+    columns 5
+    space:6 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+end
+block:s0:1
+    columns 1
+    r0[&quot;0&quot;]
+    r1[&quot;1&quot;]
+end
+block:s1:1
+    columns 1
+    0(&quot;0&quot;)
+    1(&quot;1&quot;)
+end
+block:s2:1
+    columns 1
+    4(&quot;4&quot;)
+    5(&quot;5&quot;)
+end
+block:s3:1
+    columns 1
+    8(&quot;8&quot;)
+    9(&quot;9&quot;)
+end
+block:s4:1
+    columns 1
+    c(&quot;c&quot;)
+    d(&quot;d&quot;)
+end
+block:s9:1
+    columns 1
+    r2[&quot;2&quot;]
+    r3[&quot;3&quot;]
+end
+block:s5:1
+    columns 1
+    2(&quot;2&quot;)
+    3(&quot;3&quot;)
+end
+block:s6:1
+    columns 1
+    6(&quot;6&quot;)
+    7(&quot;7&quot;)
+end
+block:s7:1
+    columns 1
+    a(&quot;a&quot;)
+    b(&quot;b&quot;)
+end
+block:s8:1
+    columns 1
+    e(&quot;e&quot;)
+    f(&quot;f&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+class columns,s0,s9 transparent
+class s1,s2,s3,s4,s5,s6,s7,s8 error
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>我们使用<code>Shared Memory</code>
+将内部矩阵转置，那么我们得到，<strong>Shared Memory
+并没有需要合并写入的需求</strong>：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;]
+block:s1:2
+    0(&quot;0&quot;) 1(&quot;4&quot;)
+end
+block:s2:2
+    2(&quot;2&quot;) 3(&quot;6&quot;)
+end
+r1[&quot;1&quot;]
+block:s3:2
+    4(&quot;1&quot;) 5(&quot;5&quot;)
+end
+block:s4:2
+    6(&quot;3&quot;) 7(&quot;7&quot;)
+end
+r2[&quot;2&quot;]
+block:s5:2
+    8(&quot;8&quot;) 9(&quot;c&quot;)
+end
+block:s6:2
+    a(&quot;a&quot;) b(&quot;e&quot;)
+end
+r3[&quot;3&quot;]
+block:s7:2
+    c(&quot;9&quot;) d(&quot;d&quot;)
+end
+block:s8:2
+    e(&quot;b&quot;) f(&quot;f&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>随后，我们再转置外层的矩阵得到：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;]
+block:s1:2
+    0(&quot;0&quot;) 1(&quot;4&quot;)
+end
+block:s5:2
+    8(&quot;8&quot;) 9(&quot;c&quot;)
+end
+r1[&quot;1&quot;]
+block:s3:2
+    4(&quot;1&quot;) 5(&quot;5&quot;)
+end
+
+block:s7:2
+    c(&quot;9&quot;) d(&quot;d&quot;)
+end
+r2[&quot;2&quot;]
+block:s2:2
+    2(&quot;2&quot;) 3(&quot;6&quot;)
+end
+
+block:s6:2
+    a(&quot;a&quot;) b(&quot;e&quot;)
+end
+r3[&quot;3&quot;]
+
+block:s4:2
+    6(&quot;3&quot;) 7(&quot;7&quot;)
+end
+block:s8:2
+    e(&quot;b&quot;) f(&quot;f&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="优化性能对比">优化性能对比</h2>
+<p>可以看到：</p>
+<ul>
+<li>我们的合并访问版本比非合并访问版本，核函数执行速度提升了接近30%；</li>
+<li>无论我们如何优化内核，这两个数值几乎是不动的，而这个指标非常大，说明我们的程序瓶颈在
+<strong>PCIe 硬件</strong>。内核优化虽然能把 21ms 缩减到 15ms，但对于
+328ms 的搬运来说，用户体感不明显。：
+<ul>
+<li><code>[CUDA memcpy Host-to-Device]</code>：约 <strong>166
+ms</strong></li>
+<li><code>[CUDA memcpy Device-to-Host]</code>：约 <strong>162
+ms</strong></li>
+</ul></li>
+</ul>
+<table>
+<thead>
+<tr class="header">
+<th>指标</th>
+<th>shared memory</th>
+<th>无shared memory</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>cuda_gpu_kern_sum</td>
+<td>21ms</td>
+<td>30ms</td>
+</tr>
+<tr class="even">
+<td>CUDA memcpy DtoH</td>
+<td>166ms</td>
+<td>166ms</td>
+</tr>
+<tr class="odd">
+<td>CUDA memcpy HtoD</td>
+<td>162ms</td>
+<td>162ms</td>
+</tr>
+</tbody>
+</table>
+<h1 id="sgemm">SGEMM</h1>
+<blockquote>
+<p><code>SGEMM</code> 表示 <strong>S</strong>ingle-precision
+<strong>GE</strong>neral <strong>M</strong>atrix
+<strong>M</strong>ultiply （<strong>单精度通用矩阵乘法</strong>）。</p>
+<p>它是 <strong>BLAS</strong>（Basic Linear Algebra
+Subprograms，基础线性代数子程序库）标准中的核心函数。简单来说，它实现的就是最基本的数学运算：</p>
+<p><span class="math display">\[C = \alpha (A \times B) + \beta
+C\]</span></p>
+<p>（在大多数简单的 CUDA 练习中，通常令 <span
+class="math inline">\(\alpha = 1, \beta = 0\)</span>，即简化的 <span
+class="math inline">\(C = A \times
+B\)</span>），我们这里来实现这个简化的版本。</p>
+</blockquote>
+<h2 id="sgemm的工具函数">SGEMM的工具函数</h2>
+<p>为了方便，我们直接在这里将 <code>SGEMM</code>
+抽象出来多个函数，为我们执行资源管理：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;util.cuh&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">host_sgemm_t</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">float</span> *A;</span><br><span class="line">    <span class="type">float</span> *B;</span><br><span class="line">    <span class="type">float</span> *C;</span><br><span class="line">    <span class="type">int</span> M;</span><br><span class="line">    <span class="type">int</span> N;</span><br><span class="line">    <span class="type">int</span> K;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">device_sgemm_t</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">float</span> *A;</span><br><span class="line">    <span class="type">float</span> *B;</span><br><span class="line">    <span class="type">float</span> *C;</span><br><span class="line">    <span class="type">int</span> M;</span><br><span class="line">    <span class="type">int</span> N;</span><br><span class="line">    <span class="type">int</span> K;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">bool</span> <span class="title">is_nearly_equal</span><span class="params">(<span class="type">float</span> a, <span class="type">float</span> b)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">float</span> diff = <span class="built_in">fabsf</span>(a - b);</span><br><span class="line">    a = <span class="built_in">fabsf</span>(a);</span><br><span class="line">    b = <span class="built_in">fabsf</span>(b);</span><br><span class="line">    <span class="type">float</span> max_val = (a &gt; b) ? a : b;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (max_val &lt; <span class="number">1e-6f</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">return</span> (diff / max_val) &lt; <span class="number">1e-4f</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">host_sgemm_t</span> *<span class="title">allocate_host</span><span class="params">(<span class="type">const</span> <span class="type">int</span> M, <span class="type">const</span> <span class="type">int</span> N, <span class="type">const</span> <span class="type">int</span> K)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">free_host</span><span class="params">(<span class="type">host_sgemm_t</span> *h_sgemm)</span></span>;</span><br><span class="line"><span class="function"><span class="type">device_sgemm_t</span> *<span class="title">allocate_device</span><span class="params">(<span class="type">const</span> <span class="type">int</span> M, <span class="type">const</span> <span class="type">int</span> N, <span class="type">const</span> <span class="type">int</span> K)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">free_device</span><span class="params">(<span class="type">device_sgemm_t</span> *d_sgemm_handler)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">memcpy_host_to_device</span><span class="params">(<span class="type">device_sgemm_t</span> *d_sgemm, <span class="type">host_sgemm_t</span> *h_sgemm)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">memcpy_device_to_host</span><span class="params">(<span class="type">host_sgemm_t</span> *h_sgemm, <span class="type">device_sgemm_t</span> *d_sgemm)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">init_matrix</span><span class="params">(<span class="type">host_sgemm_t</span> *h_sgemm)</span></span>;</span><br><span class="line"><span class="function"><span class="type">float</span> <span class="title">get_theoretical_result</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> j, <span class="type">int</span> K)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">verify_result</span><span class="params">(<span class="type">host_sgemm_t</span> *h_sgemm)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">launch_sgemm_kernel</span><span class="params">(<span class="type">const</span> <span class="type">device_sgemm_t</span> *d_sgemm)</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">run</span><span class="params">(<span class="type">const</span> <span class="type">int</span> M, <span class="type">const</span> <span class="type">int</span> N, <span class="type">const</span> <span class="type">int</span> K)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>这里，我们唯一需要注意的是，我们按照如下方式初始化我们的
+<code>A</code> 和 <code>B</code>：</p>
+<ul>
+<li><span class="math inline">\(A[i][j] = i + j;\)</span></li>
+<li><span class="math inline">\(B[i][j] = i - j;\)</span></li>
+</ul>
+<p>这是为了避免，编译器在编译的过程中对我们的数据逻辑进行优化，更好的模拟真正的线上数据。</p>
+<h2 id="sgemm-的结果验证">SGEMM 的结果验证</h2>
+<p>我们需要计算：<span class="math display">\[C[i][j] = \sum_{k=0}^{K-1}
+(i + k)(k - j)\]</span></p>
+<p>展开括号内的项：<span class="math display">\[(i + k)(k - j) = k^2 +
+(i - j)k - ij\]</span></p>
+<p>利用求和符号的线性性质，将其拆分为三个部分：<span
+class="math display">\[C[i][j] = \sum_{k=0}^{K-1} k^2 + (i - j)
+\sum_{k=0}^{K-1} k - \sum_{k=0}^{K-1} ij\]</span></p>
+<p>根据标准的数列求和公式：</p>
+<ol type="1">
+<li>平方和：<span class="math inline">\(\sum_{k=0}^{K-1} k^2 =
+\frac{(K-1)K(2K-1)}{6}\)</span></li>
+<li>等差数列求和：<span class="math inline">\(\sum_{k=0}^{K-1} k =
+\frac{(K-1)K}{2}\)</span></li>
+<li>常数项求和：<span class="math inline">\(\sum_{k=0}^{K-1} ij = K
+\cdot i \cdot j\)</span></li>
+</ol>
+<p>将上述公式代入并整理，得到 <span
+class="math inline">\(C[i][j]\)</span> 的解析式：<span
+class="math display">\[C[i][j] = \frac{K(K-1)(2K-1)}{6} + (i - j)
+\frac{K(K-1)}{2} - Kij\]</span></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">float</span> <span class="title">get_theoretical_result</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> j, <span class="type">int</span> K)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">double</span> k_double = (<span class="type">double</span>)K;</span><br><span class="line">    <span class="type">double</span> term1 = (k_double * (k_double - <span class="number">1.0f</span>) * (<span class="number">2.0f</span> * k_double - <span class="number">1.0f</span>)) / <span class="number">6.0f</span>;</span><br><span class="line">    <span class="type">double</span> term2 = (<span class="type">double</span>)(i - j) * (k_double * (k_double - <span class="number">1.0f</span>)) / <span class="number">2.0f</span>;</span><br><span class="line">    <span class="type">double</span> term3 = k_double * i * j;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (<span class="type">float</span>)(term1 + term2 - term3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="naive-sgemm">Naive SGEMM</h2>
+<p>一个 <span class="math inline">\(M \times K\)</span> 的矩阵乘以一个
+<span class="math inline">\(K \times N\)</span> 的矩阵会得到一个 <span
+class="math inline">\(M \times N\)</span>
+的矩阵，我们将最终的矩阵拆分为对应数量的 <span class="math inline">\(32
+\times 8\)</span> 的 <code>block</code>，随后每个 block
+负责计算最终的矩阵中的点：<span class="math inline">\((row,
+col)\)</span>，我们当前的实现也存在相当多的优化点：</p>
+<ul>
+<li>对于结果矩阵的第 <span class="math inline">\(R\)</span> 行，它的元素
+<code>[R[0], R[M])</code>，每一次计算都需要用到 <span
+class="math inline">\(M \times K\)</span> 矩阵的第 <span
+class="math inline">\(R\)</span>
+行，我们目前的计算中，每次都是从显存中读取，我们是否可以通过合理的
+<code>block</code> 安排，让计算第 <span class="math inline">\(R\)</span>
+行的 <code>block</code> 绑定到同一个
+<code>SM</code>。这样我们在计算的过程中，就可以将 <span
+class="math inline">\(A[R]\)</span> 存放到 Shared Memory
+中来提升性能。</li>
+</ul>
+<p>在 <span class="math inline">\(M \times N\)</span>
+的计算任务中，假设我们使用大小为 <span class="math inline">\((32,
+1)\)</span> 的线程块（Block），即每个 Block 负责结果矩阵 <span
+class="math inline">\(C\)</span>
+中的一行（或其一部分）。其访存行为可精确描述如下：</p>
+<ol type="1">
+<li>矩阵 A 的访问：广播（Broadcast）与访存冗余，对于 index_a = row * K +
+k：</li>
+</ol>
+<ul>
+<li>在一个 Block 内，所有线程的 row 相同，且在 k
+循环的每一步中，所有线程请求的都是 同一个内存地址。</li>
+<li>这虽然符合合并访问的广义定义（地址在同一个内存事务内），但实际上触发了硬件的
+广播机制（Broadcast）。</li>
+<li>尽管 IO 效率看似很高，但由于每个线程都各自发起了一次请求，导致 A
+的同一个元素被重复读取了 32 次。带宽浪费源于极低的数据复用率。</li>
+<li>应利用 Shared Memory 作为“一级缓存”，由 Block 内线程协作一次性加载 A
+的片断，实现“一处加载，处处复用”。</li>
+</ul>
+<ol start="2" type="1">
+<li>矩阵 B 的访问：完美的合并加载（Coalesced Load），对于 index_b = k *
+N + col：</li>
+</ol>
+<ul>
+<li>在 k 循环的每一步，k * N 是固定偏移，而 col 是随 threadIdx.x
+连续递增的。</li>
+<li>当 Warp 执行此指令时，32 个线程访问的是连续的 32 个 float 地址（128
+字节）。这恰好对齐了显存的一个 L2 Cache Line，实现了合并访问（Memory
+Coalescing）。</li>
+<li>这是目前 Naive 版中 IO 效率最高的部分。</li>
+</ul>
+<ol start="3" type="1">
+<li>矩阵 C 的写入：合并存储（Coalesced Store），对于 index_c = row * N +
+col：</li>
+</ol>
+<ul>
+<li>计算结束写回结果时，由于 row 固定而 col 连续，触发了合并存储。</li>
+<li>写回操作只会占用极少的总线周期。</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">naive_sgemm_kernel</span><span class="params">(<span class="type">const</span> <span class="type">device_sgemm_t</span> d_sgemm)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> row = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="type">int</span> col = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> value = <span class="number">0.0</span>;</span><br><span class="line">    <span class="keyword">if</span> (row &lt; d_sgemm.M &amp;&amp; col &lt; d_sgemm.N)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; d_sgemm.K; ++k)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="type">int</span> index_a = row * d_sgemm.K + k;</span><br><span class="line">            <span class="type">int</span> index_b = k * d_sgemm.N + col;</span><br><span class="line">            value += d_sgemm.A[index_a] * d_sgemm.B[index_b];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    d_sgemm.C[row * d_sgemm.N + col] = value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="shared-memory-sgemm">Shared Memory SGEMM</h2>
+<blockquote>
+<p>使用 <code>Shared Memory</code> 来优化 SGEMM 的思路，和使用
+<code>block</code> 来优化计算的思路是一样的：</p>
+<ul>
+<li>在 <code>block</code> 中，我们将一个大的矩阵划分为一定数量的
+<code>block</code>，每个 <code>block</code> 负责一部分数据的处理；</li>
+<li>在 <code>Shared Memory</code> 中，我们将一个 <code>block</code>
+中的矩阵划分为一定数量的更小的矩阵 -- 我们称之为 <code>Tile</code>。每个
+<code>Tile</code>
+可以缓存一部分的数据，然后随着程序的动态执行，我们可以动态的更新
+<code>Tile</code> 中的数据。而在 <code>Tile</code>
+中的数据满足需求之前，我们就可以直接从 <code>Tile</code>
+中读取数据，从而避免高昂的显存访问开销。</li>
+</ul>
+<p>整体的思路就是：</p>
+<ol type="1">
+<li>优化前的逻辑是，直接使用一个 for 循环直接计算所有的点；</li>
+<li>优化后我们将for循环拆分为 (K + TILE - 1) / TILE
+个循环，而每个循环内我们存在一个子循环，计算 TILE 个数字，这是因为
+<code>M * K</code> * <code>K * N</code> 的矩阵乘法需要K次计算；</li>
+<li>我们的这里，需要做的就是，<strong>分析在子循环中需要用到 A 和 B
+中的哪些数字，并在外层循环的最开始将这些数字全部加载到 Shared
+Memory；</strong></li>
+<li>在 <span class="math inline">\((M \times K) \times (K \times
+N)\)</span> 的矩阵乘法中，我们这里复杂的地方在于，我们要将之前的
+<code>for</code> 循环的思路转变 -- 现在不是 <code>for</code>
+循环，而是一个 <code>TILE</code>
+中包含哪些元素，我们便可以计算哪些元素。而这里我们需要：在计算过程中
+<code>A</code> 和 <code>B</code> 所需要的元素是不一样的，我们需要将
+<code>A</code> 和 <code>B</code> 所需的元素都缓存起来。</li>
+<li>而此时 <code>A</code> 和 <code>B</code>
+需要哪些元素呢？我们再思考一下 <span class="math inline">\(C(x,
+y)\)</span> 的定义，它是 <span class="math inline">\(A的第x行 *
+B的第y列\)</span> 的点积，而它的整个的流程就像是，在 A
+中存在一个点从左往右移动，在 B
+中存在一个点从上往下移动。而如果我们将这个点扩展到 TILE
+也是一样的道理：<strong>在 A 中存在一个 TILE 从左往右移动，在 B
+中存在一个 TILE 从上往下移动，那么当循环迭代完成时我们就算出来
+<code>C</code> 中的这个 TILE 的结果。这里的每个点，就是我们的
+<code>block</code> 中不同的线程，也就是说，我们的 <code>TILE</code>
+必须和 <code>block</code> 的线程矩阵完全一致。</strong></li>
+<li>整个 TILE 的引入，是典型的空间换时间的逻辑。</li>
+</ol>
+</blockquote>
+<p>我们再来回顾一下我们的 <code>Native SGEMM</code> 中的索引
+<code>index_a</code> 和 <code>index_b</code>，假设我们现在在计算的点是
+<span class="math inline">\((x, y)\)</span>，而我们的 <code>block</code>
+是一个 <span class="math inline">\(4 \times 4\)</span> 的矩阵；</p>
+<p>当 <code>k == 0</code> 时，我们的索引如下：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 6
+
+block:rows:6
+    columns 6
+    space:8 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+end
+r0[&quot;0&quot;]
+block:columns0:1
+    columns 1
+    index_a_0[&quot;index_a&quot;]
+    index_b_0[&quot;index_b&quot;]
+end
+block:t00:1
+    columns 1
+    a_00(&quot;row * K&quot;)
+    b_00(&quot;col&quot;)
+end
+block:t01:1
+    columns 1
+    a_01(&quot;row * K&quot;)
+    b_01(&quot;col + 1&quot;)
+end
+block:t02:1
+    columns 1
+    a_02(&quot;row * K&quot;)
+    b_02(&quot;col + 2&quot;)
+end
+block:t03:1
+    columns 1
+    a_03(&quot;row * K&quot;)
+    b_03(&quot;col + 3&quot;)
+end
+r1[&quot;1&quot;]
+block:columns1:1
+    columns 1
+    index_a_1[&quot;index_a&quot;]
+    index_b_1[&quot;index_b&quot;]
+end
+block:t10:1
+    columns 1
+    a_10(&quot;(row + 1) * K&quot;)
+    b_10(&quot;col&quot;)
+end
+block:t11:1
+    columns 1
+    a_11(&quot;(row + 1) * K&quot;)
+    b_11(&quot;col + 1&quot;)
+end
+block:t12:1
+    columns 1
+    a_12(&quot;(row + 1) * K&quot;)
+    b_12(&quot;col + 2&quot;)
+end
+block:t13:1
+    columns 1
+    a_13(&quot;(row + 1) * K&quot;)
+    b_13(&quot;col + 2&quot;)
+end
+r2[&quot;2&quot;]
+block:columns2:1
+    columns 1
+    index_a_2[&quot;index_a&quot;]
+    index_b_2[&quot;index_b&quot;]
+end
+block:t20:1
+    columns 1
+    a_20(&quot;(row + 2) * K&quot;)
+    b_20(&quot;col&quot;)
+end
+block:t21:1
+    columns 1
+    a_21(&quot;(row + 2) * K&quot;)
+    b_21(&quot;col + 1&quot;)
+end
+block:t22:1
+    columns 1
+    a_22(&quot;(row + 2) * K&quot;)
+    b_22(&quot;col + 2&quot;)
+end
+block:t23:1
+    columns 1
+    a_23(&quot;(row + 2) * K&quot;)
+    b_23(&quot;col + 2&quot;)
+end
+r3[&quot;3&quot;]
+
+block:columns3:1
+    columns 1
+    index_a_3[&quot;index_a&quot;]
+    index_b_3[&quot;index_b&quot;]
+end
+block:t30:1
+    columns 1
+    a_30(&quot;(row + 3) * K&quot;)
+    b_30(&quot;col&quot;)
+end
+block:t31:1
+    columns 1
+    a_31(&quot;(row + 3) * K&quot;)
+    b_31(&quot;col + 1&quot;)
+end
+block:t32:1
+    columns 1
+    a_32(&quot;(row + 3) * K&quot;)
+    b_32(&quot;col + 2&quot;)
+end
+block:t33:1
+    columns 1
+    a_33(&quot;(row + 3) * K&quot;)
+    b_33(&quot;col + 3&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+class index_a_0,index_a_1,index_a_2,index_a_3 green
+class index_b_0,index_b_1,index_b_2,index_b_3 blue
+class rows transparent
+class t00,t01,t02,t03,t10,t11,t12,t13,t20,t21,t22,t23,t30,t31,t32,t33 animate
+class a_00,a_01,a_02,a_03,a_10,a_11,a_12,a_13,a_20,a_21,a_22,a_23,a_30,a_31,a_32,a_33,b_00,b_01,b_02,b_03,b_10,b_11,b_12,b_13,b_20,b_21,b_22,b_23,b_30,b_31,b_32,b_33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>当 <code>k == 1</code> 时，我们的索引如下：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 6
+
+block:rows:6
+    columns 6
+    space:8 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+end
+r0[&quot;0&quot;]
+block:columns0:1
+    columns 1
+    index_a_0[&quot;index_a&quot;]
+    index_b_0[&quot;index_b&quot;]
+end
+block:t00:1
+    columns 1
+    a_00(&quot;row * k + 1&quot;)
+    b_00(&quot;N + col&quot;)
+end
+block:t01:1
+    columns 1
+    a_01(&quot;row * k + 1&quot;)
+    b_01(&quot;N + col + 1&quot;)
+end
+block:t02:1
+    columns 1
+    a_02(&quot;row * k + 1&quot;)
+    b_02(&quot;N + col + 2&quot;)
+end
+block:t03:1
+    columns 1
+    a_03(&quot;row * k + 1&quot;)
+    b_03(&quot;N + col + 3&quot;)
+end
+r1[&quot;1&quot;]
+block:columns1:1
+    columns 1
+    index_a_1[&quot;index_a&quot;]
+    index_b_1[&quot;index_b&quot;]
+end
+block:t10:1
+    columns 1
+    a_10(&quot;(row + 1) * k + 1&quot;)
+    b_10(&quot;N + col&quot;)
+end
+block:t11:1
+    columns 1
+    a_11(&quot;(row + 1) * k + 1&quot;)
+    b_11(&quot;N + col + 1&quot;)
+end
+block:t12:1
+    columns 1
+    a_12(&quot;(row + 1) * k + 1&quot;)
+    b_12(&quot;N + col + 2&quot;)
+end
+block:t13:1
+    columns 1
+    a_13(&quot;(row + 1) * k + 1&quot;)
+    b_13(&quot;N + col + 2&quot;)
+end
+r2[&quot;2&quot;]
+block:columns2:1
+    columns 1
+    index_a_2[&quot;index_a&quot;]
+    index_b_2[&quot;index_b&quot;]
+end
+block:t20:1
+    columns 1
+    a_20(&quot;(row + 2) * k + 1&quot;)
+    b_20(&quot;N + col&quot;)
+end
+block:t21:1
+    columns 1
+    a_21(&quot;(row + 2) * k + 1&quot;)
+    b_21(&quot;N + col + 1&quot;)
+end
+block:t22:1
+    columns 1
+    a_22(&quot;(row + 2) * k + 1&quot;)
+    b_22(&quot;N + col + 2&quot;)
+end
+block:t23:1
+    columns 1
+    a_23(&quot;(row + 2) * k + 1&quot;)
+    b_23(&quot;N + col + 2&quot;)
+end
+r3[&quot;3&quot;]
+
+block:columns3:1
+    columns 1
+    index_a_3[&quot;index_a&quot;]
+    index_b_3[&quot;index_b&quot;]
+end
+block:t30:1
+    columns 1
+    a_30(&quot;(row + 3) * k + 1&quot;)
+    b_30(&quot;N + col&quot;)
+end
+block:t31:1
+    columns 1
+    a_31(&quot;(row + 3) * k + 1&quot;)
+    b_31(&quot;N + col + 1&quot;)
+end
+block:t32:1
+    columns 1
+    a_32(&quot;(row + 3) * k + 1&quot;)
+    b_32(&quot;N + col + 2&quot;)
+end
+block:t33:1
+    columns 1
+    a_33(&quot;(row + 3) * k + 1&quot;)
+    b_33(&quot;N + col + 3&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+class index_a_0,index_a_1,index_a_2,index_a_3 green
+class index_b_0,index_b_1,index_b_2,index_b_3 blue
+class rows transparent
+class t00,t01,t02,t03,t10,t11,t12,t13,t20,t21,t22,t23,t30,t31,t32,t33 animate
+class a_00,a_01,a_02,a_03,a_10,a_11,a_12,a_13,a_20,a_21,a_22,a_23,a_30,a_31,a_32,a_33,b_00,b_01,b_02,b_03,b_10,b_11,b_12,b_13,b_20,b_21,b_22,b_23,b_30,b_31,b_32,b_33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>如果我们将 <code>TILE</code>
+的思想引入，那么这里的逻辑就可以划分为：每个 <code>TILE</code> 包含
+<code>[4][4]</code>
+的数据，那么我们在一次循环中，就可以一次读取显存，而执行 <code>32</code>
+次计算。如果观察我们上面的两个图，那么我们就能得到几个结论：</p>
+<h3 id="index_a">index_a</h3>
+<p>对于 <code>index_a</code>，我们 <code>4</code>
+次循环需要用到的值如下：</p>
+<ul>
+<li>这个值在同一行中完全一致，随着 <code>for</code> 循环递增；</li>
+<li>在不同的列中，随着行的增加大范围跳转；</li>
+</ul>
+<p>所以，<code>index_a</code>
+为了保证合并访问，必须如下图的形式组织：最终我们得到访问该
+<code>TILE</code> 的公式：就是行偏移量+列偏移量。</p>
+<p><span class="math display">\[GlobalIndex\_A = row \times K + (m
+\times TILE\_WIDTH + tx)\]</span></p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;] a00(&quot;row * K&quot;) a01(&quot;row * K + 1&quot;) a02(&quot;row * K + 2&quot;) a03(&quot;row * K + 3&quot;)
+r1[&quot;1&quot;] a10(&quot;(row + 1) * K&quot;) a11(&quot;(row + 1) * K + 1&quot;) a12(&quot;(row + 1) * K + 2&quot;) a13(&quot;(row + 1) * K + 3&quot;)
+r2[&quot;2&quot;] a20(&quot;(row + 2) * K&quot;) a21(&quot;(row + 2) * K + 1&quot;) a22(&quot;(row + 2) * K + 2&quot;) a23(&quot;(row + 2) * K + 3&quot;)
+r3[&quot;3&quot;] a30(&quot;(row + 3) * K&quot;) a31(&quot;(row + 3) * K + 1&quot;) a32(&quot;(row + 3) * K + 2&quot;) a33(&quot;(row + 3) * K + 3&quot;)
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class a00,a01,a02,a03,a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h3 id="index_b">index_b</h3>
+<p>对于 <code>index_b</code>，我们 <code>4</code>
+次循环需要用到的值如下：</p>
+<ul>
+<li>这个值在同一列中一致，随着 <code>threadIdx.x</code> 递增；</li>
+<li>在不同的线程中，随着线程的迭代而进行大范围跳转。</li>
+</ul>
+<p><code>index_b</code> 的公式如下：也是行偏移量+列偏移量</p>
+<p><span class="math display">\[GlobalIndex\_B = (m \times TILE\_WIDTH +
+ty) \times N + col\]</span></p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;] b00(&quot;col&quot;) b01(&quot;col + 1&quot;) b02(&quot;col + 2&quot;) b03(&quot;col + 3&quot;)
+r1[&quot;1&quot;] b10(&quot;N + col&quot;) b11(&quot;N + col + 1&quot;) b12(&quot;N + col + 2&quot;) b13(&quot;N + col + 3&quot;)
+r2[&quot;2&quot;] b20(&quot;2N + col&quot;) b21(&quot;2N + col + 1&quot;) b22(&quot;2N + col + 2&quot;) b23(&quot;2N + col + 3&quot;)
+r3[&quot;3&quot;] b30(&quot;3N + col&quot;) b31(&quot;3N + col + 1&quot;) b32(&quot;3N + col + 2&quot;) b33(&quot;3N + col + 3&quot;)
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class b00,b01,b02,b03,b10,b11,b12,b13,b20,b21,b22,b23,b30,b31,b32,b33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="第一次性能优化对比">第一次性能优化对比</h2>
+<p>如果我们再使用 <code>nsys</code>
+对两个程序进行性能对比，我们会发现现在已经看不出太大的差别了，因为他们的指标不够细化，只能在核函数的执行上看到一点差异，我们现在需要更细致的指标
+-- <code>ncu</code>，我们通过一下两个命令输出我们的对比。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ncu ./build/naive_sgemm</span><br><span class="line">ncu ./build/shared_sgemm</span><br></pre></td></tr></table></figure>
+<p>当我们执行完毕时，我们会发现：</p>
+<ul>
+<li>对于 <code>shared</code> 版本有一个 <code>warning</code>
+级别的提示：This kernel's theoretical occupancy (66.7%) is limited by
+the number of required registers. This kernel's theoretical occupancy
+(66.7%) is limited by the required amount of shared memory. This
+kernel's theoretical occupancy (66.7%) is limited by the number of warps
+within each block. See the CUDA Best Practices Guide
+(https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy)
+for more details on optimizing occupancy.</li>
+<li>而对于 <code>naive</code> 版本则有一个 <code>info</code>
+级别的提示：This kernel's theoretical occupancy is not impacted by any
+block limit.</li>
+</ul>
+<p>这表明，我们的 <code>shared</code>
+版本，因为配置不合理导致硬件使用受限 --
+<strong>然而，在这种情况下，我们的计算耗时和显存吞吐量仍然得到了显著的优化。</strong></p>
+<h3 id="gpu运行效率对比">GPU运行效率对比</h3>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 11%" />
+<col style="width: 12%" />
+<col style="width: 49%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th><strong>Naive 版本</strong></th>
+<th><strong>Shared 版本</strong></th>
+<th><strong>性能解读</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Duration (耗时)</strong></td>
+<td>556.38 ms</td>
+<td><strong>411.00 ms</strong></td>
+<td>纯计算耗时缩短了约 <strong>26%</strong>。</td>
+</tr>
+<tr class="even">
+<td><strong>DRAM Throughput (显存压力)</strong></td>
+<td><strong>93.53%</strong></td>
+<td><strong>32.88%</strong></td>
+<td><strong>可以看到，这是我们明显的优化，我们大部分时候都是从 Shared
+Memory读取数据</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>Memory Throughput (总带宽)</strong></td>
+<td>93.53%</td>
+<td>76.45%</td>
+<td>总数据压力下降，系统变得更“轻松”。</td>
+</tr>
+<tr class="even">
+<td><strong>Compute Throughput (算力利用)</strong></td>
+<td>81.66%</td>
+<td>76.45%</td>
+<td>虽然数值降了，但现在的 76% 是在做“有效功”，不再是空等数据。</td>
+</tr>
+<tr class="odd">
+<td><strong>L2 Cache Throughput</strong></td>
+<td>26.32%</td>
+<td><strong>9.30%</strong></td>
+<td>数据直接在 Shared Memory 解决了，连 L2 缓存都不怎么需要跑了。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="任务调度对比">任务调度对比</h3>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 12%" />
+<col style="width: 13%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th><strong>Naive 版本</strong></th>
+<th><strong>Shared 版本</strong></th>
+<th><strong>性能解读</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Block Size</strong></td>
+<td>256</td>
+<td><strong>1024</strong></td>
+<td>Shared 版用了更粗的粒度 (<span class="math inline">\(32 \times
+32\)</span>)，这有助于复用 Shared Memory 数据。</td>
+</tr>
+<tr class="even">
+<td><strong>Grid Size</strong></td>
+<td>524,288</td>
+<td>131,072</td>
+<td>因为 Block 变大了，所以需要的 Block 数量减少了。</td>
+</tr>
+<tr class="odd">
+<td><strong>Static Shared Memory</strong></td>
+<td><strong>0 byte</strong></td>
+<td><strong>8.19 Kbyte</strong></td>
+<td>每个 <code>block</code> 使用了 32 * 32 * 4 * 2 的 SSM</td>
+</tr>
+<tr class="even">
+<td>Registers Per Thread</td>
+<td>40</td>
+<td>37</td>
+<td>每个线程用的寄存器数量差不多。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="硬件占用率">硬件占用率</h3>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 12%" />
+<col style="width: 13%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th><strong>Naive 版本</strong></th>
+<th><strong>Shared 版本</strong></th>
+<th><strong>性能解读</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Theoretical Occupancy</strong></td>
+<td>100%</td>
+<td><strong>66.67%</strong></td>
+<td>理论占用率，我们的 <code>block</code> 使用了 32 * 32 = 1024
+线程，而我的显卡 4060TI 最多可以容纳 1536
+个线程，也就是说不论我们使用了多少 Shared Memory，这里最高已经不能超过
+66.67% 了。</td>
+</tr>
+<tr class="even">
+<td><strong>Achieved Occupancy</strong></td>
+<td>99.93%</td>
+<td><strong>66.65%</strong></td>
+<td>实际占用率，通常来说，我们需要通过合理的调整我们的配置参数，让我们的理论占用率达到100%，否则会发生硬件占用受限。而实际占用率则是越接近理论占用率说明我们的硬件利用率越高。</td>
+</tr>
+<tr class="odd">
+<td><strong>Block Limit Shared Mem</strong></td>
+<td>16</td>
+<td><strong>1</strong></td>
+<td>每个 Block 占用的 Shared Memory 限制了同时存在的块数。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="线程粗化2d-thread-tiling">线程粗化（2D Thread Tiling）</h2>
+<p>在我们之前的实现逻辑中，我们总是使用一个线程计算一个点，而如果我们可以实现一个线程计算多个点的话：</p>
+<ul>
+<li>优点是：我们可以减少我们计算所需要的线程数量，也就是说，当矩阵的大小扩张时，我们可以通过一个线程处理更多的数据量来代替增加更多的线程；
+<ul>
+<li><strong>寄存器级的数据复用</strong>：执行一次寄存器的读取，就可以计算多个值，降低了对
+SharedMemory 的访问频率；</li>
+<li><strong>指令吞吐量（Instruction Throughput）</strong>： GPU
+喜欢“流水线”。一个线程连续做 4 个乘加指令（FMA），比 4 个线程各做一个
+FMA 更容易填满算术逻辑单元（ALU）的流水线，掩盖指令发射的延迟；</li>
+<li><strong>减少 Global Memory 冗余</strong>： 虽然 Shared Memory
+已经缓解了这个问题，但线程粗化进一步减少了 Block 的总量，从而减少了在
+Block 边缘由于 Padding 或边界检查带来的开销。</li>
+</ul></li>
+<li>缺点是：我们每个线程需要使用更多的寄存器，而一个SM中的寄存器数量是有限的，这会降低我们的SM中能容纳的线程数量。这会使得我们面临<strong>Register
+Spilling（寄存器溢出）</strong> 风险，以及降低我们的
+<code>Occupation</code>。</li>
+</ul>
+<p>事实是，这种优化通常是在线程的总数量和单个线程处理的数据之间取得一个合适的平衡点：<strong>通过数据复用节省的时间，是否能超过因为线程数减少（掩盖延迟能力变弱）损失的时间？</strong>
+通常情况下，稍微牺牲一点 Occupancy（比如降到
+50%）来换取寄存器级的数据复用，性能反而会大幅提升。</p>
+<p>下面给出了对于一个 <code>4 * 4</code>
+的矩阵的优化前后对比：<strong>我们以每个线程多使用一定的寄存器作为代价，来降低了我们线程的数量。</strong></p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;]
+block:s1:2
+    0(&quot;0&quot;) 1(&quot;1&quot;)
+end
+block:s2:2
+    2(&quot;2&quot;) 3(&quot;3&quot;)
+end
+r1[&quot;1&quot;]
+block:s3:2
+    4(&quot;4&quot;) 5(&quot;5&quot;)
+end
+block:s4:2
+    6(&quot;6&quot;) 7(&quot;7&quot;)
+end
+r2[&quot;2&quot;]
+block:s5:2
+    8(&quot;8&quot;) 9(&quot;9&quot;)
+end
+block:s6:2
+    a(&quot;a&quot;) b(&quot;b&quot;)
+end
+r3[&quot;3&quot;]
+block:s7:2
+    c(&quot;c&quot;) d(&quot;d&quot;)
+end
+block:s8:2
+    e(&quot;e&quot;) f(&quot;f&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+space:2 c0[&quot;0&quot;]:2 c1[&quot;1&quot;]:2 c2[&quot;2&quot;]:2 c3[&quot;3&quot;]:2
+r0[&quot;0&quot;]:2
+block:s1:8
+    0(&quot;0&quot;)
+end
+r1[&quot;1&quot;]:2
+block:s3:8
+    1(&quot;1&quot;)
+end
+r2[&quot;2&quot;]:2
+block:s5:8
+    2(&quot;2&quot;)
+end
+r3[&quot;3&quot;]:2
+block:s7:8
+    3(&quot;3&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0 light_green
+class 1 gray
+class 2 yellow
+class 3 orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<figure>
+<img src="\images\cuda\线程粗化.png" alt="线程粗化" />
+<figcaption aria-hidden="true">线程粗化</figcaption>
+</figure>
+<blockquote>
+<p>上面这个图引用自 <a
+target="_blank" rel="noopener" href="https://cuda.keter.host/optimize_matmul/">CUDA Tutorial</a></p>
+<p>上图中，A 和 B 都是 7x7
+的矩阵。当每一个线程只计算一个结果的时候，我们需要从 A 中读取 7
+个数据，从 B 中读取 7 个数据，从 C 中读取 1 个数据，然后写一次
+C。这样的话，每个线程需要读取 15
+个数据，写一次数据。如果我们每一个线程计算 4 个结果，那么我们需要从 A
+中读取 14 个数据，从 B 中读取 14 个数据，从 C 中读取 4 个数据，然后写 4
+次 C。这样的话，每个线程需要读取 32 个数据，写 4
+次数据。计算每个线程的平方结果比计算结果的列更有效，因为这样我们可以共享更多的输入。</p>
+</blockquote>
+<h3 id="线程粗化的实现逻辑">线程粗化的实现逻辑</h3>
+<p>首先我们看看几个重要的预定义参数：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BM = <span class="number">128</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BN = <span class="number">128</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BK = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> TM = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> TN = <span class="number">8</span>;</span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li>这里 TM 和 TN 表示线程负责 TM * TN 个结果点；</li>
+<li>BM 是我们block的每次循环中，从矩阵 A 搬运到SSM的行数；</li>
+<li>BN 是我们block的每次循环中，从矩阵 B 搬运到 SSM的列数；</li>
+<li><strong>BK是对 BM 和 BN 的共同约束，因为矩阵乘法存在一个硬性要求，U
+* V 要求 U 的列数等于 V 的行数，而 BK
+就是这个共同约束，没有这个共同约束的话，U 和 V
+就不能算是一个可以相乘的矩阵；</strong></li>
+<li>按照我们之前的描述，A 从左向右移动，每个循环移动 BK 列，B
+从上向下移动，每次移动 BK 行，当 A 和 B
+移动到矩阵的结束为止，就意味着我们计算得到了 BM * BN 个点的数据。</li>
+</ol>
+<p>在有了这些信息之后，我们可以推论得到一下结果，在下面的代码中，总共有三个高亮部分：</p>
+<ol type="1">
+<li><strong>第二行</strong>：在一个 <span class="math inline">\((M
+\times K) \times (K \times N)\)</span> 的矩阵乘法中，总共需要 <span
+class="math inline">\(K\)</span>
+次计算（一次先乘再加的运算算作一次运算），而我们的滑动窗口每次可以计算
+<span class="math inline">\(BK\)</span> 次，向上取证即可；</li>
+<li><strong>第六行</strong>：在进行线程粗化（2D Thread
+Tiling）后，每个线程可以计算的值变多了，相当于我们的矩阵宽膨胀了
+TM，而高度膨胀了 TN；那么我们所需的线程数也需要相应的减少；</li>
+<li><strong>第九行和第十行：</strong>现在，所需的 <code>block</code>
+数量由步长决定，我们可以这么去理解：
+<ul>
+<li>每个线程可以处理 <code>TM</code> 行；</li>
+<li>每个 <code>block</code> 包含了 <code>BM / TM</code>
+个处理行的线程；</li>
+<li>那么每个 <code>block</code> 可以处理的行数是
+<code>BM / TM * TM</code>，我们按照 <code>M</code> 和 <code>BM</code>
+向上取整即可。</li>
+</ul></li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 算完当前 block 负责的矩阵块的循环数量</span></span><br><span class="line marked"><span class="keyword">for</span> (<span class="type">int</span> m = <span class="number">0</span>; m &lt; (K + BK - <span class="number">1</span>) / BK; m++) &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">launch_sgemm_kernel</span><span class="params">(<span class="type">const</span> <span class="type">device_sgemm_t</span> *d_sgemm)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程算 8x8，为了算完 128x128 的 BMxBN，需要 16x16 的线程</span></span><br><span class="line marked">    <span class="function">dim3 <span class="title">blockDim</span><span class="params">(BN / TN, BM / TM)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Grid 必须以 BM 和 BN 为步长划分，而不是以线程数划分</span></span><br><span class="line marked">    <span class="function">dim3 <span class="title">gridDim</span><span class="params">((d_sgemm-&gt;N + BN - <span class="number">1</span>) / BN,</span></span></span><br><span class="line marked"><span class="params"><span class="function">                 (d_sgemm-&gt;M + BM - <span class="number">1</span>) / BM)</span></span>;</span><br><span class="line"></span><br><span class="line">    tiled_sgemm_kernel&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;(d_sgemm-&gt;A, d_sgemm-&gt;B, d_sgemm-&gt;C, d_sgemm-&gt;M, d_sgemm-&gt;N, d_sgemm-&gt;K);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过这种分配模式，我们实现了：</p>
+<ul>
+<li><strong>1 Block</strong> <span
+class="math inline">\(\rightarrow\)</span> 处理 <span
+class="math inline">\(128 \times 128\)</span> 的结果块。</li>
+<li><strong>1 Thread</strong> <span
+class="math inline">\(\rightarrow\)</span> 处理 <span
+class="math inline">\(8 \times 8\)</span>
+的结果微块（Micro-tile）。</li>
+<li><strong>1 Warp (32 threads)</strong> <span
+class="math inline">\(\rightarrow\)</span> 处理 <span
+class="math inline">\(32 \times 8 \times 8\)</span>
+的数据流（取决于具体的线程排列）。</li>
+</ul>
+<h3 id="实现代码">实现代码</h3>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">tiled_sgemm_kernel</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *A, <span class="type">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C, <span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> K)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 1. 声明共享内存：尺寸为 BMxBK 和 BKxBN</span></span><br><span class="line">    __shared__ <span class="type">float</span> sA[BM][BK];</span><br><span class="line">    __shared__ <span class="type">float</span> sB[BK][BN];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 寄存器：存储该线程负责的 TMxTN 个结果点</span></span><br><span class="line">    <span class="type">float</span> accum[TM][TN] = &#123;<span class="number">0.0f</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 线程在 Block 内的 ID</span></span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> <span class="type">int</span> ty = threadIdx.y;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> <span class="type">int</span> tx = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每次循环，我们的 sA 向右移动 BM，sB 向下移动 BN，每个线程计算自身对应的矩阵块并记录到 accum 中</span></span><br><span class="line">    <span class="comment">// 当循环结束时，我们应该计算得到了一个 TM * TN 的矩阵块，矩阵块中包含了 C 中的部分元素。</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> m = <span class="number">0</span>; m &lt; (K + BK - <span class="number">1</span>) / BK; m++) &#123;</span><br><span class="line">        <span class="comment">// 1. BM * BK 是行偏移</span></span><br><span class="line">        <span class="comment">// 2. blockDim.x * blockDim.y 是每个 block 中的线程数量，也就是 (BN / TN) * (BM / TM) 个线程</span></span><br><span class="line">        <span class="comment">//          也就是说每次循环搬运的数量是 (BM * BN) / (TM * TN)</span></span><br><span class="line">        <span class="comment">//          而我们总共需要搬运的数量是 BM * BK</span></span><br><span class="line">        <span class="comment">//          也就是说我们用 BM * BK / ((BM * BN) / (TM * TN)) 即可，只是需要进行一次向上取整。</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; (BM * BK + (blockDim.x * blockDim.y) - <span class="number">1</span>) / (blockDim.x * blockDim.y); i++) &#123;</span><br><span class="line">            <span class="comment">// 这里的逻辑比较容易让人误解，这个位置的逻辑不是要进行线程粗化的计算，</span></span><br><span class="line">            <span class="comment">// 而是需要将所有线程粗化后所需的数据全部加载到SSM，所以这里是对显存的合并访问：</span></span><br><span class="line">            <span class="comment">// 在一次循环中，我们在 x 轴上合并访问的元素为 (BN / TN) 个元素；</span></span><br><span class="line">            <span class="comment">// 而这样的行，我们总共有 (BM / TM) 行；</span></span><br><span class="line">            <span class="comment">// 这两个参数也是我们的 block 中的元素的矩阵的行和列。</span></span><br><span class="line">            <span class="type">const</span> <span class="type">unsigned</span> thread_id = ty * blockDim.x + tx;</span><br><span class="line">            <span class="comment">// 这个位置的逻辑非常的绕，简单来说就是，我们</span></span><br><span class="line">            <span class="comment">// 我们将矩阵从逻辑上看做一个连续的数组，尽管不同行的数组</span></span><br><span class="line">            <span class="comment">// 中会有很多不属于该block的元素。</span></span><br><span class="line">            <span class="comment">// 那么，我们要将这个连续的数组顺序的读取到 sA 中，但是问题在于，我们并不能和CPU编程一样：</span></span><br><span class="line">            <span class="comment">// for (int i = 0; i &lt; BM * BK; ++i) &#123;&#125;</span></span><br><span class="line">            <span class="comment">// 我们计算的 load_id 就是目标元素在这个数组中的索引，也就是 &#123;0, 1, 2, ... (BN / TN) * (BM / TM)&#125;</span></span><br><span class="line">            <span class="comment">// 这依赖于以下几个逻辑：</span></span><br><span class="line">            <span class="comment">// 1. 在 block 中，thread_id 总是顺序递增的；</span></span><br><span class="line">            <span class="comment">// 2. 每个 block 中的 thread 总数，总是等于 blockDim.x * blockDim.y</span></span><br><span class="line">            <span class="comment">// 所以，我们根据当前 block 中的 threadId 是一个集合：[0, blockDim.x * blockDim.y - 1)</span></span><br><span class="line">            <span class="comment">// 我们通过每次执行完之后加上 i * (blockDim.x * blockDim.y) 来实现行增加</span></span><br><span class="line">            <span class="comment">// 而我们可以通过这个行和列计算出来他们的全局行和全局列</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">// 1. i * (blockDim.x * blockDim.y) 的本质是增加一个行偏移</span></span><br><span class="line">            <span class="comment">// 2. 这里还有一点需要注意的是，即使我们线程的数量超过 block 中一行的数量也不会发生异常</span></span><br><span class="line">            <span class="comment">//      因为，我们这里通过 (load_id &lt; BM * BK) 确保不会数组越界</span></span><br><span class="line">            <span class="comment">//      同时，通过 / Bk 和 % BK 保证我们取到的行和列也是正确的</span></span><br><span class="line">            <span class="comment">//      只不过，这种错误的参数设置，会破坏我们的合并访问。</span></span><br><span class="line">            <span class="type">const</span> <span class="type">unsigned</span> load_id = thread_id + i * (blockDim.x * blockDim.y);</span><br><span class="line">            <span class="keyword">if</span> (load_id &lt; BM * BK) &#123;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> r = load_id / BK;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> c = load_id % BK;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> global_row = blockIdx.y * BM + r;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> global_col = m * BK + c;</span><br><span class="line">                <span class="keyword">if</span> (global_row &lt; M &amp;&amp; global_col &lt; K) &#123;</span><br><span class="line">                    sA[r][c] = A[global_row * K + global_col];</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    sA[r][c] = <span class="number">0.0f</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这里和 sA 的逻辑完全一样</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; (BK * BN + (blockDim.x * blockDim.y) - <span class="number">1</span>) / (blockDim.x * blockDim.y); i++) &#123;</span><br><span class="line">            <span class="type">const</span> <span class="type">unsigned</span> thread_id = ty * blockDim.x + tx;</span><br><span class="line">            <span class="type">const</span> <span class="type">unsigned</span> load_id = thread_id + i * (blockDim.x * blockDim.y);</span><br><span class="line">            <span class="keyword">if</span> (load_id &lt; BK * BN) &#123;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> r = load_id / BN;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> c = load_id % BN;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> global_row = m * BK + r;</span><br><span class="line">                <span class="type">const</span> <span class="type">unsigned</span> global_col = blockIdx.x * BN + c;</span><br><span class="line">                sB[r][c] = (global_row &lt; K &amp;&amp; global_col &lt; N) ? B[global_row * N + global_col] : <span class="number">0.0f</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        __syncthreads();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 我们前面的算法中，使用的是内积，内积的实现通常是</span></span><br><span class="line">        <span class="comment">// 取出 A 的第 M 行和 B 的第 N 列，计算他们的积。</span></span><br><span class="line">        <span class="comment">// 内积更直观，缺点是每次计算一个点，我们就需要读取一整行和一整列</span></span><br><span class="line">        <span class="comment">// 而这个位置，使用外积效率更高，因为我们外积读取一行和一列，便可以计算出一个矩阵</span></span><br><span class="line">        <span class="comment">// 也就是，对于 `M * K` 和 `K * N` 的矩阵，我们只需要在 K 次循环中</span></span><br><span class="line">        <span class="comment">// 进行 M 次访问（读取A的行）和 N 次访问（读取 B 的列），</span></span><br><span class="line">        <span class="comment">// 在计算完成之后 A 的这一行和 B 的这一列使命就完成了</span></span><br><span class="line">        <span class="comment">// 总共需要 BK * (TM + TN) 次 SSM 访问和 BK * TM * TN * 2 次寄存器访问</span></span><br><span class="line marked">        <span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; BK; k++) &#123;</span><br><span class="line marked">            <span class="type">float</span> a_reg[TM];</span><br><span class="line marked">            <span class="type">float</span> b_reg[TN];</span><br><span class="line marked"></span><br><span class="line marked">            <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; TM; i++) &#123;</span><br><span class="line marked">                a_reg[i] = sA[ty * TM + i][k];</span><br><span class="line marked">            &#125;</span><br><span class="line marked">            <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; TN; j++) &#123;</span><br><span class="line marked">                b_reg[j] = sB[k][tx * TN + j];</span><br><span class="line marked">            &#125;</span><br><span class="line marked"></span><br><span class="line marked">            <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; TM; i++) &#123;</span><br><span class="line marked">                <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; TN; j++) &#123;</span><br><span class="line marked">                    accum[i][j] += a_reg[i] * b_reg[j];</span><br><span class="line marked">                &#125;</span><br><span class="line marked">            &#125;</span><br><span class="line marked">        &#125;</span><br><span class="line"></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 此时，我们已经将计算的结果存放到 accum 了</span></span><br><span class="line">    <span class="comment">// 注意，这里不论外层循环是TM还是TN，我们都是合并访问的</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; TM; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; TN; j++) &#123;</span><br><span class="line">            <span class="type">const</span> <span class="type">unsigned</span> global_row = blockIdx.y * BM + ty * TM + i;</span><br><span class="line">            <span class="type">const</span> <span class="type">unsigned</span> global_col = blockIdx.x * BN + tx * TN + j;</span><br><span class="line">            <span class="keyword">if</span> (global_row &lt; M &amp;&amp; global_col &lt; N) &#123;</span><br><span class="line">                C[global_row * N + global_col] = accum[i][j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">launch_sgemm_kernel</span><span class="params">(<span class="type">const</span> <span class="type">device_sgemm_t</span> *d_sgemm)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程算 8x8，为了算完 128x128 的 BMxBN，需要 16x16 的线程</span></span><br><span class="line">    <span class="function">dim3 <span class="title">blockDim</span><span class="params">(BN / TN, BM / TM)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Grid 必须以 BM 和 BN 为步长划分，而不是以线程数划分</span></span><br><span class="line">    <span class="function">dim3 <span class="title">gridDim</span><span class="params">((d_sgemm-&gt;N + BN - <span class="number">1</span>) / BN,</span></span></span><br><span class="line"><span class="params"><span class="function">                 (d_sgemm-&gt;M + BM - <span class="number">1</span>) / BM)</span></span>;</span><br><span class="line"></span><br><span class="line">    tiled_sgemm_kernel&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;(d_sgemm-&gt;A, d_sgemm-&gt;B, d_sgemm-&gt;C, d_sgemm-&gt;M, d_sgemm-&gt;N, d_sgemm-&gt;K);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="第二次性能优化对比">第二次性能优化对比</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ncu ./build/shared_sgemm_thread</span><br></pre></td></tr></table></figure>
+<h3 id="性能分析-1">性能分析</h3>
+<p>当我们执行完毕时，我们会发现有如下警告信息：</p>
+<ol type="1">
+<li>This kernel grid is too small to fill the available resources on
+this device, resulting in only 0.9 full waves across all SMs. Look at
+Launch Statistics for more details.</li>
+<li>If you execute __syncthreads() to synchronize the threads of a
+block, it is recommended to have more than the achieved 1 blocks per
+multiprocessor. This way, blocks that aren't waiting for __syncthreads()
+can keep the hardware busy.</li>
+<li>This kernel's theoretical occupancy (33.3%) is limited by the number
+of required registers. See the CUDA Best Practices Guide
+(https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy)
+for more details on optimizing occupancy.</li>
+</ol>
+<p>我们逐个解析这些逻辑：</p>
+<h4 id="sm使用率">SM使用率</h4>
+<blockquote>
+<p>This kernel grid is too small to fill the available resources on this
+device, resulting in only 0.9 full waves across all SMs. Look at Launch
+Statistics for more details.</p>
+</blockquote>
+<p>在 CUDA 的性能分析中，<strong>Full
+Wave</strong>是一个衡量<strong>并行度是否填满了硬件</strong>的核心指标。显卡（GPU）由许多个
+<strong>SM</strong>（流式多处理器）组成。一个 SM 在同一时间能处理的
+<strong>Thread Block</strong>
+数量是有限的（受限于寄存器、共享内存等）。</p>
+<ul>
+<li><strong>1 个 Wave</strong>：指的是 GPU 的所有 SM 恰好都塞满了
+Block，正在同步运行的状态。</li>
+<li><strong>Waves 的计算方式</strong>：<span class="math inline">\(Waves
+= \frac{\text{Total Blocks in Grid}}{\text{Max Active Blocks per SM}
+\times \text{Total SMs on GPU}}\)</span></li>
+</ul>
+<p>而我们这里的 <strong>0.9 full waves</strong>
+表示，我们的任务连让整个GPU满载都达不到，此外，并不是 full waves
+大于一就表示系统配置正常：</p>
+<ul>
+<li>1.0 waves 表示所有的SMs都在工作；</li>
+<li>0.9 waves 表示只有 90% 的 SMs 在工作，剩下的 10% SMs 在空闲中；</li>
+<li>1.1 waves 则是更差的状态，在完成部分工作后，很有可能进入到只有 10%
+的 SMs 在工作的状态。</li>
+</ul>
+<p>所以，我们合理的配置是，waves 是 SMs 的整数倍。</p>
+<h4 id="syncthreads">__syncthreads</h4>
+<blockquote>
+<p>If you execute __syncthreads() to synchronize the threads of a block,
+it is recommended to have more than the achieved 1 blocks per
+multiprocessor. This way, blocks that aren't waiting for __syncthreads()
+can keep the hardware busy.</p>
+</blockquote>
+<p><strong>我们目前的系统，只有 0.9 的 full waves，也就是说，我们的每个
+SM 最多会执行一个 block。</strong>这意味着当我们在 <code>block</code>
+中执行 <code>__syncthreads</code> 时，我们的整个 SM
+会直接停止工作，最好的状态是，当有 block 执行 <code>syncthreads</code>
+时，有其他的 block 可以被执行；</p>
+<h4 id="theoretical-occupancy">theoretical occupancy</h4>
+<blockquote>
+<p>This kernel's theoretical occupancy (33.3%) is limited by the number
+of required registers. See the CUDA Best Practices Guide
+(https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy)
+for more details on optimizing occupancy.</p>
+</blockquote>
+<p>我们的GPU上，每个SM的寄存器数量是有限的，而在我们的代码中：</p>
+<ul>
+<li><code>float res[TM][TN];</code> 使用了 64 个寄存器</li>
+<li><code>float a_reg[TM];</code> 使用了 8 个寄存器；</li>
+<li><code>float b_reg[TN];</code> 使用了 8 个寄存器</li>
+</ul>
+<p>除此之外，其他的临时变量也会使用寄存器，这使得我们的的 SM 能容纳的
+<code>block</code>
+数量减少。需要注意的是，这里是理论占用率，因为由于我们的 full waves 只有
+0.9，我们本身就会存在严重的低Occupation异常。</p>
+<h3 id="优化思路-1">优化思路</h3>
+<p>我们的目标是，提升 full waves，这样可以同时解决两个问题：</p>
+<ol type="1">
+<li>在 <code>SM使用率</code>
+中避免SMs限制，问题在于，我们很难配置一个参数，在不影响其他指标（例如尽可能的利用
+Memory Burst）
+的情况下，正好为SMs的整数倍，我们只能尽量去接近这个目标；</li>
+<li><code>__syncthreads</code> 如果每个 SM 中有多个 blocks，那么在 block
+休眠时，SM 不会进入限制状态；</li>
+</ol>
+<p>降低寄存器的使用数量，这可以提高我们的 occupancy。</p>
+<p>为了达到这些目的，我们可以：</p>
+<ol type="1">
+<li>减小 <span class="math inline">\(BM\)</span> 和 <span
+class="math inline">\(BN\)</span> 提升 Full Waves
+<ul>
+<li><strong>硬件对齐目标</strong>：在理想情况下，你希望 <span
+class="math inline">\(Total Blocks \div Total SMs\)</span>
+的结果不仅是一个大于 1 的数，而且最好是<strong>整数</strong>（例如 2.0,
+3.0）。</li>
+<li><strong>潜在风险（Memory Coalescing）</strong>：当我们减小 <span
+class="math inline">\(BN\)</span> 时（比如从 128 减到 64 或
+32），需要注意 <span class="math inline">\(B\)</span>
+矩阵加载时的<strong>合并访问</strong>。
+<ul>
+<li>在加载 <span class="math inline">\(sB\)</span> 时，如果 <span
+class="math inline">\(BN\)</span>
+太小，可能导致一排线程加载的内存地址跨度不够“整齐”，无法充分利用显存的单次
+Burst（通常是 128 字节）。</li>
+<li><strong>建议</strong>：即便减小 <span
+class="math inline">\(BN\)</span>，也尽量保持其为 32 或 64
+的倍数，以维持良好的访存对齐。</li>
+</ul></li>
+</ul></li>
+<li>降低 <span class="math inline">\(TM, TN\)</span> 以平衡 Occupancy
+<ul>
+<li><strong>Occupancy 提升的代价</strong>： 减少 <span
+class="math inline">\(TM, TN\)</span>（如从 <span
+class="math inline">\(8 \times 8\)</span> 降到 <span
+class="math inline">\(4 \times 4\)</span>）确实能显著释放寄存器，让
+<span class="math inline">\(33.3\%\)</span> 的 Occupancy 翻倍。</li>
+<li><strong>计算强度的下降</strong>：我们现在的代码核心优势在于<strong>外积（Outer
+Product）</strong>带来的寄存器复用。
+<ul>
+<li>在 <span class="math inline">\(8 \times 8\)</span> 模式下，读取 1 个
+<span class="math inline">\(a\_reg\)</span> 和 1 个 <span
+class="math inline">\(b\_reg\)</span> 可以支撑 1 次乘法，而这个 <span
+class="math inline">\(a\_reg\)</span> 在内层循环被复用了 8 次。</li>
+<li>如果降到 <span class="math inline">\(4 \times
+4\)</span>，复用率直接减半。这意味着你需要花费更多的指令去从 Shared
+Memory 读取数据。</li>
+<li><strong>平衡点</strong>：通常在矩阵乘法中，Occupancy 达到
+<strong>50% - 60%</strong> 左右就足够隐藏大部分延迟了。盲目追求 100%
+Occupancy 而过度牺牲 <span class="math inline">\(TM/TN\)</span>
+往往会导致单线程执行效率大幅下滑，总时间反而变长。</li>
+</ul></li>
+</ul></li>
+</ol>
+<h3 id="指标对比">指标对比</h3>
+<p>可以看到，我们在优化配置后，虽然 occupancy
+指标显著提高，但是处理时间并没有显著的提高。这是因为，为了使得 SMs
+中能执行更多的
+block，我们通过降低内部寄存器的使用，这意味着：<strong>虽然在等待时会有其他的
+block
+被调度，但是因为内部寄存器缓存数量的减少导致我们需要更多的访问显存，这也是为什么
+DRAM Throughput 和 L2 Cache Throughput
+都显著提高的原因。</strong>所以说，性能的优化并不能单纯的关注某些指标，而需要关注整体的指标做权衡。</p>
+<h4 id="gpu运行效率对比-1">GPU运行效率对比</h4>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 20%" />
+<col style="width: 22%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th><strong>Naive 版本</strong></th>
+<th><strong>Shared 版本</strong></th>
+<th>未优化配置</th>
+<th>优化配置后</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Duration</td>
+<td>556.38 ms</td>
+<td><strong>411.00 ms</strong></td>
+<td>130ms</td>
+<td>122ms</td>
+</tr>
+<tr class="even">
+<td>DRAM Throughput</td>
+<td><strong>93.53%</strong></td>
+<td><strong>32.88%</strong></td>
+<td>26.65%</td>
+<td>53.97%</td>
+</tr>
+<tr class="odd">
+<td>Memory Throughput</td>
+<td>93.53%</td>
+<td>76.45%</td>
+<td>50.12%</td>
+<td>53.97%</td>
+</tr>
+<tr class="even">
+<td>Compute Throughput</td>
+<td>81.66%</td>
+<td>76.45%</td>
+<td>36.75%</td>
+<td>51.61%</td>
+</tr>
+<tr class="odd">
+<td>L2 Cache Throughput</td>
+<td>26.32%</td>
+<td><strong>9.30%</strong></td>
+<td>9.46%</td>
+<td>14.73%</td>
+</tr>
+</tbody>
+</table>
+<h4 id="任务调度对比-1">任务调度对比</h4>
+<table>
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 19%" />
+<col style="width: 20%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th><strong>Naive 版本</strong></th>
+<th><strong>Shared 版本</strong></th>
+<th>未优化配置</th>
+<th>优化配置后</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Block Size</strong></td>
+<td>256</td>
+<td><strong>1024</strong></td>
+<td>256</td>
+<td>256</td>
+</tr>
+<tr class="even">
+<td><strong>Grid Size</strong></td>
+<td>524,288</td>
+<td>131,072</td>
+<td>64</td>
+<td>32768</td>
+</tr>
+<tr class="odd">
+<td><strong>Static Shared Memory</strong></td>
+<td><strong>0 byte</strong></td>
+<td><strong>8.19 Kbyte</strong></td>
+<td>8.19 Kbyte</td>
+<td>4.10 Kbyte</td>
+</tr>
+<tr class="even">
+<td>Registers Per Thread</td>
+<td>40</td>
+<td>37</td>
+<td>94</td>
+<td>56</td>
+</tr>
+</tbody>
+</table>
+<h4 id="硬件占用率-1">硬件占用率</h4>
+<table>
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 18%" />
+<col style="width: 20%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th><strong>Naive 版本</strong></th>
+<th><strong>Shared 版本</strong></th>
+<th>未优化版本</th>
+<th>优化后配置</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Theoretical Occupancy</strong></td>
+<td>100%</td>
+<td><strong>66.67%</strong></td>
+<td>33.33</td>
+<td>66.67</td>
+</tr>
+<tr class="even">
+<td><strong>Achieved Occupancy</strong></td>
+<td>99.93%</td>
+<td><strong>66.65%</strong></td>
+<td>31.22</td>
+<td>66.67</td>
+</tr>
+<tr class="odd">
+<td><strong>Block Limit Shared Mem</strong></td>
+<td>16</td>
+<td><strong>1</strong></td>
+<td>7</td>
+<td>12</td>
+</tr>
+</tbody>
+</table>
 <h1 id="qa">QA</h1>
 <h2 id="术语">术语</h2>
 <table>
@@ -1839,6 +3770,328 @@ PCIe 搬运到 VRAM，GPU 才能对其进行计算。</td>
 </tr>
 </tbody>
 </table>
+<h2 id="ncu的指标">ncu的指标</h2>
+<h3 id="gpu-speed-of-light-sol-throughput">GPU Speed Of Light (SOL)
+Throughput</h3>
+<p>这是“性能概览”表，反映了 GPU 硬件资源的利用极限。</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 8%" />
+<col style="width: 63%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标名称 (Metric Name)</strong></th>
+<th><strong>单位</strong></th>
+<th><strong>意义说明</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Memory Throughput</strong></td>
+<td>%</td>
+<td><strong>总存储吞吐率</strong>。表示显卡访存带宽的使用比例。超过 80%
+即意味着访存极其繁忙。</td>
+</tr>
+<tr class="even">
+<td><strong>DRAM Throughput</strong></td>
+<td>%</td>
+<td><strong>显存（大仓库）吞吐率</strong>。</td>
+</tr>
+<tr class="odd">
+<td><strong>Compute (SM) Throughput</strong></td>
+<td>%</td>
+<td><strong>计算核心利用率</strong>。</td>
+</tr>
+<tr class="even">
+<td><strong>L1/TEX Cache Throughput</strong></td>
+<td>%</td>
+<td>L1 缓存/纹理缓存吞吐率。反映了离核心最近的缓存层级的活跃度。</td>
+</tr>
+<tr class="odd">
+<td><strong>L2 Cache Throughput</strong></td>
+<td>%</td>
+<td>L2 缓存吞吐率。数值较低说明数据没怎么在二级缓存命中，全都跑去 DRAM
+搬了。</td>
+</tr>
+<tr class="even">
+<td><strong>Duration</strong></td>
+<td>ms</td>
+<td><strong>总耗时</strong>。Kernel 执行完花掉的物理时间。</td>
+</tr>
+<tr class="odd">
+<td><strong>Elapsed Cycles</strong></td>
+<td>cycle</td>
+<td>整个过程消耗的 GPU 时钟周期总数。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="launch-statistics">Launch Statistics</h3>
+<p>启动配置表</p>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 8%" />
+<col style="width: 63%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标名称 (Metric Name)</strong></th>
+<th><strong>单位</strong></th>
+<th><strong>意义说明</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Grid Size</strong></td>
+<td>-</td>
+<td><strong>网格规模</strong>。</td>
+</tr>
+<tr class="even">
+<td><strong>Block Size</strong></td>
+<td>-</td>
+<td><strong>块规模</strong>。</td>
+</tr>
+<tr class="odd">
+<td><strong>Threads</strong></td>
+<td>thread</td>
+<td><strong>总线程数</strong>。</td>
+</tr>
+<tr class="even">
+<td>Registers Per Thread</td>
+<td>reg</td>
+<td><strong>每个线程消耗的寄存器</strong>。</td>
+</tr>
+<tr class="odd">
+<td>Static Shared Memory</td>
+<td>byte</td>
+<td><strong>静态共享内存</strong>。</td>
+</tr>
+<tr class="even">
+<td>Waves Per SM</td>
+<td>-</td>
+<td>每个计算单元（SM）上排队轮转的“波次”数，数值越高说明任务越重。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="occupation">Occupation</h3>
+<p>这是“占用率”表，反映了 GPU 核心的工位利用率。</p>
+<table>
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 9%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标名称 (Metric Name)</strong></th>
+<th><strong>单位</strong></th>
+<th><strong>意义说明</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Theoretical Occupancy</strong></td>
+<td>%</td>
+<td><strong>理论占用率</strong></td>
+</tr>
+<tr class="even">
+<td><strong>Achieved Occupancy</strong></td>
+<td>%</td>
+<td><strong>实际占用率</strong>。</td>
+</tr>
+<tr class="odd">
+<td>Theoretical Active Warps per SM</td>
+<td>warp</td>
+<td>每个 SM 理论上能同时跑多少个线程束（Warp）。</td>
+</tr>
+<tr class="even">
+<td>Achieved Active Warps Per SM</td>
+<td>warp</td>
+<td>每个 SM 实际上跑的实际 warp。</td>
+</tr>
+<tr class="odd">
+<td>Block Limit SM</td>
+<td>block</td>
+<td>每个 SM 最多能放的 Block。</td>
+</tr>
+<tr class="even">
+<td>Block Limit Shared Mem</td>
+<td>block</td>
+<td>共享内存对 Block 数量的限制。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="warp">warp</h2>
+<h3 id="什么是-warp">什么是 Warp</h3>
+<p>在硬件层面，GPU
+并不是一个线程一个线程地去执行代码的。为了管理成千上万个线程，它规定：<strong>每
+32 个线程组成一个小组，这个小组被称为一个 Warp。</strong></p>
+<ul>
+<li><strong>同步执行</strong>：在任何一个时刻，这 32
+个线程都在执行<strong>同一行指令</strong>，只是在处理<strong>不同的数据</strong>（这就是
+SIMT：单指令多线程）</li>
+<li><strong>最小调度单位</strong>：GPU
+的硬件调度器（SM）每次分发任务，最少也是分发一整个 Warp 的指令。</li>
+</ul>
+<p>这里还是需要注意：<strong>GPU的并行和单核CPU的并行是完全不一样的，单核CPU是通过上下切换实现的伪并行，而GPU的并行是物理意义上的并行（每个线程都拥有自己的寄存器）。</strong></p>
+<h3 id="为什么warp是32个线程">为什么warp是32个线程</h3>
+<blockquote>
+<p><strong>32
+的意义在于：它是高性能吞吐与复杂逻辑控制之间的“最大公约数”。</strong></p>
+</blockquote>
+<p><strong>首先我们需要知道的是：不是所有的warp都是32个线程一组</strong>，虽然
+NVIDIA 定义了 "Warp" 这个概念并固定为 32，但其他架构有不同的选择：</p>
+<ul>
+<li><strong>NVIDIA (Warp)</strong>：从 2006 年至今，所有架构始终坚持
+<strong>32</strong>。</li>
+<li><strong>AMD (Wavefront)</strong>：在较老的 GCN 架构中是
+<strong>64</strong>；在最新的 RDNA 架构（如 RX 6000/7000
+系列）中，为了提高灵活性，可以配置为 <strong>32</strong>。</li>
+<li><strong>Intel (SIMD Lane)</strong>：Intel 的 GPU（如 Xe
+架构）通常使用更小的宽度，如 <strong>8、16 或 32</strong>。</li>
+</ul>
+<p>而通常来说，由于NVIDIA目前在GPU的统治地位，我们通常可以认为所有的warp都是32个线程一组。而
+NVIDIA 选择32个线程作为一个warp，本质上是在
+<strong>“硬件成本（效率）”</strong> 与
+<strong>“编程灵活性（易用性）”</strong> 之间做权衡，主要的意图包括：</p>
+<ul>
+<li><strong>掩盖访存延迟（Latency
+Hiding）</strong>：这是最核心的理由，因为GPU的计算速度远超内存访问速度：
+<ul>
+<li>当一个 Warp (32人) 因为等待数据而停下来时，SM
+硬件调度器可以瞬间切换到 <strong>另一个 Warp</strong> 去执行。</li>
+<li>而32个线程作为一组，它大到足以通过“批处理”掩盖大部分硬件开销，又小到让
+SM 内部的寄存器文件（Register
+File）不至于因为要存储太多线程的状态而变得太大太慢。</li>
+</ul></li>
+<li><strong>减少控制单元的面积</strong>：GPU
+的核心（SM）非常拥挤。如果每个线程都有自己的“指令获取器”和“程序计数器（PC）”，那芯片的大部分面积都会被控制电路占满，没地方放计算单元（ALU）了。使用warp意味着硬件开销减少了
+32 倍。这让 GPU 能把省下的空间塞进更多的计算单元，实现恐怖的算力。</li>
+<li><strong>适配现代内存合并访问</strong>：现代显存（DDR6/HBM）的数据总线宽度通常是
+<strong>256 bit（即 32 字节）</strong>，而 <code>4</code>
+个内存突发传输（<a href="#gpu的数据总线">Memory Burst</a>）总共是
+<code>128</code>字节，符合 DRAM 芯片的最佳吞吐性能。如果选 4
+个线程，带宽利用率太低；如果选 512
+个线程，管理开销和冲突又太严重。（这里需要注意的是，我们读取的数据 128
+bytes，其实是超过数据总线带宽的，我们可以参考 <a
+href="#gpu的数据总线">GPU的数据总线</a> 这一小节来查看原因。）</li>
+</ul>
+<h3 id="warp和block">warp和block</h3>
+<p>不论我们<code>dim3 block</code>
+是几维的，在硬件眼里，它们都会被拉平成一条直线，然后按 <strong>32
+个一排</strong> 砍断：拉平的顺序是：<strong>X 轴最快（内层），Y
+轴次之（中层），Z 轴最慢（外层）。</strong></p>
+<p>我们可以用一个公式来定位任何一个线程在物理队列中的位置（TID）：</p>
+<p><span class="math display">\[TID = threadIdx.z \times (blockDim.x
+\times blockDim.y) + threadIdx.y \times blockDim.x +
+threadIdx.x\]</span></p>
+<p>假设我们声明了 <span class="math inline">\(block(16, 16,
+16)\)</span>，那么我们总共会生成 <span class="math inline">\(16 * 16 *
+16 / 32 = 128\)</span> 个warp，而我们 warp 填满这些线程的逻辑是：</p>
+<ol type="1">
+<li>把 <code>block(16, 16, 16)</code> 拉平为一个
+<code>{(0, 0, 0), (0, 0, 1), ..., (0, 0, 15), (0, 1, 0), ..., (0, 15, 15), (1, 0, 0), ...}</code>
+排列的 thread 数组；</li>
+<li>在数组中，每次选择相邻的 32 个线程作为一个 warp；</li>
+</ol>
+<p>也就是说，我们的128个warp应该是如下的顺序：</p>
+<ol type="1">
+<li><code>(0, 0, 0) ~ (0, 0, 15)</code> &amp;&amp;
+<code>(0, 1, 0) ~ (0, 1, 15)</code></li>
+<li><code>(0, 2, 0) ~ (0, 2, 15)</code> &amp;&amp;
+<code>(0, 3, 0) ~ (0, 3, 15)</code></li>
+<li><code>...</code></li>
+<li><code>(1, 0, 0) ~ (1, 0, 15)</code> &amp;&amp;
+<code>(1, 1, 0) ~ (1, 1, 15)</code></li>
+<li><code>...</code></li>
+<li><code>(15, 14, 0) ~ (15, 14, 15)</code> &amp;&amp;
+<code>(15, 15, 0) ~ (15, 15, 15)</code></li>
+</ol>
+<h3 id="warp和合并访问">warp和合并访问</h3>
+<p>那现在核心的问题来了，当我们使用warp来调度三维矩阵时，我们是否实现了我们的合并访问逻辑？我们使用下面的例子来逐一分析：</p>
+<ul>
+<li><code>(16, 16, 16)</code> 我们的每个 warp 包含的线程应该是
+<code>(z, y, 0) ~ (z, y, 15)</code> 和
+<code>(z, y + 1, 0) ~ (z, y + 1， 15)</code>，而这两个部分大概率是位于不连续的内存，而这两个部分的内部
+<code>15</code>
+个元素，又位于一个连续的内存区域。也就是说，part内是合并访问的，两个part之间不是合并访问的。这里就陷入了我们的一个内存访问陷阱，我们假设
+<code>(0, 0, 0)</code> 元素是按照 128 bytes 对齐的：
+<ul>
+<li>当我们访问 <code>(0,0,0) ~ (0,0,15)</code> 的数据时，从内存读取
+<code>(0,0,0) ~ (0,0,31)</code> 数据，但是其中的 64bytes 被浪费了；</li>
+<li>当我们访问 <code>(0,1,0) ~ (0,1,15)</code> 的数据时，从内存读取
+<code>(0,0,0) ~ (0,0,31)</code> 数据，但是其中的 64bytes 被浪费了；</li>
+<li>也就是，每次访问，都会浪费掉一半的数据，我们的带宽利用率极低；</li>
+</ul></li>
+<li><code>(32, 16, 16)</code>，每个 warp 包含的线程是
+<code>(z, y, 0) ~ (z, y, 31)</code>，我们充分的利用了我们的 Memory
+Burst，这是合理的选择；</li>
+<li><code>(64, 8, 8)</code> 每个 warp 包含的线程是
+<code>(z, y, 0) ~ (z, y, 31)</code> 或者
+<code>(z, y, 32) ~ (z, y, 63)</code>，同样是合理的选择。</li>
+</ul>
+<h3 id="warp-的核心原则">warp 的核心原则</h3>
+<p>warp的最核心原则是：</p>
+<ol type="1">
+<li><code>合并访问</code>，为了实现合并访问，我们需要保证
+<code>数据内存对齐</code> 和 <code>warp对齐</code>：其中
+<code>数据内存对齐</code> 是为了保证我们每次读取的数据都在同一个 Memory
+Burst 中，避免需要多次内存读取；而 <code>warp对齐</code> 是保证 Memory
+Burst 读取到的数据能被充分利用，避免浪费；</li>
+<li><code>避免 Warp Divergence</code>：我们知道，GPU的线程执行是物理意义上的并行，并且同一个
+warp 下所有的线程只能执行同样的指令。这意味着，当同一个 warp
+下的所有线程，在 <code>if</code>
+条件进入到不同的分支时，每次只能对进入到相同分支的线程并行执行。最差情况下，32个线程进入到32个不同的分支，这意味着我们的GPU已经完全丧失了并行计算能力。</li>
+</ol>
+<h2 id="gpu的数据总线">GPU的数据总线</h2>
+<blockquote>
+<p>我们在前面提到：<strong>现代显存（DDR6/HBM）的数据总线宽度通常是 256
+bit（即 32 字节），而 <code>4</code> 个内存突发传输（<a
+href="#gpu的数据总线">Memory Burst</a>）总共是
+<code>128</code>字节，符合 DRAM 芯片的最佳吞吐性能。如果选 4
+个线程，带宽利用率太低；如果选 512
+个线程，管理开销和冲突又太严重。</strong></p>
+<p>问题是，为什么我们不设计每个 warp 为8个线程，这样访问 float
+时不是正好 <code>32</code> 个 bytes 正好占满总线贷款（Bus
+Width）吗？</p>
+</blockquote>
+<p>这里存在一个关键的硬件细节：<strong>总线宽度（Bus Width）</strong> 和
+<strong>突发传输长度（Burst Length, BL）</strong> 是两个不同的概念。</p>
+<h3 id="memory-burst">Memory Burst</h3>
+<p>在我们的总线发送数据时，我们需要先访问内存得到数据，而标准的内存访问流程如下：</p>
+<ol type="1">
+<li><strong>行激活 (RAS - Row Address Strobe)</strong>：
+内存是由行和列组成的阵列。这一步会激活特定的<strong>行（Page）</strong>，并将这一整行的数据搬运到内存芯片内部的“行缓存（Row
+Buffer）”中。这个过程比较慢，因为涉及电荷的转移。</li>
+<li><strong>列寻址 (CAS - Column Address Strobe)</strong>：
+一旦行被激活，控制器会发送列地址，告诉芯片：“我要这一行里的哪几个连续的字节”。</li>
+<li><strong>发送数据 (Data Burst)</strong>：
+这一步才是真正的“突发传输”。数据开始在数据总线上像流水一样传回
+GPU。</li>
+</ol>
+<p>而我们的 <code>&lt;1&gt;</code> 和<code>&lt;2&gt;</code>
+是拥有较为高昂的开销，所以在读取数据时我们不会仅仅读取目标行的数据，而同一行内连续读取多个列（Column），这个就是我们所谓的
+<strong>Memory
+Burst</strong>：为了提高效率，当我们给内存控制器一个地址时，它不会只返回那一个地址的数据，而是会连续快速地发送一批数据（通常是
+8 次或 16 次传输）。</p>
+<p><span class="math display">\[\text{一次突发访问的大小} =
+\text{总线宽度} \times \text{突发长度 (BL)}\]</span></p>
+<p><strong>也就说，最高效的数据传输，并不是每次占满总线带宽，而是最好能够覆盖我们一次
+Memory Burst
+读取到的内存大小。总线宽度决定了瞬时带宽，而突发传输（Burst）决定了单次事务的原子性（Atomicity）。</strong></p>
+<p>此外，我们还需要注意的是：</p>
+<ul>
+<li>如果我们的 Warp 只请求 32 字节，但内存硬件的“最小起送量（Burst
+Size）”是 128 字节，那么剩下的 96
+字节流量依然会被发出，但会被硬件丢弃。这被称为 <strong>Bandwidth
+Waste（带宽浪费）</strong>。</li>
+<li><strong>对齐</strong>：即便我们一个 Warp 读了 128
+字节，但如果起始地址不是 128 的倍数（比如从地址 64 开始），这 128
+字节的数据会跨越两个物理的 Burst 块，导致内存控制器必须发起 <strong>2
+次</strong> Burst 才能凑齐这一个 Warp 的需求。</li>
+</ul>
 <h2 id="gpu的演进">GPU的演进</h2>
 <p>在实现 GPU 矩阵加法时，我们面临的核心问题是：<strong>GPU
 如何在异构架构下高效获取数据？</strong> 很多人认为 GPU
