@@ -550,6 +550,10 @@ nsys profile --stats=true ~/tmp/a.out
      12.000      3     4.000     4.000     4.000     4.000        0.000  [CUDA memcpy Host-to-Device]
 ```
 
+# ncu
+
+参考 [ncu的指标](#ncu的指标) 和 [sgemm](#sgemm) 中对 ncu 的使用。
+
 # 优化前的准备
 
 > 在我们开始之前，我们需要搞清楚GPU的组成以及它是如何调度我们的线程的，我们可以查看 [术语](#术语) 这一节查看每个术语的含义。
@@ -1514,6 +1518,1761 @@ int main() {
 
 ![cuda-parallel](\images\cuda\cuda-stream-parallel.png)
 
+# CUDA的二维计算
+
+CUDA 的维度设计（1D, 2D, 3D）本质上是提供了一套**内置的坐标换算器**。虽然 GPU 的内存空间在物理上永远是一维（线性）的地址，但现实世界中的数据往往是多维的。
+
+## 维度层级：从点到体
+
+CUDA 使用 `dim3` 结构体来定义维度。如果我们不显式定义 `y` 和 `z`，它们默认就是 1。
+
+| **维度** | **逻辑抽象** | **典型应用场景**            | **定义方式 (示例)**      |
+| -------- | ------------ | --------------------------- | ------------------------ |
+| **1D**   | 向量 / 数组  | 向量加法、数据转换          | `dim3 block(256, 1, 1);` |
+| **2D**   | 矩阵 / 图像  | 照片滤镜、矩阵乘法          | `dim3 block(16, 16, 1);` |
+| **3D**   | 体素 / 空间  | 气象模拟、CT 影像、流体力学 | `dim3 block(8, 8, 8);`   |
+
+## 为什么需要映射
+
+在 `kernel` 内部，我们会得到两组坐标：
+
+- `blockIdx` 我们的在哪个块；
+- `threadIdx` 我们在块里哪个位置；
+
+## Matrix Transpose
+
+> 给定一个二维矩阵 `in`，我们需要对矩阵进行转置：把坐标 $(x, y)$ 变成 $(y, x)$
+
+首先，我们需要清楚一个定义是：**内存里没有真正的 `二维数组`，它永远是一维线性排列的**，例如假设我们声明一个 $2 \times 3$ 的矩阵：
+
+```mermaid
+block-beta
+
+columns 7
+
+memory("memory") m0("matrix[0][0]") m1("matrix[0][1]") m2("matrix[1][0]") m3("matrix[1][1]") m4("matrix[2][0]") m5("matrix[2][1]")
+
+row1("row1") r0("matrix[0][0]") r1("matrix[0][1]") space:4
+row2("row2") r2("matrix[1][0]") r3("matrix[1][1]") space:4
+row3("row3") r4("matrix[2][0]") r5("matrix[2][1]")
+
+class memory,row1,row2,row3 purple
+
+class m0,m1,r0,r1 green
+class m2,m3,r2,r3 blue
+class m4,m5,r4,r5 yellow
+
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+按照我们在 [第四次优化](#第四次优化) 中的代码逻辑：
+
+1. 将这个矩阵分成多个 `block` 以便于我们可以并行的执行；
+2. 为每个 `block` 分配合理的 `threads` 以便于可以最大化的利用GPU的并行能力；
+3. **每个核函数只处理它所在的 `block` 和 `thread` 应该负责的点，通过 `block` 的调度来处理整个矩阵。**
+4. 那么我们调用核函数 `transpose_kernel<<<blocks, threads>>>` ，此时我们会面临一个问题，**当前线程只知道 blockId 和 threadId，而处理矩阵需要的是当前元素在矩阵中的 `row` 和 `column`。**我们可以去计算这个值，公式并不复杂：`row = (blockId * blocksPerBlock + threadId) / width`，`column = (blockId * blocksPerBlock + threadId) % width`，但是使得程序不直观，并且引入极大的额外开销（整数除法和取模是非常“昂贵”的操作，它们需要消耗数十个时钟周期）。所以 CUDA 引入了 `dim3 grid(x, y)` 来对这个逻辑进行抽象。
+5. 在引入 `dim3` 之后，我们可以通过更便捷的方式来访问我们的矩阵：
+   - `x = blockIdx.x * blockDim.x + threadIdx.x;`
+   - `y = blockIdx.y * blockDim.y + threadIdx.y;`
+6. 此时，我们的核函数就会存在如下调用形式 `transpose_kernel<<<grid, block>>>`，其中 `grid` 和 `block` 都是 `dim3` 矩阵，当我们调用 `transpose_kernel<<<grid, block>>>` 时，我们通过 `dim3` 将原本一维的索引空间**‘重塑’（Reshape）**成了多维的坐标系。此时，**Grid** 不再是一条长线，而是一个由多个 Block 组成的**网格阵列**；每个 **Block** 内部也不再是简单的序号，而是一群拥有 `(x, y)` 坐标的**线程矩阵**。
+
+### 分割一个矩阵的思路
+
+我们可以这样理解 CUDA 的多维处理逻辑：
+
+#### 物理本质：一维的长阵
+
+首先必须明确：内存中不存在真正的二维矩阵，它在物理上是一个**超长的线性数组**。如果我们要处理一个宽度为 `w`、高度为 `h` 的矩阵，在显存里它就是一段连续的、长度为 `w * h` 的空间。
+
+#### 逻辑重塑
+
+在之前的一维处理逻辑中，如果我们决定使用 256 个线程作为一个 **Block**（线程块），那么所需的 Block 数量就是 `(w * h + 255) / 256`。此时核函数的启动方式为：
+
+```
+transpose<<<(w * h + 255) / 256, 256>>>
+```
+
+这种方式虽然可行，但在处理二维矩阵数据时，我们需要在核函数内部进行大量代价高昂的**除法（`/`）和取余（`%`）**操作来反推行列坐标，这会严重拖累 GPU 性能。
+
+#### 二级矩阵（Block）：最小分配单元
+
+为了优化逻辑，CUDA 引入了 `dim3` 结构。我们仍然维持每个 Block 包含 256 个线程，但将其重塑为一个 **$16 \times 16$ 的二级矩阵**：
+
+```
+dim3 block(16, 16);
+```
+
+此时，这 256 个线程中的每一个都对应这个二级矩阵中的一个点。CUDA 会自动为每个线程生成内置变量 **`threadIdx.x`** 和 **`threadIdx.y`**，用来表示该线程在小组内部的坐标。这个“线程方阵”是 GPU 调度的最小单元，会被整体绑定到 SM（流式多处理器）上执行。
+
+#### 一级矩阵（Grid）：全局任务划分
+
+接着，我们将整个大矩阵按照这个 $16 \times 16$ 的尺寸进行切割。我们不再计算总数，而是分别计算横向和纵向需要多少个 Block：
+
+- **水平方向（列数）所需 Block 数**：`grid_x = (w + block.x - 1) / block.x;`
+- **垂直方向（行数）所需 Block 数**：`grid_y = (h + block.y - 1) / block.y;`
+
+这就构成了 **一级矩阵（Grid）**：
+
+```
+dim3 grid(grid_x, grid_y);
+```
+
+此时，我们的核函数调用变为：
+
+```
+transpose<<<grid, block>>>;
+```
+
+#### 坐标合成与索引还原
+
+现在的任务被我们划分成了：**一个由 Block 组成的大矩阵，而每个 Block 内部又是一个由 Thread 组成的子矩阵。**
+
+在核函数执行时，定位过程如下：
+
+1. **一级定位**：通过 **`blockIdx.x`** 和 **`blockIdx.y`** 找到当前线程所属的“一级矩阵”（Block）在大网格中的位置。
+2. **二级定位**：通过 **`threadIdx.x`** 和 **`threadIdx.y`** 找到当前线程在“二级矩阵”（小组）内部的精确坐标。
+3. **合成全局坐标**：
+   - `element_x = blockIdx.x * blockDim.x + threadIdx.x;`
+   - `element_y = blockIdx.y * blockDim.y + threadIdx.y;`
+
+最后，通过这两个逻辑坐标，我们就能避开复杂的算术运算，直接计算出元素在物理数组中的实际索引，从而完成高效的数据处理。
+
+### 矩阵分割的实例
+
+假设，我们存在一个 `7 * 7` 的矩阵，我们现在需要使用我们的矩阵分割逻辑来处理这个矩阵，我们使用 `2 * 2` 的线程矩阵来对它进行第一次分割：
+
+```mermaid
+block-beta
+
+columns 9
+
+%% 定义表头（列坐标轴 x）
+space:1 c0("0") c1("1") c2("2") c3("3") c4("4") c5("5") c6("6") c7("7")
+
+%% 第一行 (y=0)
+r0("0") 
+r0c0("0") r0c1("1") r0c2("2") r0c3("3") r0c4("4") r0c5("5") r0c6("6") e0("IndexOut")
+
+%% 第二行 (y=1)
+r1("1") 
+r1c0("7") r1c1("8") r1c2("9") r1c3("10") r1c4("11") r1c5("12") r1c6("13") e1("IndexOut")
+
+%% 第三行 (y=2)
+r2("2") 
+r2c0("14") r2c1("15") r2c2("16") r2c3("17") r2c4("18") r2c5("19") r2c6("20") e2("IndexOut")
+
+%% 第四行 (y=3)
+r3("3") 
+r3c0("21") r3c1("22") r3c2("23") r3c3("24") r3c4("25") r3c5("26") r3c6("27") e3("IndexOut")
+
+%% 第五行 (y=4)
+r4("4") 
+r4c0("28") r4c1("29") r4c2("30") r4c3("31") r4c4("32") r4c5("33") r4c6("34") e4("IndexOut")
+
+%% 第六行 (y=5)
+r5("5") 
+r5c0("35") r5c1("36") r5c2("37") r5c3("38") r5c4("39") r5c5("40") r5c6("41") e5("IndexOut")
+
+%% 第七行 (y=6)
+r6("6") 
+r6c0("42") r6c1("43") r6c2("44") r6c3("45") r6c4("46") r6c5("47") r6c6("48") e6("IndexOut")
+
+r7("7") e7("IndexOut") e8("IndexOut") e9("IndexOut") e10("IndexOut") e11("IndexOut") e12("IndexOut") e13("IndexOut") e14("IndexOut")
+
+class r0c0,r0c1,r1c0,r1c1 light_green
+class r0c2,r0c3,r1c2,r1c3 gray
+class r0c4,r0c5,r1c4,r1c5 content
+class r0c6,e0,r1c6,e1 blue
+class r2c0,r2c1,r3c0,r3c1 yellow
+class r2c2,r2c3,r3c2,r3c3 orange
+class r2c4,r2c5,r3c4,r3c5 pink
+class r2c6,e2,r3c6,e3 green
+class r4c0,r4c1,r5c0,r5c1 light_green
+class r4c2,r4c3,r5c2,r5c3 gray
+class r4c4,r4c5,r5c4,r5c5 content
+class r4c6,e4,r5c6,e5 blue
+class r6c0,r6c1,e7,e8 yellow
+class r6c2,r6c3,e9,e10 orange
+class r6c4,r6c5,e11,e12 pink
+class r6c6,e13,e14,e6 green
+
+class r0,r1,r2,r3,r4,r5,r6,r7,c0,c1,c2,c3,c4,c5,c6,c7 purple
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+随后，我们使用 `grid` 来对我们的线性矩阵进行一次分割：
+
+```mermaid
+block-beta
+columns 9
+
+space:1 
+c0("0"):2 
+c1("1"):2 
+c2("2"):2 
+c3("3"):2
+
+%% 第一大行 r0
+r0("0")
+block:b01:2
+    columns 2
+    0("0") 1("1")
+    7("7") 8("8")
+end
+block:b02:2
+    columns 2
+    2("2") 3("3")
+    9("9") 10("10")
+end
+block:b03:2
+    columns 2
+    4("4") 5("5")
+    11("11") 12("12")
+end
+block:b04:2
+    columns 2
+    6("6") e1("IndexOut")
+    13("13") e2("IndexOut")
+end
+
+%% 第二大行 r1
+r1("1")
+block:b11:2
+    columns 2
+    14("14") 15("15")
+    21("21") 22("22")
+end
+block:b12:2
+    columns 2
+    16("16") 17("17")
+    23("23") 24("24")
+end
+block:b13:2
+    columns 2
+    18("18") 19("19")
+    25("25") 26("26")
+end
+block:b14:2
+    columns 2
+    20("20") e3("IndexOut")
+    27("27") e4("IndexOut")
+end
+
+%% 第三大行 r2
+r2("2")
+block:b21:2
+    columns 2
+    28("28") 29("29")
+    35("35") 36("36")
+end
+block:b22:2
+    columns 2
+    30("30") 31("31")
+    37("37") 38("38")
+end
+block:b23:2
+    columns 2
+    32("32") 33("33")
+    39("39") 40("40")
+end
+block:b24:2
+    columns 2
+    34("34") e5("IndexOut")
+    41("41") e6("IndexOut")
+end
+
+%% 第四大行 r3 (纵向越界层)
+r3("3")
+block:b31:2
+    columns 2
+    42("42") 43("43")
+    e7("IndexOut") e8("IndexOut")
+end
+block:b32:2
+    columns 2
+    44("44") 45("45")
+    e9("IndexOut") e10("IndexOut")
+end
+block:b33:2
+    columns 2
+    46("46") 47("47")
+    e11("IndexOut") e12("IndexOut")
+end
+block:b34:2
+    columns 2
+    48("48") e13("IndexOut")
+    e14("IndexOut") e15("IndexOut")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+class b01,b02,b03,b04,b11,b12,b13,b14,b21,b22,b23,b24,b31,b32,b33,b34 blockContainer
+class 0,1,7,8 light_green
+class 2,3,9,10 gray
+class 4,5,11,12 content
+class 6,e1,13,e2 blue
+
+class 14,15,21,22 yellow
+class 16,17,23,24 orange
+class 18,19,25,26 pink
+class 20,27,e3,e4 green
+class 28,29,35,36 light_green
+class 30,31,37,38 gray
+class 32,33,39,40 content
+class 34,41,e5,e6 blue
+class 42,43,e7,e8 yellow
+class 44,45,e9,e10 orange
+class 46,47,e11,e12 pink
+class 48,e13,e14,e15 green
+
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef axis fill:#f9f9f9,stroke:#333,stroke-width:2px,font-weight:bold;
+```
+
+现在，对于任意一个节点，我们都可以知道：
+
+- `x = blockIdx.x * blockDim.x + threadIdx.x`
+- `y = blockId.y * blockDim.y + threadIdx.y`
+- 例如对于 `9`，它的实际索引是 `(1, 2)` = `(0 * 2 + 1, 1 * 2 + 0)`
+- 而它的的在内存的实际索引也可以通过 `x * width + y` 计算
+
+## 最后代码
+
+```c++
+__global__ void transpose_kernel(float *out, const float *in, int width, int height)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height)
+    {
+        out[x * height + y] = in[y * width + x];
+    }
+}
+
+int main(int argc, char const *argv[])
+{
+    int nx = 1024;
+    int ny = 512;
+    size_t total_bytes = nx * ny * sizeof(int);
+    float *h_in, *h_out;
+    cudaHostAlloc(&h_in, total_bytes, cudaHostAllocDefault);
+    cudaHostAlloc(&h_out, total_bytes, cudaHostAllocDefault);
+    for (int i = 0; i < nx * ny; i++) {
+        h_in[i] = i;
+        h_out[i] = 0;
+    }
+
+    dim3 block(16, 16);
+    dim3 grid((nx + block.x - 1) / block.x, (ny + block.y - 1) / block.y);
+
+    float *d_in;
+    float *d_out;
+    cudaMalloc(&d_in, total_bytes);
+    cudaMalloc(&d_out, total_bytes);
+    cudaMemcpy(d_in, h_in, total_bytes, cudaMemcpyHostToDevice);
+    transpose_kernel<<<grid, block>>>(d_out, d_in, nx, ny);
+    cudaMemcpy(h_out, d_out, total_bytes, cudaMemcpyDeviceToHost);
+    int errorCount = 0;
+    for (int r = 0; r < ny; r++) {
+        for (int c = 0; c < nx; c++) {
+            int index_in = r * nx + c;
+            int index_out = c * ny + r;
+            if (h_in[index_in] != h_out[index_out]) {
+                errorCount++;
+            }
+        }
+    }
+    if (errorCount > 0) {
+        std::cout << "error count: " << errorCount << std::endl;
+    }
+    return 0;
+}
+```
+
+# 使用SharedMemory优化矩阵转置
+
+在我们的矩阵转置实现中，我们很容易发现有个严重拉低我们性能的点，那就是我们在数据读取时是合并访问的，**然而我们数据在输出时，因为我们已经不是合并输出的了。**
+
+这里，我们需要先理清楚一个逻辑：参考 [矩阵分割的实例](#矩阵分割的实例) 中的描述，如果CUDA在调度时以 `block` 作为块输入，那么我们的第一个 `block` 应该是 `{0, 1, 7, 8}` -- 这是否意味着我们的输入也没有合并输入呢？答案是：**CUDA 既抽象了矩阵逻辑，又严格按照线程束（Warp）的线性顺序执行。**
+
+在我们这个为了演示的例子中，我们的这个 `block` 中：
+
+- `{0, 1}` 是合并访问的， `{7, 8}` 也是合并访问的；
+- `{0, 1}` 和 `{7, 8}`  则是不合并访问的。
+
+但是这个逻辑很好解决，我们只需要优化我们的核函数的参数到 `<<<32, y, z>>>` 即可。现在我们需要使用 `SharedMemory` 来优化我们的写入。
+
+## 为什么会出现不能合并访问的问题
+
+假设原矩阵是 $A$，转置后的矩阵是 $B$。根据定义，如果 $A$ 中的一个点坐标是 $(Global\_X, Global\_Y)$，那么它在 $B$ 中的位置必须是 $(Global\_Y, Global\_X)$。
+
+在读取阶段，一个线程处理的原始全局坐标是：
+
+- $Global\_X_{in} = blockIdx.x \times blockDim.x + threadIdx.x$
+- $Global\_Y_{in} = blockIdx.y \times blockDim.y + threadIdx.y$
+
+我们要把这个点搬到新矩阵 $B$ 的对称位置：
+
+- $Global\_X_{out} = Global\_Y_{in}$
+- $Global\_Y_{out} = Global\_X_{in}$
+
+如果我们直接代入，会得到：
+
+- $Global\_X_{out} = blockIdx.y \times blockDim.y + \mathbf{threadIdx.y}$
+- $Global\_Y_{out} = blockIdx.x \times blockDim.x + \mathbf{threadIdx.x}$
+
+**此时，问题出现，我们没有办法合并访问了：**
+
+-  通常，为了能够合并访问，我们的每个 warp 会处理 block 中的同一行，而矩阵中的同一行的特点是：`y` 不变，`x` 递增；
+- **而我们的 $Global\_Y_{out}$ 依赖于 `x`，这表示我们出现了行偏移，也就说我们的全局地址将不再连续。**
+
+解决方案是：**我们变化的只能是 $Global\_X_{out}$，只有这样才能保证我们的全局地址连续以便于我们可以合并访问**。这个逻辑很好理解，因为全局地址是 $y * width + x$，任意的 `y` 变化都会使得我们的索引直接偏移出一次 Memory Burst 的可读范围。**无论逻辑上我们在算什么，我们必须强行分配任务，让 `threadIdx.x` 永远与地址计算公式中权重最小的那个项绑定。**这个结论及时扩展到三维一样成立，因为三维的空间中，全局索引等于 $z * width * height + y * width + x$。
+
+## 如何处理合并访问异常
+
+正如我们前面提到的，在任何计算中，`threadIdx.x` 永远与地址计算公式中权重最小的那个项绑定，也就是，我们要通过某种方式，将我们的公式转换为：
+
+- $Global\_X_{out} = blockIdx.y \times blockDim.y + \mathbf{threadIdx.x}$
+- $Global\_Y_{out} = blockIdx.x \times blockDim.x + \mathbf{threadIdx.y}$
+
+而这个逻辑实现并不复杂，我们知道，我们是矩阵嵌套，而外层的矩阵对应的是 `block`，它的先后执行顺序对我们的结果和性能不会有影响。我们只需要预先将内层矩阵进行一次矩阵转置，此时我们便可以将我们的索引绑定到 `threadIdx.x`。
+
+## 实际代码
+
+```c++
+__global__ void transpose_tiled_kernel(float *out, const float *in, int width, int height)
+{
+    __shared__ float tile[32][32];
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x < width && y < height) {
+        tile[threadIdx.y][threadIdx.x] = in[y * width + x];
+    }
+    __syncthreads();
+    // Assuming that we have a 4 * 4 matrix, the matrix is:
+    // 0 1 2 3
+    // 4 5 6 7
+    // 8 9 a b
+    // c d e f
+    // Assuming that we're running block 0, so the tile will be :
+    // 0 4
+    // 1 5
+    // Now the submatrix is updated in shared memory, what we have to do now is to update the value in current block to the new block.
+    int new_x = blockIdx.y * blockDim.y+ threadIdx.x;
+    int new_y = blockIdx.x * blockDim.x + threadIdx.y;
+    out[new_y * height + new_x] = tile[threadIdx.x][threadIdx.y];
+}
+```
+
+## SharedMemory下的矩阵转换实例
+
+> 假设一次 `Memory Burst` 读取到的是两个 `float`。
+
+我们的初始矩阵如下，我们读取时是可以合并访问的，因为 `block` 中的每行的全局索引中是连续的：
+
+```mermaid
+block-beta
+
+columns 5
+
+space:1 c0["0"] c1["1"] c2["2"] c3["3"]
+r0["0"]
+block:s1:2
+    0("0") 1("1")
+end
+block:s2:2
+    2("2") 3("3")
+end
+r1["1"]
+block:s3:2
+    4("4") 5("5")
+end
+block:s4:2
+    6("6") 7("7")
+end
+r2["2"]
+block:s5:2
+    8("8") 9("9")
+end
+block:s6:2
+    a("a") b("b")
+end
+r3["3"]
+block:s7:2
+    c("c") d("d")
+end
+block:s8:2
+    e("e") f("f")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+如果我们直接在 `block`的线程中使用矩阵转置，我们每次的写入都相当于是一次随机的内存访问，并不能实现合并访问：
+
+```mermaid
+block-beta
+
+columns 5
+
+block:columns:5
+    columns 5
+    space:6 c0["0"] c1["1"] c2["2"] c3["3"]
+end
+block:s0:1
+    columns 1
+    r0["0"]
+    r1["1"]
+end
+block:s1:1
+    columns 1
+    0("0")
+    1("1")
+end
+block:s2:1
+    columns 1
+    4("4")
+    5("5")
+end
+block:s3:1
+    columns 1
+    8("8")
+    9("9")
+end
+block:s4:1
+    columns 1
+    c("c")
+    d("d")
+end
+block:s9:1
+    columns 1
+    r2["2"]
+    r3["3"]
+end
+block:s5:1
+    columns 1
+    2("2")
+    3("3")
+end
+block:s6:1
+    columns 1
+    6("6")
+    7("7")
+end
+block:s7:1
+    columns 1
+    a("a")
+    b("b")
+end
+block:s8:1
+    columns 1
+    e("e")
+    f("f")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+class columns,s0,s9 transparent
+class s1,s2,s3,s4,s5,s6,s7,s8 error
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+
+
+我们使用`Shared Memory`  将内部矩阵转置，那么我们得到，**Shared Memory 并没有需要合并写入的需求**：
+
+```mermaid
+block-beta
+
+columns 5
+
+space:1 c0["0"] c1["1"] c2["2"] c3["3"]
+r0["0"]
+block:s1:2
+    0("0") 1("4")
+end
+block:s2:2
+    2("2") 3("6")
+end
+r1["1"]
+block:s3:2
+    4("1") 5("5")
+end
+block:s4:2
+    6("3") 7("7")
+end
+r2["2"]
+block:s5:2
+    8("8") 9("c")
+end
+block:s6:2
+    a("a") b("e")
+end
+r3["3"]
+block:s7:2
+    c("9") d("d")
+end
+block:s8:2
+    e("b") f("f")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+随后，我们再转置外层的矩阵得到：
+
+```mermaid
+block-beta
+
+columns 5
+
+space:1 c0["0"] c1["1"] c2["2"] c3["3"]
+r0["0"]
+block:s1:2
+    0("0") 1("4")
+end
+block:s5:2
+    8("8") 9("c")
+end
+r1["1"]
+block:s3:2
+    4("1") 5("5")
+end
+
+block:s7:2
+    c("9") d("d")
+end
+r2["2"]
+block:s2:2
+    2("2") 3("6")
+end
+
+block:s6:2
+    a("a") b("e")
+end
+r3["3"]
+
+block:s4:2
+    6("3") 7("7")
+end
+block:s8:2
+    e("b") f("f")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+## 优化性能对比
+
+可以看到：
+
+- 我们的合并访问版本比非合并访问版本，核函数执行速度提升了接近30%；
+- 无论我们如何优化内核，这两个数值几乎是不动的，而这个指标非常大，说明我们的程序瓶颈在 **PCIe 硬件**。内核优化虽然能把 21ms 缩减到 15ms，但对于 328ms 的搬运来说，用户体感不明显。：
+  - `[CUDA memcpy Host-to-Device]`：约 **166 ms**
+  - `[CUDA memcpy Device-to-Host]`：约 **162 ms**
+
+| 指标              | shared memory | 无shared memory |
+| ----------------- | ------------- | --------------- |
+| cuda_gpu_kern_sum | 21ms          | 30ms            |
+| CUDA memcpy DtoH  | 166ms         | 166ms           |
+| CUDA memcpy HtoD  | 162ms         | 162ms           |
+
+# SGEMM 
+
+> `SGEMM` 表示 **S**ingle-precision **GE**neral **M**atrix **M**ultiply （**单精度通用矩阵乘法**）。
+>
+> 它是 **BLAS**（Basic Linear Algebra Subprograms，基础线性代数子程序库）标准中的核心函数。简单来说，它实现的就是最基本的数学运算：
+>
+> $$C = \alpha (A \times B) + \beta C$$
+>
+> （在大多数简单的 CUDA 练习中，通常令 $\alpha = 1, \beta = 0$，即简化的 $C = A \times B$），我们这里来实现这个简化的版本。
+
+## SGEMM的工具函数
+
+为了方便，我们直接在这里将 `SGEMM` 抽象出来多个函数，为我们执行资源管理：
+
+```c++ mark:91-108
+#include <util.cuh>
+
+struct host_sgemm_t
+{
+    float *A;
+    float *B;
+    float *C;
+    int M;
+    int N;
+    int K;
+};
+
+struct device_sgemm_t
+{
+    float *A;
+    float *B;
+    float *C;
+    int M;
+    int N;
+    int K;
+};
+
+inline bool is_nearly_equal(float a, float b)
+{
+    float diff = fabsf(a - b);
+    a = fabsf(a);
+    b = fabsf(b);
+    float max_val = (a > b) ? a : b;
+
+    if (max_val < 1e-6f)
+        return true;
+    return (diff / max_val) < 1e-4f;
+}
+
+host_sgemm_t *allocate_host(const int M, const int N, const int K);
+void free_host(host_sgemm_t *h_sgemm);
+device_sgemm_t *allocate_device(const int M, const int N, const int K);
+void free_device(device_sgemm_t *d_sgemm_handler);
+void memcpy_host_to_device(device_sgemm_t *d_sgemm, host_sgemm_t *h_sgemm);
+void memcpy_device_to_host(host_sgemm_t *h_sgemm, device_sgemm_t *d_sgemm);
+void init_matrix(host_sgemm_t *h_sgemm);
+float get_theoretical_result(int i, int j, int K);
+void verify_result(host_sgemm_t *h_sgemm);
+void launch_sgemm_kernel(const device_sgemm_t *d_sgemm);
+void run(const int M, const int N, const int K);
+```
+
+这里，我们唯一需要注意的是，我们按照如下方式初始化我们的 `A` 和 `B`：
+
+- $A[i][j] = i + j;$
+- $B[i][j] = i - j;$
+
+这是为了避免，编译器在编译的过程中对我们的数据逻辑进行优化，更好的模拟真正的线上数据。
+
+## SGEMM 的结果验证
+
+我们需要计算：$$C[i][j] = \sum_{k=0}^{K-1} (i + k)(k - j)$$
+
+展开括号内的项：$$(i + k)(k - j) = k^2 + (i - j)k - ij$$
+
+利用求和符号的线性性质，将其拆分为三个部分：$$C[i][j] = \sum_{k=0}^{K-1} k^2 + (i - j) \sum_{k=0}^{K-1} k - \sum_{k=0}^{K-1} ij$$
+
+根据标准的数列求和公式：
+
+1. 平方和：$\sum_{k=0}^{K-1} k^2 = \frac{(K-1)K(2K-1)}{6}$
+1. 等差数列求和：$\sum_{k=0}^{K-1} k = \frac{(K-1)K}{2}$
+1. 常数项求和：$\sum_{k=0}^{K-1} ij = K \cdot i \cdot j$
+
+将上述公式代入并整理，得到 $C[i][j]$ 的解析式：$$C[i][j] = \frac{K(K-1)(2K-1)}{6} + (i - j) \frac{K(K-1)}{2} - Kij$$ 
+
+```c++
+float get_theoretical_result(int i, int j, int K)
+{
+    double k_double = (double)K;
+    double term1 = (k_double * (k_double - 1.0f) * (2.0f * k_double - 1.0f)) / 6.0f;
+    double term2 = (double)(i - j) * (k_double * (k_double - 1.0f)) / 2.0f;
+    double term3 = k_double * i * j;
+
+    return (float)(term1 + term2 - term3);
+}
+```
+
+## Naive SGEMM
+
+一个 $M \times K$ 的矩阵乘以一个 $K \times N$ 的矩阵会得到一个 $M \times N$ 的矩阵，我们将最终的矩阵拆分为对应数量的 $32 \times 8$ 的 `block`，随后每个 block 负责计算最终的矩阵中的点：$(row, col)$，我们当前的实现也存在相当多的优化点：
+
+- 对于结果矩阵的第 $R$ 行，它的元素 `[R[0], R[M])`，每一次计算都需要用到 $M \times K$ 矩阵的第 $R$ 行，我们目前的计算中，每次都是从显存中读取，我们是否可以通过合理的 `block` 安排，让计算第 $R$ 行的 `block` 绑定到同一个 `SM`。这样我们在计算的过程中，就可以将 $A[R]$ 存放到 Shared Memory 中来提升性能。
+
+在 $M \times N$ 的计算任务中，假设我们使用大小为 $(32, 1)$ 的线程块（Block），即每个 Block 负责结果矩阵 $C$ 中的一行（或其一部分）。其访存行为可精确描述如下：
+
+1. 矩阵 A 的访问：广播（Broadcast）与访存冗余，对于 index_a = row * K + k：
+  - 在一个 Block 内，所有线程的 row 相同，且在 k 循环的每一步中，所有线程请求的都是 同一个内存地址。
+  - 这虽然符合合并访问的广义定义（地址在同一个内存事务内），但实际上触发了硬件的 广播机制（Broadcast）。
+  - 尽管 IO 效率看似很高，但由于每个线程都各自发起了一次请求，导致 A 的同一个元素被重复读取了 32 次。带宽浪费源于极低的数据复用率。
+  - 应利用 Shared Memory 作为“一级缓存”，由 Block 内线程协作一次性加载 A 的片断，实现“一处加载，处处复用”。
+
+2. 矩阵 B 的访问：完美的合并加载（Coalesced Load），对于 index_b = k * N + col：
+  - 在 k 循环的每一步，k * N 是固定偏移，而 col 是随 threadIdx.x 连续递增的。
+  - 当 Warp 执行此指令时，32 个线程访问的是连续的 32 个 float 地址（128 字节）。这恰好对齐了显存的一个 L2 Cache Line，实现了合并访问（Memory Coalescing）。
+  - 这是目前 Naive 版中 IO 效率最高的部分。
+
+3. 矩阵 C 的写入：合并存储（Coalesced Store），对于 index_c = row * N + col：
+  - 计算结束写回结果时，由于 row 固定而 col 连续，触发了合并存储。
+  - 写回操作只会占用极少的总线周期。
+
+```c++
+__global__ void naive_sgemm_kernel(const device_sgemm_t d_sgemm)
+{
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    float value = 0.0;
+    if (row < d_sgemm.M && col < d_sgemm.N)
+    {
+        for (int k = 0; k < d_sgemm.K; ++k)
+        {
+            int index_a = row * d_sgemm.K + k;
+            int index_b = k * d_sgemm.N + col;
+            value += d_sgemm.A[index_a] * d_sgemm.B[index_b];
+        }
+    }
+    d_sgemm.C[row * d_sgemm.N + col] = value;
+}
+```
+
+## Shared Memory SGEMM
+
+> 使用 `Shared Memory` 来优化 SGEMM 的思路，和使用 `block` 来优化计算的思路是一样的：
+>
+> - 在 `block` 中，我们将一个大的矩阵划分为一定数量的 `block`，每个 `block` 负责一部分数据的处理；
+> - 在 `Shared Memory` 中，我们将一个 `block` 中的矩阵划分为一定数量的更小的矩阵 -- 我们称之为 `Tile`。每个 `Tile` 可以缓存一部分的数据，然后随着程序的动态执行，我们可以动态的更新 `Tile` 中的数据。而在 `Tile` 中的数据满足需求之前，我们就可以直接从 `Tile` 中读取数据，从而避免高昂的显存访问开销。
+>
+> 整体的思路就是：
+>
+> 1. 优化前的逻辑是，直接使用一个 for 循环直接计算所有的点；
+> 2. 优化后我们将for循环拆分为 (K + TILE - 1) / TILE 个循环，而每个循环内我们存在一个子循环，计算 TILE 个数字，这是因为 `M * K` * `K * N` 的矩阵乘法需要K次计算；
+> 3. 我们的这里，需要做的就是，**分析在子循环中需要用到 A 和 B 中的哪些数字，并在外层循环的最开始将这些数字全部加载到 Shared Memory；**
+> 4. 在 $(M \times K) \times (K \times N)$ 的矩阵乘法中，我们这里复杂的地方在于，我们要将之前的 `for` 循环的思路转变 -- 现在不是 `for` 循环，而是一个 `TILE` 中包含哪些元素，我们便可以计算哪些元素。而这里我们需要：在计算过程中 `A` 和 `B` 所需要的元素是不一样的，我们需要将 `A` 和 `B` 所需的元素都缓存起来。
+> 5. 而此时 `A` 和 `B` 需要哪些元素呢？我们再思考一下 $C(x, y)$ 的定义，它是 $A的第x行 * B的第y列$ 的点积，而它的整个的流程就像是，在 A 中存在一个点从左往右移动，在 B 中存在一个点从上往下移动。而如果我们将这个点扩展到 TILE 也是一样的道理：**在 A 中存在一个 TILE 从左往右移动，在 B 中存在一个 TILE 从上往下移动，那么当循环迭代完成时我们就算出来 `C` 中的这个 TILE 的结果。这里的每个点，就是我们的 `block` 中不同的线程，也就是说，我们的 `TILE` 必须和 `block` 的线程矩阵完全一致。**
+> 6. 整个 TILE 的引入，是典型的空间换时间的逻辑。
+
+我们再来回顾一下我们的 `Native SGEMM` 中的索引 `index_a` 和 `index_b`，假设我们现在在计算的点是 $(x, y)$，而我们的 `block` 是一个 $4 \times 4$ 的矩阵；
+
+当 `k == 0` 时，我们的索引如下：
+
+```mermaid
+block-beta
+
+columns 6
+
+block:rows:6
+    columns 6
+    space:8 c0["0"] c1["1"] c2["2"] c3["3"]
+end
+r0["0"]
+block:columns0:1
+    columns 1
+    index_a_0["index_a"]
+    index_b_0["index_b"]
+end
+block:t00:1
+    columns 1
+    a_00("row * K")
+    b_00("col")
+end
+block:t01:1
+    columns 1
+    a_01("row * K")
+    b_01("col + 1")
+end
+block:t02:1
+    columns 1
+    a_02("row * K")
+    b_02("col + 2")
+end
+block:t03:1
+    columns 1
+    a_03("row * K")
+    b_03("col + 3")
+end
+r1["1"]
+block:columns1:1
+    columns 1
+    index_a_1["index_a"]
+    index_b_1["index_b"]
+end
+block:t10:1
+    columns 1
+    a_10("(row + 1) * K")
+    b_10("col")
+end
+block:t11:1
+    columns 1
+    a_11("(row + 1) * K")
+    b_11("col + 1")
+end
+block:t12:1
+    columns 1
+    a_12("(row + 1) * K")
+    b_12("col + 2")
+end
+block:t13:1
+    columns 1
+    a_13("(row + 1) * K")
+    b_13("col + 2")
+end
+r2["2"]
+block:columns2:1
+    columns 1
+    index_a_2["index_a"]
+    index_b_2["index_b"]
+end
+block:t20:1
+    columns 1
+    a_20("(row + 2) * K")
+    b_20("col")
+end
+block:t21:1
+    columns 1
+    a_21("(row + 2) * K")
+    b_21("col + 1")
+end
+block:t22:1
+    columns 1
+    a_22("(row + 2) * K")
+    b_22("col + 2")
+end
+block:t23:1
+    columns 1
+    a_23("(row + 2) * K")
+    b_23("col + 2")
+end
+r3["3"]
+
+block:columns3:1
+    columns 1
+    index_a_3["index_a"]
+    index_b_3["index_b"]
+end
+block:t30:1
+    columns 1
+    a_30("(row + 3) * K")
+    b_30("col")
+end
+block:t31:1
+    columns 1
+    a_31("(row + 3) * K")
+    b_31("col + 1")
+end
+block:t32:1
+    columns 1
+    a_32("(row + 3) * K")
+    b_32("col + 2")
+end
+block:t33:1
+    columns 1
+    a_33("(row + 3) * K")
+    b_33("col + 3")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+class index_a_0,index_a_1,index_a_2,index_a_3 green
+class index_b_0,index_b_1,index_b_2,index_b_3 blue
+class rows transparent
+class t00,t01,t02,t03,t10,t11,t12,t13,t20,t21,t22,t23,t30,t31,t32,t33 animate
+class a_00,a_01,a_02,a_03,a_10,a_11,a_12,a_13,a_20,a_21,a_22,a_23,a_30,a_31,a_32,a_33,b_00,b_01,b_02,b_03,b_10,b_11,b_12,b_13,b_20,b_21,b_22,b_23,b_30,b_31,b_32,b_33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+当 `k == 1` 时，我们的索引如下：
+
+```mermaid
+block-beta
+
+columns 6
+
+block:rows:6
+    columns 6
+    space:8 c0["0"] c1["1"] c2["2"] c3["3"]
+end
+r0["0"]
+block:columns0:1
+    columns 1
+    index_a_0["index_a"]
+    index_b_0["index_b"]
+end
+block:t00:1
+    columns 1
+    a_00("row * k + 1")
+    b_00("N + col")
+end
+block:t01:1
+    columns 1
+    a_01("row * k + 1")
+    b_01("N + col + 1")
+end
+block:t02:1
+    columns 1
+    a_02("row * k + 1")
+    b_02("N + col + 2")
+end
+block:t03:1
+    columns 1
+    a_03("row * k + 1")
+    b_03("N + col + 3")
+end
+r1["1"]
+block:columns1:1
+    columns 1
+    index_a_1["index_a"]
+    index_b_1["index_b"]
+end
+block:t10:1
+    columns 1
+    a_10("(row + 1) * k + 1")
+    b_10("N + col")
+end
+block:t11:1
+    columns 1
+    a_11("(row + 1) * k + 1")
+    b_11("N + col + 1")
+end
+block:t12:1
+    columns 1
+    a_12("(row + 1) * k + 1")
+    b_12("N + col + 2")
+end
+block:t13:1
+    columns 1
+    a_13("(row + 1) * k + 1")
+    b_13("N + col + 2")
+end
+r2["2"]
+block:columns2:1
+    columns 1
+    index_a_2["index_a"]
+    index_b_2["index_b"]
+end
+block:t20:1
+    columns 1
+    a_20("(row + 2) * k + 1")
+    b_20("N + col")
+end
+block:t21:1
+    columns 1
+    a_21("(row + 2) * k + 1")
+    b_21("N + col + 1")
+end
+block:t22:1
+    columns 1
+    a_22("(row + 2) * k + 1")
+    b_22("N + col + 2")
+end
+block:t23:1
+    columns 1
+    a_23("(row + 2) * k + 1")
+    b_23("N + col + 2")
+end
+r3["3"]
+
+block:columns3:1
+    columns 1
+    index_a_3["index_a"]
+    index_b_3["index_b"]
+end
+block:t30:1
+    columns 1
+    a_30("(row + 3) * k + 1")
+    b_30("N + col")
+end
+block:t31:1
+    columns 1
+    a_31("(row + 3) * k + 1")
+    b_31("N + col + 1")
+end
+block:t32:1
+    columns 1
+    a_32("(row + 3) * k + 1")
+    b_32("N + col + 2")
+end
+block:t33:1
+    columns 1
+    a_33("(row + 3) * k + 1")
+    b_33("N + col + 3")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+class index_a_0,index_a_1,index_a_2,index_a_3 green
+class index_b_0,index_b_1,index_b_2,index_b_3 blue
+class rows transparent
+class t00,t01,t02,t03,t10,t11,t12,t13,t20,t21,t22,t23,t30,t31,t32,t33 animate
+class a_00,a_01,a_02,a_03,a_10,a_11,a_12,a_13,a_20,a_21,a_22,a_23,a_30,a_31,a_32,a_33,b_00,b_01,b_02,b_03,b_10,b_11,b_12,b_13,b_20,b_21,b_22,b_23,b_30,b_31,b_32,b_33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+如果我们将 `TILE` 的思想引入，那么这里的逻辑就可以划分为：每个 `TILE` 包含 `[4][4]` 的数据，那么我们在一次循环中，就可以一次读取显存，而执行 `32` 次计算。如果观察我们上面的两个图，那么我们就能得到几个结论：
+
+### index_a
+
+对于 `index_a`，我们 `4` 次循环需要用到的值如下：
+
+- 这个值在同一行中完全一致，随着 `for` 循环递增；
+- 在不同的列中，随着行的增加大范围跳转；
+
+所以，`index_a` 为了保证合并访问，必须如下图的形式组织：最终我们得到访问该 `TILE` 的公式：就是行偏移量+列偏移量。
+
+$$GlobalIndex\_A = row \times K + (m \times TILE\_WIDTH + tx)$$
+
+
+
+```mermaid
+block-beta
+
+columns 5
+
+space:1 c0["0"] c1["1"] c2["2"] c3["3"]
+r0["0"] a00("row * K") a01("row * K + 1") a02("row * K + 2") a03("row * K + 3")
+r1["1"] a10("(row + 1) * K") a11("(row + 1) * K + 1") a12("(row + 1) * K + 2") a13("(row + 1) * K + 3")
+r2["2"] a20("(row + 2) * K") a21("(row + 2) * K + 1") a22("(row + 2) * K + 2") a23("(row + 2) * K + 3")
+r3["3"] a30("(row + 3) * K") a31("(row + 3) * K + 1") a32("(row + 3) * K + 2") a33("(row + 3) * K + 3")
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class a00,a01,a02,a03,a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+### index_b
+
+对于 `index_b`，我们 `4` 次循环需要用到的值如下：
+
+- 这个值在同一列中一致，随着 `threadIdx.x` 递增；
+- 在不同的线程中，随着线程的迭代而进行大范围跳转。
+
+`index_b` 的公式如下：也是行偏移量+列偏移量
+
+$$GlobalIndex\_B = (m \times TILE\_WIDTH + ty) \times N + col$$
+
+```mermaid
+block-beta
+
+columns 5
+
+space:1 c0["0"] c1["1"] c2["2"] c3["3"]
+r0["0"] b00("col") b01("col + 1") b02("col + 2") b03("col + 3")
+r1["1"] b10("N + col") b11("N + col + 1") b12("N + col + 2") b13("N + col + 3")
+r2["2"] b20("2N + col") b21("2N + col + 1") b22("2N + col + 2") b23("2N + col + 3")
+r3["3"] b30("3N + col") b31("3N + col + 1") b32("3N + col + 2") b33("3N + col + 3")
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class b00,b01,b02,b03,b10,b11,b12,b13,b20,b21,b22,b23,b30,b31,b32,b33 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+## 第一次性能优化对比
+
+如果我们再使用 `nsys` 对两个程序进行性能对比，我们会发现现在已经看不出太大的差别了，因为他们的指标不够细化，只能在核函数的执行上看到一点差异，我们现在需要更细致的指标 -- `ncu`，我们通过一下两个命令输出我们的对比。
+
+```bash
+ncu ./build/naive_sgemm
+ncu ./build/shared_sgemm
+```
+
+当我们执行完毕时，我们会发现：
+
+- 对于 `shared` 版本有一个 `warning` 级别的提示：This kernel's theoretical occupancy (66.7%) is limited by the number of required registers. This kernel's theoretical occupancy (66.7%) is limited by the required amount of shared memory. This kernel's theoretical occupancy (66.7%) is limited by the number of warps within each block. See the CUDA Best Practices Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on optimizing occupancy.
+- 而对于 `naive` 版本则有一个 `info` 级别的提示：This kernel's theoretical occupancy is not impacted by any block limit.
+
+这表明，我们的 `shared` 版本，因为配置不合理导致硬件使用受限 -- **然而，在这种情况下，我们的计算耗时和显存吞吐量仍然得到了显著的优化。**
+
+### GPU运行效率对比
+
+| **指标 (Metric)**                 | **Naive 版本** | **Shared 版本** | **性能解读**                                                 |
+| --------------------------------- | -------------- | --------------- | ------------------------------------------------------------ |
+| **Duration (耗时)**               | 556.38 ms      | **411.00 ms**   | 纯计算耗时缩短了约 **26%**。                                 |
+| **DRAM Throughput (显存压力)**    | **93.53%**     | **32.88%**      | **可以看到，这是我们明显的优化，我们大部分时候都是从 Shared Memory读取数据** |
+| **Memory Throughput (总带宽)**    | 93.53%         | 76.45%          | 总数据压力下降，系统变得更“轻松”。                           |
+| **Compute Throughput (算力利用)** | 81.66%         | 76.45%          | 虽然数值降了，但现在的 76% 是在做“有效功”，不再是空等数据。  |
+| **L2 Cache Throughput**           | 26.32%         | **9.30%**       | 数据直接在 Shared Memory 解决了，连 L2 缓存都不怎么需要跑了。 |
+
+### 任务调度对比
+
+| **指标 (Metric)**        | **Naive 版本** | **Shared 版本** | **性能解读**                                                 |
+| ------------------------ | -------------- | --------------- | ------------------------------------------------------------ |
+| **Block Size**           | 256            | **1024**        | Shared 版用了更粗的粒度 ($32 \times 32$)，这有助于复用 Shared Memory 数据。 |
+| **Grid Size**            | 524,288        | 131,072         | 因为 Block 变大了，所以需要的 Block 数量减少了。             |
+| **Static Shared Memory** | **0 byte**     | **8.19 Kbyte**  | 每个 `block` 使用了 32 * 32 * 4 * 2 的 SSM                   |
+| Registers Per Thread     | 40             | 37              | 每个线程用的寄存器数量差不多。                               |
+
+### 硬件占用率
+
+| **指标 (Metric)**          | **Naive 版本** | **Shared 版本** | **性能解读**                                                 |
+| -------------------------- | -------------- | --------------- | ------------------------------------------------------------ |
+| **Theoretical Occupancy**  | 100%           | **66.67%**      | 理论占用率，我们的 `block` 使用了 32 * 32 = 1024 线程，而我的显卡  4060TI 最多可以容纳 1536 个线程，也就是说不论我们使用了多少 Shared Memory，这里最高已经不能超过 66.67% 了。 |
+| **Achieved Occupancy**     | 99.93%         | **66.65%**      | 实际占用率，通常来说，我们需要通过合理的调整我们的配置参数，让我们的理论占用率达到100%，否则会发生硬件占用受限。而实际占用率则是越接近理论占用率说明我们的硬件利用率越高。 |
+| **Block Limit Shared Mem** | 16             | **1**           | 每个 Block 占用的 Shared Memory 限制了同时存在的块数。       |
+
+## 线程粗化（2D Thread Tiling）
+
+在我们之前的实现逻辑中，我们总是使用一个线程计算一个点，而如果我们可以实现一个线程计算多个点的话：
+
+- 优点是：我们可以减少我们计算所需要的线程数量，也就是说，当矩阵的大小扩张时，我们可以通过一个线程处理更多的数据量来代替增加更多的线程；
+  - **寄存器级的数据复用**：执行一次寄存器的读取，就可以计算多个值，降低了对 SharedMemory 的访问频率；
+  - **指令吞吐量（Instruction Throughput）**： GPU 喜欢“流水线”。一个线程连续做 4 个乘加指令（FMA），比 4 个线程各做一个 FMA 更容易填满算术逻辑单元（ALU）的流水线，掩盖指令发射的延迟；
+  - **减少 Global Memory 冗余**： 虽然 Shared Memory 已经缓解了这个问题，但线程粗化进一步减少了 Block 的总量，从而减少了在 Block 边缘由于 Padding 或边界检查带来的开销。
+
+- 缺点是：我们每个线程需要使用更多的寄存器，而一个SM中的寄存器数量是有限的，这会降低我们的SM中能容纳的线程数量。这会使得我们面临**Register Spilling（寄存器溢出）** 风险，以及降低我们的 `Occupation`。
+
+事实是，这种优化通常是在线程的总数量和单个线程处理的数据之间取得一个合适的平衡点：**通过数据复用节省的时间，是否能超过因为线程数减少（掩盖延迟能力变弱）损失的时间？** 通常情况下，稍微牺牲一点 Occupancy（比如降到 50%）来换取寄存器级的数据复用，性能反而会大幅提升。
+
+下面给出了对于一个 `4 * 4` 的矩阵的优化前后对比：**我们以每个线程多使用一定的寄存器作为代价，来降低了我们线程的数量。**
+
+```mermaid
+block-beta
+
+columns 5
+
+space:1 c0["0"] c1["1"] c2["2"] c3["3"]
+r0["0"]
+block:s1:2
+    0("0") 1("1")
+end
+block:s2:2
+    2("2") 3("3")
+end
+r1["1"]
+block:s3:2
+    4("4") 5("5")
+end
+block:s4:2
+    6("6") 7("7")
+end
+r2["2"]
+block:s5:2
+    8("8") 9("9")
+end
+block:s6:2
+    a("a") b("b")
+end
+r3["3"]
+block:s7:2
+    c("c") d("d")
+end
+block:s8:2
+    e("e") f("f")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+```mermaid
+block-beta
+
+columns 10
+
+space:2 c0["0"]:2 c1["1"]:2 c2["2"]:2 c3["3"]:2
+r0["0"]:2
+block:s1:8
+    0("0")
+end
+r1["1"]:2
+block:s3:8
+    1("1")
+end
+r2["2"]:2
+block:s5:8
+    2("2")
+end
+r3["3"]:2
+block:s7:8
+    3("3")
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0 light_green
+class 1 gray
+class 2 yellow
+class 3 orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+
+
+![线程粗化](\images\cuda\线程粗化.png)
+
+> 上面这个图引用自 [CUDA Tutorial](https://cuda.keter.host/optimize_matmul/)
+>
+> 上图中，A 和 B 都是 7x7 的矩阵。当每一个线程只计算一个结果的时候，我们需要从 A 中读取 7 个数据，从 B 中读取 7 个数据，从 C 中读取 1 个数据，然后写一次 C。这样的话，每个线程需要读取 15 个数据，写一次数据。如果我们每一个线程计算 4 个结果，那么我们需要从 A 中读取 14 个数据，从 B 中读取 14 个数据，从 C 中读取 4 个数据，然后写 4 次 C。这样的话，每个线程需要读取 32 个数据，写 4 次数据。计算每个线程的平方结果比计算结果的列更有效，因为这样我们可以共享更多的输入。
+
+### 线程粗化的实现逻辑
+
+首先我们看看几个重要的预定义参数：
+
+```c++
+constexpr int BM = 128;
+constexpr int BN = 128;
+constexpr int BK = 8;
+constexpr int TM = 8;
+constexpr int TN = 8;
+```
+
+1. 这里 TM 和 TN 表示线程负责 TM * TN 个结果点；
+2. BM 是我们block的每次循环中，从矩阵 A 搬运到SSM的行数；
+3. BN 是我们block的每次循环中，从矩阵 B 搬运到 SSM的列数；
+4. **BK是对 BM 和 BN 的共同约束，因为矩阵乘法存在一个硬性要求，U * V 要求 U 的列数等于 V 的行数，而 BK 就是这个共同约束，没有这个共同约束的话，U 和 V 就不能算是一个可以相乘的矩阵；**
+5. 按照我们之前的描述，A 从左向右移动，每个循环移动 BK 列，B 从上向下移动，每次移动 BK 行，当 A 和 B 移动到矩阵的结束为止，就意味着我们计算得到了 BM * BN 个点的数据。
+
+在有了这些信息之后，我们可以推论得到一下结果，在下面的代码中，总共有三个高亮部分：
+
+1. **第二行**：在一个 $(M \times K) \times (K \times N)$ 的矩阵乘法中，总共需要 $K$ 次计算（一次先乘再加的运算算作一次运算），而我们的滑动窗口每次可以计算 $BK$ 次，向上取证即可；
+2. **第六行**：在进行线程粗化（2D Thread Tiling）后，每个线程可以计算的值变多了，相当于我们的矩阵宽膨胀了 TM，而高度膨胀了 TN；那么我们所需的线程数也需要相应的减少；
+3. **第九行和第十行：**现在，所需的 `block` 数量由步长决定，我们可以这么去理解：
+   - 每个线程可以处理 `TM` 行；
+   - 每个 `block` 包含了 `BM / TM` 个处理行的线程；
+   - 那么每个 `block` 可以处理的行数是 `BM / TM * TM`，我们按照 `M` 和 `BM` 向上取整即可。
+
+```c++ mark:2,6,9-10
+// 算完当前 block 负责的矩阵块的循环数量
+for (int m = 0; m < (K + BK - 1) / BK; m++) {}
+
+void launch_sgemm_kernel(const device_sgemm_t *d_sgemm) {
+    // 每个线程算 8x8，为了算完 128x128 的 BMxBN，需要 16x16 的线程
+    dim3 blockDim(BN / TN, BM / TM);
+
+    // Grid 必须以 BM 和 BN 为步长划分，而不是以线程数划分
+    dim3 gridDim((d_sgemm->N + BN - 1) / BN,
+                 (d_sgemm->M + BM - 1) / BM);
+
+    tiled_sgemm_kernel<<<gridDim, blockDim>>>(d_sgemm->A, d_sgemm->B, d_sgemm->C, d_sgemm->M, d_sgemm->N, d_sgemm->K);
+}
+```
+
+通过这种分配模式，我们实现了：
+
+- **1 Block** $\rightarrow$ 处理 $128 \times 128$ 的结果块。
+- **1 Thread** $\rightarrow$ 处理 $8 \times 8$ 的结果微块（Micro-tile）。
+- **1 Warp (32 threads)** $\rightarrow$ 处理 $32 \times 8 \times 8$ 的数据流（取决于具体的线程排列）。
+
+### 实现代码
+
+```c++ mark:83-99
+__global__ void tiled_sgemm_kernel(const float *A, const float *B, float *C, int M, int N, int K) {
+    // 1. 声明共享内存：尺寸为 BMxBK 和 BKxBN
+    __shared__ float sA[BM][BK];
+    __shared__ float sB[BK][BN];
+
+    // 2. 寄存器：存储该线程负责的 TMxTN 个结果点
+    float accum[TM][TN] = {0.0f};
+
+    // 线程在 Block 内的 ID
+    const unsigned int ty = threadIdx.y;
+    const unsigned int tx = threadIdx.x;
+
+    // 每次循环，我们的 sA 向右移动 BM，sB 向下移动 BN，每个线程计算自身对应的矩阵块并记录到 accum 中
+    // 当循环结束时，我们应该计算得到了一个 TM * TN 的矩阵块，矩阵块中包含了 C 中的部分元素。
+    for (int m = 0; m < (K + BK - 1) / BK; m++) {
+        // 1. BM * BK 是行偏移
+        // 2. blockDim.x * blockDim.y 是每个 block 中的线程数量，也就是 (BN / TN) * (BM / TM) 个线程
+        //          也就是说每次循环搬运的数量是 (BM * BN) / (TM * TN)
+        //          而我们总共需要搬运的数量是 BM * BK
+        //          也就是说我们用 BM * BK / ((BM * BN) / (TM * TN)) 即可，只是需要进行一次向上取整。
+        for (int i = 0; i < (BM * BK + (blockDim.x * blockDim.y) - 1) / (blockDim.x * blockDim.y); i++) {
+            // 这里的逻辑比较容易让人误解，这个位置的逻辑不是要进行线程粗化的计算，
+            // 而是需要将所有线程粗化后所需的数据全部加载到SSM，所以这里是对显存的合并访问：
+            // 在一次循环中，我们在 x 轴上合并访问的元素为 (BN / TN) 个元素；
+            // 而这样的行，我们总共有 (BM / TM) 行；
+            // 这两个参数也是我们的 block 中的元素的矩阵的行和列。
+            const unsigned thread_id = ty * blockDim.x + tx;
+            // 这个位置的逻辑非常的绕，简单来说就是，我们
+            // 我们将矩阵从逻辑上看做一个连续的数组，尽管不同行的数组
+            // 中会有很多不属于该block的元素。
+            // 那么，我们要将这个连续的数组顺序的读取到 sA 中，但是问题在于，我们并不能和CPU编程一样：
+            // for (int i = 0; i < BM * BK; ++i) {}
+            // 我们计算的 load_id 就是目标元素在这个数组中的索引，也就是 {0, 1, 2, ... (BN / TN) * (BM / TM)}
+            // 这依赖于以下几个逻辑：
+            // 1. 在 block 中，thread_id 总是顺序递增的；
+            // 2. 每个 block 中的 thread 总数，总是等于 blockDim.x * blockDim.y
+            // 所以，我们根据当前 block 中的 threadId 是一个集合：[0, blockDim.x * blockDim.y - 1)
+            // 我们通过每次执行完之后加上 i * (blockDim.x * blockDim.y) 来实现行增加
+            // 而我们可以通过这个行和列计算出来他们的全局行和全局列
+
+            // 1. i * (blockDim.x * blockDim.y) 的本质是增加一个行偏移
+            // 2. 这里还有一点需要注意的是，即使我们线程的数量超过 block 中一行的数量也不会发生异常
+            //      因为，我们这里通过 (load_id < BM * BK) 确保不会数组越界
+            //      同时，通过 / Bk 和 % BK 保证我们取到的行和列也是正确的
+            //      只不过，这种错误的参数设置，会破坏我们的合并访问。
+            const unsigned load_id = thread_id + i * (blockDim.x * blockDim.y);
+            if (load_id < BM * BK) {
+                const unsigned r = load_id / BK;
+                const unsigned c = load_id % BK;
+                const unsigned global_row = blockIdx.y * BM + r;
+                const unsigned global_col = m * BK + c;
+                if (global_row < M && global_col < K) {
+                    sA[r][c] = A[global_row * K + global_col];
+                } else {
+                    sA[r][c] = 0.0f;
+                }
+            }
+        }
+
+        // 这里和 sA 的逻辑完全一样
+        for (int i = 0; i < (BK * BN + (blockDim.x * blockDim.y) - 1) / (blockDim.x * blockDim.y); i++) {
+            const unsigned thread_id = ty * blockDim.x + tx;
+            const unsigned load_id = thread_id + i * (blockDim.x * blockDim.y);
+            if (load_id < BK * BN) {
+                const unsigned r = load_id / BN;
+                const unsigned c = load_id % BN;
+                const unsigned global_row = m * BK + r;
+                const unsigned global_col = blockIdx.x * BN + c;
+                sB[r][c] = (global_row < K && global_col < N) ? B[global_row * N + global_col] : 0.0f;
+            }
+        }
+
+        __syncthreads();
+
+        // 我们前面的算法中，使用的是内积，内积的实现通常是
+        // 取出 A 的第 M 行和 B 的第 N 列，计算他们的积。
+        // 内积更直观，缺点是每次计算一个点，我们就需要读取一整行和一整列
+        // 而这个位置，使用外积效率更高，因为我们外积读取一行和一列，便可以计算出一个矩阵
+        // 也就是，对于 `M * K` 和 `K * N` 的矩阵，我们只需要在 K 次循环中
+        // 进行 M 次访问（读取A的行）和 N 次访问（读取 B 的列），
+        // 在计算完成之后 A 的这一行和 B 的这一列使命就完成了
+        // 总共需要 BK * (TM + TN) 次 SSM 访问和 BK * TM * TN * 2 次寄存器访问
+        for (int k = 0; k < BK; k++) {
+            float a_reg[TM];
+            float b_reg[TN];
+
+            for (int i = 0; i < TM; i++) {
+                a_reg[i] = sA[ty * TM + i][k];
+            }
+            for (int j = 0; j < TN; j++) {
+                b_reg[j] = sB[k][tx * TN + j];
+            }
+
+            for (int i = 0; i < TM; i++) {
+                for (int j = 0; j < TN; j++) {
+                    accum[i][j] += a_reg[i] * b_reg[j];
+                }
+            }
+        }
+
+        __syncthreads();
+    }
+
+    // 此时，我们已经将计算的结果存放到 accum 了
+    // 注意，这里不论外层循环是TM还是TN，我们都是合并访问的
+    for (int i = 0; i < TM; i++) {
+        for (int j = 0; j < TN; j++) {
+            const unsigned global_row = blockIdx.y * BM + ty * TM + i;
+            const unsigned global_col = blockIdx.x * BN + tx * TN + j;
+            if (global_row < M && global_col < N) {
+                C[global_row * N + global_col] = accum[i][j];
+            }
+        }
+    }
+}
+
+void launch_sgemm_kernel(const device_sgemm_t *d_sgemm) {
+    // 每个线程算 8x8，为了算完 128x128 的 BMxBN，需要 16x16 的线程
+    dim3 blockDim(BN / TN, BM / TM);
+
+    // Grid 必须以 BM 和 BN 为步长划分，而不是以线程数划分
+    dim3 gridDim((d_sgemm->N + BN - 1) / BN,
+                 (d_sgemm->M + BM - 1) / BM);
+
+    tiled_sgemm_kernel<<<gridDim, blockDim>>>(d_sgemm->A, d_sgemm->B, d_sgemm->C, d_sgemm->M, d_sgemm->N, d_sgemm->K);
+}
+```
+
+## 第二次性能优化对比
+
+```bash
+ncu ./build/shared_sgemm_thread
+```
+
+### 性能分析
+
+当我们执行完毕时，我们会发现有如下警告信息：
+
+1. This kernel grid is too small to fill the available resources on this device, resulting in only 0.9 full waves across all SMs. Look at Launch Statistics for more details.
+2. If you execute __syncthreads() to synchronize the threads of a block, it is recommended to have more than the achieved 1 blocks per multiprocessor. This way, blocks that aren't waiting for __syncthreads() can keep the hardware busy.
+3. This kernel's theoretical occupancy (33.3%) is limited by the number of required registers. See the CUDA Best Practices Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on optimizing occupancy.
+
+我们逐个解析这些逻辑：
+
+#### SM使用率
+
+>This kernel grid is too small to fill the available resources on this device, resulting in only 0.9 full waves across all SMs. Look at Launch Statistics for more details.
+
+在 CUDA 的性能分析中，**Full Wave**是一个衡量**并行度是否填满了硬件**的核心指标。显卡（GPU）由许多个 **SM**（流式多处理器）组成。一个 SM 在同一时间能处理的 **Thread Block** 数量是有限的（受限于寄存器、共享内存等）。
+
+- **1 个 Wave**：指的是 GPU 的所有 SM 恰好都塞满了 Block，正在同步运行的状态。
+- **Waves 的计算方式**：$Waves = \frac{\text{Total Blocks in Grid}}{\text{Max Active Blocks per SM} \times \text{Total SMs on GPU}}$
+
+而我们这里的 **0.9 full waves** 表示，我们的任务连让整个GPU满载都达不到，此外，并不是 full waves 大于一就表示系统配置正常：
+
+- 1.0 waves 表示所有的SMs都在工作；
+- 0.9 waves 表示只有 90% 的 SMs 在工作，剩下的 10% SMs 在空闲中；
+- 1.1 waves 则是更差的状态，在完成部分工作后，很有可能进入到只有 10% 的 SMs 在工作的状态。
+
+所以，我们合理的配置是，waves 是 SMs 的整数倍。
+
+#### __syncthreads
+
+> If you execute __syncthreads() to synchronize the threads of a block, it is recommended to have more than the achieved 1 blocks per multiprocessor. This way, blocks that aren't waiting for __syncthreads() can keep the hardware busy.
+
+**我们目前的系统，只有 0.9 的 full waves，也就是说，我们的每个 SM 最多会执行一个 block。**这意味着当我们在 `block` 中执行 `__syncthreads` 时，我们的整个 SM 会直接停止工作，最好的状态是，当有 block 执行 `syncthreads` 时，有其他的 block 可以被执行；
+
+#### theoretical occupancy
+
+>This kernel's theoretical occupancy (33.3%) is limited by the number of required registers. See the CUDA Best Practices Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on optimizing occupancy.
+
+我们的GPU上，每个SM的寄存器数量是有限的，而在我们的代码中：
+
+- `float res[TM][TN];` 使用了 64 个寄存器
+- `float a_reg[TM];` 使用了 8 个寄存器；
+- `float b_reg[TN];` 使用了 8 个寄存器
+
+除此之外，其他的临时变量也会使用寄存器，这使得我们的的 SM 能容纳的 `block` 数量减少。需要注意的是，这里是理论占用率，因为由于我们的 full waves 只有 0.9，我们本身就会存在严重的低Occupation异常。
+
+### 优化思路
+
+我们的目标是，提升 full waves，这样可以同时解决两个问题：
+
+1. 在 `SM使用率` 中避免SMs限制，问题在于，我们很难配置一个参数，在不影响其他指标（例如尽可能的利用 Memory Burst） 的情况下，正好为SMs的整数倍，我们只能尽量去接近这个目标；
+2. `__syncthreads` 如果每个 SM 中有多个 blocks，那么在 block 休眠时，SM 不会进入限制状态；
+
+降低寄存器的使用数量，这可以提高我们的 occupancy。
+
+为了达到这些目的，我们可以：
+
+1. 减小 $BM$ 和 $BN$ 提升 Full Waves
+   - **硬件对齐目标**：在理想情况下，你希望 $Total Blocks \div Total SMs$ 的结果不仅是一个大于 1 的数，而且最好是**整数**（例如 2.0, 3.0）。
+   - **潜在风险（Memory Coalescing）**：当我们减小 $BN$ 时（比如从 128 减到 64 或 32），需要注意 $B$ 矩阵加载时的**合并访问**。
+     - 在加载 $sB$ 时，如果 $BN$ 太小，可能导致一排线程加载的内存地址跨度不够“整齐”，无法充分利用显存的单次 Burst（通常是 128 字节）。
+     - **建议**：即便减小 $BN$，也尽量保持其为 32 或 64 的倍数，以维持良好的访存对齐。
+2. 降低 $TM, TN$ 以平衡 Occupancy
+   - **Occupancy 提升的代价**： 减少 $TM, TN$（如从 $8 \times 8$ 降到 $4 \times 4$）确实能显著释放寄存器，让 $33.3\%$ 的 Occupancy 翻倍。
+   - **计算强度的下降**：我们现在的代码核心优势在于**外积（Outer Product）**带来的寄存器复用。
+     - 在 $8 \times 8$ 模式下，读取 1 个 $a\_reg$ 和 1 个 $b\_reg$ 可以支撑 1 次乘法，而这个 $a\_reg$ 在内层循环被复用了 8 次。
+     - 如果降到 $4 \times 4$，复用率直接减半。这意味着你需要花费更多的指令去从 Shared Memory 读取数据。
+     - **平衡点**：通常在矩阵乘法中，Occupancy 达到 **50% - 60%** 左右就足够隐藏大部分延迟了。盲目追求 100% Occupancy 而过度牺牲 $TM/TN$ 往往会导致单线程执行效率大幅下滑，总时间反而变长。
+
+### 指标对比
+
+可以看到，我们在优化配置后，虽然 occupancy 指标显著提高，但是处理时间并没有显著的提高。这是因为，为了使得 SMs 中能执行更多的 block，我们通过降低内部寄存器的使用，这意味着：**虽然在等待时会有其他的 block 被调度，但是因为内部寄存器缓存数量的减少导致我们需要更多的访问显存，这也是为什么 DRAM Throughput 和 L2 Cache  Throughput 都显著提高的原因。**所以说，性能的优化并不能单纯的关注某些指标，而需要关注整体的指标做权衡。
+
+#### GPU运行效率对比
+
+| **指标 (Metric)**   | **Naive 版本** | **Shared 版本** | 未优化配置 | 优化配置后 |
+| ------------------- | -------------- | --------------- | ---------- | ---------- |
+| Duration            | 556.38 ms      | **411.00 ms**   | 130ms      | 122ms      |
+| DRAM Throughput     | **93.53%**     | **32.88%**      | 26.65%     | 53.97%     |
+| Memory Throughput   | 93.53%         | 76.45%          | 50.12%     | 53.97%     |
+| Compute Throughput  | 81.66%         | 76.45%          | 36.75%     | 51.61%     |
+| L2 Cache Throughput | 26.32%         | **9.30%**       | 9.46%      | 14.73%     |
+
+#### 任务调度对比
+
+| **指标 (Metric)**        | **Naive 版本** | **Shared 版本** | 未优化配置 | 优化配置后 |
+| ------------------------ | -------------- | --------------- | ---------- | ---------- |
+| **Block Size**           | 256            | **1024**        | 256        | 256        |
+| **Grid Size**            | 524,288        | 131,072         | 64         | 32768      |
+| **Static Shared Memory** | **0 byte**     | **8.19 Kbyte**  | 8.19 Kbyte | 4.10 Kbyte |
+| Registers Per Thread     | 40             | 37              | 94         | 56         |
+
+#### 硬件占用率
+
+| **指标 (Metric)**          | **Naive 版本** | **Shared 版本** | 未优化版本 | 优化后配置 |
+| -------------------------- | -------------- | --------------- | ---------- | ---------- |
+| **Theoretical Occupancy**  | 100%           | **66.67%**      | 33.33      | 66.67      |
+| **Achieved Occupancy**     | 99.93%         | **66.65%**      | 31.22      | 66.67      |
+| **Block Limit Shared Mem** | 16             | **1**           | 7          | 12         |
+
 # QA
 
 ## 术语
@@ -1534,6 +3293,144 @@ int main() {
 |      | Register File                             | SM 内部速度最快但空间最小的存储，分配给每个线程。            |
 |      | Shared Memory                             | 允许同一个 Block 内的线程互相通信。                          |
 |      | Warp Scheduler                            | 负责每 32 个线程（一个 Warp）一组，指派到计算单元上运行。    |
+
+## ncu的指标
+
+### GPU Speed Of Light (SOL) Throughput
+
+这是“性能概览”表，反映了 GPU 硬件资源的利用极限。
+
+| **指标名称 (Metric Name)**  | **单位** | **意义说明**                                                 |
+| --------------------------- | -------- | ------------------------------------------------------------ |
+| **Memory Throughput**       | %        | **总存储吞吐率**。表示显卡访存带宽的使用比例。超过 80% 即意味着访存极其繁忙。 |
+| **DRAM Throughput**         | %        | **显存（大仓库）吞吐率**。                                   |
+| **Compute (SM) Throughput** | %        | **计算核心利用率**。                                         |
+| **L1/TEX Cache Throughput** | %        | L1 缓存/纹理缓存吞吐率。反映了离核心最近的缓存层级的活跃度。 |
+| **L2 Cache Throughput**     | %        | L2 缓存吞吐率。数值较低说明数据没怎么在二级缓存命中，全都跑去 DRAM 搬了。 |
+| **Duration**                | ms       | **总耗时**。Kernel 执行完花掉的物理时间。                    |
+| **Elapsed Cycles**          | cycle    | 整个过程消耗的 GPU 时钟周期总数。                            |
+
+### Launch Statistics
+
+启动配置表
+
+| **指标名称 (Metric Name)** | **单位** | **意义说明**                                                 |
+| -------------------------- | -------- | ------------------------------------------------------------ |
+| **Grid Size**              | -        | **网格规模**。                                               |
+| **Block Size**             | -        | **块规模**。                                                 |
+| **Threads**                | thread   | **总线程数**。                                               |
+| Registers Per Thread       | reg      | **每个线程消耗的寄存器**。                                   |
+| Static Shared Memory       | byte     | **静态共享内存**。                                           |
+| Waves Per SM               | -        | 每个计算单元（SM）上排队轮转的“波次”数，数值越高说明任务越重。 |
+
+### Occupation
+
+这是“占用率”表，反映了 GPU 核心的工位利用率。
+
+| **指标名称 (Metric Name)**      | **单位** | **意义说明**                                 |
+| ------------------------------- | -------- | -------------------------------------------- |
+| **Theoretical Occupancy**       | %        | **理论占用率**                               |
+| **Achieved Occupancy**          | %        | **实际占用率**。                             |
+| Theoretical Active Warps per SM | warp     | 每个 SM 理论上能同时跑多少个线程束（Warp）。 |
+| Achieved Active Warps Per SM    | warp     | 每个 SM 实际上跑的实际 warp。                |
+| Block Limit SM                  | block    | 每个 SM 最多能放的 Block。                   |
+| Block Limit Shared Mem          | block    | 共享内存对 Block 数量的限制。                |
+
+## warp
+
+### 什么是 Warp
+
+在硬件层面，GPU 并不是一个线程一个线程地去执行代码的。为了管理成千上万个线程，它规定：**每 32 个线程组成一个小组，这个小组被称为一个 Warp。**
+
+- **同步执行**：在任何一个时刻，这 32 个线程都在执行**同一行指令**，只是在处理**不同的数据**（这就是 SIMT：单指令多线程）
+- **最小调度单位**：GPU 的硬件调度器（SM）每次分发任务，最少也是分发一整个 Warp 的指令。
+
+这里还是需要注意：**GPU的并行和单核CPU的并行是完全不一样的，单核CPU是通过上下切换实现的伪并行，而GPU的并行是物理意义上的并行（每个线程都拥有自己的寄存器）。**
+
+### 为什么warp是32个线程
+
+> **32 的意义在于：它是高性能吞吐与复杂逻辑控制之间的“最大公约数”。**
+
+**首先我们需要知道的是：不是所有的warp都是32个线程一组**，虽然 NVIDIA 定义了 "Warp" 这个概念并固定为 32，但其他架构有不同的选择：
+
+- **NVIDIA (Warp)**：从 2006 年至今，所有架构始终坚持 **32**。
+- **AMD (Wavefront)**：在较老的 GCN 架构中是 **64**；在最新的 RDNA 架构（如 RX 6000/7000 系列）中，为了提高灵活性，可以配置为 **32**。
+- **Intel (SIMD Lane)**：Intel 的 GPU（如 Xe 架构）通常使用更小的宽度，如 **8、16 或 32**。
+
+而通常来说，由于NVIDIA目前在GPU的统治地位，我们通常可以认为所有的warp都是32个线程一组。而 NVIDIA 选择32个线程作为一个warp，本质上是在 **“硬件成本（效率）”** 与 **“编程灵活性（易用性）”** 之间做权衡，主要的意图包括：
+
+- **掩盖访存延迟（Latency Hiding）**：这是最核心的理由，因为GPU的计算速度远超内存访问速度：
+  - 当一个 Warp (32人) 因为等待数据而停下来时，SM 硬件调度器可以瞬间切换到 **另一个 Warp** 去执行。
+  - 而32个线程作为一组，它大到足以通过“批处理”掩盖大部分硬件开销，又小到让 SM 内部的寄存器文件（Register File）不至于因为要存储太多线程的状态而变得太大太慢。
+- **减少控制单元的面积**：GPU 的核心（SM）非常拥挤。如果每个线程都有自己的“指令获取器”和“程序计数器（PC）”，那芯片的大部分面积都会被控制电路占满，没地方放计算单元（ALU）了。使用warp意味着硬件开销减少了 32 倍。这让 GPU 能把省下的空间塞进更多的计算单元，实现恐怖的算力。
+- **适配现代内存合并访问**：现代显存（DDR6/HBM）的数据总线宽度通常是 **256 bit（即 32 字节）**，而 `4` 个内存突发传输（[Memory Burst](#gpu的数据总线)）总共是 `128 `字节，符合 DRAM 芯片的最佳吞吐性能。如果选 4 个线程，带宽利用率太低；如果选 512 个线程，管理开销和冲突又太严重。（这里需要注意的是，我们读取的数据 128 bytes，其实是超过数据总线带宽的，我们可以参考 [GPU的数据总线](#gpu的数据总线) 这一小节来查看原因。）
+
+### warp和block
+
+不论我们`dim3 block` 是几维的，在硬件眼里，它们都会被拉平成一条直线，然后按 **32 个一排** 砍断：拉平的顺序是：**X 轴最快（内层），Y 轴次之（中层），Z 轴最慢（外层）。**
+
+我们可以用一个公式来定位任何一个线程在物理队列中的位置（TID）：
+
+$$TID = threadIdx.z \times (blockDim.x \times blockDim.y) + threadIdx.y \times blockDim.x + threadIdx.x$$
+
+假设我们声明了 $block(16, 16, 16)$，那么我们总共会生成 $16 * 16 * 16 / 32 = 128$ 个warp，而我们 warp 填满这些线程的逻辑是：
+
+1. 把 `block(16, 16, 16)` 拉平为一个 `{(0, 0, 0), (0, 0, 1), ..., (0, 0, 15), (0, 1, 0), ..., (0, 15, 15), (1, 0, 0), ...}` 排列的 thread 数组；
+2. 在数组中，每次选择相邻的 32 个线程作为一个 warp；
+
+也就是说，我们的128个warp应该是如下的顺序：
+
+1. `(0, 0, 0) ~ (0, 0, 15)` && `(0, 1, 0) ~ (0, 1, 15)`
+2. `(0, 2, 0) ~ (0, 2, 15)` && `(0, 3, 0) ~ (0, 3, 15)`
+3. `...`
+4. `(1, 0, 0) ~ (1, 0, 15)` && `(1, 1, 0) ~ (1, 1, 15)`
+5. `...`
+6. `(15, 14, 0) ~ (15, 14, 15)` && `(15, 15, 0) ~ (15, 15, 15)`
+
+### warp和合并访问
+
+那现在核心的问题来了，当我们使用warp来调度三维矩阵时，我们是否实现了我们的合并访问逻辑？我们使用下面的例子来逐一分析：
+
+- `(16, 16, 16)` 我们的每个 warp 包含的线程应该是 `(z, y, 0) ~ (z, y, 15)` 和 `(z, y + 1, 0) ~ (z, y + 1， 15)`，而这两个部分大概率是位于不连续的内存，而这两个部分的内部 `15` 个元素，又位于一个连续的内存区域。也就是说，part内是合并访问的，两个part之间不是合并访问的。这里就陷入了我们的一个内存访问陷阱，我们假设 `(0, 0, 0)` 元素是按照 128 bytes 对齐的：
+  - 当我们访问 `(0,0,0) ~ (0,0,15)` 的数据时，从内存读取 `(0,0,0) ~ (0,0,31)` 数据，但是其中的 64bytes 被浪费了；
+  - 当我们访问 `(0,1,0) ~ (0,1,15)` 的数据时，从内存读取 `(0,0,0) ~ (0,0,31)` 数据，但是其中的 64bytes 被浪费了；
+  - 也就是，每次访问，都会浪费掉一半的数据，我们的带宽利用率极低；
+- `(32, 16, 16)`，每个 warp 包含的线程是 `(z, y, 0) ~ (z, y, 31)`，我们充分的利用了我们的 Memory Burst，这是合理的选择；
+- `(64, 8, 8)` 每个 warp 包含的线程是 `(z, y, 0) ~ (z, y, 31)` 或者 `(z, y, 32) ~ (z, y, 63)`，同样是合理的选择。
+
+### warp 的核心原则
+
+warp的最核心原则是：
+
+1. `合并访问`，为了实现合并访问，我们需要保证 `数据内存对齐` 和 `warp对齐`：其中 `数据内存对齐` 是为了保证我们每次读取的数据都在同一个 Memory Burst 中，避免需要多次内存读取；而 `warp对齐` 是保证 Memory Burst 读取到的数据能被充分利用，避免浪费；
+2. `避免 Warp Divergence`：我们知道，GPU的线程执行是物理意义上的并行，并且同一个 warp 下所有的线程只能执行同样的指令。这意味着，当同一个 warp 下的所有线程，在 `if` 条件进入到不同的分支时，每次只能对进入到相同分支的线程并行执行。最差情况下，32个线程进入到32个不同的分支，这意味着我们的GPU已经完全丧失了并行计算能力。
+
+## GPU的数据总线
+
+> 我们在前面提到：**现代显存（DDR6/HBM）的数据总线宽度通常是 256 bit（即 32 字节），而 `4` 个内存突发传输（[Memory Burst](#gpu的数据总线)）总共是 `128 `字节，符合 DRAM 芯片的最佳吞吐性能。如果选 4 个线程，带宽利用率太低；如果选 512 个线程，管理开销和冲突又太严重。**
+>
+> 问题是，为什么我们不设计每个 warp 为8个线程，这样访问 float 时不是正好 `32` 个 bytes 正好占满总线贷款（Bus Width）吗？
+
+这里存在一个关键的硬件细节：**总线宽度（Bus Width）** 和 **突发传输长度（Burst Length, BL）** 是两个不同的概念。
+
+### Memory Burst
+
+在我们的总线发送数据时，我们需要先访问内存得到数据，而标准的内存访问流程如下：
+
+1. **行激活 (RAS - Row Address Strobe)**： 内存是由行和列组成的阵列。这一步会激活特定的**行（Page）**，并将这一整行的数据搬运到内存芯片内部的“行缓存（Row Buffer）”中。这个过程比较慢，因为涉及电荷的转移。
+2. **列寻址 (CAS - Column Address Strobe)**： 一旦行被激活，控制器会发送列地址，告诉芯片：“我要这一行里的哪几个连续的字节”。
+3. **发送数据 (Data Burst)**： 这一步才是真正的“突发传输”。数据开始在数据总线上像流水一样传回 GPU。
+
+而我们的 `<1>` 和`<2>` 是拥有较为高昂的开销，所以在读取数据时我们不会仅仅读取目标行的数据，而同一行内连续读取多个列（Column），这个就是我们所谓的 **Memory Burst**：为了提高效率，当我们给内存控制器一个地址时，它不会只返回那一个地址的数据，而是会连续快速地发送一批数据（通常是 8 次或 16 次传输）。
+
+$$\text{一次突发访问的大小} = \text{总线宽度} \times \text{突发长度 (BL)}$$
+
+**也就说，最高效的数据传输，并不是每次占满总线带宽，而是最好能够覆盖我们一次 Memory Burst 读取到的内存大小。总线宽度决定了瞬时带宽，而突发传输（Burst）决定了单次事务的原子性（Atomicity）。**
+
+此外，我们还需要注意的是：
+
+- 如果我们的 Warp 只请求 32 字节，但内存硬件的“最小起送量（Burst Size）”是 128 字节，那么剩下的 96 字节流量依然会被发出，但会被硬件丢弃。这被称为 **Bandwidth Waste（带宽浪费）**。
+- **对齐**：即便我们一个 Warp 读了 128 字节，但如果起始地址不是 128 的倍数（比如从地址 64 开始），这 128 字节的数据会跨越两个物理的 Burst 块，导致内存控制器必须发起 **2 次** Burst 才能凑齐这一个 Warp 的需求。
 
 ## GPU的演进
 
