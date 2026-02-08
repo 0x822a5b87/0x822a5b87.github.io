@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文所有代码可以在 test-cuda 下查看。  下面的图展示的是 CUDA 编程中一种非常经典的算法模式：并行规约（Parallel Reduction）。简单来说，它的目的是将一个大数组中的所有元素“折叠”成一个值（比如求和、求最大值或最小值）。 block-beta  columns 25     space     a0 a1 a2 a3 a4 a5 a6 a7     b0 b1 b">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA编程入门：Reduce">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="本文所有代码可以在 test-cuda 下查看。  下面的图展示的是 CUDA 编程中一种非常经典的算法模式：并行规约（Parallel Reduction）。简单来说，它的目的是将一个大数组中的所有元素“折叠”成一个值（比如求和、求最大值或最小值）。 block-beta  columns 25     space     a0 a1 a2 a3 a4 a5 a6 a7     b0 b1 b">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-29T10:40:44.000Z">
+<meta property="article:modified_time" content="2026-02-05T13:44:23.286Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="c++">
+<meta property="article:tag" content="cuda">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/","path":"2026/01/29/CUDA编程入门：Reduce/","title":"CUDA编程入门：Reduce"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CUDA编程入门：Reduce | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#add"><span class="nav-number">1.</span> <span class="nav-text">add</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84reduce%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">最简单的reduce实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B6%88%E9%99%A4-warp-divergent"><span class="nav-number">3.</span> <span class="nav-text">消除 Warp Divergent</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E8%80%81%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94"><span class="nav-number">3.1.</span> <span class="nav-text">新老方案对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-number">3.2.</span> <span class="nav-text">代码逻辑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%90%88%E5%B9%B6%E8%AE%BF%E9%97%AE"><span class="nav-number">4.</span> <span class="nav-text">内存合并访问</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%90%88%E5%B9%B6%E8%AE%BF%E9%97%AE%E7%9A%84%E6%8C%87%E6%A0%87"><span class="nav-number">4.1.</span> <span class="nav-text">内存合并访问的指标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3bank-conflict"><span class="nav-number">5.</span> <span class="nav-text">解决Bank Conflict</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#bank-conflict-%E7%9A%84%E4%BA%A7%E7%94%9F"><span class="nav-number">5.1.</span> <span class="nav-text">Bank Conflict 的产生</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96%E5%86%99%E5%85%A5"><span class="nav-number">5.2.</span> <span class="nav-text">向量化写入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96%E6%95%B0%E6%8D%AE%E5%86%99%E5%85%A5%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">5.3.</span> <span class="nav-text">向量化数据写入引入的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">6.</span> <span class="nav-text">第一次性能对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%B2%97%E5%8C%96%E5%92%8Cidle%E7%BA%BF%E7%A8%8B%E4%BC%98%E5%8C%96"><span class="nav-number">7.</span> <span class="nav-text">线程粗化和IDLE线程优化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">8.</span> <span class="nav-text">第二次性能对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#warp-shuffle"><span class="nav-number">9.</span> <span class="nav-text">Warp Shuffle</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">10.</span> <span class="nav-text">第三次性能对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">11.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#warp%E8%B0%83%E5%BA%A6"><span class="nav-number">11.1.</span> <span class="nav-text">warp调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6%E5%AE%9E%E4%BE%8B"><span class="nav-number">11.1.1.</span> <span class="nav-text">线程调度实例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#shfl_down_sync"><span class="nav-number">11.2.</span> <span class="nav-text">shfl_down_sync</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">11.2.1.</span> <span class="nav-text">语法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bank-conflict"><span class="nav-number">11.3.</span> <span class="nav-text">bank conflict</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bank"><span class="nav-number">11.3.1.</span> <span class="nav-text">bank</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%9E%E5%9B%9B%E5%AD%97%E8%8A%82%E6%95%B0%E6%8D%AE%E7%9A%84bank-conflict"><span class="nav-number">11.3.2.</span> <span class="nav-text">非四字节数据的Bank Conflict</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%BF%E6%92%AD"><span class="nav-number">11.3.3.</span> <span class="nav-text">广播</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8padding%E6%9C%BA%E5%88%B6%E6%9D%A5%E8%A7%A3%E5%86%B3-bank-conflict"><span class="nav-number">11.3.4.</span> <span class="nav-text">使用padding机制来解决 Bank
+Conflict</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bank-arbiter"><span class="nav-number">11.3.5.</span> <span class="nav-text">bank arbiter</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%B2%E8%A3%81%E5%99%A8arbiter%E7%9A%84%E5%B8%A6%E5%AE%BD%E9%99%90%E5%88%B6"><span class="nav-number">11.3.5.1.</span> <span class="nav-text">仲裁器（Arbiter）的带宽限制</span></a></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="CUDA编程入门：Reduce | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA编程入门：Reduce
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-01-29 18:40:44" itemprop="dateCreated datePublished" datetime="2026-01-29T18:40:44+08:00">2026-01-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-05 21:44:23" itemprop="dateModified" datetime="2026-02-05T21:44:23+08:00">2026-02-05</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>本文所有代码可以在 <a
+target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-cuda.git">test-cuda</a>
+下查看。</p>
+</blockquote>
+<p>下面的图展示的是 CUDA
+编程中一种非常经典的算法模式：<strong>并行规约（Parallel
+Reduction）</strong>。简单来说，它的目的是将一个大数组中的所有元素“折叠”成一个值（比如求和、求最大值或最小值）。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 25
+    space
+    a0 a1 a2 a3 a4 a5 a6 a7
+    b0 b1 b2 b3 b4 b5 b6 b7
+    c0 c1 c2 c3 c4 c5 c6 c7
+
+r1(&quot;r1&quot;)
+
+sum0(&quot;sum&quot;):2 sum1(&quot;sum&quot;):2 sum2(&quot;sum&quot;):2 sum3(&quot;sum&quot;):2
+sum4(&quot;sum&quot;):2 sum5(&quot;sum&quot;):2 sum6(&quot;sum&quot;):2 sum7(&quot;sum&quot;):2
+sum8(&quot;sum&quot;):2 sum9(&quot;sum&quot;):2 sum10(&quot;sum&quot;):2 sum11(&quot;sum&quot;):2
+
+r2(&quot;r2&quot;)
+
+sum12(&quot;sum&quot;):4 sum13(&quot;sum&quot;):4
+sum14(&quot;sum&quot;):4 sum15(&quot;sum&quot;):4
+sum16(&quot;sum&quot;):4 sum17(&quot;sum&quot;):4
+
+r3(&quot;r3&quot;)
+
+sum18(&quot;sum&quot;):8
+sum19(&quot;sum&quot;):8
+sum20(&quot;sum&quot;):8
+
+space:25
+
+r4(&quot;r4&quot;)
+s(&quot;cross&quot;):24
+
+sum18 --&quot;跨block通信&quot;--&gt; s
+sum19 --&quot;跨block通信&quot;--&gt; s
+sum20 --&quot;跨block通信&quot;--&gt; s
+
+class a0,a1,a2,a3,a4,a5,a6,a7 green
+class b0,b1,b2,b3,b4,b5,b6,b7 blue
+class c0,c1,c2,c3,c4,c5,c6,c7 orange
+
+class sum0,sum1,sum2,sum3,sum12,sum13 green
+class sum4,sum5,sum6,sum7,sum14,sum15 blue
+class sum8,sum9,sum10,sum11,sum16,sum17 orange
+
+class sum18,sum19,sum20 gray
+
+class r1,r2,r3,r4 purple
+
+class s error
+
+
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><strong>第一层（最上方）</strong>：每个 Block
+内部的线程开始成对地读取数据。例如，线程 0 读取位置 0 和位置 1
+的数，将它们相加。</p>
+<p><strong>逐级折叠</strong>：</p>
+<ul>
+<li>第一轮：8 个数变成 4 个数。</li>
+<li>第二轮：4 个数变成 2 个数。</li>
+<li>第三轮：2 个数变成 1 个数。</li>
+</ul>
+<p><strong>最终结果</strong>：每个 Block 最终会产生一个局部结果。</p>
+<h1 id="add">add</h1>
+<p>我们以简单的递加作为起始来实现我们的 reduce 学习。</p>
+<h1 id="最简单的reduce实现">最简单的reduce实现</h1>
+<p>首先我们实现的是最简单版本的
+<code>reduce</code>，这个版本的逻辑非常简单：</p>
+<ol type="1">
+<li><strong>第一段高亮代码</strong>：这里，我们声明了一个长度等于线程数的
+SSM，我们会将所有归属于该 block 的数据全部存放到 SSM 中；</li>
+<li><strong>第二段高亮代码</strong>：我们将数据从显存搬运到 SSM；</li>
+<li><strong>第三段高亮代码</strong>：我们每个按照 <code>reduce</code>
+逻辑，每个 step 将数字并向前累加，直到所有的点计算完毕，此时当前
+<code>block</code> 的数据存放于 <code>ssm_data[0]</code> 中；</li>
+<li><strong>第四段高亮代码</strong>：将我们 block 的值进行跨 block
+累加得到最终结果；</li>
+</ol>
+<p>这里我们存在如下问题：</p>
+<ol type="1">
+<li>虽然使用 SSM
+可以来降低我们的对显存的访问，但是这里有个巨大的问题是，过多的寄存器会使得我们的核函数占用过的寄存器，从而使得
+<code>theoretic occupancy</code> 降低；</li>
+<li>在计算时，存在大量的 <code>if</code> 条件，而 <code>if</code>
+条件是并行编程中性能杀手 --
+当线程进入不同的分支时，GPU的并行计算能力会完全丧失；</li>
+</ol>
+<p>我们可以通过如下方式去进行优化：</p>
+<ol type="1">
+<li>注意到，在我们的SSM中，那些索引为奇数的字段只会被读取一次，也就是说我们可以只声明长度为
+<code>THREAD_NUM / 2</code> 的
+SSM，而那些奇数我们直接在初始化阶段时便累加到 SSM 中。</li>
+<li>注意到，<strong>0是加法中典型的
+<code>单位元（指与任何元素运算后仍保持该元素不变的特殊值）</code>，那么我们可以在判断边界条件时去补0。</strong></li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span> THREAD_NUM&gt;</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_naive_kernel</span><span class="params">(<span class="type">const</span> <span class="type">int</span> *arr, <span class="type">int</span> *out, <span class="type">const</span> <span class="type">int</span> len)</span> </span>&#123;</span><br><span class="line marked">    __shared__ <span class="type">int</span> ssm_data[THREAD_NUM];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> global_tx = GLOBAL_TX;</span><br><span class="line marked">    <span class="keyword">if</span> (global_tx &lt; len) &#123;</span><br><span class="line marked">        ssm_data[tx] = arr[global_tx];</span><br><span class="line marked">    &#125;</span><br><span class="line marked">    __syncthreads();</span><br><span class="line"></span><br><span class="line marked">    <span class="keyword">for</span> (<span class="type">size_t</span> step = <span class="number">1</span>; step &lt; THREAD_NUM; step *= <span class="number">2</span>) &#123;</span><br><span class="line marked">        <span class="keyword">if</span> (tx % (step * <span class="number">2</span>) == <span class="number">0</span> &amp;&amp; tx + step &lt; THREAD_NUM) &#123;</span><br><span class="line marked">            ssm_data[tx] += ssm_data[tx + step];</span><br><span class="line marked">        &#125;</span><br><span class="line marked">        __syncthreads();</span><br><span class="line marked">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tx == <span class="number">0</span>) &#123;</span><br><span class="line marked">        <span class="built_in">atomicAdd</span>(out, ssm_data[<span class="number">0</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用上面的方式，我们得到了V2版本：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span> THREAD_NUM&gt;</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_optimized_v2_kernel</span><span class="params">(<span class="type">const</span> <span class="type">int</span> *arr, <span class="type">int</span> *out, <span class="type">const</span> <span class="type">int</span> len)</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm_data[THREAD_NUM / <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> i = blockIdx.x * blockDim.x + tx;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> sum = (i &lt; len) ? arr[i] : <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (i + THREAD_NUM &lt; len) &#123;</span><br><span class="line">        sum += arr[i + THREAD_NUM];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ssm_data[tx] = sum;</span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> step = THREAD_NUM / <span class="number">2</span>; step &gt; <span class="number">0</span>; step &gt;&gt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (tx &lt; step) &#123;</span><br><span class="line">            ssm_data[tx] += ssm_data[tx + step];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tx == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">atomicAdd</span>(out, ssm_data[<span class="number">0</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="消除-warp-divergent">消除 Warp Divergent</h1>
+<p>在 <a
+href="https://0x822a5b87.github.io/2026/01/23/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8/#coalesced-access">CUDA编程入门</a>
+中，我们提到了GPU的并行性：</p>
+<blockquote>
+<p>对于CPU来讲，任务执行时的内存模型是这样的：在 <code>t0</code>
+时间，CPU 集中的处理一段连续的内存；在 <code>t1</code> 时间，CPU
+集中的处理另外一段连续的内存。</p>
+</blockquote>
+<pre><code class="highlight mermaid">block-beta
+
+columns 11
+
+x0(&quot;0&quot;) x1(&quot;1&quot;) x2(&quot;2&quot;) x3(&quot;...&quot;) x4(&quot;3906&quot;) 
+x5(&quot;0 + 3907&quot;) x6(&quot;1 + 3907&quot;) x7(&quot;2 + 3907&quot;) x8(&quot;...&quot;) x9(&quot;3906 + 3907&quot;)
+x10(&quot;...&quot;)
+
+t0:5
+t1:5
+
+class x0,x1,x2,x3,x4 green
+class x5,x6,x7,x8,x9 yellow
+class x10 blue
+class t0,t1 pink
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>对于GPU来讲，任务执行时的内存模型是这样的：GPU 的执行单位是
+Warp（32个线程）。当指令执行到访存操作时，这 32
+个线程会<strong>同时</strong>发出内存请求：当warp中的32个线程执行时，请求的是一片<strong>连续的、对齐的</strong>内存块。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 25
+
+x0(&quot;0&quot;) x1(&quot;1&quot;) x2(&quot;...&quot;) x3(&quot;31&quot;) x4(&quot;...&quot;) x5(&quot;255&quot;)
+y0(&quot;0&quot;) y1(&quot;1&quot;) y2(&quot;...&quot;) y3(&quot;31&quot;) y4(&quot;...&quot;) y5(&quot;255&quot;)
+z0(&quot;0&quot;) z1(&quot;1&quot;) z2(&quot;...&quot;) z3(&quot;31&quot;) z4(&quot;...&quot;) z5(&quot;255&quot;)
+a(&quot;...&quot;)
+b0(&quot;0&quot;) b1(&quot;1&quot;) b2(&quot;...&quot;) b3(&quot;31&quot;) b4(&quot;...&quot;) b5(&quot;255&quot;)
+
+class x0,x1,x2,x3 green
+class y0,y1,y2,y3 yellow
+class b0,b1,b2,b3 blue
+class z0,z1,z2,z3 orange
+
+warp1(&quot;warp&quot;):4
+space:2
+warp2(&quot;warp&quot;):4
+space:2
+warp3(&quot;warp&quot;):4
+space:3
+warp4(&quot;warp&quot;):4
+space:2
+
+class warp1,warp2,warp3,warp4 purple
+
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而这里对内存的描述，我们扩散到指令也是一样的：在同一个时刻，warp
+只能执行一个指令，如果他们是完全相同的指令，那么我们就可以合并执行；如果在出现了条件判断时，不同的线程走到了不同的分支，那么其他没有走到这个分支的线程会被阻塞：<strong>这就是我们所谓的
+Warp Divergent</strong>。</p>
+<p>假设存在如下代码：我们存在一个 <code>32</code> 线程的
+<code>block</code>：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (blockIdx.x &lt; <span class="number">16</span>) &#123;</span><br><span class="line">    <span class="comment">// branch 1</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread id &lt; 16.&quot;</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// branch 2</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread id &gt;= 16&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">statement</span>();</span><br></pre></td></tr></table></figure>
+<p>那么，程序的执行顺序是这样的：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 3
+
+space thread0(&quot;thread[0, 16)&quot;) thread1(&quot;thread[16, 32)&quot;)
+t0 branch1(&quot;branch1&quot;) space
+t1 space branch2(&quot;branch2&quot;)
+t2 statement(&quot;statement&quot;):2
+
+class t0,t1,t2 purple
+class thread0,thread1 purple
+class branch1,branch2 light_green
+class statement green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>此外，取模操作也是一个代价高昂的操作，我们需要想办法避免。</p>
+<blockquote>
+<p>那么我们应该如何优化 <code>Wrap Divergent</code>
+呢？首先，我们需要了解 <code>warp</code> 的调度，这里可以参考 <a
+href="#warp调度">warp调度</a>。</p>
+</blockquote>
+<h2 id="新老方案对比">新老方案对比</h2>
+<blockquote>
+<p>假设我们当前的 <code>block</code> 中总共有 <code>8</code>
+个线程，而每个 <code>warp</code> 中包含 <code>8</code> 个线程。</p>
+</blockquote>
+<p>在老的方案中，我们最重要的问题是<strong>活跃线程在物理排布上出现了稀疏化</strong>：可以看到，随着程序的执行，我们的
+<code>warp</code> 中活跃线程越来越少。</p>
+<pre><code class="highlight mermaid">block-beta
+columns 9
+
+t0
+block:b0:2
+    t0_0(&quot;t0&quot;) t0_1(&quot;t1&quot;)
+end
+block:b1:2
+     t0_2(&quot;t2&quot;) t0_3(&quot;t3&quot;)
+end
+block:b2:2
+    t0_4(&quot;t4&quot;) t0_5(&quot;t5&quot;)
+end
+block:b3:2
+    t0_6(&quot;t6&quot;) t0_7(&quot;t7&quot;)
+end
+
+space:9
+t1
+block:b4:2
+    t1_0(&quot;t0&quot;) t1_1(&quot;t1&quot;)
+end
+block:b5:2
+    t1_2(&quot;t2&quot;) t1_3(&quot;t3&quot;)
+end
+block:b6:2
+    t1_4(&quot;t4&quot;) t1_5(&quot;t5&quot;)
+end
+block:b7:2
+    t1_6(&quot;t6&quot;) t1_7(&quot;t7&quot;)
+end
+
+space:9
+t2
+block:b8:2
+    t2_0(&quot;t0&quot;) t2_1(&quot;t1&quot;)
+end
+block:b9:2
+    t2_2(&quot;t2&quot;) t2_3(&quot;t3&quot;)
+end
+block:b10:2
+    t3_4(&quot;t4&quot;) t3_5(&quot;t5&quot;)
+end
+block:b11:2
+    t3_6(&quot;t6&quot;) t3_7(&quot;t7&quot;)
+end
+
+
+t0_0 --&gt; t1_0
+t0_1 --&gt; t1_0
+
+t0_2 --&gt; t1_2
+t0_3 --&gt; t1_2
+
+t0_4 --&gt; t1_4
+t0_5 --&gt; t1_4
+
+t0_6 --&gt; t1_6
+t0_7 --&gt; t1_6
+
+t1_0 --&gt; t2_0
+t1_4 --&gt; t2_0
+
+
+class t0,t1,t2 purple
+class b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 animate
+class t0_0,t0_2,t0_4,t0_6,t1_0,t1_4,t2_0 green
+class t0_1,t0_3,t0_5,t0_7,t1_1,t1_2,t1_3,t1_5,t1_6,t1_7,t2_1,t2_2,t2_3,t2_4,t3_4,t3_5,t3_6,t3_7 gray
+
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而我们的核心思路就是<strong>让活跃线程在物理排布上尽可能紧凑，使得每一个
+warp 中的活跃线程尽可能的多</strong>。</p>
+<pre><code class="highlight mermaid">block-beta
+columns 9
+
+t0
+block:b0:2
+    t0_0(&quot;t0&quot;) t0_1(&quot;t1&quot;)
+end
+block:b1:2
+    t0_2(&quot;t2&quot;) t0_3(&quot;t3&quot;)
+end
+block:b2:2
+    t0_4(&quot;t4&quot;) t0_5(&quot;t5&quot;)
+end
+block:b3:2
+    t0_6(&quot;t6&quot;) t0_7(&quot;t7&quot;)
+end
+
+space:9
+t1
+block:b4:2
+    t1_0(&quot;t0&quot;) t1_1(&quot;t1&quot;)
+end
+block:b5:2
+    t1_2(&quot;t2&quot;) t1_3(&quot;t3&quot;)
+end
+block:b6:2
+    t1_4(&quot;t4&quot;) t1_5(&quot;t5&quot;)
+end
+block:b11:2
+    t1_6(&quot;t6&quot;) t1_7(&quot;t7&quot;)
+end
+
+space:9
+t2
+block:b7:2
+    t2_0(&quot;t0&quot;) t2_1(&quot;t1&quot;)
+end
+block:b8:2
+    t2_2(&quot;t2&quot;) t2_3(&quot;t3&quot;)
+end
+block:b9:2
+    t3_4(&quot;t4&quot;) t3_5(&quot;t5&quot;)
+end
+block:b10:2
+    t3_6(&quot;t6&quot;) t3_7(&quot;t7&quot;)
+end
+
+
+t0_0 --&gt; t1_0
+t0_4 --&quot;t0&quot;--&gt; t1_0
+
+t0_1 --&gt; t1_1
+t0_5 --&quot;t1&quot;--&gt; t1_1
+
+t0_2 --&gt; t1_2
+t0_6 --&quot;t2&quot;--&gt; t1_2
+
+t0_3 --&gt; t1_3
+t0_7 --&quot;t3&quot;--&gt; t1_3
+
+
+t1_0 --&gt; t2_0
+t1_1 --&gt; t2_0
+
+class t0,t1,t2 purple
+class b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 animate
+
+class t0_0,t0_1,t0_2,t0_3 green
+class t1_0,t1_1,t2_0 green
+
+class t0_4,t0_5,t0_6,t0_7,t1_2,t1_3,t1_4,t1_5,t1_6,t1_7,t2_1,t2_2,t2_3,t3_4,t3_5,t3_6,t3_7 gray
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<ol type="1">
+<li>在 <code>t0</code> 时间 <code>warp0</code> 和 <code>wrap1</code>
+包含的全部都是活跃线程；</li>
+<li>在 <code>t1</code> 时间，<code>warp0</code>
+包含的全部是活跃线程；</li>
+<li>在 <code>t2</code>
+时间，此时会出现部分资源浪费，但是通常已经属于是可接受的范围了，规约是指数级收敛的。绝大部分的计算量都在前几轮（<span
+class="math inline">\(t_0, t_1\)</span>）完成了。当进入 <span
+class="math inline">\(t_2\)</span>
+甚至更晚的迭代时，剩下的计算开销对于庞大的 GPU
+吞吐量来说已经微乎其微。</li>
+</ol>
+<h2 id="代码逻辑">代码逻辑</h2>
+<p>代码实现逻辑非常简单，这里就不做详细描述了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span> THREAD_NUM&gt;</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_naive_kernel</span><span class="params">(<span class="type">const</span> <span class="type">int</span> *arr, <span class="type">int</span> *out, <span class="type">const</span> <span class="type">int</span> len)</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm_data[THREAD_NUM];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> global_tx = GLOBAL_TX;</span><br><span class="line">    <span class="keyword">if</span> (global_tx &lt; len) &#123;</span><br><span class="line">        ssm_data[tx] = arr[global_tx];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> step = THREAD_NUM &gt;&gt; <span class="number">1</span>; step &gt; <span class="number">0</span>; step &gt;&gt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (tx + step &lt; THREAD_NUM) &#123;</span><br><span class="line">            ssm_data[tx] += ssm_data[tx + step];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tx == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">atomicAdd</span>(out, ssm_data[<span class="number">0</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="内存合并访问">内存合并访问</h1>
+<p>我们执行一下指令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> ncu --metrics  l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum,l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum  ./build/reduce_eliminate_divergence</span><br></pre></td></tr></table></figure>
+<p>得到：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[28068] reduce_eliminate_divergence@127.0.0.1</span><br><span class="line">  void reduce_eliminate_divergence&lt;(int)8&gt;(const int *, int *, int) (12500000, 1, 1)x(8, 1, 1), Context 1, Stream 7, Device 0, CC 8.9</span><br><span class="line">    Section: Command line profiler metrics</span><br><span class="line">    ----------------------------------------------- ----------- ------------</span><br><span class="line">    Metric Name                                     Metric Unit Metric Value</span><br><span class="line">    ----------------------------------------------- ----------- ------------</span><br><span class="line marked">    l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum     request     12500000</span><br><span class="line marked">    l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum       sector     12500000</span><br><span class="line">    ----------------------------------------------- ----------- ------------</span><br></pre></td></tr></table></figure>
+<h2 id="内存合并访问的指标">内存合并访问的指标</h2>
+<p>在我们上的性能分析结果中，有两个特殊的指标：</p>
+<ul>
+<li><code>l1tex__t_requests_pipe_lsu_mem_global_op_ld</code> 这是指
+<strong>Warp 层级的指令发射数</strong>。当一个 Warp（32
+个线程）执行一条加载指令（如
+<code>ld.global</code>）时，它会向显存系统发出“请求”。<strong>理想情况</strong>下，1
+个 Warp 只发出 1 个 Request。</li>
+<li><code>l1tex__t_sectors_pipe_lsu_mem_global_op_ld</code></li>
+<li>这是指 <strong>物理传输的最小单元数</strong>。GPU 的 L1
+缓存行（Cache Line）是 128 字节，它被划分为 <strong>4 个 32 字节的扇区
+(Sector)</strong>。显存控制器每次搬运数据的最小单位就是一个扇区（32B）。<strong>理想情况下</strong>1
+个 Warp 如果读取连续的 32 个 <code>int</code>（共 128B），正好填满 4
+个扇区。</li>
+</ul>
+<p>可以看到，我们的 Cache Line 和我们之前提到的 <a
+href="https://0x822a5b87.github.io/2026/01/23/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8/#memory-burst">Memory
+Burst</a> 的大小是一致的，为了效率，GPU
+的存储架构设计遵循了“对齐”原则。我们可以这样理解它们的关系：</p>
+<ul>
+<li><strong>Cache Line (128 字节)</strong>：这是 <strong>L1
+缓存</strong> 管理数据的基本单位。当我们访问显存时，<code>L1</code>
+缓存会以 128 字节为块进行存储。</li>
+<li><strong>Memory Burst (32 字节 × 4 = 128 字节)</strong>：这是
+<strong>显存控制器（MC）</strong> 从 DRAM 搬运数据的物理特征。
+<ul>
+<li>在 GDDR6/GDDR6X 显存中，一次物理上的 <strong>Burst
+Read</strong>（突发读取）通常对应 <strong>32 字节</strong>（即 1 个
+Sector）。</li>
+<li>由于 L1 Cache Line 是 128 字节，硬件会自动将 <strong>4 个连续的 32
+字节 Burst</strong> 组合在一起，一次性填满一个 Cache Line。</li>
+</ul></li>
+</ul>
+<p>所以，这是一种逻辑上的设计：</p>
+<ol type="1">
+<li>为了减少访问显存时的行激活和列寻址开销，一次完整的 memory burst
+会包含多次读取；</li>
+<li>在硬件设计层面，一次 burst 正好读满一个 Sector；而为了填满整个 Cache
+Line，我们的突发长度（Memory Length）也设计为等同于一个
+<code>Cache Line</code> 包含的 <code>Sector</code> 数量。</li>
+</ol>
+<p>这样设计的结果是：<strong>一次物理上的显存波峰，刚好完美填充一个缓存行。</strong>
+没有任何多余的控制开销，也没有任何带宽浪费。</p>
+<p>再回到我们的指标统计：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum              request     12500000</span><br><span class="line">l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum                sector     12500000</span><br></pre></td></tr></table></figure>
+<p>这两个指标完全相等，这是不合理的：因为这意味着，我们每个
+<code>request</code>，只读取到了 <code>1</code> 个
+<code>Sector</code>，这意味着，我们四次 <code>request</code>
+才能填满一个 <code>Cache Line</code>。</p>
+<p><strong>这是因为，我们在代码中，设置了单个 block 的线程数量为
+<code>8</code>，我们调整这个参数为 <code>32</code> 即可</strong> ：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line marked">    <span class="keyword">constexpr</span> <span class="type">int</span> thread_num = <span class="number">32</span>;</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">int</span> block_num = (len + thread_num - <span class="number">1</span>) / thread_num;</span><br><span class="line">    reduce_eliminate_divergence&lt;thread_num&gt;&lt;&lt;&lt;block_num, thread_num&gt;&gt;&gt;(d_arr, d_out, len);</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重新分析得到结果，现在 <span class="math inline">\(Ratio =
+\frac{\text{Sectors}}{\text{Requests}}\)</span> 等于
+<code>4</code>，这意味着我们完美的合并了访问：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[<span class="number">28405</span>] reduce_eliminate_divergence@<span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span></span><br><span class="line">  <span class="type">void</span> reduce_eliminate_divergence&lt;(<span class="type">int</span>)<span class="number">32</span>&gt;(const <span class="type">int</span> *, <span class="type">int</span> *, <span class="type">int</span>) (<span class="number">3125000</span>, <span class="number">1</span>, <span class="number">1</span>)x(<span class="number">32</span>, <span class="number">1</span>, <span class="number">1</span>), Context <span class="number">1</span>, Stream <span class="number">7</span>, Device <span class="number">0</span>, CC <span class="number">8.9</span></span><br><span class="line">    Section: Command <span class="type">line</span> profiler metrics</span><br><span class="line">    <span class="comment">----------------------------------------------- ----------- ------------</span></span><br><span class="line">    Metric <span class="type">Name</span>                                     Metric Unit Metric <span class="keyword">Value</span></span><br><span class="line">    <span class="comment">----------------------------------------------- ----------- ------------</span></span><br><span class="line">    l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum     request      <span class="number">3125000</span></span><br><span class="line">    l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum       sector     <span class="number">12500000</span></span><br><span class="line">    <span class="comment">----------------------------------------------- ----------- ------------</span></span><br></pre></td></tr></table></figure>
+<h1 id="解决bank-conflict">解决Bank Conflict</h1>
+<p>我们使用如下指令查看现在代码中存在的 Bank Conflict。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> ncu --metrics  l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum  ./build/reduce_eliminate_divergence</span><br></pre></td></tr></table></figure>
+<p>我们得到输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[25436] reduce_eliminate_divergence@127.0.0.1</span><br><span class="line">  void reduce_eliminate_divergence&lt;(int)8&gt;(const int *, int *, int) (12500000, 1, 1)x(8, 1, 1), Context 1, Stream 7, Device 0, CC 8.9</span><br><span class="line">    Section: Command line profiler metrics</span><br><span class="line">    -------------------------------------------------------- ----------- ------------</span><br><span class="line">    Metric Name                                              Metric Unit Metric Value</span><br><span class="line">    -------------------------------------------------------- ----------- ------------</span><br><span class="line marked">    l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum                    77021</span><br><span class="line">    -------------------------------------------------------- ----------- ------------</span><br></pre></td></tr></table></figure>
+<p>可以看到，我们这里仍然存在一定的冲突，在我们的代码中：</p>
+<ul>
+<li><code>ssm_data[tx]</code> 永远不会产生 Bank
+Conflict，因为所有的线程都是线性访问的。除非我们设置了错误的参数：例如我们将
+<code>THTREAD_NUM</code> 设置为
+<code>32</code>，那么无论如何设计代码都无法避免 Bank Conflict。</li>
+<li><code>ssm_data[tx]</code> 和 <code>ssm_data[tx + step]</code>
+也不会产生 Bank Conflict：冲突只发生在“同一个 Warp 内的
+<strong>不同线程</strong> 争抢 <strong>同一个 Bank</strong> 的
+<strong>不同
+Row</strong>”。这里是同一条指令里由同一个物理通道完成的（先读 A，再读
+B），这不叫冲突，这叫正常的序列化读取。</li>
+</ul>
+<h2 id="bank-conflict-的产生">Bank Conflict 的产生</h2>
+<p>我们之前的代码（<code>thread_num=32</code> 版本）逻辑如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssm_data[tx] = arr[global_tx]; <span class="comment">// 每个线程写入 4 字节</span></span><br></pre></td></tr></table></figure>
+<p>虽然在<strong>逻辑索引</strong>上 <code>tx</code> 是连续的（0, 1,
+2...），但从 <strong>LSU（加载存储单元）流水线</strong>
+的物理视角来看，它面临以下压力：</p>
+<ul>
+<li><strong>高频仲裁压力</strong>：一个 Warp 在每一个指令周期都要发起 32
+个独立的 4 字节存储请求。</li>
+<li><strong>物理冲突假象</strong>：由于单线程任务极轻，大量 Block
+并发。当硬件处理这些 <code>STS.32</code>（Store Shared
+32-bit）指令时，如果多个 Warp 的写操作在时间片上重叠，共享内存的
+<strong>Bank 仲裁器（Arbiter）</strong> 就会因为排队压力报出冲突。</li>
+<li><strong>统计溢出</strong>：NCU 记录的 <code>op_st</code>
+冲突很多时候是物理流水线由于“写掩码（Write
+Mask）”或“并发争用”产生的停顿，而不纯粹是地址对齐问题。</li>
+</ul>
+<h2 id="向量化写入">向量化写入</h2>
+<p>在我们的向量化写入中，我们通过以下方式优化了我们的指令数量：</p>
+<ul>
+<li><strong>存储空间的膨胀</strong>：声明 <code>THREAD_NUM * 4</code>
+的共享内存，虽然 Block
+线程数没变，但每个线程现在作为“搬运工”的单次负荷增加了 4
+倍。为了存放这些从全局内存拉回来的数据，Shared Memory
+必须相应扩大，以承载这 <span class="math inline">\(128\)</span>
+字节（<span class="math inline">\(32\)</span> 线程 <span
+class="math inline">\(\times\)</span> <span
+class="math inline">\(4\)</span> 字节 <span
+class="math inline">\(\times\)</span> <span
+class="math inline">\(4\)</span> 倍数据）的单次 Warp 加载量。</li>
+<li><strong>加载阶段：指令压缩（Bandwidth Optimization）</strong>：使用
+<code>int4</code> 强转，将四个 <code>int</code> 合并为一个
+<code>128-bit</code> 事务：
+<ul>
+<li><strong>指令层</strong>：用一次 <code>STS.128</code> 代替四次
+<code>STS.32</code>。</li>
+<li><strong>硬件层</strong>：极大缓解了 <strong>Bank Arbiter</strong>
+的仲裁压力，消除了由于指令过于密集导致的“伪 Bank Conflict”。</li>
+<li><strong>吞吐量</strong>：更接近 <code>GPU</code> 显存控制器的物理
+Burst 限制（<span class="math inline">\(32\)</span>
+字节），实现了极致的带宽利用。</li>
+</ul></li>
+<li>在计算时，我们通过每个线程负责一个 <code>int4</code>
+来达成使用相同的线程数量计算全部的数字。同时每个线程在访问数据时仍然是连续的，不会引发不能合并访问或者
+bank conflict 等问题；</li>
+<li>有一个需要注意的地方是：我们的数组的长度并一定是4的倍数，所以
+<code>reinterpret_cast&lt;const int4*&gt;(arr)[global_tx];</code>
+这段代码可能会发生越界访问，而我们最长使用的方法是：<strong>在
+<code>cudaMalloc</code> 时分配 (len + 3) / 4 * 4
+来进行对齐，并且需要将超出的部分显式的初始化为
+<code>0</code></strong>。</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span> THREAD_NUM&gt;</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_vectorized</span><span class="params">(<span class="type">const</span> <span class="type">int</span> *arr, <span class="type">int</span> *out, <span class="type">const</span> <span class="type">int</span> len)</span> </span>&#123;</span><br><span class="line marked">    __shared__ <span class="type">int</span> ssm[THREAD_NUM * <span class="number">4</span>];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> global_tx = (blockIdx.x * blockDim.x) + tx;</span><br><span class="line marked">    <span class="keyword">if</span> (global_tx * <span class="number">4</span> &lt; len) &#123;</span><br><span class="line marked">        <span class="type">const</span> int4 data = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">const</span> int4*&gt;(arr)[global_tx];</span><br><span class="line marked">        <span class="built_in">reinterpret_cast</span>&lt;int4*&gt;(ssm)[tx] = data;</span><br><span class="line marked">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line marked">        <span class="built_in">reinterpret_cast</span>&lt;int4*&gt;(ssm)[tx] = <span class="built_in">make_int4</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line marked">    &#125;</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="type">size_t</span> start = tx * <span class="number">4</span>;</span><br><span class="line">    <span class="comment">// 这里，我们将 [tx * 4, tx * 4 + 3] 这段数据计算后存储到 tx</span></span><br><span class="line">    <span class="comment">// 当当前block的所有线程执行完毕之后，所有的数据相当于被压缩到了 [0, THREAD_NUM) 这段 ssm 内</span></span><br><span class="line">    <span class="comment">// 后续的 ssm 数据已经不再使用</span></span><br><span class="line marked">    <span class="type">const</span> <span class="type">int</span> int4_sum = ssm[start] + ssm[start + <span class="number">1</span>] + ssm[start + <span class="number">2</span>] + ssm[start + <span class="number">3</span>];</span><br><span class="line marked">    __syncthreads();</span><br><span class="line marked">    ssm[tx] = int4_sum;</span><br><span class="line marked">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> step = THREAD_NUM &gt;&gt; <span class="number">1</span>; step &gt; <span class="number">0</span>; step &gt;&gt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (tx &lt; step) &#123;</span><br><span class="line">            ssm[tx] += ssm[tx + step];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tx == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">atomicAdd</span>(out, ssm[<span class="number">0</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="向量化数据写入引入的问题">向量化数据写入引入的问题</h2>
+<p>向量化数据引入的主要问题是：<strong>由于我们合并了四个数字到<code>int4</code>类型导致我们的核函数内部使用了过多的<code>ssm</code>，这使得我们每个
+block 占用过多的 Shared Memory，进而导致我们每个SM能调度的 block
+减少。这在我们代码中存在大量的<code>__syncthreads()</code>时是一个非常致命的缺陷：</strong></p>
+<ol type="1">
+<li>向量化导致 Shared Memory 占用高。</li>
+<li>Shared Memory 占用高导致 SM 里的活跃 Block 变少。</li>
+<li>活跃 Block 少导致没有足够的“备选 Warp”可以切换。</li>
+<li>结果：所有的 Warp 都在 <code>__syncthreads()</code> 处干等，SM
+的计算单元（ALU）大量闲置。</li>
+</ol>
+<h1 id="第一次性能对比">第一次性能对比</h1>
+<table>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th>reduce_eliminate_divergence</th>
+<th>reduce_vectorized</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Duration</td>
+<td>14.39ms</td>
+<td>4.59ms</td>
+</tr>
+<tr class="even">
+<td>SM Active Cycles</td>
+<td>30287486.94</td>
+<td>9211841.03</td>
+</tr>
+<tr class="odd">
+<td>DRAM Throughput</td>
+<td>10.69%</td>
+<td>32.71%</td>
+</tr>
+<tr class="even">
+<td>Memory Throughput</td>
+<td>33.19%</td>
+<td>47.01%</td>
+</tr>
+<tr class="odd">
+<td>Compute Throughput</td>
+<td>33.19%</td>
+<td>39.52%</td>
+</tr>
+<tr class="even">
+<td>cudaMemcpy</td>
+<td>227ms</td>
+<td>57ms</td>
+</tr>
+<tr class="odd">
+<td>cudaMalloc</td>
+<td>168ms</td>
+<td>199ms</td>
+</tr>
+<tr class="even">
+<td>kernel function</td>
+<td>14ms</td>
+<td>4ms</td>
+</tr>
+<tr class="odd">
+<td>HtoD</td>
+<td>206ms</td>
+<td>45ms</td>
+</tr>
+<tr class="even">
+<td>DtoH</td>
+<td>1344ns</td>
+<td>1376ns</td>
+</tr>
+<tr class="odd">
+<td>Threads</td>
+<td>100000000</td>
+<td>100000000</td>
+</tr>
+</tbody>
+</table>
+<h1 id="线程粗化和idle线程优化">线程粗化和IDLE线程优化</h1>
+<p>为了使得我们的优化我们提到的这些问题，我们可以如下实现：</p>
+<ol type="1">
+<li>在读取数据时，仍然以 <code>int4</code>
+类型来读取数据，以便于提高ssm的利用率；</li>
+<li>在写入时，我们并不存取全部数据，而是直接将<code>int4</code>计算完得到最终的结果后存入到ssm；</li>
+<li>最后，我们相应的减少线程数量；</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constexpr</span> <span class="type">unsigned</span> NUMBER_PER_THREAD = <span class="number">4</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span> THREAD_NUM&gt;</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_vectorized</span><span class="params">(<span class="type">const</span> <span class="type">int</span> *arr, <span class="type">int</span> *out, <span class="type">const</span> <span class="type">int</span> len)</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm[THREAD_NUM];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> global_tx = (blockIdx.x * blockDim.x) + tx;</span><br><span class="line">    <span class="keyword">if</span> (global_tx * NUMBER_PER_THREAD &lt; len) &#123;</span><br><span class="line">        <span class="type">const</span> <span class="keyword">auto</span> [x, y, z, w] = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">const</span> int4*&gt;(arr)[global_tx];</span><br><span class="line marked">        ssm[tx] = x + y + z + w;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ssm[tx] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> step = THREAD_NUM &gt;&gt; <span class="number">1</span>; step &gt; <span class="number">0</span>; step &gt;&gt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (tx &lt; step) &#123;</span><br><span class="line">            ssm[tx] += ssm[tx + step];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tx == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">atomicAdd</span>(out, ssm[<span class="number">0</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">size_t</span> len = <span class="number">100000000</span>;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">int</span> thread_num = <span class="number">32</span>;</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">int</span> stride = thread_num * NUMBER_PER_THREAD;</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">int</span> block_num = (len + stride - <span class="number">1</span>) / stride;</span><br><span class="line marked">    reduce_vectorized&lt;thread_num&gt;&lt;&lt;&lt;block_num, thread_num&gt;&gt;&gt;(d_arr, d_out, len);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="第二次性能对比">第二次性能对比</h1>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 36%" />
+<col style="width: 22%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th>reduce_eliminate_divergence</th>
+<th>reduce_vectorized</th>
+<th>reduce_vec_v2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Duration</td>
+<td>14.39ms</td>
+<td>4.59ms</td>
+<td>1.46ms</td>
+</tr>
+<tr class="even">
+<td>SM Active Cycles</td>
+<td>30287486.94</td>
+<td>9211841.03</td>
+<td>3380794.09</td>
+</tr>
+<tr class="odd">
+<td>DRAM Throughput</td>
+<td>10.69%</td>
+<td>32.71%</td>
+<td>98.05%</td>
+</tr>
+<tr class="even">
+<td>Memory Throughput</td>
+<td>33.19%</td>
+<td>47.01%</td>
+<td>98.05%</td>
+</tr>
+<tr class="odd">
+<td>Compute Throughput</td>
+<td>33.19%</td>
+<td>39.52%</td>
+<td>30.02%</td>
+</tr>
+<tr class="even">
+<td>cudaMemcpy</td>
+<td>227ms</td>
+<td>57ms</td>
+<td>90ms</td>
+</tr>
+<tr class="odd">
+<td>cudaMalloc</td>
+<td>168ms</td>
+<td>199ms</td>
+<td>162ms</td>
+</tr>
+<tr class="even">
+<td>kernel function</td>
+<td>14ms</td>
+<td>4ms</td>
+<td>1.51ms</td>
+</tr>
+<tr class="odd">
+<td>HtoD</td>
+<td>206ms</td>
+<td>45ms</td>
+<td>81ms</td>
+</tr>
+<tr class="even">
+<td>DtoH</td>
+<td>1344ns</td>
+<td>1376ns</td>
+<td>1312ns</td>
+</tr>
+<tr class="odd">
+<td>Threads</td>
+<td>100000000</td>
+<td>100000000</td>
+<td>25000000</td>
+</tr>
+</tbody>
+</table>
+<h1 id="warp-shuffle">Warp Shuffle</h1>
+<p>我们知道 <code>__syncthreads()</code>
+是一个代价高昂的操作，我们有没有办法消除对于
+<code>__syncthreads()</code> 的调用呢？这里，我们必须先了解一下 warp
+的调度逻辑。</p>
+<p>Warp 是 GPU 硬件执行的最小单位，而 Block 只是一个逻辑组织单位：</p>
+<ul>
+<li><strong>在 <code>warp</code> 内部</strong>， 32
+个线程是由同一个<strong>硬件调度器（Warp Scheduler）</strong>管理的。在
+<code>SIMT</code>（单指令多线程）架构下，这 32
+个线程在物理上是“步调一致”的。当一条加法指令下达时，这 32 个线程的 ALU
+会在同一个时钟周期执行。<strong>这些线程本来就是一起动的，所以不需要互相打招呼（<code>__syncthreads</code>）。</strong></li>
+<li><strong>在 <code>block</code> 内部</strong>，一个 Block 可能包含多个
+Warp（比如 256 个线程就是 8 个 Warp）。这 8 个 Warp 在 SM
+内部是<strong>独立调度</strong>的。Warp 0 可能正在算加法，而 Warp 1
+可能因为内存延迟被挂起了。如果 Warp 0 想读 Warp 1 的数据，它必须调用
+<code>__syncthreads()</code>。</li>
+</ul>
+<p>这就相当于我们在 <code>CPU</code> 编程中对于临界区的访问：</p>
+<ul>
+<li>在不需要访问 <code>Shared Memory</code> 时，我们无需任何形式的
+<code>__syncthreads()</code>，因为我们内部的并行是基于 <code>SIMT</code>
+并行的；</li>
+<li>而当我们需要访问 <code>Shared Memory</code> 时，我们必须要通过
+<code>__syncthreads()</code> 等待同一个 <code>block</code>
+内的所有线程执行到当前位置，因为这里相当于是进入临界区了。</li>
+</ul>
+<p><strong>这也就是说，当我们执行到只剩最后一个 warp 时，我们可以不使用
+<code>__syncthreads()</code>
+的。另一方面，如果我们的线程数量少于32个（即只有一个warp），那么我们可以直接不使用
+<code>__syncthreads()</code>，因为我们只有一个 warp。</strong></p>
+<p>而我们有很多种方式来实现，其中最符合现代 CUDA 开发的方式是通过 <a
+href="#shfl_down_sync">__shfl_down_sync</a> 来实现。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constexpr</span> <span class="type">unsigned</span> NUMBER_PER_THREAD = <span class="number">4</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span> THREAD_NUM&gt;</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_vectorized</span><span class="params">(<span class="type">const</span> <span class="type">int</span> *arr, <span class="type">int</span> *out, <span class="type">const</span> <span class="type">int</span> len)</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm[THREAD_NUM];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> global_tx = (blockIdx.x * blockDim.x) + tx;</span><br><span class="line">    <span class="keyword">if</span> (global_tx * NUMBER_PER_THREAD &lt; len) &#123;</span><br><span class="line">        <span class="type">const</span> <span class="keyword">auto</span> [x, y, z, w] = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">const</span> int4*&gt;(arr)[global_tx];</span><br><span class="line">        ssm[tx] = x + y + z + w;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ssm[tx] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 我们使用 for 循环执行前面的部分</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> step = THREAD_NUM &gt;&gt; <span class="number">1</span>; step &gt; <span class="number">32</span>; step &gt;&gt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (tx &lt; step) &#123;</span><br><span class="line">            ssm[tx] += ssm[tx + step];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 当执行到该位置时，由于我们在 for 循环中调用了 __syncthreads()，所以所有的线程都已经执行到该位置</span></span><br><span class="line">    <span class="comment">// 这也就表明，所有的数据都已经被规约到 ssm[0] ~ ssm[31]</span></span><br><span class="line">    <span class="comment">// 此时我们只需要使用 __shfl_down_sync 来计算最后的结果即可。</span></span><br><span class="line">    <span class="keyword">if</span> (tx &lt; <span class="number">32</span>) &#123;</span><br><span class="line">        <span class="type">int</span> sum = ssm[tx];</span><br><span class="line">        <span class="comment">// 注意，最后一次计算时 step &gt; 32，也就是我们的值现在规约到了 ssm[0] ~ ssm[63]</span></span><br><span class="line">        <span class="keyword">if</span> (THREAD_NUM &gt; <span class="number">32</span> &amp;&amp; tx + <span class="number">32</span> &lt; THREAD_NUM) &#123;</span><br><span class="line">            sum += ssm[tx + <span class="number">32</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        sum += __shfl_down_sync(<span class="number">0xffffffff</span>, sum, <span class="number">16</span>);</span><br><span class="line">        sum += __shfl_down_sync(<span class="number">0xffffffff</span>, sum, <span class="number">8</span>);</span><br><span class="line">        sum += __shfl_down_sync(<span class="number">0xffffffff</span>, sum, <span class="number">4</span>);</span><br><span class="line">        sum += __shfl_down_sync(<span class="number">0xffffffff</span>, sum, <span class="number">2</span>);</span><br><span class="line">        sum += __shfl_down_sync(<span class="number">0xffffffff</span>, sum, <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (tx == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="built_in">atomicAdd</span>(out, sum);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="第三次性能对比">第三次性能对比</h1>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 31%" />
+<col style="width: 20%" />
+<col style="width: 15%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>指标 (Metric)</strong></th>
+<th>reduce_eliminate_divergence</th>
+<th>reduce_vectorized</th>
+<th>reduce_vec_v2</th>
+<th>shuffle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Duration</td>
+<td>14.39ms</td>
+<td>4.59ms</td>
+<td>1.46ms</td>
+<td>1.52ms</td>
+</tr>
+<tr class="even">
+<td>SM Active Cycles</td>
+<td>30287486.94</td>
+<td>9211841.03</td>
+<td>3380794.09</td>
+<td>3365834.97</td>
+</tr>
+<tr class="odd">
+<td>DRAM Throughput</td>
+<td>10.69%</td>
+<td>32.71%</td>
+<td>98.05%</td>
+<td>98.04%</td>
+</tr>
+<tr class="even">
+<td>Memory Throughput</td>
+<td>33.19%</td>
+<td>47.01%</td>
+<td>98.05%</td>
+<td>98.04%</td>
+</tr>
+<tr class="odd">
+<td>Compute Throughput</td>
+<td>33.19%</td>
+<td>39.52%</td>
+<td>30.02%</td>
+<td>12.62%</td>
+</tr>
+<tr class="even">
+<td>cudaMemcpy</td>
+<td>227ms</td>
+<td>57ms</td>
+<td>90ms</td>
+<td>52ms</td>
+</tr>
+<tr class="odd">
+<td>cudaMalloc</td>
+<td>168ms</td>
+<td>199ms</td>
+<td>162ms</td>
+<td>167ms</td>
+</tr>
+<tr class="even">
+<td>kernel function</td>
+<td>14ms</td>
+<td>4ms</td>
+<td>1.51ms</td>
+<td>1.46ms</td>
+</tr>
+<tr class="odd">
+<td>HtoD</td>
+<td>206ms</td>
+<td>45ms</td>
+<td>81ms</td>
+<td>43ms</td>
+</tr>
+<tr class="even">
+<td>DtoH</td>
+<td>1344ns</td>
+<td>1376ns</td>
+<td>1312ns</td>
+<td>1280ns</td>
+</tr>
+<tr class="odd">
+<td>Threads</td>
+<td>100000000</td>
+<td>100000000</td>
+<td>25000000</td>
+<td>25000064</td>
+</tr>
+</tbody>
+</table>
+<h1 id="qa">QA</h1>
+<h2 id="warp调度">warp调度</h2>
+<p>GPU在进行硬件调度warp时，有两个基本原则：</p>
+<ol type="1">
+<li><p><strong>分段连续性</strong>（Warp 内部线程索引连续）。</p></li>
+<li><p><strong>归属唯一性</strong>（Warp 绝不跨 Block）。</p></li>
+</ol>
+<p>假设 block 的线程数量为 T，每个warp的线程数为 N，那么</p>
+<ol type="1">
+<li><code>[0, N)</code> 为第一个 warp；</li>
+<li><code>[N, 2 * N)</code> 为第二个 warp；</li>
+<li>如此递推，直到 <code>[a * N, min(T, (a + 1) * N)</code>
+将所有的线程消耗完。</li>
+</ol>
+<p>例如：假设 <span class="math inline">\(N=32\)</span>（标准 Warp
+大小），而我们设置 <span class="math inline">\(T=48\)</span>：</p>
+<ol type="1">
+<li><strong>第一个 Warp</strong>：<span class="math inline">\([0,
+32)\)</span>。这是一个“满载”的 Warp，32 个线程全部活跃。</li>
+<li><strong>第二个 Warp</strong>：<span class="math inline">\([32,
+48)\)</span>。
+<ul>
+<li><strong>硬件层面</strong>：调度器依然会为这个 Warp 分配 <strong>32
+个线程的执行宽度</strong>。</li>
+<li><strong>执行层面</strong>：索引为 <span
+class="math inline">\(48\)</span> 到 <span
+class="math inline">\(63\)</span> 的位置被称为 <strong>Inactive
+Lanes（非活跃通道）</strong>。它们会消耗指令周期，占用寄存器资源，但其输出被硬件自动屏蔽，不执行任何写操作。</li>
+</ul></li>
+</ol>
+<p>这就是为什么建议 <code>blockDim.x</code> 永远设置为 32
+的倍数。如果你设置 <span
+class="math inline">\(T=33\)</span>，你实际上消耗了 2 个 Warp
+的硬件资源，但第二个 Warp 的利用率仅为 <span class="math inline">\(1/32
+\approx 3\%\)</span>。</p>
+<h3 id="线程调度实例">线程调度实例</h3>
+<p>根据我们前面的描述，我们的八个线程，被拆分为四组
+<code>warp</code>:</p>
+<ul>
+<li><code>{b0 t0, b0 t1}</code></li>
+<li><code>{b0 t2, b0 t3}</code></li>
+<li><code>{b1 t0, b1 t1}</code></li>
+<li><code>{b1 t2, b1 t3}</code></li>
+</ul>
+<p>那么在调度时，GPU 就会像 CPU
+调度线程一样，随机的调度这四组中的任意一组。</p>
+<pre><code class="highlight mermaid">block-beta
+columns 9
+
+t0
+
+block:block1:4
+    b0t0(&quot;b0 t0&quot;)
+    b0t1(&quot;b0 t1&quot;)
+    b0t2(&quot;b0 t2&quot;)
+    b0t3(&quot;b0 t3&quot;)
+end
+
+block:block2:4
+    b1t0(&quot;b1 t0&quot;)
+    b1t1(&quot;b1 t1&quot;)
+    b1t2(&quot;b1 t2&quot;)
+    b1t3(&quot;b1 t3&quot;)
+end
+
+t1
+block:block3:4
+    b2t0(&quot;b0 t0&quot;)
+    b2t1(&quot;b0 t1&quot;)
+    b2t2(&quot;b0 t2&quot;)
+    b2t3(&quot;b0 t3&quot;)
+end
+
+block:block4:4
+    b3t0(&quot;b1 t0&quot;)
+    b3t1(&quot;b1 t1&quot;)
+    b3t2(&quot;b1 t2&quot;)
+    b3t3(&quot;b1 t3&quot;)
+end
+
+t2
+block:block5:4
+    b4t0(&quot;b0 t0&quot;)
+    b4t1(&quot;b0 t1&quot;)
+    b4t2(&quot;b0 t2&quot;)
+    b4t3(&quot;b0 t3&quot;)
+end
+
+block:block6:4
+    b5t0(&quot;b1 t0&quot;)
+    b5t1(&quot;b1 t1&quot;)
+    b5t2(&quot;b1 t2&quot;)
+    b5t3(&quot;b1 t3&quot;)
+end
+
+t3
+block:block7:4
+    b6t0(&quot;b0 t0&quot;)
+    b6t1(&quot;b0 t1&quot;)
+    b6t2(&quot;b0 t2&quot;)
+    b6t3(&quot;b0 t3&quot;)
+end
+
+block:block8:4
+    b7t0(&quot;b1 t0&quot;)
+    b7t1(&quot;b1 t1&quot;)
+    b7t2(&quot;b1 t2&quot;)
+    b7t3(&quot;b1 t3&quot;)
+end
+
+t4
+block:block9:4
+    b8t0(&quot;b0 t0&quot;)
+    b8t1(&quot;b0 t1&quot;)
+    b8t2(&quot;b0 t2&quot;)
+    b8t3(&quot;b0 t3&quot;)
+end
+
+block:block10:4
+    b9t0(&quot;b1 t0&quot;)
+    b9t1(&quot;b1 t1&quot;)
+    b9t2(&quot;b1 t2&quot;)
+    b9t3(&quot;b1 t3&quot;)
+end
+
+class t0,t1,t2,t3,t4 purple
+
+class block1,block2 animate
+class b0t0,b0t1 green
+class b0t2,b0t3,b1t0,b1t1,b1t2,b1t3 gray
+
+class b2t2,b2t3,b5t0,b5t1,b7t2,b7t3 green
+
+class b2t0,b2t1,b3t0,b3t1,b3t2,b3t3,b4t0,b4t1,b4t2,b4t3,b5t2,b5t3,b6t0,b6t1,b6t2,b6t3,b7t0,b7t1 gray
+
+class b8t0,b8t1,b8t2,b8t3 gray
+class b9t2,b9t3 gray
+class b9t0,b9t1 green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="shfl_down_sync">shfl_down_sync</h2>
+<p><code>__shfl_down_sync</code> 是 CUDA 提供的 <strong>Warp
+Shuffle</strong>（掩码交换）原语之一。它是规约算法中极其关键的“黑科技”，<strong>让线程能直接“读”同
+Warp 内其他线程的寄存器值</strong>。</p>
+<h3 id="语法">语法</h3>
+<p>以 <code>__shfl_down_sync(0xffffffff, sum, 16);</code>
+为例：这条指令的作用是<strong>对于任意线程，执行
+<code>sum += (线程索引 + 16)</code> 处的
+<code>sum</code></strong>。这里指的注意的是，关于“索引大于 32
+的线程”的处理，硬件并不是简单的“不执行任何操作”，而是：
+<strong>对于这些线程，该函数会返回一个“未定义值”或原来的值（通常在
+<code>down</code> 模式下，越界请求会返回原值或者
+0，取决于具体掩码），但最关键的是：只有索引在 <span
+class="math inline">\([0, 15]\)</span>
+范围内的线程能够成功“加”到有效数据。</strong>简单来说，我们在调用了这条指令之后，所有索引在
+<code>[15, 31]</code> 范围的线程的 <code>sum</code>
+值就不应该被使用了，因为他们属于是未定义结果。</p>
+<ul>
+<li><strong><code>0xffffffff</code> (Mask)</strong>：这是一个 32
+位的掩码。每一位对应 Warp 里的一个线程（第 0 位对应线程
+0，以此类推）。<code>0xffffffff</code> 表示这个操作对 Warp
+内<strong>所有 32 个线程</strong>都有效。</li>
+<li><strong><code>sum</code>
+(Var)</strong>：这是我们想要传递出去的变量名（在寄存器中）。</li>
+<li><strong><code>16</code>
+(Delta)</strong>：这是偏移量。<code>down</code> 表示每个线程去读
+<strong>“自己索引 + 16”</strong> 的那个线程手中的 <code>sum</code>
+值。</li>
+</ul>
+<h2 id="bank-conflict">bank conflict</h2>
+<h3 id="bank">bank</h3>
+<p>在现代 <code>GPU</code> 中，通常 Shared Memory 被平均分成 <strong>32
+个等大小的存储模块</strong>，称为
+<strong>Banks</strong>。Banks的数量固定为 32 个，刚好对应一个 Warp
+的线程数。</p>
+<p>而它的实际结构可以如下图所示：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+address[&quot; Byte Address&quot;] ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;] ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 124)&quot;] ad31[&quot;[124, 128)&quot;]
+r0[&quot;row 0&quot;] r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;...&quot;) r0c31(&quot;31&quot;)
+r1[&quot;row 1&quot;] r1c0(&quot;32&quot;) r1c1(&quot;33&quot;) r1c2(&quot;34&quot;) r1c3(&quot;35&quot;) r1c4(&quot;36&quot;) r1c5(&quot;37&quot;) r1c6(&quot;...&quot;) r1c31(&quot;63&quot;)
+r2[&quot;...&quot;] r2c0(&quot;...&quot;) r2c1(&quot;...&quot;) r2c2(&quot;...&quot;) r2c3(&quot;...&quot;) r2c4(&quot;...&quot;) r2c5(&quot;...&quot;) r2c6(&quot;...&quot;) r2c31(&quot;...&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank31,r0,r1,r2 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad31 pink
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31 light_green
+class r1c0,r1c1,r1c2,r1c3,r1c4,r1c5,r1c6,r1c31 light_green
+class r2c0,r2c1,r2c2,r2c3,r2c4,r2c5,r2c6,r2c31 light_green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>我们可以把整个 Shared Memory 看做一个 <code>ssm[rows][32]</code>
+的数组，我们可以把任何一个 Shared Memory 的索引 <code>i</code>
+映射到这个数组中：</p>
+<ul>
+<li><strong>Col (Bank ID)</strong> = <span class="math inline">\(i
+\pmod{32}\)</span></li>
+<li><strong>Row (Entry ID)</strong> = <span class="math inline">\(i /
+32\)</span></li>
+</ul>
+<p>而这个特性，也意味着我们在访问 ssm
+时，只要他们是连续的，长度不超过32的，他就不会产生 bank conflict
+而不用处理它的起始长度。例如，当我们存在如下代码（每个 block 的线程数为
+32）：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_eliminate_divergence</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm_data[<span class="number">32</span>];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    ssm_data[tx] = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个代码中，<code>ssm_data</code> 可能指向任意一个
+Bank，我们假设我们指向了 <code>bank-1</code>，那么他访问的 bank
+如下所示，这依然是没有产生 bank conflict 的：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+address[&quot; Byte Address&quot;] ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;] ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 124)&quot;] ad31[&quot;[124, 128)&quot;]
+r0[&quot;row 0&quot;] r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;...&quot;) r0c31(&quot;31&quot;)
+r1[&quot;row 1&quot;] r1c0(&quot;32&quot;) r1c1(&quot;33&quot;) r1c2(&quot;34&quot;) r1c3(&quot;35&quot;) r1c4(&quot;36&quot;) r1c5(&quot;37&quot;) r1c6(&quot;...&quot;) r1c31(&quot;63&quot;)
+r2[&quot;...&quot;] r2c0(&quot;...&quot;) r2c1(&quot;...&quot;) r2c2(&quot;...&quot;) r2c3(&quot;...&quot;) r2c4(&quot;...&quot;) r2c5(&quot;...&quot;) r2c6(&quot;...&quot;) r2c31(&quot;...&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank31,r0,r1,r2 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad31 pink
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31 light_green
+class r1c0,r1c1,r1c2,r1c3,r1c4,r1c5,r1c6,r1c31 light_green
+class r2c0,r2c1,r2c2,r2c3,r2c4,r2c5,r2c6,r2c31 light_green
+class r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31,r1c0 orange
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>如果我们对索引进行一个简单的修改让他不连续，最简单的方式，我们直接将所有的索引直接乘以32，那么整个
+warp 将发生严重的 bank conflict 导致访问 ssm 被串行化。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_eliminate_divergence</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm_data[<span class="number">32</span>];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line marked">    ssm_data[tx * <span class="number">32</span>] = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时 ssm 访问模型为：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+address[&quot; Byte Address&quot;] ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;] ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 124)&quot;] ad31[&quot;[124, 128)&quot;]
+r0[&quot;row 0&quot;] r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;...&quot;) r0c31(&quot;31&quot;)
+r1[&quot;row 1&quot;] r1c0(&quot;32&quot;) r1c1(&quot;33&quot;) r1c2(&quot;34&quot;) r1c3(&quot;35&quot;) r1c4(&quot;36&quot;) r1c5(&quot;37&quot;) r1c6(&quot;...&quot;) r1c31(&quot;63&quot;)
+r2[&quot;...&quot;] r2c0(&quot;...&quot;) r2c1(&quot;...&quot;) r2c2(&quot;...&quot;) r2c3(&quot;...&quot;) r2c4(&quot;...&quot;) r2c5(&quot;...&quot;) r2c6(&quot;...&quot;) r2c31(&quot;...&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank31,r0,r1,r2 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad31 pink
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31 light_green
+class r1c0,r1c1,r1c2,r1c3,r1c4,r1c5,r1c6,r1c31 light_green
+class r2c0,r2c1,r2c2,r2c3,r2c4,r2c5,r2c6,r2c31 light_green
+
+class r0c1,r1c1,r2c1 error
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><strong>在上面的这种极端的场景下，所有的线程都发生了 bank
+conflict，这种冲突叫做
+<code>32-way Bank Conflict</code></strong>。而如果我们只是将
+<code>x * 2</code>，那么这个冲突将降低到
+<code>2-way Bank Conflict</code>。<strong>而这些就是在交错寻址下发生的典型
+Bank Conflict。</strong></p>
+<h3 id="非四字节数据的bank-conflict">非四字节数据的Bank Conflict</h3>
+<p>对于较小的数据类型（如 <code>char</code> 或
+<code>short</code>），如果我们定义
+<code>__shared__ char ssm[128]</code>：<code>ssm[0]</code>,
+<code>ssm[1]</code>, <code>ssm[2]</code>, <code>ssm[3]</code> 全部挤在
+<strong>Bank 0</strong> 的同一个 4 字节空间里。</p>
+<p>然而惊人的是：如果线程 0 读 <code>ssm[0]</code>，线程 1 读
+<code>ssm[1]</code>，这<strong>不会</strong>发生 Bank
+Conflict。这是因为现代 GPU 具备“字节选择逻辑”，当多个线程访问同一个 Bank
+的<strong>同一个 4
+字节字（Word）</strong>中的不同字节时，硬件可以像广播一样处理。</p>
+<p><strong>GPU会读取 <code>ssm[0]</code> 和 <code>ssm[1]</code>
+的数据，并广播到对应的地址。</strong></p>
+<p>对于较大的数据类型（如 <code>double</code> 或
+<code>long long</code>），如果我们定义
+<code>__shared__ double ssm[64]</code>（一个 <code>double</code> 占 8
+字节）：</p>
+<ul>
+<li><code>ssm[0]</code> 会占据 <strong>Bank 0 和 Bank 1</strong> 的第 0
+行。</li>
+<li><code>ssm[1]</code> 会占据 <strong>Bank 2 和 Bank 3</strong> 的第 0
+行。</li>
+<li>一个 Warp 访问 32 个 <code>double</code> 时，实际上会产生两次 64
+字节的内存请求。硬件会自动将其拆分为两次无冲突的访问。</li>
+</ul>
+<h3 id="广播">广播</h3>
+<blockquote>
+<p>如果 Warp 里的所有线程都访问同一个 Bank
+的同一个地址，会发生冲突吗？</p>
+</blockquote>
+<p><strong>答案是：不会。</strong>
+硬件此时会触发“广播机制”，把这个地址的数据一次性发给所有请求它的线程。这种情况下性能依然是极高的。<strong>Bank
+Conflict 只发生在 “同一个 Bank，不同地址” 的竞争上。</strong></p>
+<h3 id="使用padding机制来解决-bank-conflict">使用padding机制来解决 Bank
+Conflict</h3>
+<p>假设我们现在需要访问一个数组中的某一列，那么此时按照我们之前使用的方式没有办法避免
+Bank Conflict（这里一个 block 仍然是 32 个线程）：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_eliminate_divergence</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">int</span> ssm_data[<span class="number">32</span>][<span class="number">32</span>];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    ssm_data[tx][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为此时我们的内存模型是这样的：</p>
+<ol type="1">
+<li>其中 ssm 的 <code>[0, 128)</code> 对应于
+<code>[bank0, bank32]</code> 的第 0 行；</li>
+<li>每次我们访问时访问的数据是 <code>tx * 32</code>；</li>
+</ol>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+address[&quot; Byte Address&quot;] ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;] ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 124)&quot;] ad31[&quot;[124, 128)&quot;]
+r0[&quot;row 0&quot;] r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;...&quot;) r0c31(&quot;31&quot;)
+r1[&quot;row 1&quot;] r1c0(&quot;32&quot;) r1c1(&quot;33&quot;) r1c2(&quot;34&quot;) r1c3(&quot;35&quot;) r1c4(&quot;36&quot;) r1c5(&quot;37&quot;) r1c6(&quot;...&quot;) r1c31(&quot;63&quot;)
+r2[&quot;...&quot;] r2c0(&quot;...&quot;) r2c1(&quot;...&quot;) r2c2(&quot;...&quot;) r2c3(&quot;...&quot;) r2c4(&quot;...&quot;) r2c5(&quot;...&quot;) r2c6(&quot;...&quot;) r2c31(&quot;...&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank31,r0,r1,r2 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad31 pink
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31 light_green
+class r1c0,r1c1,r1c2,r1c3,r1c4,r1c5,r1c6,r1c31 gray
+class r2c0,r2c1,r2c2,r2c3,r2c4,r2c5,r2c6,r2c31 light_green
+
+class r0c0,r1c0,r2c0 error
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>我们需要做的是，通过 <code>padding</code>
+来通过浪费少量的ssm来使得他们在内存中的位置分布于不同的
+bank，我们通过修改 ssm 的声明为 <code>ssm_data[32][33]</code>：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">reduce_eliminate_divergence</span><span class="params">()</span> </span>&#123;</span><br><span class="line marked">    __shared__ <span class="type">int</span> ssm_data[<span class="number">32</span>][<span class="number">33</span>];</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> tx = threadIdx.x;</span><br><span class="line">    ssm_data[tx][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这种情况下，我们的ssm分布如下：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+address[&quot; Byte Address&quot;] ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;] ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 124)&quot;] ad31[&quot;[124, 128)&quot;]
+r0[&quot;row 0&quot;] r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;...&quot;) r0c31(&quot;31&quot;)
+r1[&quot;row 1&quot;] r1c0(&quot;32&quot;) r1c1(&quot;33&quot;) r1c2(&quot;34&quot;) r1c3(&quot;35&quot;) r1c4(&quot;36&quot;) r1c5(&quot;37&quot;) r1c6(&quot;...&quot;) r1c31(&quot;63&quot;)
+r2[&quot;row 2&quot;] r2c0(&quot;64&quot;) r2c1(&quot;65&quot;) r2c2(&quot;66&quot;) r2c3(&quot;67&quot;) r2c4(&quot;68&quot;) r2c5(&quot;69&quot;) r2c6(&quot;...&quot;) r2c31(&quot;95&quot;)
+r3[&quot;...&quot;] r3c0(&quot;...&quot;) r3c1(&quot;...&quot;) r3c2(&quot;...&quot;) r3c3(&quot;...&quot;) r3c4(&quot;...&quot;) r3c5(&quot;...&quot;) r3c6(&quot;...&quot;) r3c31(&quot;...&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank31,r0,r1,r2,r3 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad31 pink
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31,r1c0 light_green
+class r1c1,r1c2,r1c3,r1c4,r1c5,r1c6,r1c31,r2c0,r2c1 gray
+class r2c0,r2c1,r2c2,r2c3,r2c4,r2c5,r2c6,r2c31 light_green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>对于同样的访问逻辑，我们的 bank 直接错开了：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+address[&quot; Byte Address&quot;] ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;] ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 124)&quot;] ad31[&quot;[124, 128)&quot;]
+r0[&quot;row 0&quot;] r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;...&quot;) r0c31(&quot;31&quot;)
+r1[&quot;row 1&quot;] r1c0(&quot;32&quot;) r1c1(&quot;33&quot;) r1c2(&quot;34&quot;) r1c3(&quot;35&quot;) r1c4(&quot;36&quot;) r1c5(&quot;37&quot;) r1c6(&quot;...&quot;) r1c31(&quot;63&quot;)
+r2[&quot;row 2&quot;] r2c0(&quot;64&quot;) r2c1(&quot;65&quot;) r2c2(&quot;66&quot;) r2c3(&quot;67&quot;) r2c4(&quot;68&quot;) r2c5(&quot;69&quot;) r2c6(&quot;...&quot;) r2c31(&quot;95&quot;)
+r3[&quot;...&quot;] r3c0(&quot;...&quot;) r3c1(&quot;...&quot;) r3c2(&quot;...&quot;) r3c3(&quot;...&quot;) r3c4(&quot;...&quot;) r3c5(&quot;...&quot;) r3c6(&quot;...&quot;) r3c31(&quot;...&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank31,r0,r1,r2,r3 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad31 pink
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c31,r1c0 light_green
+class r1c1,r1c2,r1c3,r1c4,r1c5,r1c6,r1c31,r2c0,r2c1 gray
+class r2c0,r2c1,r2c2,r2c3,r2c4,r2c5,r2c6,r2c31 light_green
+class r0c0,r1c1,r2c2 orange
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h3 id="bank-arbiter">bank arbiter</h3>
+<p>Bank Conflict 并不总是由于“地址映射到了同一个
+Bank”，还可能是由于“指令发射过于密集导致的硬件排队（Congestion）”。</p>
+<h4 id="仲裁器arbiter的带宽限制">仲裁器（Arbiter）的带宽限制</h4>
+<p>Shared Memory 的每个 Bank 虽然独立，但每个周期能处理的
+<strong>事务数量（Transactions）</strong> 是有限的。</p>
+<ul>
+<li><strong>原始代码</strong>：32 个线程各存 4
+字节（<code>STS.32</code>）。Warp 必须发起一个覆盖 32
+个地址的巨大请求。在 CC 8.9 这种高并发架构下，如果多个 Warp 同时塞满 LSU
+流水线，Bank Arbiter 就会因为处理不过来而产生“逻辑退避”。</li>
+<li><strong>向量化代码</strong>：通过 <code>int4</code>，我们将原本需要
+32 个地址位的请求，压缩成了只需要 8 个 <code>int4</code>
+地址位的物理请求（针对单次存储事务）。这极大地释放了仲裁器的压力。</li>
+</ul>
+<p>例如，在我们的代码中，1 亿次数据 = 1 亿次 <code>STS.32</code>（Store
+Shared）指令。而我们可以通过 <code>int4</code> 来减少 Bank Arbiter
+的压力：1 亿次数据 = 2500 万次 <code>STS.128</code> 指令。
+指令数量减少到原来的 <strong>1/4</strong>。由于指令变少了，NCU
+统计到的由于排队产生的“伪 Bank Conflict”也就归零了。</p>
+<p>总结来说：在非向量化代码下，我们的内存模型如下：每个
+<code>STS.32</code> 指令负责自己对应的 <code>int</code>；</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 12
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;bank-6&quot;] bank7[&quot;bank-7&quot;] bank8[&quot;bank-8&quot;] bank9[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+
+address[&quot; Byte Address&quot;]
+ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;]
+ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 28)&quot;] ad8[&quot;[28, 32)&quot;]
+ad9[&quot;[32, 36)&quot;] ad10[&quot;...&quot;] ad31[&quot;[124, 128)&quot;]
+
+r0[&quot;row 0&quot;]
+r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;) r0c4(&quot;4&quot;)
+r0c5(&quot;5&quot;) r0c6(&quot;6&quot;) r0c7(&quot;7&quot;) r0c8(&quot;8&quot;)
+r0c9(&quot;...&quot;)
+r0c31(&quot;31&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank7,bank8,bank9,bank31,r0,r1,r2,r3 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad8,ad9,ad10,ad31 pink
+
+class r0c0,r0c1,r0c2,r0c3,r0c4,r0c5,r0c6,r0c7,r0c8,r0c9,r0c31 light_green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而我们通过向量化写入，我们可以将四个指令合并为一个指令：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 12
+
+space bank0[&quot;bank-0&quot;] bank1[&quot;bank-1&quot;] bank2[&quot;bank-2&quot;] bank2[&quot;bank-2&quot;] bank3[&quot;bank-3&quot;] bank4[&quot;bank-4&quot;] bank5[&quot;bank-5&quot;] bank6[&quot;bank-6&quot;] bank7[&quot;bank-7&quot;] bank8[&quot;bank-8&quot;] bank9[&quot;...&quot;] bank31[&quot;bank-31&quot;]
+
+address[&quot; Byte Address&quot;]
+ad0[&quot;[0, 4)&quot;] ad1[&quot;[4, 8)&quot;] ad2[&quot;[8, 12)&quot;] ad3[&quot;[12, 16)&quot;]
+ad4[&quot;[16, 2)&quot;] ad5[&quot;[20, 24)&quot;] ad7[&quot;[24, 28)&quot;] ad8[&quot;[28, 32)&quot;]
+ad9[&quot;[32, 36)&quot;] ad10[&quot;...&quot;] ad31[&quot;[124, 128)&quot;]
+
+r0[&quot;row 0&quot;]
+
+block:b0:4
+    r0c0(&quot;0&quot;) r0c1(&quot;1&quot;) r0c2(&quot;2&quot;) r0c3(&quot;3&quot;)
+end
+
+block:b1:4
+     r0c4(&quot;4&quot;) r0c5(&quot;5&quot;) r0c6(&quot;6&quot;) r0c7(&quot;7&quot;)
+end
+r0c8(&quot;8&quot;)
+r0c9(&quot;...&quot;)
+r0c31(&quot;31&quot;)
+
+class bank0,bank1,bank2,bank3,bank4,bank5,bank6,bank7,bank8,bank9,bank31,r0,r1,r2,r3 purple
+class address,ad0,ad1,ad2,ad3,ad4,ad5,ad7,ad8,ad9,ad10,ad31 pink
+
+class b0,b1 animate
+
+class r0c0,r0c1,r0c2,r0c3 green
+class r0c4,r0c5,r0c6,r0c7 light_green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><strong>向量化优化的本质</strong>： 并不是 <code>int4</code> 改变了
+Bank 的分布规律，而是它<strong>降低了仲裁密度</strong>。将 32 个独立的
+32-bit 存储意图转化为 8 个 128-bit
+的物理事务，使得硬件仲裁器从“高频、小包”的忙乱状态进入“低频、大包”的高效状态，彻底消除了流水线中的拥堵。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/c/" rel="tag"># c++</a>
+              <a href="/tags/cuda/" rel="tag"># cuda</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/23/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8/" rel="prev" title="CUDA编程入门">
+                  <i class="fa fa-angle-left"></i> CUDA编程入门
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/" rel="next" title="CUDA编程入门：卷积">
+                  CUDA编程入门：卷积 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

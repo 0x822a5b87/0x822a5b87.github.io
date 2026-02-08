@@ -146,12 +146,12 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-count">45</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-count">40</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -168,6 +168,298 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" class="post-title-link" itemprop="url">uCore进程及进程管理</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-02 11:09:36" itemprop="dateCreated datePublished" datetime="2025-12-02T11:09:36+08:00">2025-12-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="ucore进程及进程管理">uCore：进程及进程管理</h1>
+<blockquote>
+<p>我们将开发一个用户 <strong>终端</strong> (Terminal) 或
+<strong>命令行</strong> (Command Line Application, 俗称
+<strong>Shell</strong> ) ， 形成用户与操作系统进行交互的命令行界面
+(Command Line Interface)。</p>
+<p>为此，我们要对任务建立新的抽象： <strong>进程</strong>
+，并实现若干基于 <strong>进程</strong> 的强大系统调用。</p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart LR
+    subgraph init[&quot;初始化阶段：无用户任务&quot;]
+        direction LR
+        registers_0(&quot;registers.cx: idle运行状态&quot;):::pink
+        current_0(&quot;current: None&quot;):::purple
+        idle_task_cx_0(&quot;idle_task_cx: zero.ctx（占位）&quot;):::green
+    end
+
+    subgraph stage_1[&quot;阶段1：fetch_task&quot;]
+        direction LR
+        registers_1(&quot;registers.cx: task.cx（用户任务状态）&quot;):::pink
+        current_1(&quot;current: Some(task)&quot;):::purple
+        idle_task_cx_1(&quot;idle_task_cx: 原registers.cx（idle休眠状态）&quot;):::green
+    end
+
+    subgraph stage_2[&quot;阶段2：suspend&quot;]
+        direction LR
+        registers_2(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_2(&quot;current: None&quot;):::purple
+        idle_task_cx_2(&quot;idle_task_cx: 原registers_1（用户任务挂起状态）&quot;):::green
+    end
+
+    subgraph stage_3[&quot;阶段3：exit→用户任务退出&quot;]
+        direction LR
+        registers_3(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
+        current_3(&quot;current: None&quot;):::purple
+        idle_task_cx_3(&quot;idle_task_cx: 原idle_task_cx_1（无变化）&quot;):::green
+    end
+
+    subgraph TaskManager[&quot;TaskManager：就绪队列&quot;]
+        t_task(&quot;task.cx: 用户任务挂起状态（仅suspend后存在）&quot;):::coral
+    end
+
+    %% 流转逻辑（补充关键动作标注）
+    init --&gt;|init| stage_1
+    stage_1 --&gt;|suspend| stage_2
+    stage_1 --&gt;|exit| stage_3
+
+    %% 状态转移细节
+    current_1 --&gt;|take_current后add_task，共享task所有权| TaskManager
+    registers_1 --&gt;|__switch保存用户任务状态到task.cx| t_task
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_2
+    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_3
+
+    %% 样式定义（沿用你的设计）
+    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
+    classDef green fill: #696,color: #fff,font-weight: bold;
+    classDef purple fill:#969,stroke:#333, font-weight: bold;
+    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
+    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
+<h2 id="与进程有关的重要系统调用">与进程有关的重要系统调用</h2>
+<h3 id="重要系统调用">重要系统调用</h3>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/" class="post-title-link" itemprop="url">uCore地址空间</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-21 17:11:09" itemprop="dateCreated datePublished" datetime="2025-11-21T17:11:09+08:00">2025-11-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>在这个章节，我们会实现虚拟内存机制。</p>
+</blockquote>
+<h2 id="物理空间和虚拟空间">物理空间和虚拟空间</h2>
+<blockquote>
+<p>虚拟空间连续，物理空间不一定连续！</p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart LR
+    %% 样式定义（避开关键字，用合法语法）
+    classDef structStyle fill:#f0f8ff,stroke:#2c3e50,stroke-width:2px,rounded:10px
+    classDef vaStyle fill:#fdf2f8,stroke:#9b59b6,stroke-width:2px,rounded:10px
+    classDef vpnStyle fill:#fef7fb,stroke:#9b59b6,stroke-width:1px,rounded:8px,padding:10px
+    classDef paStyle fill:#e8f4f8,stroke:#3498db,stroke-width:2px,rounded:10px
+    classDef ppnStyle fill:#f0f8ff,stroke:#3498db,stroke-width:1px,rounded:8px,padding:10px
+    classDef fieldStyle font-weight:bold,color:#2c3e50
+    classDef connStyle stroke:#7f8c8d,stroke-width:1.5px,arrowheadStyle:fill:#7f8c8d
+
+    %% 上层：结构体（连续字段）
+    subgraph Struct[&quot;📦 TimeVal 结构体（连续虚拟内存视图）&quot;]
+        direction TB
+        sec[&quot;&lt;span class=&#x27;fieldStyle&#x27;&gt;sec&lt;/span&gt;&lt;br/&gt;usize (8字节)&quot;]:::fieldStyle
+        usec[&quot;&lt;span class=&#x27;fieldStyle&#x27;&gt;usec&lt;/span&gt;&lt;br/&gt;usize (8字节)&quot;]:::fieldStyle
+    end
+    class Struct structStyle
+
+    %% 中层：虚拟地址 VA（连续，跨2个虚拟页）
+    subgraph VA[&quot;🌐 虚拟地址 VA（连续）&quot;]
+        direction LR
+        subgraph VPN0[&quot;VPN0（虚拟页0）&quot;]
+            %% 修正：sec 位于 VPN0 末尾，VA = 页起始 + (4KB-8) = 0x40200000 + 0xFF8 = 0x40200FF8
+            va_sec[&quot;0x40200FF8&lt;br/&gt;[页内偏移: 0xFF8 = 4KB-8]&quot;]
+        end
+        subgraph VPN1[&quot;VPN1（虚拟页1）&quot;]
+            %% 修正：usec 位于 VPN1 起始，页内偏移 0x000
+            va_usec[&quot;0x40201000&lt;br/&gt;[页内偏移: 0x000]&quot;]
+        end
+        note_va[&quot;页大小：4KB (0x1000)&lt;br/&gt;VPN0范围：0x40200000~0x40200FFF&lt;br/&gt;VPN1范围：0x40201000~0x40201FFF&quot;]
+        class note_va vaStyle
+    end
+    class VA vaStyle
+
+    %% 下层：物理地址 PA（离散）
+    subgraph PA[&quot;💾 物理地址 PA（离散）&quot;]
+        subgraph PPN0[&quot;PPN0（物理页0）&quot;]
+            %% 物理页0起始 + 偏移0xFF8 = 0x8000 + 0xFF8 = 0x8FF8
+            pa_sec[&quot;0x8FF8&lt;br/&gt;[页内偏移: 0xFF8]&quot;]
+        end
+        subgraph PPN1[&quot;PPN1（物理页1）&quot;]
+            %% 物理页1起始 + 偏移0x000 = 0x4000 + 0x000 = 0x4000
+            pa_usec[&quot;0x4000&lt;br/&gt;[页内偏移: 0x000]&quot;]
+        end
+        note_pa[&quot;物理页独立分配，地址不连续&lt;br/&gt;PPN0范围：0x8000~0x8FFF&lt;br/&gt;PPN1范围：0x4000~0x4FFF&quot;]
+        class note_pa paStyle
+    end
+    class PA paStyle
+
+    %% 映射关系（字段 → VA → PA）
+    sec -.-&gt;|字段对应VA| va_sec:::connStyle
+    usec -.-&gt;|字段对应VA| VPN1:::connStyle
+    va_sec -.-&gt;|页表翻译（VPN0→PPN0）| pa_sec:::connStyle
+    va_usec -.-&gt;|页表翻译（VPN1→PPN1）| pa_usec:::connStyle
+
+    %% 核心结论标注（突出问题）
+    conclusion[&quot;⚠️  核心问题：&lt;br/&gt;结构体VA连续（跨页边界），但映射的PA离散&lt;br/&gt;内核需拆为2段写入：&lt;br/&gt;1. PPN0的0x8FF8~0x8FFF（6字节？不，8字节刚好）&lt;br/&gt;2. PPN1的0x4000~0x4007&quot;]:::structStyle
+    PA -.-&gt;|体现| conclusion:::connStyle</code></pre>
+<h2 id="管理sv39多级页表">管理SV39多级页表</h2>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -1250,210 +1542,6 @@ orthogonalization Orthogonal Q and triangular R</td>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/" class="post-title-link" itemprop="url">Python里的一些语法糖</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-05-08 20:02:44" itemprop="dateCreated datePublished" datetime="2025-05-08T20:02:44+08:00">2025-05-08</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="引用">引用</h2>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://docs.python.org/3/reference/simple_stmts.html#grammar-token-python-grammar-yield_stmt">The
-<code>yield</code> statement</a></li>
-<li><a target="_blank" rel="noopener" href="https://realpython.com/python-operators-expressions/">Operators
-and Expressions in Python</a></li>
-<li><a target="_blank" rel="noopener" href="https://realpython.com/syntactic-sugar-python/#unpacking-in-python">Syntactic
-Sugar: Why Python Is Sweet and Pythonic</a></li>
-<li><a target="_blank" rel="noopener" href="https://realpython.com/introduction-to-python-generators/">How to
-Use Generators and yield in Python</a></li>
-<li><a target="_blank" rel="noopener" href="https://realpython.com/list-comprehension-python/">When to
-Use a List Comprehension in Python</a></li>
-<li><a target="_blank" rel="noopener" href="https://realpython.com/python-dictionary-comprehension/">Python
-Dictionary Comprehensions: How and When to Use Them</a></li>
-<li><a target="_blank" rel="noopener" href="https://docs.python.org/2/tutorial/datastructures.html#list-comprehensions">List
-Comprehensions</a></li>
-<li><a target="_blank" rel="noopener" href="https://docs.python.org/3/tutorial/datastructures.html#dictionaries">Dictionaries</a></li>
-</ul>
-<h2 id="关键词">关键词</h2>
-<ul>
-<li>Syntactic Sugar</li>
-<li>Operators</li>
-<li>Assignment Expressions</li>
-<li>for loops</li>
-<li>comprehensions</li>
-<li>constructor</li>
-</ul>
-<h2 id="operators">Operators</h2>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/05/08/Python%E9%87%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E8%AF%AD%E6%B3%95%E7%B3%96/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/" class="post-title-link" itemprop="url">一个学习汇编的小游戏：BOX-256</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-03-18 14:58:57" itemprop="dateCreated datePublished" datetime="2025-03-18T14:58:57+08:00">2025-03-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="box-256">BOX-256</h1>
-<h2 id="前言">前言</h2>
-<p>最近在学习 <a target="_blank" rel="noopener" href="https://drive.google.com/file/d/1uviu1nH-tScFfgrovvFCrj7Omv8tFtkp/view">RISC-V</a>，但是指令太多，并且学习起来确实很无聊，所以找到了这个小游戏来学习一下汇编的思路。虽然不是真正的标准
-RISC-V，但是可以作为学习路上的一个参考工具，下面是 <a target="_blank" rel="noopener" href="http://box-256.com/">BOX-256</a> 的一些描述：</p>
-<blockquote>
-<p>BOX-256 is a 8-bit fantasy computer, with 256 bytes of memory, 16
-color 16x16 display. It is also a programming game, where the player
-tries to pass the graphics tests and optimize the code to perfection.
-The ultimate goal is to use as few CPU cycles or lines of code as
-possible, by employing multithreading and other optimization tricks.</p>
-</blockquote>
-<p>此外，文档里提到了一些比较重要的细节这里也稍微列举一下：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/03/18/%E4%B8%80%E4%B8%AA%E5%AD%A6%E4%B9%A0%E6%B1%87%E7%BC%96%E7%9A%84%E5%B0%8F%E6%B8%B8%E6%88%8F%EF%BC%9ABOX-256/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>

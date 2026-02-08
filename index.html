@@ -146,12 +146,12 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-count">45</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-count">40</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -168,6 +168,258 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/" class="post-title-link" itemprop="url">CUDA编程入门：卷积</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-02-05 21:54:58" itemprop="dateCreated datePublished" datetime="2026-02-05T21:54:58+08:00">2026-02-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-08 22:46:39" itemprop="dateModified" datetime="2026-02-08T22:46:39+08:00">2026-02-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="什么是卷积">什么是卷积</h1>
+<p>在数学、信号处理以及深度学习（卷积神经网络
+CNN）中，<strong>卷积（Convolution）</strong>
+是一种通过两个函数生成第三个函数的数学运算，表征了一个函数在另一个函数之上滑动时，两者重叠部分的累积效果。而对于
+<a href="#连续域和离散域">连续域和离散域</a>，我们的处理方式是完全不一样的：</p>
+<ul>
+<li><p>在连续域中，函数 <span class="math inline">\(f\)</span> 和 <span class="math inline">\(g\)</span> 的卷积定义为：<span class="math display">\[(f * g)(t) = \int_{-\infty}^{\infty} f(\tau)g(t -
+\tau) d\tau\]</span></p></li>
+<li><p>在离散域（如图像处理）中，定义为：<span class="math display">\[(f
+* g)[n] = \sum_{m=-\infty}^{\infty} f[m]g[n - m]\]</span></p></li>
+</ul>
+<h1 id="卷积的一个典型例子复利">卷积的一个典型例子：复利</h1>
+<p>假设：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/" class="post-title-link" itemprop="url">CUDA编程入门：Reduce</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-01-29 18:40:44" itemprop="dateCreated datePublished" datetime="2026-01-29T18:40:44+08:00">2026-01-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-05 21:44:23" itemprop="dateModified" datetime="2026-02-05T21:44:23+08:00">2026-02-05</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>本文所有代码可以在 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/test-cuda.git">test-cuda</a>
+下查看。</p>
+</blockquote>
+<p>下面的图展示的是 CUDA
+编程中一种非常经典的算法模式：<strong>并行规约（Parallel
+Reduction）</strong>。简单来说，它的目的是将一个大数组中的所有元素“折叠”成一个值（比如求和、求最大值或最小值）。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 25
+    space
+    a0 a1 a2 a3 a4 a5 a6 a7
+    b0 b1 b2 b3 b4 b5 b6 b7
+    c0 c1 c2 c3 c4 c5 c6 c7
+
+r1(&quot;r1&quot;)
+
+sum0(&quot;sum&quot;):2 sum1(&quot;sum&quot;):2 sum2(&quot;sum&quot;):2 sum3(&quot;sum&quot;):2
+sum4(&quot;sum&quot;):2 sum5(&quot;sum&quot;):2 sum6(&quot;sum&quot;):2 sum7(&quot;sum&quot;):2
+sum8(&quot;sum&quot;):2 sum9(&quot;sum&quot;):2 sum10(&quot;sum&quot;):2 sum11(&quot;sum&quot;):2
+
+r2(&quot;r2&quot;)
+
+sum12(&quot;sum&quot;):4 sum13(&quot;sum&quot;):4
+sum14(&quot;sum&quot;):4 sum15(&quot;sum&quot;):4
+sum16(&quot;sum&quot;):4 sum17(&quot;sum&quot;):4
+
+r3(&quot;r3&quot;)
+
+sum18(&quot;sum&quot;):8
+sum19(&quot;sum&quot;):8
+sum20(&quot;sum&quot;):8
+
+space:25
+
+r4(&quot;r4&quot;)
+s(&quot;cross&quot;):24
+
+sum18 --&quot;跨block通信&quot;--&gt; s
+sum19 --&quot;跨block通信&quot;--&gt; s
+sum20 --&quot;跨block通信&quot;--&gt; s
+
+class a0,a1,a2,a3,a4,a5,a6,a7 green
+class b0,b1,b2,b3,b4,b5,b6,b7 blue
+class c0,c1,c2,c3,c4,c5,c6,c7 orange
+
+class sum0,sum1,sum2,sum3,sum12,sum13 green
+class sum4,sum5,sum6,sum7,sum14,sum15 blue
+class sum8,sum9,sum10,sum11,sum16,sum17 orange
+
+class sum18,sum19,sum20 gray
+
+class r1,r2,r3,r4 purple
+
+class s error
+
+
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><strong>第一层（最上方）</strong>：每个 Block
+内部的线程开始成对地读取数据。例如，线程 0 读取位置 0 和位置 1
+的数，将它们相加。</p>
+<p><strong>逐级折叠</strong>：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -213,7 +465,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-29 18:39:39" itemprop="dateModified" datetime="2026-01-29T18:39:39+08:00">2026-01-29</time>
+      <time title="修改时间：2026-02-06 11:39:48" itemprop="dateModified" datetime="2026-02-06T11:39:48+08:00">2026-02-06</time>
     </span>
 
   
@@ -1059,298 +1311,6 @@ n个线程，属于同一个进程的线程共享进程的资源， 比如
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" class="post-title-link" itemprop="url">uCore进程及进程管理</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-12-02 11:09:36" itemprop="dateCreated datePublished" datetime="2025-12-02T11:09:36+08:00">2025-12-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="ucore进程及进程管理">uCore：进程及进程管理</h1>
-<blockquote>
-<p>我们将开发一个用户 <strong>终端</strong> (Terminal) 或
-<strong>命令行</strong> (Command Line Application, 俗称
-<strong>Shell</strong> ) ， 形成用户与操作系统进行交互的命令行界面
-(Command Line Interface)。</p>
-<p>为此，我们要对任务建立新的抽象： <strong>进程</strong>
-，并实现若干基于 <strong>进程</strong> 的强大系统调用。</p>
-</blockquote>
-<pre><code class="highlight mermaid">flowchart LR
-    subgraph init[&quot;初始化阶段：无用户任务&quot;]
-        direction LR
-        registers_0(&quot;registers.cx: idle运行状态&quot;):::pink
-        current_0(&quot;current: None&quot;):::purple
-        idle_task_cx_0(&quot;idle_task_cx: zero.ctx（占位）&quot;):::green
-    end
-
-    subgraph stage_1[&quot;阶段1：fetch_task&quot;]
-        direction LR
-        registers_1(&quot;registers.cx: task.cx（用户任务状态）&quot;):::pink
-        current_1(&quot;current: Some(task)&quot;):::purple
-        idle_task_cx_1(&quot;idle_task_cx: 原registers.cx（idle休眠状态）&quot;):::green
-    end
-
-    subgraph stage_2[&quot;阶段2：suspend&quot;]
-        direction LR
-        registers_2(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
-        current_2(&quot;current: None&quot;):::purple
-        idle_task_cx_2(&quot;idle_task_cx: 原registers_1（用户任务挂起状态）&quot;):::green
-    end
-
-    subgraph stage_3[&quot;阶段3：exit→用户任务退出&quot;]
-        direction LR
-        registers_3(&quot;registers.cx: idle运行状态（从idle_task_cx_1加载）&quot;):::pink
-        current_3(&quot;current: None&quot;):::purple
-        idle_task_cx_3(&quot;idle_task_cx: 原idle_task_cx_1（无变化）&quot;):::green
-    end
-
-    subgraph TaskManager[&quot;TaskManager：就绪队列&quot;]
-        t_task(&quot;task.cx: 用户任务挂起状态（仅suspend后存在）&quot;):::coral
-    end
-
-    %% 流转逻辑（补充关键动作标注）
-    init --&gt;|init| stage_1
-    stage_1 --&gt;|suspend| stage_2
-    stage_1 --&gt;|exit| stage_3
-
-    %% 状态转移细节
-    current_1 --&gt;|take_current后add_task，共享task所有权| TaskManager
-    registers_1 --&gt;|__switch保存用户任务状态到task.cx| t_task
-    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_2
-    idle_task_cx_1 --&gt;|__switch加载idle状态到寄存器| registers_3
-
-    %% 样式定义（沿用你的设计）
-    classDef pink fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
-    classDef green fill: #696,color: #fff,font-weight: bold;
-    classDef purple fill:#969,stroke:#333, font-weight: bold;
-    classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
-    classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-    classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
-<h2 id="与进程有关的重要系统调用">与进程有关的重要系统调用</h2>
-<h3 id="重要系统调用">重要系统调用</h3>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/12/02/ucore%E8%BF%9B%E7%A8%8B%E5%8F%8A%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/" class="post-title-link" itemprop="url">uCore地址空间</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-11-21 17:11:09" itemprop="dateCreated datePublished" datetime="2025-11-21T17:11:09+08:00">2025-11-21</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <blockquote>
-<p>在这个章节，我们会实现虚拟内存机制。</p>
-</blockquote>
-<h2 id="物理空间和虚拟空间">物理空间和虚拟空间</h2>
-<blockquote>
-<p>虚拟空间连续，物理空间不一定连续！</p>
-</blockquote>
-<pre><code class="highlight mermaid">flowchart LR
-    %% 样式定义（避开关键字，用合法语法）
-    classDef structStyle fill:#f0f8ff,stroke:#2c3e50,stroke-width:2px,rounded:10px
-    classDef vaStyle fill:#fdf2f8,stroke:#9b59b6,stroke-width:2px,rounded:10px
-    classDef vpnStyle fill:#fef7fb,stroke:#9b59b6,stroke-width:1px,rounded:8px,padding:10px
-    classDef paStyle fill:#e8f4f8,stroke:#3498db,stroke-width:2px,rounded:10px
-    classDef ppnStyle fill:#f0f8ff,stroke:#3498db,stroke-width:1px,rounded:8px,padding:10px
-    classDef fieldStyle font-weight:bold,color:#2c3e50
-    classDef connStyle stroke:#7f8c8d,stroke-width:1.5px,arrowheadStyle:fill:#7f8c8d
-
-    %% 上层：结构体（连续字段）
-    subgraph Struct[&quot;📦 TimeVal 结构体（连续虚拟内存视图）&quot;]
-        direction TB
-        sec[&quot;&lt;span class=&#x27;fieldStyle&#x27;&gt;sec&lt;/span&gt;&lt;br/&gt;usize (8字节)&quot;]:::fieldStyle
-        usec[&quot;&lt;span class=&#x27;fieldStyle&#x27;&gt;usec&lt;/span&gt;&lt;br/&gt;usize (8字节)&quot;]:::fieldStyle
-    end
-    class Struct structStyle
-
-    %% 中层：虚拟地址 VA（连续，跨2个虚拟页）
-    subgraph VA[&quot;🌐 虚拟地址 VA（连续）&quot;]
-        direction LR
-        subgraph VPN0[&quot;VPN0（虚拟页0）&quot;]
-            %% 修正：sec 位于 VPN0 末尾，VA = 页起始 + (4KB-8) = 0x40200000 + 0xFF8 = 0x40200FF8
-            va_sec[&quot;0x40200FF8&lt;br/&gt;[页内偏移: 0xFF8 = 4KB-8]&quot;]
-        end
-        subgraph VPN1[&quot;VPN1（虚拟页1）&quot;]
-            %% 修正：usec 位于 VPN1 起始，页内偏移 0x000
-            va_usec[&quot;0x40201000&lt;br/&gt;[页内偏移: 0x000]&quot;]
-        end
-        note_va[&quot;页大小：4KB (0x1000)&lt;br/&gt;VPN0范围：0x40200000~0x40200FFF&lt;br/&gt;VPN1范围：0x40201000~0x40201FFF&quot;]
-        class note_va vaStyle
-    end
-    class VA vaStyle
-
-    %% 下层：物理地址 PA（离散）
-    subgraph PA[&quot;💾 物理地址 PA（离散）&quot;]
-        subgraph PPN0[&quot;PPN0（物理页0）&quot;]
-            %% 物理页0起始 + 偏移0xFF8 = 0x8000 + 0xFF8 = 0x8FF8
-            pa_sec[&quot;0x8FF8&lt;br/&gt;[页内偏移: 0xFF8]&quot;]
-        end
-        subgraph PPN1[&quot;PPN1（物理页1）&quot;]
-            %% 物理页1起始 + 偏移0x000 = 0x4000 + 0x000 = 0x4000
-            pa_usec[&quot;0x4000&lt;br/&gt;[页内偏移: 0x000]&quot;]
-        end
-        note_pa[&quot;物理页独立分配，地址不连续&lt;br/&gt;PPN0范围：0x8000~0x8FFF&lt;br/&gt;PPN1范围：0x4000~0x4FFF&quot;]
-        class note_pa paStyle
-    end
-    class PA paStyle
-
-    %% 映射关系（字段 → VA → PA）
-    sec -.-&gt;|字段对应VA| va_sec:::connStyle
-    usec -.-&gt;|字段对应VA| VPN1:::connStyle
-    va_sec -.-&gt;|页表翻译（VPN0→PPN0）| pa_sec:::connStyle
-    va_usec -.-&gt;|页表翻译（VPN1→PPN1）| pa_usec:::connStyle
-
-    %% 核心结论标注（突出问题）
-    conclusion[&quot;⚠️  核心问题：&lt;br/&gt;结构体VA连续（跨页边界），但映射的PA离散&lt;br/&gt;内核需拆为2段写入：&lt;br/&gt;1. PPN0的0x8FF8~0x8FFF（6字节？不，8字节刚好）&lt;br/&gt;2. PPN1的0x4000~0x4007&quot;]:::structStyle
-    PA -.-&gt;|体现| conclusion:::connStyle</code></pre>
-<h2 id="管理sv39多级页表">管理SV39多级页表</h2>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/11/21/ucore%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>

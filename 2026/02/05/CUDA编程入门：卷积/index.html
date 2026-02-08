@@ -1,0 +1,2405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="什么是卷积 在数学、信号处理以及深度学习（卷积神经网络 CNN）中，卷积（Convolution） 是一种通过两个函数生成第三个函数的数学运算，表征了一个函数在另一个函数之上滑动时，两者重叠部分的累积效果。而对于 连续域和离散域，我们的处理方式是完全不一样的：  在连续域中，函数 \(f\) 和 \(g\) 的卷积定义为：\[(f * g)(t) &#x3D; \int_{-\infty}^{\infty}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA编程入门：卷积">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="什么是卷积 在数学、信号处理以及深度学习（卷积神经网络 CNN）中，卷积（Convolution） 是一种通过两个函数生成第三个函数的数学运算，表征了一个函数在另一个函数之上滑动时，两者重叠部分的累积效果。而对于 连续域和离散域，我们的处理方式是完全不一样的：  在连续域中，函数 \(f\) 和 \(g\) 的卷积定义为：\[(f * g)(t) &#x3D; \int_{-\infty}^{\infty}">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/2026/02/05/images/cuda/im2col.jpg">
+<meta property="article:published_time" content="2026-02-05T13:54:58.000Z">
+<meta property="article:modified_time" content="2026-02-08T14:46:39.653Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="cuda">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/2026/02/05/images/cuda/im2col.jpg">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/","path":"2026/02/05/CUDA编程入门：卷积/","title":"CUDA编程入门：卷积"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CUDA编程入门：卷积 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%8D%B7%E7%A7%AF"><span class="nav-number">1.</span> <span class="nav-text">什么是卷积</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E7%9A%84%E4%B8%80%E4%B8%AA%E5%85%B8%E5%9E%8B%E4%BE%8B%E5%AD%90%E5%A4%8D%E5%88%A9"><span class="nav-number">2.</span> <span class="nav-text">卷积的一个典型例子：复利</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%86%E5%8D%B7%E7%A7%AF%E6%89%A9%E5%B1%95%E5%88%B0%E4%BA%8C%E7%BB%B4%E4%BD%BF%E7%94%A8%E7%9F%A9%E9%98%B5%E5%A4%84%E7%90%86%E5%9B%BE%E5%83%8F"><span class="nav-number">3.</span> <span class="nav-text">将卷积扩展到二维：使用矩阵处理图像</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5%E7%9A%84%E5%8D%B7%E7%A7%AF%E5%BB%BA%E6%A8%A1"><span class="nav-number">3.1.</span> <span class="nav-text">矩阵的卷积建模</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5%E5%8D%B7%E7%A7%AF%E7%9A%84%E4%B8%80%E4%B8%AA%E5%AE%9E%E4%BE%8B"><span class="nav-number">3.2.</span> <span class="nav-text">矩阵卷积的一个实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E7%9F%A9%E9%98%B5"><span class="nav-number">3.2.1.</span> <span class="nav-text">输入矩阵</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E6%A0%B8%E5%87%BD%E6%95%B0"><span class="nav-number">3.2.2.</span> <span class="nav-text">卷积核函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E5%9C%A8%E6%95%B0%E5%AD%A6%E4%B8%AD%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-number">3.2.3.</span> <span class="nav-text">卷积在数学中的计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E5%9C%A8%E8%AE%A1%E7%AE%97%E6%9C%BA%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8%E4%BA%92%E7%9B%B8%E5%85%B3"><span class="nav-number">3.2.4.</span> <span class="nav-text">卷积在计算机中的应用（互相关）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E7%AE%97%E5%AD%90%E7%9A%84%E6%9C%80%E7%AE%80%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">卷积算子的最简实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E5%9C%A8cnn%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">4.1.</span> <span class="nav-text">卷积在CNN中的应用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E5%9C%A8cnn%E4%B8%AD%E7%9A%84%E5%85%B8%E5%9E%8B%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.2.</span> <span class="nav-text">卷积在CNN中的典型实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E5%BC%A0%E9%87%8F"><span class="nav-number">4.2.1.</span> <span class="nav-text">输入张量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E6%A0%B8%E5%87%BD%E6%95%B0-1"><span class="nav-number">4.2.2.</span> <span class="nav-text">卷积核函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E5%BC%A0%E9%87%8F"><span class="nav-number">4.2.3.</span> <span class="nav-text">输出张量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%95%BF"><span class="nav-number">4.2.4.</span> <span class="nav-text">步长</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A5%E8%BE%B9"><span class="nav-number">4.2.5.</span> <span class="nav-text">补边</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.2.6.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81"><span class="nav-number">4.3.</span> <span class="nav-text">源码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu%E8%AE%A1%E7%AE%97%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.3.1.</span> <span class="nav-text">CPU计算的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#gpu%E8%AE%A1%E7%AE%97%E7%9A%84%E5%9D%90%E6%A0%87%E8%BD%B4%E5%8E%8B%E7%BC%A9"><span class="nav-number">4.3.2.</span> <span class="nav-text">GPU计算的坐标轴压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E4%BA%8C%E7%BB%B4%E6%98%A0%E5%B0%84"><span class="nav-number">4.3.2.1.</span> <span class="nav-text">空间二维映射</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E9%81%93%E4%BC%98%E5%85%88"><span class="nav-number">4.3.2.2.</span> <span class="nav-text">通道优先</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E7%89%87tile"><span class="nav-number">4.3.2.3.</span> <span class="nav-text">分片Tile</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E9%80%9A%E9%81%93%E4%BC%98%E5%85%88%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">4.3.3.</span> <span class="nav-text">一个通道优先的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nchw%E5%92%8Cnhwc%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-number">4.4.</span> <span class="nav-text">NCHW和NHWC的内存布局</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#nchw"><span class="nav-number">4.4.1.</span> <span class="nav-text">NCHW</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E5%BC%A0%E9%87%8F-1"><span class="nav-number">4.4.1.1.</span> <span class="nav-text">输入张量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E6%A0%B8%E5%87%BD%E6%95%B0-2"><span class="nav-number">4.4.1.2.</span> <span class="nav-text">卷积核函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E5%BC%A0%E9%87%8F-1"><span class="nav-number">4.4.1.3.</span> <span class="nav-text">输出张量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nhwc"><span class="nav-number">4.4.2.</span> <span class="nav-text">NHWC</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E5%BC%A0%E9%87%8F-2"><span class="nav-number">4.4.2.1.</span> <span class="nav-text">输入张量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E6%A0%B8%E5%87%BD%E6%95%B0-3"><span class="nav-number">4.4.2.2.</span> <span class="nav-text">卷积核函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E5%BC%A0%E9%87%8F-2"><span class="nav-number">4.4.2.3.</span> <span class="nav-text">输出张量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.4.3.</span> <span class="nav-text">代码实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%AE%9A%E4%B9%89"><span class="nav-number">4.4.3.1.</span> <span class="nav-text">配置定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-number">4.4.3.2.</span> <span class="nav-text">具体实现逻辑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">4.4.4.</span> <span class="nav-text">性能分析</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%9F%A9%E9%98%B5%E4%B9%98%E6%B3%95%E4%BC%98%E5%8C%96%E5%8D%B7%E7%A7%AF%E7%AE%97%E5%AD%90"><span class="nav-number">5.</span> <span class="nav-text">使用矩阵乘法优化卷积算子</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#im2col-%E7%AE%97%E5%AD%90%E5%AE%9E%E7%8E%B0todo"><span class="nav-number">5.1.</span> <span class="nav-text">im2col 算子实现(TODO)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">6.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9E%E7%BB%AD%E5%9F%9F%E5%92%8C%E7%A6%BB%E6%95%A3%E5%9F%9F"><span class="nav-number">6.1.</span> <span class="nav-text">连续域和离散域</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E5%9F%9F%E7%9A%84%E6%95%B0%E5%AD%A6%E6%9C%AC%E8%B4%A8"><span class="nav-number">6.1.1.</span> <span class="nav-text">定义域的数学本质</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9E%E7%BB%AD%E5%9F%9F%E5%92%8C%E7%A6%BB%E6%95%A3%E5%9F%9F%E7%9A%84%E5%AE%9E%E4%BE%8B"><span class="nav-number">6.1.2.</span> <span class="nav-text">连续域和离散域的实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%AE%97%E7%AE%97%E5%AD%90%E7%9A%84%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB"><span class="nav-number">6.1.3.</span> <span class="nav-text">运算算子的对应关系</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%9A%842d%E5%92%8C3d"><span class="nav-number">6.2.</span> <span class="nav-text">计算机的2D和3D</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#padding%E5%8D%B7%E7%A7%AF%E4%B8%8E%E4%BA%92%E7%9B%B8%E5%85%B3"><span class="nav-number">6.3.</span> <span class="nav-text">padding，卷积与互相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#implicit-padding"><span class="nav-number">6.3.1.</span> <span class="nav-text">Implicit Padding</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#explicit-padding"><span class="nav-number">6.3.2.</span> <span class="nav-text">Explicit Padding</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E7%9A%84padding%E6%96%B9%E5%BC%8F"><span class="nav-number">6.3.3.</span> <span class="nav-text">其他的padding方式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">7.</span> <span class="nav-text">引用</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="CUDA编程入门：卷积 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA编程入门：卷积
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-02-05 21:54:58" itemprop="dateCreated datePublished" datetime="2026-02-05T21:54:58+08:00">2026-02-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-08 22:46:39" itemprop="dateModified" datetime="2026-02-08T22:46:39+08:00">2026-02-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="什么是卷积">什么是卷积</h1>
+<p>在数学、信号处理以及深度学习（卷积神经网络
+CNN）中，<strong>卷积（Convolution）</strong>
+是一种通过两个函数生成第三个函数的数学运算，表征了一个函数在另一个函数之上滑动时，两者重叠部分的累积效果。而对于
+<a
+href="#连续域和离散域">连续域和离散域</a>，我们的处理方式是完全不一样的：</p>
+<ul>
+<li><p>在连续域中，函数 <span class="math inline">\(f\)</span> 和 <span
+class="math inline">\(g\)</span> 的卷积定义为：<span
+class="math display">\[(f * g)(t) = \int_{-\infty}^{\infty} f(\tau)g(t -
+\tau) d\tau\]</span></p></li>
+<li><p>在离散域（如图像处理）中，定义为：<span class="math display">\[(f
+* g)[n] = \sum_{m=-\infty}^{\infty} f[m]g[n - m]\]</span></p></li>
+</ul>
+<h1 id="卷积的一个典型例子复利">卷积的一个典型例子：复利</h1>
+<p>假设：</p>
+<ul>
+<li>我们每年在银行存入 <code>100</code> ，那么我得到函数 <span
+class="math inline">\(f(m) = 100\)</span>，其中 m 是存钱的年份；</li>
+<li>钱在银行每年的利息为5%，那么我们得到利息函数 <span
+class="math inline">\(g(t) = (1 + 0.05)^t\)</span>，其中 <span
+class="math inline">\(t\)</span> 是 存储在银行的年份；</li>
+</ul>
+<p>那么，我们我们第 <span class="math inline">\(n\)</span>
+年在银行有的钱就是：</p>
+<ul>
+<li><span class="math inline">\(f(1) * g(n - 1)\)</span></li>
+<li><span class="math inline">\(f(2) * g(n - 2)\)</span></li>
+<li><span class="math inline">\(\dots\)</span></li>
+<li><span class="math inline">\(f(n - 1) * g(1)\)</span></li>
+</ul>
+<p>这个数组的总和，他表示了我们每一年存的钱到今年得到的复利的总和。</p>
+<p>而这个函数就是我们的卷积函数： <span class="math display">\[
+(f * g)[n] = \sum_{m=1}^{n} f[m]g[n - m]
+\]</span></p>
+<p>在我们的复利模型中：</p>
+<ul>
+<li><strong><span class="math inline">\(n\)</span>
+(现在/观察点)</strong>：对应于我们查看存折的那一年（输出坐标）。</li>
+<li><strong><span class="math inline">\(m\)</span>
+(动作点)</strong>：对应于我们历史上每一次去银行存钱的那一年（输入坐标）。</li>
+<li><strong><span class="math inline">\(n - m\)</span>
+(相对时长)</strong>：这笔钱在银行里存放了多久（位移量）。</li>
+<li><strong><span
+class="math inline">\(f[m]\)</span></strong>：那一年的存款金额（信号强度）。</li>
+<li><strong><span
+class="math inline">\(g[n-m]\)</span></strong>：这笔钱因为存放了那么久，而应得的增值倍数（系统响应）。</li>
+</ul>
+<p>这里，我们还注意到，在原始的卷积函数中我们的迭代范围是 <span
+class="math inline">\(\sum_{-\infty}^{\infty}\)</span>，而在我们的公式中则是
+<span class="math inline">\(\sum_{m =
+1}^n\)</span>，这里涉及到我们所谓的<strong>生命范围</strong>的概念：</p>
+<ul>
+<li><p>下限是 <span class="math inline">\(m =
+1\)</span>，因为我们从第一年开始存钱，这个时候我们的函数是 <span
+class="math inline">\(f(1)\)</span>，而在更早的年份，我还没有存钱，所以函数是没有意义的；</p></li>
+<li><p>上限是 <span class="math inline">\(n\)</span>，因为对于 <span
+class="math inline">\(m &gt; n\)</span>
+的时候，钱尚未存入，我们的利息函数也是没有意义的；</p></li>
+</ul>
+<p>这个在信号处理中有一个专门的术语叫 <strong>“因果系统” (Causal
+System)</strong>。</p>
+<ul>
+<li><strong>下限 <span
+class="math inline">\(m=1\)</span></strong>：这对应了信号的<strong>起点</strong>。在矩阵卷积中，这对应了图像的边界（坐标
+0）。</li>
+<li><strong>上限 <span
+class="math inline">\(n\)</span></strong>：这体现了<strong>因果律</strong>——未来的动作不能影响现在。如果
+<span class="math inline">\(m &gt;
+n\)</span>，意味着我们还没存钱，这笔钱对我们现在的存款总额贡献为
+0。</li>
+</ul>
+<h1
+id="将卷积扩展到二维使用矩阵处理图像">将卷积扩展到二维：使用矩阵处理图像</h1>
+<h2 id="矩阵的卷积建模">矩阵的卷积建模</h2>
+<p>在一维卷积（例如我们前面提到的复利）中，变量只有<strong>时间</strong>。而在二维图像卷积中，变量变成了<strong>位置</strong>。</p>
+<ul>
+<li><strong>一维（复利）</strong>：我们关心的是<strong>时间跨度</strong>（第
+<span class="math inline">\(n\)</span> 年减去存款的第 <span
+class="math inline">\(m\)</span> 年）。</li>
+<li><strong>二维（图像）</strong>：我们关心的是<strong>空间位移</strong>。
+<ul>
+<li><span class="math inline">\(n\)</span> 变成了一个二维坐标 <span
+class="math inline">\((n_x,
+n_y)\)</span>，代表我们在图像上观察的位置。</li>
+<li><span class="math inline">\(m\)</span> 变成了一个二维坐标 <span
+class="math inline">\((m_x, m_y)\)</span>，代表我们周围像素的位置。</li>
+<li><strong><span class="math inline">\(n - m\)</span>
+变成了两个方向上的距离差，决定了周围像素对中心点的贡献权重。</strong></li>
+</ul></li>
+</ul>
+<p>那么，对于二维图像处理，我们同样可以开始定义：</p>
+<ul>
+<li><span class="math inline">\(f(m)\)</span>
+是我们的输入矩阵，矩阵里包含了我们图像的全部像素点；</li>
+<li><span class="math inline">\(m\)</span>
+是每个像素点在矩阵里的坐标；</li>
+<li><span class="math inline">\(g(t)\)</span>
+是我们的核函数，表示了对于像素点 <code>t</code>
+对应的权重，而根据我们的目标不同，我们会使用不同的核函数
+<ul>
+<li><strong>模糊</strong>：提高像素点周边像素点的权重，使得像素点和周边像素点趋同，从而达成模糊的效果；</li>
+<li><strong>锐化</strong>：降低像素点周边像素点的权重，提高像素点之间的对比度；</li>
+<li><strong>边缘检测</strong>：只有像素值发生突变的地方，卷积结果才不为零。</li>
+</ul></li>
+<li><span class="math inline">\(t\)</span>
+像素点之间的空间位移（距离），这里容易误解的地方在于对于核函数它存在自己的索引，我们需要做的是将
+<span class="math inline">\(n - m\)</span> 转换为核函数的索引：
+<ul>
+<li><span class="math inline">\(n\)</span>
+是我们生成的目标函数的输入，他在目标函数调用时已经固定了，就对应于输出矩阵中的特定点的索引；</li>
+<li><span class="math inline">\(m\)</span> 是输入矩阵的索引，而这个值在
+<span class="math inline">\(f\)</span> 中会通过 <span
+class="math inline">\(\sum_{-\infty}^{\infty}\)</span>
+扩散到输入矩阵的整个矩阵，这个矩阵在和核函数交互的过程中，大部分点超出了核函数的生命范围，所以我们实际上只需要计算
+<span class="math inline">\(n\)</span> 周边的少量像素点；</li>
+</ul></li>
+</ul>
+<p><strong>我们使用卷积处理图像的意义在于：我们通过输入矩阵 <span
+class="math inline">\(f(m)\)</span>，配合特定的核函数 <span
+class="math inline">\(g(t)\)</span>，生成了一个新的函数。而这个函数会为我们生成一个全新的矩阵。</strong>我们可以使用如下伪代码描述我们的逻辑：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> r new_matrix</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历输出矩阵的每一个点 n (row, col)</span></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> row = <span class="number">0</span>; row &lt; f.<span class="built_in">height</span>(); row++) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> col = <span class="number">0</span>; col &lt; f.<span class="built_in">width</span>(); col++) &#123;</span><br><span class="line">        </span><br><span class="line">        <span class="type">float</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 在每一个点 n 上，我们要通过 m 遍历核函数的“生命范围”</span></span><br><span class="line">        <span class="comment">// 假设核是 3x3，偏移量 k_row, k_col 从 -1 到 1</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k_row = <span class="number">-1</span>; k_row &lt;= <span class="number">1</span>; k_row++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k_col = <span class="number">-1</span>; k_col &lt;= <span class="number">1</span>; k_col++) &#123;</span><br><span class="line">                </span><br><span class="line">                <span class="comment">// m = n - t (这里 t 是位移，即 k_row, k_col)</span></span><br><span class="line">                <span class="type">int</span> m_row = row - k_row;</span><br><span class="line">                <span class="type">int</span> m_col = col - k_col;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 检查边界（只有在输入矩阵范围内的 m 才参与计算）</span></span><br><span class="line">                <span class="keyword">if</span> (m_row &gt;= <span class="number">0</span> &amp;&amp; m_row &lt; f.<span class="built_in">height</span>() &amp;&amp; m_col &gt;= <span class="number">0</span> &amp;&amp; m_col &lt; f.<span class="built_in">width</span>()) &#123;</span><br><span class="line">                    <span class="comment">// 累加：输入点像素 * 核函数权重</span></span><br><span class="line">                    sum += f[m_row][m_col] * kernel[k_row + <span class="number">1</span>][k_col + <span class="number">1</span>];</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        new_matrix[row][col] = sum; <span class="comment">// 生成新函数的输出值</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="矩阵卷积的一个实例">矩阵卷积的一个实例</h2>
+<h3 id="输入矩阵">输入矩阵</h3>
+<p>假设我们存在一个 <code>5 * 5</code> 的矩阵： <span
+class="math display">\[
+\begin{bmatrix} 0 &amp; 1 &amp; 2 &amp; 3 &amp; 4 \\ 5 &amp; 6 &amp; 7
+&amp; 8 &amp; 9 \\ 10 &amp; 11 &amp; 12 &amp; 13 &amp; 14 \\ 15 &amp; 16
+&amp; 17 &amp; 18 &amp; 19 \\ 20 &amp; 21 &amp; 22 &amp; 23 &amp; 24
+\end{bmatrix}
+\]</span></p>
+<p>每个点对应的坐标是： <span class="math display">\[
+\begin{bmatrix} (0, 0) &amp; (0, 1) &amp; (0, 2) &amp; (0, 3) &amp; (0,
+4) \\(1, 0) &amp; (1, 1) &amp; (1, 2) &amp; (1, 3) &amp; (1, 4)\\(2, 0)
+&amp; (2, 1) &amp; (2, 2) &amp; (2, 3) &amp; (2, 4)\\(3, 0) &amp; (3, 1)
+&amp; (3, 2) &amp; (3, 3) &amp; (3, 4)\\(4, 0) &amp; (4, 1) &amp; (4, 2)
+&amp; (4, 3) &amp; (4, 4) \end{bmatrix}
+\]</span></p>
+<p>那么，这个矩阵可以被理解为以坐标轴作为输入，坐标轴对应的值作为输出的函数：
+<span class="math display">\[
+f(m) =
+\begin{cases}
+0 &amp; \text{if } m = (0, 0) \\
+1 &amp; \text{if } m = (0, 1) \\
+\dots
+\end{cases}
+\]</span></p>
+<h3 id="卷积核函数">卷积核函数</h3>
+<p>而我们的卷积核函数则是一个 <code>3 * 3</code> 的矩阵： <span
+class="math display">\[
+\begin{bmatrix} 0 &amp; 1 &amp; 2 \\ 3 &amp; 4 &amp; 5 \\ 6 &amp; 7
+&amp; 8 \end{bmatrix}
+\]</span></p>
+<p>每个点对应的坐标是： <span class="math display">\[
+\begin{bmatrix} (-1, -1) &amp; (-1, 0) &amp; (-1, 1) \\ (0, -1) &amp;
+(0, 0) &amp; (0, 1) \\ (1, -1) &amp; (1, 0) &amp; (1, 1) \end{bmatrix}
+\]</span></p>
+<p>那么，我们卷积核函数就可以表示为： <span class="math display">\[
+g(t) =
+\begin{cases}
+0 &amp; \text{if } t = (-1, -1) \\
+1 &amp; \text{if } t = (-1, 0) \\
+\dots \\ 8 &amp; \text{if } t = (1, 1)\\ \end{cases}
+\]</span></p>
+<h3 id="卷积在数学中的计算">卷积在数学中的计算</h3>
+<p>假设我们需要计算 <span class="math inline">\((2, 2)\)</span>
+这个点的卷积，根据卷积的定义 <span class="math inline">\(\sum
+f(m)g(n-m)\)</span> ，我们需要应该遍历整个 <span class="math inline">\(5
+\times 5\)</span> 甚至无限大的平面。但实际上：</p>
+<ul>
+<li>卷积核 <span class="math inline">\(g\)</span> 只有在索引为 <span
+class="math inline">\((0,0)\)</span> 到 <span
+class="math inline">\((2,2)\)</span> 之间（或者数学定义中的 <span
+class="math inline">\((-1,-1)\)</span> 到 <span
+class="math inline">\((1,1)\)</span>）时才有值。</li>
+<li><strong>对于其他所有的位置，卷积核的值都是 <span
+class="math inline">\(0\)</span>。</strong></li>
+</ul>
+<p>因此，当 <span class="math inline">\(n=(2, 2)\)</span> 时，只有当
+<span class="math inline">\(m\)</span> 落在它周围的 <span
+class="math inline">\(3 \times 3\)</span> 区域内，<span
+class="math inline">\(g(n-m)\)</span> 才可能不为零。如果 <span
+class="math inline">\(m\)</span> 跑到了 <span class="math inline">\((0,
+0)\)</span>，由于 <span class="math inline">\((2,2)-(0,0)=(2,2)\)</span>
+已经超出了某些定义的核边界（或者对应的权重很微弱），所以我们只关心那个子矩阵。<strong>本质上来说，取出子矩阵是为了</strong>节省计算量<strong>，因为子矩阵之外的点乘以卷积核的结果全是
+<span class="math inline">\(0\)</span></strong>。这就是<strong>卷积核
+<span class="math inline">\(g\)</span> 的“生命范围”</strong>。</p>
+<p>那么，我们可以取出这个子矩阵： <span class="math display">\[
+\begin{bmatrix} (1, 1) &amp; (1, 2) &amp; (1, 3) \\(2, 1) &amp; (2, 2)
+&amp; (2, 3) \\ (3, 1) &amp; (3, 2) &amp; (3, 3) \end{bmatrix}
+\]</span></p>
+<p>此时，我们的 <span class="math inline">\(f[m]\)</span>
+被转换为如下函数： <span class="math display">\[
+f(m) =
+\begin{cases}
+6 &amp; \text{if } m = (1, 1) \\ 7 &amp; \text{if } m = (1, 2) \\ \dots
+\\ 18 &amp; \text {if } m = (3, 3)
+\end{cases}
+\]</span></p>
+<p>而 <span class="math inline">\(n = (2, 2)\)</span></p>
+<p>那么，<span class="math inline">\([n - m]\)</span>
+就等同于如下的矩阵索引： <span class="math display">\[
+\begin{bmatrix} (1, 1) &amp; (1, 0) &amp; (1, -1) \\ (0, 1) &amp; (0, 0)
+&amp; (0, -1) \\ (-1, 1) &amp; (-1, 0) &amp; (-1, -1)\end{bmatrix}
+\]</span></p>
+<p>再代入到我们的函数 <span class="math inline">\(f(m)\)</span> 和 <span
+class="math inline">\(g(t)\)</span> 中，我们就得到了我们的卷积： <span
+class="math display">\[
+(f * g)[n] = \\6 \times 8 + 7 \times 7 + 8 \times 6 \\+ 11 \times 5 + 12
+\times 4 + 13 \times 3\\+21 \times 2 + 22 \times 1 + 23 \times 0
+\]</span></p>
+<p><strong>于是，我们得到了输出矩阵中 <span class="math inline">\((2,
+2)\)</span>
+这个点的结果，而我们在循环中将这个结果应用到所有的像素点，就得到了我们的新的矩阵图。</strong></p>
+<h3 id="卷积在计算机中的应用互相关">卷积在计算机中的应用（互相关）</h3>
+<p>在我们的实际应用中，计算机的二维数组，也就是我们的输入矩阵和卷积，都是以一个连续数组的形式来存储的：</p>
+<ul>
+<li>这意味着我们的索引中不可能出现负数。</li>
+<li>同时也意味着，我们在迭代时，必须输入矩阵从前往后遍历而卷积核函数从后往前遍历；</li>
+</ul>
+<p>此外，还有一个重要的点是：<strong>在深度学习中，卷积核里的数值（权重）是</strong>练出来的<strong>。系统会自动学会一个“已经是反的”或者“最合适”的权重，所以程序员不需要在底层代码里手动做
+<code>reverse</code>。</strong></p>
+<p>基于这些结论，在计算机的实现中，我们更倾向于使用更适合于计算机领域的公式，<strong>互相关
+(Cross-correlation)</strong>。</p>
+<p><span class="math display">\[(f \star g)[n] = \sum
+f[n+m]g[m]\]</span></p>
+<p>在这个公式中：</p>
+<ul>
+<li><span class="math inline">\(n\)</span>
+的定义没有变，仍然是输出矩阵的对应像素点的索引；</li>
+<li><span class="math inline">\(m\)</span>
+的定义则由输入矩阵的像素点索引变为<strong>相对偏移量</strong>（Offset）；</li>
+</ul>
+<p>例如，在我们前面的例子中：</p>
+<p>子矩阵的原始索引为： <span class="math display">\[
+\begin{bmatrix} (1, 1) &amp; (1, 2) &amp; (1, 3) \\(2, 1) &amp; (2, 2)
+&amp; (2, 3) \\ (3, 1) &amp; (3, 2) &amp; (3, 3) \end{bmatrix}
+\]</span></p>
+<p>而它的相对于 <span class="math inline">\((2, 2)\)</span>
+的相对偏移量索引为，而这个索引和我们的卷积核函数的表示形式是一样的，这意味着我们不需要再做各种逻辑变化而直接进行逻辑计算：
+<span class="math display">\[
+\begin{bmatrix} (-1, -1) &amp; (-1, 0) &amp; (-1, 1) \\(0, -1) &amp; (0,
+0) &amp; (0, 1) \\ (1, -1) &amp; (1, 0) &amp; (1, 1) \end{bmatrix}
+\]</span></p>
+<h1 id="卷积算子的最简实现">卷积算子的最简实现</h1>
+<h2 id="卷积在cnn中的应用">卷积在CNN中的应用</h2>
+<p>卷积在计算机中目前最重要的应用之一就是在 <a
+target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Convolutional_neural_network">CNN(Convolutional
+Neural Networks)</a> 中的应用，这里引用 <a
+target="_blank" rel="noopener" href="https://mlnotebook.github.io/post/CNN1/">Convolutional Neural
+Networks - Basics</a> 这篇文章中 [How does this feed into CNNs?]
+这一小结的描述。这里，我们了解到 <code>CNN</code>
+的突破性进展：<strong>从主动设计到自主学习</strong>：</p>
+<ul>
+<li><strong>传统做法</strong>：过去几十年，数学家和工程师手动设计卷积核（比如我们之前提到的模糊、锐化算子）。这是一种主动设计，需要人类知道特征长什么样。</li>
+<li><strong>CNN
+的突破</strong>：当我们不知道特征长什么样，或者不知道对应的核函数该怎么写时，我们将卷积核里的每一个数值看作<strong>权重（Weight）</strong>。这些权重不再由人给定，而是通过<strong>反向传播（Back
+Propagation）</strong>算法，根据误差自动调整。</li>
+</ul>
+<p>我们以CNN识别猫作为例子：传统的方式是，我们使用照片作为输入，同时我们提取猫的特征作为卷积核函数，这样我们可以精准的识别出猫的图像。然而问题在于，由于人体的限制，设计一个合理的核函数是一个不可能完成的任务。</p>
+<p><strong>而CNN
+并不需要知道“特征”是什么，它只需要知道“结果”对不对。</strong></p>
+<ol type="1">
+<li>虽然人不知道提取猫的特征需要什么样的卷积核，但人知道<strong>“这张图片里有一只猫”</strong>。
+<ul>
+<li><strong>初始状态</strong>：卷积核 <span
+class="math inline">\(g(t)\)</span>
+里的参数全是随机生成的乱码。此时卷积出来的结果也是一团浆糊。</li>
+<li><strong>目标（Label）</strong>：我们给 CNN
+一万张猫的照片，告诉它：“不管我们中间怎么折腾，最后输出的结果必须指向‘猫’这个标签。”</li>
+<li><strong>误差反馈</strong>：如果 CNN
+算出来觉得是“狗”，系统就会产生一个<strong>误差（Loss）</strong>。</li>
+</ul></li>
+<li>反向传播：通过微积分（链式法则），误差会像水流一样倒着往回流：
+<ul>
+<li><strong>逻辑</strong>：系统会问，“为了让最后的结果更接近‘猫’，我倒数第一层的权重该怎么改？倒数第二层呢？...直到最开始的那个卷积核
+<span class="math inline">\(g(t)\)</span> 该怎么改？”</li>
+<li><strong>微调</strong>：每一个卷积核里的权重都会根据误差调整那么一点点（比如
+<span class="math inline">\(0.0001\)</span>）。</li>
+<li><strong>进化</strong>：经过数百万次的调整，卷积核会逐渐收敛。它们会自动变成某种样子——有的变成了边缘检测器，有的变成了圆形探测器。<strong>不是我们教它怎么画这些核，而是为了达到“识别猫”这个目标，数学逻辑逼迫它必须长成那个样子。</strong></li>
+</ul></li>
+<li>特征的自动涌现
+(Emergence)，在深度学习中，特征是<strong>层级化</strong>自动生成的：
+<ul>
+<li><strong>底层（Layer
+1-2）</strong>：由于图片最基本的构成是线，卷积核会自发地演化成“水平线检测器”或“垂直线检测器”。</li>
+<li><strong>中层（Layer
+3-4）</strong>：这些线条卷积核的结果再被卷积，就会组合成“圆圈”、“三角形”等形状。</li>
+<li><strong>高层（Layer
+5+）</strong>：形状再组合，就出现了“猫耳朵”、“眼睛”甚至“胡须”。</li>
+</ul></li>
+</ol>
+<p><strong>而这个过程就是人类在进行大规模机器学习训练时的一个无限循环的流程：</strong></p>
+<ol type="1">
+<li>前向传播 (Forward Pass) ——
+“计算机识别”：计算机拿着目前的卷积核（哪怕是乱码），对图片进行卷积、堆叠、分类。最终给出一个答案，比如：“我觉得
+80% 是猫，20% 是狗”。</li>
+<li>计算损失 (Loss Calculation) ——
+“人类标注”：人预先给出的标签（Label）是“猫”。计算机发现自己的答案和标准答案之间有一个<strong>误差（Loss）</strong>，这里不是简单的对错，而是一个<strong>距离</strong>。误差越大，说明卷积核偏离得越远。</li>
+<li>反向传播 (Back Propagation) —— “权重调整”：
+<ul>
+<li><strong>计算梯度</strong>：数学上会算出 Loss 对每一个卷积权重 <span
+class="math inline">\(w\)</span>
+的导数（梯度）。这个梯度会告诉我们：如果我想让 Loss 变小，这个 <span
+class="math inline">\(w\)</span> 应该增加还是减少？</li>
+<li><strong>更新权重</strong>：根据梯度的方向，更新卷积核。<span
+class="math inline">\(w_{new} = w_{old} - \text{学习率} \times
+\text{梯度}\)</span></li>
+</ul></li>
+</ol>
+<h2 id="卷积在cnn中的典型实现">卷积在CNN中的典型实现</h2>
+<p>通常，在CNN中，我们的输入通常包含：</p>
+<ul>
+<li>一个 <code>张量（Tensor）</code>，这个张量是我们的全部数据；</li>
+<li>一个 <code>卷积核函数</code>，我们使用这个核函数来对我们的
+<code>输入张量</code> 进行变换求值；</li>
+</ul>
+<p>最后，我们会将数据输出到一个全新的矩阵中。</p>
+<h3 id="输入张量">输入张量</h3>
+<p>通常，我们的输入张量是 <code>n</code> 个
+<code>3D-Tensor</code>，通常会包含四个指标，我们称之为
+<code>nchw</code>：</p>
+<ul>
+<li><code>n</code> 代表我们输入的 <code>3D-Tensor</code>
+的个数，这些张量通常是完全独立计算的，只是在内存中紧密排列；</li>
+<li><code>c</code> 代表了
+<code>Channel</code>，表示我们的张量的厚度；</li>
+<li><code>w</code> 代表了 <code>Width</code>，表示我们张量的宽度；</li>
+<li><code>h</code> 代表了 <code>height</code>，表示我们张量的高度。</li>
+</ul>
+<p>以我们的图形处理为例：通常，我们的每张图片是一个 <span
+class="math inline">\(w \times h\)</span>
+的像素点矩阵，问题在于，每个像素点还需要一个维度来表示他的颜色，那么也就是每个节点可以使用两种方式来存储这个
+<code>RGB</code> 结构信息：</p>
+<blockquote>
+<p>在二维数组中，每个节点存储一个 <code>RGB</code>
+结构，这样我们仍然是一个 <span class="math inline">\(2 \times 2\)</span>
+的矩阵；</p>
+</blockquote>
+<p><span class="math display">\[
+\mathcal{A} =
+    \begin{bmatrix} (0, 1, 2) &amp; (3, 4, 5) \\(6, 7, 8) &amp; (9, a,
+b) \end{bmatrix}
+\]</span></p>
+<blockquote>
+<p>将二维数组拓展到三维数组，第一层到第三层分别存储
+<code>R</code>，<code>G</code>，<code>B</code>，这样最后的结果就变成了三个
+<span class="math inline">\(2 * 2\)</span> 的矩阵叠加在一起：</p>
+</blockquote>
+<p><span class="math display">\[
+\mathcal{A} =
+\begin{bmatrix}
+    \begin{bmatrix} 0 &amp; 3 \\ 6 &amp; 9 \end{bmatrix}_{Channel=R} \\
+    \begin{bmatrix} 1 &amp; 4 \\ 7 &amp; a \end{bmatrix}_{Channel=G} \\
+    \begin{bmatrix} 2 &amp; 5 \\ 8 &amp; b \end{bmatrix}_{Channel=B}
+\end{bmatrix}
+\]</span></p>
+<p>在我们的实际应用中，我们通常使用第二种方式来表示我们的张量，主要出于以下几个考虑：</p>
+<ol type="1">
+<li><strong>更高的性能</strong>，通常来说我们在进行卷积计算的时候，通常只关注某个特定的特征。例如，在上面的例子中，我们只想要处理
+<code>R</code>
+这个特征，那我们必须读取大量的无关数据，这对于本来就捉襟见肘的带宽带来了更大的压力；</li>
+<li><strong>更加的灵活</strong>，在我们的卷积计算中，<code>channel</code>
+这个指标其实是和具体的需求绑定的，如果我们使用 <code>3D Tensor</code>
+的方式，那么我们可以灵活的替换我们的特征；</li>
+</ol>
+<blockquote>
+<p>注：这个逻辑有点类似于我们在DB中的列存储（Column-oriented）和行存储（Row-oriented）：</p>
+<ul>
+<li>在卷积里，我们并不关心某个点的 <code>Pixel(x,y)</code>
+是什么颜色，我们关心的是<strong>“整张图里所有点的 R
+通道”</strong>与卷积核的红色部分进行卷积。当 <code>GPU</code> 线程读取 R
+通道时，如果采用 <strong>SoA
+(NCHW)</strong>，相邻的线程读取的像素在内存中是<strong>连续</strong>的。这样就能触发
+GPU 的 <strong>Memory
+Coalescing（显存合并访问）</strong>，就像列存数据库在读磁盘时能利用顺序读（Sequential
+Read）一样，带宽利用率接近 100%。</li>
+<li>卷积中<strong>不需要随机查询</strong>：卷积是扫描式的，从头扫到尾，没有“点查询”需求。</li>
+</ul>
+</blockquote>
+<h3 id="卷积核函数-1">卷积核函数</h3>
+<p>卷积核函数通常是 <code>k</code> 个 <code>3D-Tensor</code>：</p>
+<ul>
+<li><code>k</code>
+代表了我们核函数的数量，每一个核函数都代表了不同的特征；</li>
+<li><code>c</code> 这个对应于<strong>输入张量</strong>的厚度；</li>
+<li><code>r</code> 表示核函数的高度；</li>
+<li><code>s</code> 表示核函数的宽度；</li>
+</ul>
+<p>通常来说，<strong>输入张量</strong>中的所有元素都必须和全部的核函数进行卷积计算，最后识别出一个特定的特征。例如，假设我们需要实现一个人脸识别的功能：</p>
+<ul>
+<li><span class="math inline">\(k_1\)</span> 识别眼睛；</li>
+<li><span class="math inline">\(k_2\)</span> 识别鼻子；</li>
+<li><span class="math inline">\(k_3\)</span> 识别嘴巴</li>
+<li><span class="math inline">\(k_4\)</span> 识别耳朵；</li>
+</ul>
+<p>更为精妙的是，我们的CNN通常分为多层。例如，我们在识别眼睛的阶段：</p>
+<ul>
+<li><span class="math inline">\(k_{10}\)</span> 识别单眼皮眼睛；</li>
+<li><span class="math inline">\(k_{11}\)</span> 识别双眼皮眼睛；</li>
+<li><span class="math inline">\(k_{13}\)</span>
+识别瞳孔中的不同颜色；</li>
+</ul>
+<h3 id="输出张量">输出张量</h3>
+<p>在计算完成之后，我们需要将数据输出到 <code>n</code> 个全新的
+<code>3D-Tensor</code>：</p>
+<ul>
+<li><code>n</code> 每一个 <code>3D-Tensor</code> 输入都对应了一个
+<code>3D-Tensor</code> 输出；</li>
+<li><code>k</code> <strong>可以看到，相对于输入张量中的
+<code>channel</code>，我们的 “厚度”
+被转换成卷积核函数的数量了，这是因为在这次计算完成之后，我们关注的特征就改变了：</strong>
+<ul>
+<li>例如我们识别图像的例子中，输入张量中的厚度是
+<code>R</code>/<code>G</code>/<code>B</code>，而我们的卷积核函数则关注的是
+<code>横线</code>/<code>竖线</code>/<code>曲线</code> 等；</li>
+<li>当我们执行完第一次转换后，我们的下层转换关注的就是
+<code>横线</code>/<code>竖线</code>/<code>曲线</code>
+这些特征指标，我们需要将他进一步的转换为更加复杂的形体，例如：<code>正方形</code>/<code>长方形</code>/<code>椭圆</code>/<code>圆形</code>
+等；</li>
+<li>如此迭代下去，最后我们可以真正的识别到我们的目标图像。</li>
+</ul></li>
+<li><code>out_h</code> 输出张量的高度；</li>
+<li><code>out_w</code> 输出张量的宽度。</li>
+</ul>
+<p>在我们的输出张量中，<code>n</code> 和 <code>k</code>
+是在输入张量和卷积核函数中隐式声明的，而 <code>out_h</code> 和
+<code>out_w</code> 则是取决于我们的卷积核有多大（<span
+class="math inline">\(r, s\)</span>）、跳着走几步（步长 <span
+class="math inline">\(u, v\)</span>）以及补了多少边（<span
+class="math inline">\(p, q\)</span>）。</p>
+<h3 id="步长">步长</h3>
+<p>在我们的卷积计算中，我们有一个逻辑是遍历输入张量 <span
+class="math inline">\(\sum_{m=-\infty}^{\infty}\)</span>，而这里存在一个逻辑是，我应该怎么去遍历输入张量呢？通常来说，我们遍历输入张量的全部元素，可以获取到最多的信息。然而这也会引入相当多的问题：</p>
+<ul>
+<li>性能差，当我们遍历整个输入张量的全部节点时，我们的时间复杂度相当于每张图片
+<code>c * w * h * k * r * s</code>，而这个复杂度在大量的高分辨率图片输入时性能极差；</li>
+<li>读取过多的冗余信息，在计算时我们可能并不需要过于精细的数据。例如，假设我们现在需要判断视频中是否有人移动，我们只需要很粗略的遍历即可；</li>
+<li>更高的延迟，在部分场景下（例如自动驾驶）我们会放弃一定的精度换取更低的延迟；</li>
+</ul>
+<p>为此，我们引入了两个单独的变量 <code>u</code> 和 <code>v</code>
+来控制我们我们的遍历逻辑：</p>
+<ul>
+<li><code>u</code> 卷积在高方向上的步长；</li>
+<li><code>v</code> 卷积在宽方向上的步长；</li>
+</ul>
+<h3 id="补边">补边</h3>
+<p>此外，还存在两个严重的问题是：</p>
+<ul>
+<li>在我们遍历的过程中，对于那些边缘的点（row = 0 || row = h - 1 || col
+= 0 || col = w -
+1），因为它不满足和核函数相乘的条件，而这会导致我们每一次计算都会产生“边缘信息丢失”
+或 “维度收缩”。</li>
+<li>在计算时，中心的节点会更多的参与计算，在没有 padding
+的情况下，边缘像素可能只会被扫描到
+<code>1</code>~<code>3</code>次，而中心的节点则会被扫描到 <code>9</code>
+次。</li>
+</ul>
+<p>我们通过补边来解决这个问题：</p>
+<ul>
+<li><code>p</code> 卷积在高方向上的补边；</li>
+<li><code>q</code> 卷积在宽方向上的补边；</li>
+</ul>
+<p>考虑如下的 <span class="math inline">\(5 * 5\)</span> 矩阵：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+0(&quot;0&quot;) 1(&quot;1&quot;) 2(&quot;2&quot;) 3(&quot;3&quot;) 4(&quot;4&quot;) 
+5(&quot;5&quot;) 6(&quot;6&quot;) 7(&quot;7&quot;) 8(&quot;8&quot;) 9(&quot;9&quot;)
+10(&quot;10&quot;) 11(&quot;11&quot;) 12(&quot;12&quot;) 13(&quot;13&quot;) 14(&quot;14&quot;)
+15(&quot;15&quot;) 16(&quot;16&quot;) 17(&quot;17&quot;) 18(&quot;18&quot;) 19(&quot;19&quot;)
+20(&quot;20&quot;) 21(&quot;21&quot;) 22(&quot;22&quot;) 23(&quot;23&quot;) 24(&quot;24&quot;)
+
+class 0,20,4,24 error
+class 1,3,21,23,5,15,9,19 gray
+class 2,10,22,14 light_green
+class 6,8,16,18 green
+class 7,11,13,17 yellow
+class 12 orange
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>我们在整个的扫描过程中：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 1
+
+1(&quot;本颜色表示被计算1次&quot;)
+2(&quot;本颜色表示被计算2次&quot;)
+3(&quot;本颜色表示被计算3次&quot;)
+4(&quot;本颜色表示被计算4次&quot;)
+5(&quot;本颜色表示被计算6次&quot;)
+6(&quot;本颜色表示被计算9次&quot;)
+
+
+class 1 error
+class 2 gray
+class 3 light_green
+class 4 green
+class 5 yellow
+class 6 orange
+
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而我们可以通过在外圈填充 <span class="math inline">\(p = \frac{r -
+1}{2}\)</span> 和 <span class="math inline">\(r = \frac{s -
+1}{2}\)</span>的 边来降低这种误差值：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 7
+
+%% 周边填充层 (Padding)
+z0[&quot;0&quot;] z1[&quot;0&quot;] z2[&quot;0&quot;] z3[&quot;0&quot;] z4[&quot;0&quot;] z5[&quot;0&quot;] z6[&quot;0&quot;]
+z7[&quot;0&quot;] 0(&quot;0&quot;) 1(&quot;1&quot;) 2(&quot;2&quot;) 3(&quot;3&quot;) 4(&quot;4&quot;) z8[&quot;0&quot;]
+z9[&quot;0&quot;] 5(&quot;5&quot;) 6(&quot;6&quot;) 7(&quot;7&quot;) 8(&quot;8&quot;) 9(&quot;9&quot;) z10[&quot;0&quot;]
+z11[&quot;0&quot;] 10(&quot;10&quot;) 11(&quot;11&quot;) 12(&quot;12&quot;) 13(&quot;13&quot;) 14(&quot;14&quot;) z12[&quot;0&quot;]
+z13[&quot;0&quot;] 15(&quot;15&quot;) 16(&quot;16&quot;) 17(&quot;17&quot;) 18(&quot;18&quot;) 19(&quot;19&quot;) z14[&quot;0&quot;]
+z15[&quot;0&quot;] 20(&quot;20&quot;) 21(&quot;21&quot;) 22(&quot;22&quot;) 23(&quot;23&quot;) 24(&quot;24&quot;) z16[&quot;0&quot;]
+z17[&quot;0&quot;] z18[&quot;0&quot;] z19[&quot;0&quot;] z20[&quot;0&quot;] z21[&quot;0&quot;] z22[&quot;0&quot;] z23[&quot;0&quot;]
+
+class 0,4,20,24 green
+class 1,3,21,23,5,9,15,19,10,2,14,22 yellow
+class 6,7,8,11,12,13,16,17,18 orange
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+
+%% 将填充层样式设为灰色以示区别
+class z0,z1,z2,z3,z4,z5,z6,z7,z8,z9,z10,z11,z12,z13,z14,z15,z16,z17</code></pre>
+<p>可以看到，在进行补边之后，及时是计算最少的四个顶点也计算了
+<code>4</code> 次。而我们不补更多的边让所有的节点都被计算 <code>9</code>
+次，是因为：</p>
+<ul>
+<li>补 0 本质上是引入“噪声”。补 1
+圈是为了<strong>保住维度</strong>（让输出不收缩），同时<strong>显著改善</strong>边缘的参与度（从
+1 次提升到 4 次，提升了 400%）。如果补太多
+0，卷积核就会花大量的精力去计算那些毫无意义的 0。</li>
+<li>补 <span class="math inline">\(\frac{r-1}{2}\)</span>
+是工业界的“黄金平衡点”——它既保证了输出空间维度不坍塌，又在最小噪声代价下提升了边缘的权重。</li>
+</ul>
+<h3 id="总结">总结</h3>
+<p>在我们整个的计算过程中：</p>
+<ol type="1">
+<li>输入张量中的 <code>n</code>
+表示输入张量的数量，每个张量的计算是独立的；</li>
+<li>卷积核函数的 <code>厚度</code> 不用显式声明，它必须和
+<code>输入张量</code> 的 <code>channel</code> 完全一致；</li>
+<li>在执行完毕后，输出张量的厚度将由 <code>c</code> 转换为
+<code>k</code>，这个 <code>k</code> 是核函数的数量；</li>
+<li>最终输出的张量的四个参数全部由输入决定：
+<ul>
+<li><code>n</code> 等于输入张量的数量；</li>
+<li><code>k</code> 等于卷积核函数的数量；</li>
+<li><span class="math inline">\(out_w = 1 + \lfloor \frac{w + 2 \times q
+- s}{v} \rfloor\)</span></li>
+<li><span class="math inline">\(out_h = 1 + \lfloor \frac{h + 2 \times q
+- r}{u} \rfloor\)</span></li>
+</ul></li>
+</ol>
+<p>这里可以注意到的一点是，我们在求 <span
+class="math inline">\(out_w\)</span> 和 <span
+class="math inline">\(out_h\)</span>
+时，都是向下取整的，这是因为对于不能和核函数同宽同高的块会直接不被计算。</p>
+<h2 id="源码">源码</h2>
+<h3 id="cpu计算的实现">CPU计算的实现</h3>
+<p><strong>这里我们可以注意到，我们的编程逻辑中改变了CPU的传统逻辑：遍历输入得到输出，而是反向的遍历输出，每个输出去找自己的输入。</strong></p>
+<p>在 GPU 中，计算是高度并行的：</p>
+<ol type="1">
+<li>我们不再使用嵌套循环去遍历输入得到输出。</li>
+<li>相反，我们会启动成千上万个线程，<strong>每个线程认领输出矩阵中的一个点
+<span class="math inline">\((i, j)\)</span></strong>。</li>
+<li>每个线程都会运行一段完全相同的代码：
+<ul>
+<li>“我是线程 <span class="math inline">\((i, j)\)</span>，我要算我的
+<code>sum</code>。”</li>
+<li>“我的输入起点在 <code>u*i - p</code>。”</li>
+<li>“我要遍历我的 <span class="math inline">\(r \times s\)</span>
+小窗口。”</li>
+</ul></li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">conv2d_cpu</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *in, <span class="type">const</span> <span class="type">float</span> *weight, <span class="type">float</span> *out, <span class="type">const</span> Conv2dDims &amp;dims, <span class="type">const</span> Conv2dAttrs &amp;attrs)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 每张图片单独计算</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> n_num = <span class="number">0</span>; n_num &lt; dims.n; ++n_num) &#123;</span><br><span class="line">        <span class="comment">// 在计算完之后，我们的原始厚度 c（通道）将被转换为新的厚度 k</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k_num = <span class="number">0</span>; k_num &lt; dims.k; ++k_num) &#123;</span><br><span class="line">            <span class="comment">// 这里 oh_num 和 ow_num 都是输出上的点，也就是说每个点都需要计算</span></span><br><span class="line">            <span class="comment">// 我们这里改变了从输入到输出的顺序，而是通过输出反推输入</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> oh_num = <span class="number">0</span>; oh_num &lt; dims.out_h; oh_num++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> ow_num = <span class="number">0</span>; ow_num &lt; dims.out_w; ow_num++) &#123;</span><br><span class="line">                    <span class="comment">// 我们通过 p 和 q，将我们输出张量中的节点映射到了输入张量的左上角节点而不是中心节点</span></span><br><span class="line">                    <span class="comment">// 这意味着我们的可以执行互相关而不是卷积</span></span><br><span class="line">                    <span class="type">float</span> sum = <span class="number">0.0</span>;</span><br><span class="line">                    <span class="type">const</span> <span class="type">int</span> h_pos = oh_num * attrs.u - attrs.p;</span><br><span class="line">                    <span class="type">const</span> <span class="type">int</span> w_pos = ow_num * attrs.v - attrs.q;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">int</span> c_num = <span class="number">0</span>; c_num &lt; dims.c; ++c_num) &#123;</span><br><span class="line">                        <span class="keyword">for</span> (<span class="type">int</span> h_num = <span class="number">0</span>; h_num &lt; dims.r; ++h_num) &#123;</span><br><span class="line">                            <span class="keyword">for</span> (<span class="type">int</span> w_num = <span class="number">0</span>; w_num &lt; dims.s; ++w_num) &#123;</span><br><span class="line">                                <span class="type">const</span> <span class="type">int</span> in_w = w_pos + w_num;</span><br><span class="line">                                <span class="type">const</span> <span class="type">int</span> in_h = h_pos + h_num;</span><br><span class="line">                                <span class="keyword">if</span> (<span class="number">0</span> &lt;= in_w &amp;&amp; in_w &lt; dims.w &amp;&amp; <span class="number">0</span> &lt;= in_h &amp;&amp; in_h &lt; dims.h) &#123;</span><br><span class="line">                                    <span class="type">const</span> <span class="type">float</span> in_val = in[dims.<span class="built_in">in_offset</span>(n_num, c_num, in_h, in_w)];</span><br><span class="line">                                    <span class="type">const</span> <span class="type">float</span> k_val = weight[dims.<span class="built_in">weight_offset</span>(k_num, c_num, h_num, w_num)];</span><br><span class="line">                                    sum += in_val * k_val;</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">// 最终生成的结果为：</span></span><br><span class="line">                    <span class="comment">// [</span></span><br><span class="line">                    <span class="comment">//      图片1 -&gt; [</span></span><br><span class="line">                    <span class="comment">//          核函数1 -&gt; 核函数1生成的张量,</span></span><br><span class="line">                    <span class="comment">//          核函数2 -&gt; 核函数2生成的张量,</span></span><br><span class="line">                    <span class="comment">//          ...</span></span><br><span class="line">                    <span class="comment">//      ],</span></span><br><span class="line">                    <span class="comment">//      图片2 -&gt; [],</span></span><br><span class="line">                    <span class="comment">//      ...</span></span><br><span class="line">                    <span class="comment">// ]</span></span><br><span class="line">                    out[dims.<span class="built_in">out_offset</span>(n_num, k_num, oh_num, ow_num)] = sum;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="gpu计算的坐标轴压缩">GPU计算的坐标轴压缩</h3>
+<p>当我们真正开始实现代码之前，我们发现：<strong>CUDA内建只支持 x, y, z
+三个坐标轴，而我们的输入实际上是存在 n, k, h, w
+四个坐标轴的。</strong>在这种情况下，如果我们还是使用物理意义上的
+x，y，z 轴去对应我们的 w，h，k 三个坐标轴，那么我们将面临一个问题：</p>
+<p>在只有一张图片的情况下，这个算法工作良好，然而当超过一张图片时，在我们计算完第一张图片后想要进入第二张图片时，我们的坐标轴已经溢出了。</p>
+<p>因为我们不能通过让 <code>threadIdx.x</code> &gt; w
+去表示宽度，因为这会让我们无法判断当前是我们的线程处理溢出了输入矩阵还是进入到下一张图片了。</p>
+<p>也就是说，当我们使用这种更符合直觉的方式去表示我们的坐标轴时，我们最大只能表示
+<span class="math inline">\(w * h * k\)</span>
+个元素，在这种情况下，我们必须要对我们的坐标轴进行压缩，工业界有几种典型的压缩方式：</p>
+<ul>
+<li><strong>空间二维映射</strong>，这是最后符合直觉的表示方式：
+<ul>
+<li><span class="math inline">\(w\)</span> 用 <span
+class="math inline">\(x\)</span> 表示；</li>
+<li><span class="math inline">\(h\)</span> 用 <span
+class="math inline">\(y\)</span> 表示；</li>
+<li><span class="math inline">\(k * n\)</span> 则使用 <span
+class="math inline">\(z\)</span> 来表示；</li>
+</ul></li>
+<li><strong>通道优先</strong>：
+<ul>
+<li>将图片的一层，也就是 <span class="math inline">\(w * h\)</span>
+压缩为一行，用 <span class="math inline">\(x\)</span> 表示；</li>
+<li>深度 <span class="math inline">\(k\)</span> 用 <span
+class="math inline">\(y\)</span> 表示；</li>
+<li>batch <span class="math inline">\(n\)</span> 用 <span
+class="math inline">\(z\)</span> 来表示；</li>
+</ul></li>
+<li><strong>分块瓦片化</strong>：这是对于通道优先的优化版本：
+<ul>
+<li>将图片的一层，分为多个不同的 <code>Tile</code>，每个
+<code>Tile</code> 用 <span class="math inline">\(x\)</span> 和 <span
+class="math inline">\(y\)</span> 来表示；</li>
+<li><span class="math inline">\(n * k\)</span> 用 <span
+class="math inline">\(z\)</span> 来表示；</li>
+</ul></li>
+</ul>
+<h4 id="空间二维映射">空间二维映射</h4>
+<p>以下是一个 <span class="math inline">\(2 * 2 * 3 * 3\)</span>
+的张量，使用空间二维映射的典型排布：</p>
+<ul>
+<li>其中 <code>z = 0</code> 和 <code>z = 1</code>
+表示的是第一张图片的第一层和第二层；</li>
+<li>而 <code>z = 2</code> 和 <code>z = 3</code>
+表示的是第二张图片的第一层和第二层；</li>
+</ul>
+<pre><code class="highlight mermaid">block-beta
+columns 4
+block:header0:4
+    columns 4
+    space:8
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+    header4(&quot;z = 2&quot;)
+    header5(&quot;z = 3&quot;)
+end
+block:z1:1
+    columns 3
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+end
+block:z2:1
+    columns 3
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+block:z3:1
+    columns 3
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+end
+block:z4:1
+    columns 3
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3,z4 animate
+class z100,z101,z102,z120,z121,z122,z210,z211,z212,z300,z301,z302,z320,z321,z322,z410,z411,z412 light_green
+class z110,z111,z112,z200,z201,z202,z220,z221,z222,z310,z311,z312,z400,z401,z402,z420,z421,z422 blue
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>假设我们使用一个 <span class="math inline">\(2 * 2 * 2\)</span>
+的张量来计算：</p>
+<p>那么 <code>block 1</code> 负责的区域应该为：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 4
+block:header0:4
+    columns 4
+    space:8
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+    header4(&quot;z = 2&quot;)
+    header5(&quot;z = 3&quot;)
+end
+block:z1:1
+    columns 3
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+end
+block:z2:1
+    columns 3
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+block:z3:1
+    columns 3
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+end
+block:z4:1
+    columns 3
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3,z4 animate
+class z100,z101,z102,z120,z121,z122,z210,z211,z212,z300,z301,z302,z320,z321,z322,z410,z411,z412 light_green
+class z110,z111,z112,z200,z201,z202,z220,z221,z222,z310,z311,z312,z400,z401,z402,z420,z421,z422 blue
+
+class z100,z101,z110,z111,z200,z201,z210,z211 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而 <code>block 2</code>
+负责的区域应该为（可以看到，由于产生了横向越界，实际会只会有一部分线程执行）：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 4
+block:header0:4
+    columns 4
+    space:8
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+    header4(&quot;z = 2&quot;)
+    header5(&quot;z = 3&quot;)
+end
+block:z1:1
+    columns 3
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+end
+block:z2:1
+    columns 3
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+block:z3:1
+    columns 3
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+end
+block:z4:1
+    columns 3
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3,z4 animate
+class z100,z101,z102,z120,z121,z122,z210,z211,z212,z300,z301,z302,z320,z321,z322,z410,z411,z412 light_green
+class z110,z111,z112,z200,z201,z202,z220,z221,z222,z310,z311,z312,z400,z401,z402,z420,z421,z422 blue
+
+class z102,z112,z202,z212 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><code>block 3</code> 负责的区域为（纵向越界）：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 4
+block:header0:4
+    columns 4
+    space:8
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+    header4(&quot;z = 2&quot;)
+    header5(&quot;z = 3&quot;)
+end
+block:z1:1
+    columns 3
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+end
+block:z2:1
+    columns 3
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+block:z3:1
+    columns 3
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+end
+block:z4:1
+    columns 3
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3,z4 animate
+class z100,z101,z102,z120,z121,z122,z210,z211,z212,z300,z301,z302,z320,z321,z322,z410,z411,z412 light_green
+class z110,z111,z112,z200,z201,z202,z220,z221,z222,z310,z311,z312,z400,z401,z402,z420,z421,z422 blue
+
+class z120,z121,z220,z221 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><code>block 4</code> 负责的区域为（双向越界）：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 4
+block:header0:4
+    columns 4
+    space:8
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+    header4(&quot;z = 2&quot;)
+    header5(&quot;z = 3&quot;)
+end
+block:z1:1
+    columns 3
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+end
+block:z2:1
+    columns 3
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+block:z3:1
+    columns 3
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+end
+block:z4:1
+    columns 3
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3,z4 animate
+class z100,z101,z102,z120,z121,z122,z210,z211,z212,z300,z301,z302,z320,z321,z322,z410,z411,z412 light_green
+class z110,z111,z112,z200,z201,z202,z220,z221,z222,z310,z311,z312,z400,z401,z402,z420,z421,z422 blue
+
+class z122,z222 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="通道优先">通道优先</h4>
+<p>以下是一个 <span class="math inline">\(2 * 2 * 3 * 3\)</span>
+的张量，使用通道优先映射的典型排布：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:header0:2
+    columns 2
+    space:2
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+end
+
+block:z1:1
+    columns 9
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+
+block:z3:1
+    columns 9
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0,heade3 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3 animate
+
+class z100,z101,z102,z110,z111,z112,z120,z121,z122 light_green
+class z200,z201,z202,z210,z211,z212,z220,z221,z222 blue
+class z300,z301,z302,z310,z311,z312,z320,z321,z322 light_green
+class z400,z401,z402,z410,z411,z412,z420,z421,z422 blue
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#3</code></pre>
+<p>同样假设我们使用一个 <span class="math inline">\(2 * 2 * 2\)</span>
+的张量来计算：</p>
+<p><code>block 0</code> 负责的区域为：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:header0:2
+    columns 2
+    space:2
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+end
+
+block:z1:1
+    columns 9
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+
+block:z3:1
+    columns 9
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0,heade3 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3 animate
+
+class z100,z101,z102,z110,z111,z112,z120,z121,z122 light_green
+class z200,z201,z202,z210,z211,z212,z220,z221,z222 blue
+class z300,z301,z302,z310,z311,z312,z320,z321,z322 light_green
+class z400,z401,z402,z410,z411,z412,z420,z421,z422 blue
+
+class z100,z101,z200,z201,z300,z301,z400,z401 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><code>block 2</code> 负责的区域为：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:header0:2
+    columns 2
+    space:2
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+end
+
+block:z1:1
+    columns 9
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+
+block:z3:1
+    columns 9
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0,heade3 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3 animate
+
+class z100,z101,z102,z110,z111,z112,z120,z121,z122 light_green
+class z200,z201,z202,z210,z211,z212,z220,z221,z222 blue
+class z300,z301,z302,z310,z311,z312,z320,z321,z322 light_green
+class z400,z401,z402,z410,z411,z412,z420,z421,z422 blue
+
+class z102,z202,z110,z210,z302,z402,z310,z410 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><code>block 5</code> 负责的区域为：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:header0:2
+    columns 2
+    space:2
+    header1(&quot;z = 0&quot;)
+    header2(&quot;z = 1&quot;)
+end
+
+block:z1:1
+    columns 9
+    z100(&quot;(0,0,0)&quot;) z101(&quot;(0,0,1)&quot;) z102(&quot;(0,0,2)&quot;)
+    z110(&quot;(0,1,0)&quot;) z111(&quot;(0,1,1)&quot;) z112(&quot;(0,1,2)&quot;)
+    z120(&quot;(0,2,0)&quot;) z121(&quot;(0,2,1)&quot;) z122(&quot;(0,2,2)&quot;)
+    z200(&quot;(1,0,0)&quot;) z201(&quot;(1,0,1)&quot;) z202(&quot;(1,0,2)&quot;)
+    z210(&quot;(1,1,0)&quot;) z211(&quot;(1,1,1)&quot;) z212(&quot;(1,1,2)&quot;)
+    z220(&quot;(1,2,0)&quot;) z221(&quot;(1,2,1)&quot;) z222(&quot;(1,2,2)&quot;)
+end
+
+block:z3:1
+    columns 9
+    z300(&quot;(2,0,0)&quot;) z301(&quot;(2,0,1)&quot;) z302(&quot;(2,0,2)&quot;)
+    z310(&quot;(2,1,0)&quot;) z311(&quot;(2,1,1)&quot;) z312(&quot;(2,1,2)&quot;)
+    z320(&quot;(2,2,0)&quot;) z321(&quot;(2,2,1)&quot;) z322(&quot;(2,2,2)&quot;)
+    z400(&quot;(3,0,0)&quot;) z401(&quot;(3,0,1)&quot;) z402(&quot;(3,0,2)&quot;)
+    z410(&quot;(3,1,0)&quot;) z411(&quot;(3,1,1)&quot;) z412(&quot;(3,1,2)&quot;)
+    z420(&quot;(3,2,0)&quot;) z421(&quot;(3,2,1)&quot;) z422(&quot;(3,2,2)&quot;)
+end
+
+class header0,heade3 transparent
+class header1,header2,header4,header5 purple
+class z1,z2,z3 animate
+
+class z100,z101,z102,z110,z111,z112,z120,z121,z122 light_green
+class z200,z201,z202,z210,z211,z212,z220,z221,z222 blue
+class z300,z301,z302,z310,z311,z312,z320,z321,z322 light_green
+class z400,z401,z402,z410,z411,z412,z420,z421,z422 blue
+
+class z122,z222,z322,z422 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="分片tile">分片Tile</h4>
+<p><code>分片Tile</code> 就是在空间二维映射的基础上，具体的逻辑可以参考
+<a
+href="https://0x822a5b87.github.io/2026/01/23/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8/#sharedmemory%E4%B8%8B%E7%9A%84%E7%9F%A9%E9%98%B5%E8%BD%AC%E6%8D%A2%E5%AE%9E%E4%BE%8B">SharedMemory下的矩阵转换实例</a>
+中的描述：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 5
+
+space:1 c0[&quot;0&quot;] c1[&quot;1&quot;] c2[&quot;2&quot;] c3[&quot;3&quot;]
+r0[&quot;0&quot;]
+block:s1:2
+    0(&quot;0&quot;) 1(&quot;1&quot;)
+end
+block:s2:2
+    2(&quot;2&quot;) 3(&quot;3&quot;)
+end
+r1[&quot;1&quot;]
+block:s3:2
+    4(&quot;4&quot;) 5(&quot;5&quot;)
+end
+block:s4:2
+    6(&quot;6&quot;) 7(&quot;7&quot;)
+end
+r2[&quot;2&quot;]
+block:s5:2
+    8(&quot;8&quot;) 9(&quot;9&quot;)
+end
+block:s6:2
+    a(&quot;a&quot;) b(&quot;b&quot;)
+end
+r3[&quot;3&quot;]
+block:s7:2
+    c(&quot;c&quot;) d(&quot;d&quot;)
+end
+block:s8:2
+    e(&quot;e&quot;) f(&quot;f&quot;)
+end
+
+class c0,c1,c2,c3,r0,r1,r2,r3 purple
+
+class 0,1,4,5 light_green
+class 2,3,6,7 gray
+class 8,9,c,d yellow
+class a,b,e,f orange
+
+class s1,s2,s3,s4,s5,s6,s7,s8 animate
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h3 id="一个通道优先的例子">一个通道优先的例子</h3>
+<p>我们下面的逻辑中，使用了通道优先逻辑，那么此时：</p>
+<ul>
+<li>每个 <code>block</code> 只会读取一张图片，因为我们的 <span
+class="math inline">\(z\)</span> 使用的默认数字 <code>1</code>；</li>
+<li>每个 <code>block</code>
+通道优先，也就是我们尽量的多处理不同通道中的内容，这里有个问题是，如果通道的数量超过
+<code>1024</code>，我们的代码会直接异常；因为超出了单 <code>block</code>
+的线程上限；</li>
+<li>在确定了我们的 <code>y</code>
+之后，我们的通道数量也就确定了。此时，每个 <code>block</code> 中的
+<code>x</code> 轴就会存在一个上限：<span
+class="math inline">\(thread\_count\_per\_block = x * y\)</span>
+必须小于等于 <code>1024</code>，这意味着 <span class="math inline">\(x =
+max(1, min(\frac{thread\_count\_per\_block}{k},
+\frac{1024}{k}))\)</span></li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里我们使用通道优先的策略，我们的 block 中包含图片的所有通道。</span></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> blockDim_y = k;</span><br><span class="line"><span class="comment">// 将输入图片的一层压缩为一行，并且由于我们使用通道优先的策略，所以</span></span><br><span class="line"><span class="comment">// 我们需要根据通道的数量来调整我们的矩阵的大小</span></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> max_threads = <span class="number">1024</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> ideal_x = (out_h * out_w + k - <span class="number">1</span>) / k;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> blockDim_x = std::<span class="built_in">max</span>(<span class="number">1</span>, std::<span class="built_in">min</span>(ideal_x, max_threads / k));</span><br></pre></td></tr></table></figure>
+<h2 id="nchw和nhwc的内存布局">NCHW和NHWC的内存布局</h2>
+<blockquote>
+<p>注意，这里只是内存布局示意图，所以在我们本小结的图示中，并不存在行和列的概念，他们都是在内存中一片连续的内存。</p>
+<p>这里，我们假设在计算卷积时的步长 <code>u</code> 和 <code>v</code>
+都等于 <code>1</code>。</p>
+</blockquote>
+<h3 id="nchw">NCHW</h3>
+<p><code>NCHW</code> 是平面优先的内存布局：在同一个 <span
+class="math inline">\(n\)</span> 和 <span
+class="math inline">\(c\)</span> 下，所有的像素（<span
+class="math inline">\(h, w\)</span>）构成了一个连续的物理平面。</p>
+<h4 id="输入张量-1">输入张量</h4>
+<p>假设我们的输入张量是 <span class="math inline">\(2 * 2 * 2 *
+2\)</span>：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 8
+
+0(&quot;图0-通道0-行0-列0&quot;)
+1(&quot;图0-通道0-行0-列1&quot;)
+2(&quot;图0-通道0-行1-列0&quot;)
+3(&quot;图0-通道0-行1-列1&quot;)
+4(&quot;图0-通道1-行0-列0&quot;)
+5(&quot;图0-通道1-行0-列1&quot;)
+6(&quot;图0-通道1-行1-列0&quot;)
+7(&quot;图0-通道1-行1-列1&quot;)
+8(&quot;图2&quot;):8
+
+
+
+class 0,1,2,3 light_green
+class 4,5,6,7 green
+class 8 blue
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="卷积核函数-2">卷积核函数</h4>
+<p>我们假设核函数是 <span class="math inline">\(3 * 2 * 3 *
+3\)</span>：这里有个问题是，卷积函数通常要求输入张量的中心点的矩阵能够全覆盖核函数。我们的输入张量只有
+<span class="math inline">\(2 *
+2\)</span>，我们在实际的计算过程中可以通过 <code>padding</code>
+来将它扩展为 <span class="math inline">\(4 * 4\)</span>
+的矩阵来保证我们的前提。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+0(&quot;核0-通道0-行0-列0&quot;)
+1(&quot;核0-通道0-行0-列1&quot;)
+2(&quot;核0-通道0-行0-列2&quot;)
+3(&quot;核0-通道0-行1-列0&quot;)
+4(&quot;核0-通道0-行1-列1&quot;)
+5(&quot;核0-通道0-行1-列2&quot;)
+6(&quot;核0-通道0-行2-列0&quot;)
+7(&quot;核0-通道0-行2-列1&quot;)
+8(&quot;核0-通道0-行2-列2&quot;)
+9(&quot;核0-通道1-行0-列0&quot;)
+10(&quot;核0-通道1-行0-列1&quot;)
+11(&quot;核0-通道1-行0-列2&quot;)
+12(&quot;核0-通道1-行1-列0&quot;)
+13(&quot;核0-通道1-行1-列1&quot;)
+14(&quot;核0-通道1-行1-列2&quot;)
+15(&quot;核0-通道1-行2-列0&quot;)
+16(&quot;核0-通道1-行2-列1&quot;)
+17(&quot;核0-通道1-行2-列2&quot;)
+18(&quot;核1-通道0&quot;):9
+19(&quot;核1-通道1&quot;):9
+20(&quot;核2-通道0&quot;):9
+21(&quot;核2-通道1&quot;):9
+
+class 0,1,2,3,4,5,6,7,8 yellow
+class 9,10,11,12,13,14,15,16,17 orange
+
+class 18,20 yellow
+class 19,21 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="输出张量-1">输出张量</h4>
+<p>一个 <span class="math inline">\(2 * 2 * 2 * 2\)</span>
+的输入张量乘以一个 <span class="math inline">\(3 * 2 * 3 * 3\)</span>
+的核函数会得到一个 <span class="math inline">\(2 * 3 * 2 * 2\)</span>
+的输出张量：</p>
+<ul>
+<li>厚度被 <code>k</code> 替换；</li>
+<li>矩阵的高度和宽度保持不变，和核函数的尺寸无关；</li>
+</ul>
+<p>在下面的图中：</p>
+<ul>
+<li>输入张量的通道0和核函数0的通道0，核函数1的通道0，核函数2的通道0，构成了一个新的
+3 * 2 * 2 的张量。</li>
+<li>输入张量的通道1和核函数0的通道1，核函数1的通道1，核函数2的通道1，构成了一个新的
+3 * 2 * 2 的张量。</li>
+</ul>
+<p>也就是说：</p>
+<ol type="1">
+<li>输入通道 0 → 产生 3 个输出通道</li>
+<li>输入通道 1 → 产生 3 个输出通道</li>
+</ol>
+<p>我们要将 <code>通道0的输出通道0</code> 和
+<code>通道1的输出通道0</code> 叠加成为一个新的通道，于是最终得到一个
+<span class="math inline">\(3 * 2 * 2\)</span>
+的输出张量。因为每一层都包含了一定的信息（特征），我们只有将这些特征融合起来才能知道图片真正的信息。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 4
+
+0(&quot;图0-通道0-行0-列0&quot;)
+1(&quot;图0-通道0-行0-列1&quot;)
+2(&quot;图0-通道0-行1-列0&quot;)
+3(&quot;图0-通道0-行1-列1&quot;)
+4(&quot;图0-通道1-行0-列0&quot;)
+5(&quot;图0-通道1-行0-列1&quot;)
+6(&quot;图0-通道1-行1-列0&quot;)
+7(&quot;图0-通道1-行1-列1&quot;)
+8(&quot;图0-通道2-行0-列0&quot;)
+9(&quot;图0-通道2-行0-列1&quot;)
+10(&quot;图0-通道2-行1-列0&quot;)
+11(&quot;图0-通道2-行1-列1&quot;)
+12(&quot;图2&quot;):4
+
+
+class 0,1,2,3 light_green
+class 4,5,6,7 green
+class 8,9,10,11 light_green
+class 12 blue
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h3 id="nhwc">NHWC</h3>
+<p><code>NHWC</code> 是通道优先的内存布局：在同一个 <span
+class="math inline">\(n\)</span> 下，不同通道中具有相同索引的像素点
+<span class="math inline">\((h, w)\)</span> 紧密排列。</p>
+<h4 id="输入张量-2">输入张量</h4>
+<p>假设我们的输入张量是 <span class="math inline">\(2 * 2 * 2 *
+2\)</span>：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 4
+
+0(&quot;图0-通道0-行0-列0&quot;)
+4(&quot;图0-通道1-行0-列0&quot;)
+1(&quot;图0-通道0-行0-列1&quot;)
+5(&quot;图0-通道1-行0-列1&quot;)
+2(&quot;图0-通道0-行1-列0&quot;)
+6(&quot;图0-通道1-行1-列0&quot;)
+3(&quot;图0-通道0-行1-列1&quot;)
+7(&quot;图0-通道1-行1-列1&quot;)
+8(&quot;图2&quot;):4
+
+
+
+class 0,1,2,3 light_green
+class 4,5,6,7 green
+class 8 blue
+
+class z102,z202,z110,z210,z302,z402,z310,z410 orange
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="卷积核函数-3">卷积核函数</h4>
+<p>我们假设核函数是 <span class="math inline">\(3 * 2 * 3 *
+3\)</span>：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 6
+
+0(&quot;核0-通道0-行0-列0&quot;)
+9(&quot;核0-通道1-行0-列0&quot;)
+1(&quot;核0-通道0-行0-列1&quot;)
+10(&quot;核0-通道1-行0-列1&quot;)
+2(&quot;核0-通道0-行0-列2&quot;)
+11(&quot;核0-通道1-行0-列2&quot;)
+3(&quot;核0-通道0-行1-列0&quot;)
+12(&quot;核0-通道1-行1-列0&quot;)
+4(&quot;核0-通道0-行1-列1&quot;)
+13(&quot;核0-通道1-行1-列1&quot;)
+5(&quot;核0-通道0-行1-列2&quot;)
+14(&quot;核0-通道1-行1-列2&quot;)
+6(&quot;核0-通道0-行2-列0&quot;)
+15(&quot;核0-通道1-行2-列0&quot;)
+7(&quot;核0-通道0-行2-列1&quot;)
+16(&quot;核0-通道1-行2-列1&quot;)
+8(&quot;核0-通道0-行2-列2&quot;)
+17(&quot;核0-通道1-行2-列2&quot;)
+18(&quot;核1&quot;):6
+19(&quot;核2&quot;):6
+
+class 0,1,2,3,4,5,6,7,8 yellow
+class 9,10,11,12,13,14,15,16,17 orange
+
+class 18,19 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="输出张量-2">输出张量</h4>
+<p>这里，我特意把中间过程画出来了，在第一次合并循环时，我们得到了如下的图：在遍历核函数时，我们其实针对于每一个通道都生成了一个乘积：这些相邻且颜色相同的色块，将被合并为一个新的像素点，最终生成一个
+<span class="math inline">\(2 * 3 * 2 * 2\)</span> 的输出矩阵。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 8
+
+0(&quot;图0-核0-通道0-行0-列0&quot;)
+4(&quot;图0-核0-通道1-行0-列0&quot;)
+1(&quot;图0-核0-通道0-行0-列1&quot;)
+5(&quot;图0-核0-通道1-行0-列1&quot;)
+2(&quot;图0-核0-通道0-行1-列0&quot;)
+6(&quot;图0-核0-通道1-行1-列0&quot;)
+3(&quot;图0-核0-通道0-行1-列1&quot;)
+7(&quot;图0-核0-通道1-行1-列1&quot;)
+
+8(&quot;图0-核1-通道0-行0-列0&quot;)
+9(&quot;图0-核1-通道1-行0-列0&quot;)
+10(&quot;图0-核1-通道0-行0-列1&quot;)
+11(&quot;图0-核1-通道1-行0-列1&quot;)
+12(&quot;图0-核1-通道0-行1-列0&quot;)
+13(&quot;图0-核1-通道1-行1-列0&quot;)
+14(&quot;图0-核1-通道0-行1-列1&quot;)
+15(&quot;图0-核1-通道1-行1-列1&quot;)
+
+16(&quot;图0-核2-通道0-行0-列0&quot;)
+17(&quot;图0-核2-通道1-行0-列0&quot;)
+18(&quot;图0-核2-通道0-行0-列1&quot;)
+19(&quot;图0-核2-通道1-行0-列1&quot;)
+20(&quot;图0-核2-通道0-行1-列0&quot;)
+21(&quot;图0-核2-通道1-行1-列0&quot;)
+22(&quot;图0-核2-通道0-行1-列1&quot;)
+23(&quot;图0-核2-通道1-行1-列1&quot;)
+
+class 0,4,2,6,10,11,16,17,20,21 blue
+class 8,9,14,15,18,19 pink
+class 1,5,7,3,12,13,22,23 purple
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>合并后得到了：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 6
+
+0(&quot;图0-通道0-行0-列0&quot;)
+4(&quot;图0-通道1-行0-列0&quot;)
+8(&quot;图0-通道2-行0-列0&quot;)
+1(&quot;图0-通道0-行0-列1&quot;)
+5(&quot;图0-通道1-行0-列1&quot;)
+9(&quot;图0-通道2-行0-列1&quot;)
+2(&quot;图0-通道0-行1-列0&quot;)
+6(&quot;图0-通道1-行1-列0&quot;)
+10(&quot;图0-通道2-行1-列0&quot;)
+3(&quot;图0-通道0-行1-列1&quot;)
+7(&quot;图0-通道1-行1-列1&quot;)
+11(&quot;图0-通道2-行1-列1&quot;)
+12(&quot;图2&quot;):6
+
+
+class 0,1,2,3 light_green
+class 4,5,6,7 green
+class 8,9,10,11 gray
+class 12 blue
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h3 id="代码实现">代码实现</h3>
+<h4 id="配置定义">配置定义</h4>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Conv2dDims</span> &#123;</span><br><span class="line">    <span class="type">int</span> n, c, h, w;</span><br><span class="line">    <span class="type">int</span> k, r, s;</span><br><span class="line">    <span class="type">int</span> out_h, out_w;</span><br><span class="line"></span><br><span class="line">    <span class="function">__host__ __device__ <span class="keyword">inline</span> <span class="type">int</span> <span class="title">in_offset</span><span class="params">(<span class="type">const</span> <span class="type">int</span> idx_n, <span class="type">const</span> <span class="type">int</span> idx_c, <span class="type">const</span> <span class="type">int</span> idx_h, <span class="type">const</span> <span class="type">int</span> idx_w)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (idx_n * c * h * w) + (idx_c * h * w) + (idx_h * w) + idx_w;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">__host__ __device__ <span class="keyword">inline</span> <span class="type">int</span> <span class="title">weight_offset</span><span class="params">(<span class="type">const</span> <span class="type">int</span> idx_k, <span class="type">const</span> <span class="type">int</span> idx_c, <span class="type">const</span> <span class="type">int</span> idx_h, <span class="type">const</span> <span class="type">int</span> idx_w)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (idx_k * c * r * s) + (idx_c * r * s) + (idx_h * s) + idx_w;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">__host__ __device__ <span class="keyword">inline</span> <span class="type">int</span> <span class="title">out_offset</span><span class="params">(<span class="type">const</span> <span class="type">int</span> idx_n, <span class="type">const</span> <span class="type">int</span> idx_k, <span class="type">const</span> <span class="type">int</span> idx_out_h, <span class="type">const</span> <span class="type">int</span> idx_out_w)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (idx_n * k * out_h * out_w) + (idx_k * out_h * out_w) + (idx_out_h * out_w) + idx_out_w;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Conv2dAttrs</span> &#123;</span><br><span class="line">    <span class="type">int</span> u, v;</span><br><span class="line">    <span class="type">int</span> p, q;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h4 id="具体实现逻辑">具体实现逻辑</h4>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">naive_conv2d_c_oriented</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *in, <span class="type">float</span> *weight, <span class="type">float</span> *out, <span class="type">const</span> Conv2dDims dims, <span class="type">const</span> Conv2dAttrs attrs)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 我们将整个输出张量的一个通道中的所有算子压缩到x轴，所以这里x代表了在某个通道中的相对偏移量</span></span><br><span class="line">    <span class="comment">// idx_area = height * w + width;</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> idx_area_out = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.x * blockDim.x + threadIdx.x);</span><br><span class="line">    <span class="comment">// 这里代表了第 idx_k 个核函数，这里非常容易误解的是</span></span><br><span class="line">    <span class="comment">// 在通道优先中，y 表示的是通道的索引，实际上这里和通道没有任何关系</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> idx_k = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.y * blockDim.y + threadIdx.y);</span><br><span class="line">    <span class="comment">// 表示第几张图片</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> idx_n = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.z * blockDim.z + threadIdx.z);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (idx_area_out &gt;= dims.out_h * dims.out_w || idx_k &gt;= dims.k || idx_n &gt;= dims.n) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 计算输出张量元素在矩阵中的相对坐标</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> idx_h_in_area = idx_area_out / dims.out_w;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> idx_w_in_area = idx_area_out % dims.out_w;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过输出张量元素在矩阵中的相对坐标计算在输入张量中的起始位置</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> pos_ori_h = idx_h_in_area * attrs.u - attrs.p;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> pos_ori_w = idx_w_in_area * attrs.v - attrs.q;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> k_h_num = <span class="number">0</span>; k_h_num &lt; dims.r; k_h_num++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k_w_num = <span class="number">0</span>; k_w_num &lt; dims.s; k_w_num++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k_c_num = <span class="number">0</span>; k_c_num &lt; dims.c; k_c_num++) &#123;</span><br><span class="line">                <span class="type">const</span> <span class="type">int</span> pos_cur_h = pos_ori_h + k_h_num;</span><br><span class="line">                <span class="type">const</span> <span class="type">int</span> pos_cur_w = pos_ori_w + k_w_num;</span><br><span class="line">                <span class="keyword">if</span> (<span class="number">0</span> &lt;= pos_cur_h &amp;&amp; pos_cur_h &lt; dims.h &amp;&amp; <span class="number">0</span> &lt;= pos_cur_w &amp;&amp; pos_cur_w &lt; dims.w) &#123;</span><br><span class="line">                    <span class="comment">// 通道优先的含义是：计算**同一个核函数**下，输入张量不同通道间具有相同相对索引的元素</span></span><br><span class="line">                    <span class="comment">// 所以这个位置他的相对索引和 idx_k 没有任何关系，只和输入张量的通道有关</span></span><br><span class="line">                    <span class="type">const</span> <span class="type">int</span> in_offset = dims.<span class="built_in">in_offset</span>(idx_n, k_c_num, pos_cur_h, pos_cur_w);</span><br><span class="line">                    <span class="comment">// 核函数的索引只和核函数以及 idx_k 有关</span></span><br><span class="line">                    <span class="type">const</span> <span class="type">int</span> weight_offset = dims.<span class="built_in">weight_offset</span>(idx_k, k_c_num, k_h_num, k_w_num);</span><br><span class="line">                    sum += in[in_offset] * weight[weight_offset];</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> out_offset = dims.<span class="built_in">out_offset</span>(idx_n, idx_k, idx_h_in_area, idx_w_in_area);</span><br><span class="line">    out[out_offset] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="性能分析">性能分析</h3>
+<blockquote>
+<p><strong>在我们的算法中，有一个巨大的性能漏洞在于，虽然我们算法实现是基于通道优先的算法，然而实际上我们的内存布局却是平面优先的。</strong></p>
+</blockquote>
+<p>我们可以查看这一段代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">naive_conv2d_c_oriented</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *in, <span class="type">float</span> *weight, <span class="type">float</span> *out, <span class="type">const</span> Conv2dDims dims, <span class="type">const</span> Conv2dAttrs attrs)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">    <span class="type">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> k_h_num = <span class="number">0</span>; k_h_num &lt; dims.r; k_h_num++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k_w_num = <span class="number">0</span>; k_w_num &lt; dims.s; k_w_num++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k_c_num = <span class="number">0</span>; k_c_num &lt; dims.c; k_c_num++) &#123;</span><br><span class="line">                <span class="type">const</span> <span class="type">int</span> pos_cur_h = pos_ori_h + k_h_num;</span><br><span class="line">                <span class="type">const</span> <span class="type">int</span> pos_cur_w = pos_ori_w + k_w_num;</span><br><span class="line">                <span class="keyword">if</span> (<span class="number">0</span> &lt;= pos_cur_h &amp;&amp; pos_cur_h &lt; dims.h &amp;&amp; <span class="number">0</span> &lt;= pos_cur_w &amp;&amp; pos_cur_w &lt; dims.w) &#123;</span><br><span class="line marked">                    <span class="type">const</span> <span class="type">int</span> in_offset = dims.<span class="built_in">in_offset</span>(idx_n, k_c_num, pos_cur_h, pos_cur_w);</span><br><span class="line marked">                    <span class="type">const</span> <span class="type">int</span> weight_offset = dims.<span class="built_in">weight_offset</span>(idx_k, k_c_num, k_h_num, k_w_num);</span><br><span class="line">                    sum += in[in_offset] * weight[weight_offset];</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">const</span> <span class="type">unsigned</span> out_offset = dims.<span class="built_in">out_offset</span>(idx_n, idx_k, idx_h_in_area, idx_w_in_area);</span><br><span class="line">    out[out_offset] = sum;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Conv2dDims</span> &#123;</span><br><span class="line marked">    <span class="function">__host__ __device__ <span class="keyword">inline</span> <span class="type">int</span> <span class="title">in_offset</span><span class="params">(<span class="type">const</span> <span class="type">int</span> idx_n, <span class="type">const</span> <span class="type">int</span> idx_c, <span class="type">const</span> <span class="type">int</span> idx_h, <span class="type">const</span> <span class="type">int</span> idx_w)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line marked">        <span class="keyword">return</span> (idx_n * c * h * w) + (idx_c * h * w) + (idx_h * w) + idx_w;</span><br><span class="line marked">    &#125;</span><br><span class="line"></span><br><span class="line marked">    <span class="function">__host__ __device__ <span class="keyword">inline</span> <span class="type">int</span> <span class="title">weight_offset</span><span class="params">(<span class="type">const</span> <span class="type">int</span> idx_k, <span class="type">const</span> <span class="type">int</span> idx_c, <span class="type">const</span> <span class="type">int</span> idx_h, <span class="type">const</span> <span class="type">int</span> idx_w)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line marked">        <span class="keyword">return</span> (idx_k * c * r * s) + (idx_c * r * s) + (idx_h * s) + idx_w;</span><br><span class="line marked">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">__host__ __device__ <span class="keyword">inline</span> <span class="type">int</span> <span class="title">out_offset</span><span class="params">(<span class="type">const</span> <span class="type">int</span> idx_n, <span class="type">const</span> <span class="type">int</span> idx_k, <span class="type">const</span> <span class="type">int</span> idx_out_h, <span class="type">const</span> <span class="type">int</span> idx_out_w)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (idx_n * k * out_h * out_w) + (idx_k * out_h * out_w) + (idx_out_h * out_w) + idx_out_w;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>在代码中，我们引入了两个变量，在变量中：</p>
+<ul>
+<li><code>const int weight_offset = dims.weight_offset(idx_k, k_c_num, k_h_num, k_w_num);</code></li>
+<li><code>const int in_offset = dims.in_offset(idx_n, k_c_num, pos_cur_h, pos_cur_w);</code></li>
+</ul>
+<p>对于 <code>weight_offset</code>，它主要依赖于
+<code>y</code>，而其他的三个参数：<code>k_c_num</code>，<code>k_h_num</code>，<code>k_w_num</code>
+是同 block 内所有线程一致的。也就是说，同一个 <code>block</code>
+内线程：</p>
+<ul>
+<li><code>y</code>
+相同的线程，他们访问的甚至是一个变量，可以通过广播机制来达成高效访问；</li>
+<li><code>y</code>
+不同的线程，无法合并访问，但是这个是可以接受的，因为本身 <code>y</code>
+的改变就会引起内存地址大范围跳转。</li>
+</ul>
+<p>所以，只要我们保证 <code>block</code> 中每一行的线程是
+<code>32</code>的整数倍，就可以充分的利用合并访问机制；</p>
+<p>对于 <code>in_offset()</code> 中，依赖的 <span
+class="math inline">\((pos\_cur\_h, pos\_cur\_w)\)</span>
+这两个字段是基于
+<code>static_cast&lt;int&gt;(blockIdx.x * blockDim.x + threadIdx.x)</code>
+计算的，也就说同一个warp中的线程：<code>idx_h_in_area</code>
+不变，<code>idx_w_in_area</code> 改变。虽然因为我们引入了 <code>p</code>
+和 <code>q</code>
+来表示步长，但是此时我们可以认为他们是接近于连续的。</p>
+<p>看起来，我们的线程好像分配很合理，他们都实现了合并访问。然而实际上他们会存在如下问题：</p>
+<ul>
+<li><strong>非对齐事务（Unaligned
+Transactions）</strong>：在该代码中，由于 <code>pos_ori_h * w</code> 和
+<code>pos_ori_w</code> 的存在，如果输入图像的宽度 <span
+class="math inline">\(w\)</span> 不是 32
+的倍数，那么每一行开始读取时，地址几乎必然是<strong>非对齐</strong>的。原本一次总线传输就能搞定的数据，硬件可能需要分两次甚至三次传输（Transaction），带宽利用率瞬间减半。</li>
+<li><strong>步长导致的缓存污染</strong>：虽然在最内层
+<code>pos_out_w</code> 是合并的，但卷积还有 <span
+class="math inline">\(i\)</span> 和 <span
+class="math inline">\(j\)</span>（卷积核的高宽）以及 <span
+class="math inline">\(c\)</span>（通道）的循环：当我们从当前像素跳转到下一行（<span
+class="math inline">\(i \rightarrow i+1\)</span>）或者下一个通道（<span
+class="math inline">\(c \rightarrow
+c+1\)</span>）时，地址发生了巨大的跳跃（Stride）。GPU 的 L2
+缓存是以“缓存行”（Cache
+Line）为单位存储的。这种跳跃式读取会导致我们刚读进缓存的内容还没被充分利用，就被下一次大跳跃带来的新数据“踢”出去了。这叫
+<strong>Cache Thrashing（缓存抖动）</strong>。</li>
+</ul>
+<p><strong>这里引发一切问题的根源在于，依然我们的计算模型使用的是通道优先，但是我们的内存模型却使用的是平面优先。</strong></p>
+<p>最优的逻辑是：</p>
+<ol type="1">
+<li>在生成数据时，生成通道优先的内存结构，这样最内层循环变成了通道。我们不需要计算复杂的索引，直接
+<code>in_ptr++</code>。</li>
+<li>共享内存：如果无法修改输入数据格式，我们可以尝试使用共享内存将在执行循环前，一次性把输入图像的一个分块（Tile）搬到
+GPU 的 <strong>Shared Memory</strong> 里。</li>
+</ol>
+<h1 id="使用矩阵乘法优化卷积算子">使用矩阵乘法优化卷积算子</h1>
+<p>在离散域中的卷积算法可以分为两个主要类型：</p>
+<blockquote>
+<p><strong>平面优先型</strong>，对于该类型的卷积算子公式可以总结为</p>
+</blockquote>
+<p><span class="math display">\[
+Out[n,o_c,o_h,o_w]= \sum_{i_c = 0}^{C-1}\sum_{i_r=0}^{R-1}\sum_{i_s =
+0}^{S-1}In[n, i_c, i_h, i_w] \times Kernel[o_c, i_c, i_r, i_s]
+\]</span></p>
+<p>其中：</p>
+<ul>
+<li><span class="math inline">\(i_h = o_h \cdot u + i_r -
+p\)</span></li>
+<li><span class="math inline">\(i_w = o_w \cdot v + i_s -
+q\)</span></li>
+</ul>
+<blockquote>
+<p><strong>通道优先型</strong>，对于该类型的卷积算子公式可以总结为</p>
+</blockquote>
+<p><span class="math display">\[
+Out[n,o_c,o_h,o_w]= \sum_{i_r=0}^{R-1}\sum_{i_s = 0}^{S-1}\sum_{i_c =
+0}^{C-1}In[n, i_c, i_h, i_w] \times Kernel[o_c, i_c, i_r, i_s]
+\]</span></p>
+<p>其中：</p>
+<ul>
+<li><span class="math inline">\(i_h = o_h \cdot u + i_r -
+p\)</span></li>
+<li><span class="math inline">\(i_w = o_w \cdot v + i_s -
+q\)</span></li>
+</ul>
+<h2 id="im2col-算子实现todo">im2col 算子实现(TODO)</h2>
+<p><code>im2col</code>
+的思路很简单，我们发现，卷积的算法可以被转换为矩阵乘法，而矩阵乘法则是可以通过将点积转换为和积来大幅的提高计算性能。</p>
+<figure>
+<img src="../images/cuda/im2col.jpg" alt="im2col" />
+<figcaption aria-hidden="true">im2col</figcaption>
+</figure>
+<h1 id="qa">QA</h1>
+<h2 id="连续域和离散域">连续域和离散域</h2>
+<h3 id="定义域的数学本质">定义域的数学本质</h3>
+<ul>
+<li><strong>连续域（Continuous
+Domain）</strong>：定义域通常是<strong>不可数集</strong>（如实数集 <span
+class="math inline">\(\mathbb{R}\)</span>）。在测度论中，它具有连续的勒贝格测度。这意味着我们可以无限细分取值范围，任意两点之间都存在无穷多个点。</li>
+<li><strong>离散域（Discrete
+Domain）</strong>：定义域是<strong>可数集</strong>（如整数集 <span
+class="math inline">\(\mathbb{Z}\)</span>）。点与点之间是孤立的，每个点都有一个明确的“邻居”。</li>
+</ul>
+<h3 id="连续域和离散域的实例">连续域和离散域的实例</h3>
+<ul>
+<li><p><strong>连续域</strong>指的是变量可以在某个范围内取<strong>任意</strong>值，没有间隙。例如：</p>
+<ul>
+<li><p>对于实数，他是稠密且连续的，在任意两个实数之间都有无穷多的实数。</p></li>
+<li><p>对于时间，真实实际的时间也可以被认为是连续的，任意时间都可以被划分为更小的时间片；</p></li>
+</ul></li>
+<li><p><strong>离散域</strong>指的是变量只能取<strong>特定、不连续</strong>的值（通常是整数步长）。</p>
+<ul>
+<li>对于自然数，他只能取 0, 1, 2, 3, ...
+等特定的数字，并且在两个连续的数字中间不存在其他的数字；</li>
+<li>对于图像，对于我们计算机中的图像，他由一定数量的像素点来构成 --
+这个像素点它是离散的，并且它是基于我们的显示器和显卡的类型可以找到一个集合来表示所有可以显示的像素点；</li>
+</ul></li>
+</ul>
+<h3 id="运算算子的对应关系">运算算子的对应关系</h3>
+<p>在计算机的世界里，由于硬件的限制不可能存在连续域，例如：任意
+<code>float</code> /<code>double</code>
+类型都存在精度，就好比计算机不存在一个真实的值可以表示
+<code>π</code>；所以，我们没有办法将数学上描述连续域的算子应用到计算机的离散域。<strong>也就是说，在从连续切换到离散时，数学工具会发生“算子平移”：</strong></p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 34%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>运算类型</strong></th>
+<th><strong>连续域 (Continuous)</strong></th>
+<th><strong>离散域 (Discrete)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>基础算子</strong></td>
+<td><strong>积分 (<span
+class="math inline">\(\int\)</span>)</strong></td>
+<td><strong>求和 (<span
+class="math inline">\(\sum\)</span>)</strong></td>
+</tr>
+<tr class="even">
+<td><strong>变化率</strong></td>
+<td><strong>微分 (<span
+class="math inline">\(df/dt\)</span>)</strong></td>
+<td><strong>差分 (<span class="math inline">\(\Delta f / \Delta
+n\)</span>)</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>变换理论</strong></td>
+<td>傅里叶变换 (FT)</td>
+<td>离散傅里叶变换 (DFT)</td>
+</tr>
+<tr class="even">
+<td><strong>基本单位</strong></td>
+<td>微分算子 <span class="math inline">\(dt\)</span></td>
+<td>单位脉冲 <span class="math inline">\(\delta[n]\)</span></td>
+</tr>
+</tbody>
+</table>
+<h2 id="计算机的2d和3d">计算机的2D和3D</h2>
+<blockquote>
+<p><strong>计算机内存本质上是线性（1D）的，所有的“多维”都是我们通过数学索引强加给它的幻觉。</strong></p>
+</blockquote>
+<p>本质上来说，计算机里不存在 2D 数组，更不存在 3D 张量：</p>
+<ul>
+<li>我们所谓的 <code>in[n][c][h][w]</code>，在底层 CPU
+看来，只是一个简单的算术题：<code>base_address + offset</code>。</li>
+<li><strong>所谓的“维度”，本质上是“寻址跳跃的步长（Stride）”。</strong></li>
+</ul>
+<pre><code class="highlight mermaid">block-beta
+
+columns 25
+
+x0(&quot;0&quot;) x1(&quot;1&quot;) x2(&quot;...&quot;) x3(&quot;31&quot;) x4(&quot;...&quot;) x5(&quot;255&quot;)
+y0(&quot;0&quot;) y1(&quot;1&quot;) y2(&quot;...&quot;) y3(&quot;31&quot;) y4(&quot;...&quot;) y5(&quot;255&quot;)
+z0(&quot;0&quot;) z1(&quot;1&quot;) z2(&quot;...&quot;) z3(&quot;31&quot;) z4(&quot;...&quot;) z5(&quot;255&quot;)
+a(&quot;...&quot;)
+b0(&quot;0&quot;) b1(&quot;1&quot;) b2(&quot;...&quot;) b3(&quot;31&quot;) b4(&quot;...&quot;) b5(&quot;255&quot;)
+
+class x0,x1,x2,x3 green
+class y0,y1,y2,y3 yellow
+class b0,b1,b2,b3 blue
+class z0,z1,z2,z3 orange
+
+warp1(&quot;warp&quot;):4
+space:2
+warp2(&quot;warp&quot;):4
+space:2
+warp3(&quot;warp&quot;):4
+space:3
+warp4(&quot;warp&quot;):4
+space:2
+
+class warp1,warp2,warp3,warp4 purple
+
+
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而在我们的卷积函数执行过程中：</p>
+<ul>
+<li><strong>1D
+卷积</strong>：通常用于序列数据（如音频、文本），核只在一个方向上滑动。</li>
+<li><strong>2D
+卷积</strong>：用于图像，核在上下、左右两个维度移动。</li>
+<li><strong>3D 卷积</strong>：用于视频或医学 CT
+扫描，核在长、宽、高（时间）三个维度移动。</li>
+</ul>
+<p>这里有一个非常明显的特点在于：对于图片来讲，它只有两个维度，宽和高，这里的第三维是不同的特征，不同的特征之间是分开计算的。而当我们进行3D卷积时，这个新增的维度也并不是我们物理意义上的深度，而是时间。</p>
+<p>在我们的2D卷积中，<strong>我们的Channel
+是“属性”而非“几何高度”</strong>，在 CNN 里，3D
+的三个轴分别是：<strong>高度(H)、宽度(W)、通道(C)</strong>：</p>
+<ul>
+<li><strong>H 和 W</strong>
+是几何空间。它们代表了像素在平面上的物理位置。</li>
+<li><strong>C (Channel)</strong>
+绝对不是几何意义上的“厚度”。它更像是<strong>“在这个点上，我观察到了哪些属性？”</strong>。
+<ul>
+<li>第一层卷积：属性是 R、G、B 颜色。</li>
+<li>中间层卷积：属性是“这里有没有横线？”、“这里有没有圆圈？”。</li>
+<li>更高层卷积：这里的图形组织成了什么具体的物体？</li>
+</ul></li>
+<li><strong>分开计算</strong>：之所以通道间是“分开”又“聚合”的（每个通道有自己的卷积核参数，最后求和），是因为我们要综合不同属性来判定一个高级特征。</li>
+</ul>
+<p>而当我们扩展到3D时，我们的维度仍然不包含物理意义上深度，而是新增了
+<strong>时间轴（T）</strong>：卷积核不再只在平面滑，它还会<strong>“穿透”</strong>时间。</p>
+<h2 id="padding卷积与互相关">padding，卷积与互相关</h2>
+<p>我们前面提到，在计算机的实际开发过程中，有一个重要的优化：<strong>卷积的计算被优化为一个互相关的计算</strong>。</p>
+<p>原始的卷积公式： <span class="math display">\[
+(f * g)[n] = \sum_{m=1}^{n} f[m]g[n - m]
+\]</span></p>
+<p>被优化为： <span class="math display">\[
+(f \star g)[n] = \sum f[n+m]g[m]
+\]</span></p>
+<p>而这个优化依赖于两个重要的结论：</p>
+<ul>
+<li>在CNN中，卷积核函数并不是我们指定的，而是训练得到的。也就是说，如果我们使用互相关代替卷积，那么我们在计算时得到的天然就是已经转置过的核函数。在信号处理中，如果我们不翻转卷积核，滤波器提取的特征方向就会出错。但在
+CNN 中：
+<ul>
+<li>反向传播（Backpropagation）计算梯度的公式，本质上也是一种卷积/互相关操作。</li>
+<li>如果数学上需要一个旋转 <span
+class="math inline">\(180^\circ\)</span> 的核 <span
+class="math inline">\(G&#39;\)</span> 来提取特征，优化器（如
+Adam/SGD）在训练过程中，会直接把权重矩阵 <span
+class="math inline">\(G\)</span> 学习成那个旋转后的样子。</li>
+<li>对于神经网络来说，它并不关心核函数在内存里是怎么摆放的，它只关心最终能降低
+Loss。既然如此，省去“翻转核”这个耗时的计算步骤，对性能是大有裨益的。</li>
+</ul></li>
+<li>通过 <code>padding</code>，我们使得参数 <span
+class="math inline">\([n + m]\)</span> 变得可能：
+<ul>
+<li>在互相关的公式 <span class="math inline">\((f \star g)[n] = \sum
+f[n+m]g[m]\)</span> 中，当 <span class="math inline">\(n\)</span>
+是图像边缘且 <span class="math inline">\(m\)</span> 是正偏移时，索引
+<span class="math inline">\(n+m\)</span> 会迅速超出原始图像的边界。</li>
+<li><strong>Padding 的缓冲作用</strong>：如果没有 Padding，我们只能做
+<code>Valid</code> 卷积，我们的输出索引 <span
+class="math inline">\(n\)</span> 必须从一个足够大的位置开始，以确保
+<span class="math inline">\(n+m\)</span>
+不越界。这会导致图像越卷越小。</li>
+<li><strong>坐标归一化</strong>：通过 Padding，我们人为地在 <span
+class="math inline">\(n+m\)</span>
+可能触达的所有地方填充了“安全数值”（通常是 <span
+class="math inline">\(0\)</span>）。这使得：
+<ol type="1">
+<li><strong>索引变得整齐</strong>：我们可以从输出的 <span
+class="math inline">\((0,0)\)</span> 位置开始，无脑地应用正向索引 <span
+class="math inline">\([n+m]\)</span>。</li>
+<li><strong>空间对齐</strong>：通过 Padding，我们让输出的 <span
+class="math inline">\([n]\)</span>
+位置在物理视觉上，依然能对应到输入图像中心点的特征，而不是发生偏移。</li>
+</ol></li>
+</ul></li>
+</ul>
+<p>这里，我们举一个简单的例子来理解，padding
+是如何帮助我们将卷积运算转换为互相关运算的，考虑我们的CPU卷积代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">conv2d_cpu</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *in, <span class="type">const</span> <span class="type">float</span> *weight, <span class="type">float</span> *out, <span class="type">const</span> Conv2dDims &amp;dims, <span class="type">const</span> Conv2dAttrs &amp;attrs)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">            <span class="comment">// 这里 oh_num 和 ow_num 都是输出上的点，也就是说每个点都需要计算</span></span><br><span class="line">            <span class="comment">// 我们这里改变了从输入到输出的顺序，而是通过输出反推输入</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">size_t</span> oh_num = <span class="number">0</span>; oh_num &lt; dims.out_h; oh_num++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">size_t</span> ow_num = <span class="number">0</span>; ow_num &lt; dims.out_w; ow_num++) &#123;</span><br><span class="line">                    <span class="type">float</span> v = <span class="number">0.0</span>;</span><br><span class="line marked">                    <span class="type">const</span> <span class="type">int</span> h_pos = oh_num * attrs.u - attrs.p;</span><br><span class="line marked">                    <span class="type">const</span> <span class="type">int</span> w_pos = ow_num * attrs.v - attrs.q;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">size_t</span> c_num = <span class="number">0</span>; c_num &lt; dims.c; ++c_num) &#123;</span><br><span class="line">                        <span class="keyword">for</span> (<span class="type">size_t</span> h_num = <span class="number">0</span>; h_num &lt; dims.h; ++h_num) &#123;</span><br><span class="line">                            <span class="keyword">for</span> (<span class="type">size_t</span> w_num = <span class="number">0</span>; w_num &lt; dims.w; ++w_num) &#123;</span><br><span class="line marked">                                <span class="type">int</span> pos_ori_h = h_pos + h_num;</span><br><span class="line marked">                                <span class="type">int</span> pos_ori_w = w_pos + w_num;</span><br><span class="line marked">                                <span class="keyword">if</span> (pos_ori_w &gt;= <span class="number">0</span> &amp;&amp; pos_ori_h &gt;= <span class="number">0</span> &amp;&amp; pos_ori_w &lt; w &amp;&amp; pos_ori_h &lt; h)</span><br><span class="line">                                &#123;</span><br><span class="line">                                    <span class="comment">// add</span></span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，当我们在计算输出张量的点 <span
+class="math inline">\((oh\_num, ow\_num)\)</span>
+时，我们计算的是在输入张量的以 <span class="math inline">\((oh\_num,
+ow\_num)\)</span> 作为左上角顶点（在子张量中索引为 <span
+class="math inline">\((0,
+0)\)</span>）的张量和核函数的乘积。<strong>这带来的一个问题是，我们的坐标系看起来出现了漂移。</strong></p>
+<p>举个例子，假设我们的核函数是 <span class="math inline">\(3 \times
+3\)</span>，我们的输入矩阵也是 <span class="math inline">\(3 \times
+3\)</span>，那么看起来我们在计算 <span class="math inline">\((1,
+1)\)</span> 时，实际上计算的却是以 <span class="math inline">\((1,
+1)\)</span>
+作为左顶点的矩阵和核函数的乘积。这个逻辑，实际上是我们通过对输入矩阵进行
+<code>padding</code> 来实现的一个优化。</p>
+<p>考虑我们的输入是如下的一个 <span class="math inline">\(3 * 3\)</span>
+的矩阵：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 3
+
+0 1 2
+3 4 5
+6 7 8
+
+class 0,1,2,3,4,5,6,7,8 light_green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+
+%% 将填充层样式设为灰色以示区别
+class z0,z1,z2,z3,z4,z5,z6,z7,z8,z9,z10,z11,z12,z13,z14,z15,z16,z17</code></pre>
+<p>我们的输出是一个如下 <span class="math inline">\(3 * 3\)</span>
+的矩阵，我们现在计算 <span class="math inline">\((0, 0)\)</span>
+元素</p>
+<pre><code class="highlight mermaid">block-beta
+columns 3
+
+a b c
+d e f
+g h i
+
+class a yellow
+class b,c,d,e,f,g,h,i light_green
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+
+%% 将填充层样式设为灰色以示区别
+class z0,z1,z2,z3,z4,z5,z6,z7,z8,z9,z10,z11,z12,z13,z14,z15,z16,z17</code></pre>
+<p>那么，我们对这个矩阵进行一次 <code>padding</code> 之后得到：</p>
+<pre><code class="highlight mermaid">block-beta
+columns 5
+
+z0[&quot;x&quot;] z1[&quot;0&quot;] z2[&quot;0&quot;] z3[&quot;0&quot;] z4[&quot;0&quot;]
+z5[&quot;0&quot;] 0(&quot;0&quot;) 1(&quot;1&quot;) 2(&quot;2&quot;) z6[&quot;0&quot;]
+z7[&quot;0&quot;] 3(&quot;3&quot;) 4(&quot;4&quot;) 5(&quot;5&quot;) z8[&quot;0&quot;]
+z9[&quot;0&quot;] 6(&quot;6&quot;) 7(&quot;7&quot;) 8(&quot;8&quot;) z10[&quot;0&quot;]
+z11[&quot;0&quot;] z12[&quot;0&quot;] z13[&quot;0&quot;] z14[&quot;0&quot;] z15[&quot;0&quot;]
+
+%% 样式应用
+class 0 yellow
+class z0 orange
+class 1,2,3,4,5,6,7,8 light_green
+class z1,z2,z3,z4,z5,z6,z7,z8,z9,z10,z11,z12,z13,z14,z15 gray
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>当我们计算 <span class="math inline">\((0, 0)\)</span>
+进行卷积运算后的结果时：<strong>这里有一个非常容易产生误解的点，<span
+class="math inline">\((0, 0)\)</span>
+是元素在输出张量中的索引，而不是在输入张量或者核函数中的索引。</strong></p>
+<p>我们在输入张量中的索引，是通过一下公式计算得出：</p>
+<ul>
+<li><span class="math inline">\(h_{in} = i \times u - p\)</span></li>
+<li><span class="math inline">\(w_{in} = j \times v - q\)</span></li>
+</ul>
+<p>而核函数的索引则是在对 <span class="math inline">\((c, h, w)\)</span>
+的三层 <code>for</code> 循环中得到。</p>
+<p>此时，我们会发现，在我们计算输出张量的 <span
+class="math inline">\((0, 0)\)</span> 节点时，我们可以将 <code>x</code>
+节点作为起始节点，而该节点的索引地址在 <code>padding</code>
+后的输入张量中正是 <span class="math inline">\((h_{in},
+w_{in})\)</span>。我们的计算逻辑从卷积正式的被改变为互相关。</p>
+<p>这种方法被称之为<strong>“锚点平移理论”</strong>，这在高性能计算（HPC）中非常有启发性：如果不加
+Padding，卷积核在处理 <span class="math inline">\(3 \times 3\)</span>
+矩阵的第一个元素 <code>0</code> 时，核的<strong>中心点</strong>对准的是
+<code>0</code>。这意味着核的左上角必须处于索引
+<code>(-1, -1)</code>：</p>
+<ul>
+<li><strong>物理现实</strong>：图像是从 <code>(0, 0)</code>
+开始存储的，内存里没有 <code>(-1, -1)</code>。</li>
+<li><strong>工程方案</strong>：通过
+Padding，我们在内存里人为地造出了一个 <code>(-1, -1)</code>。</li>
+<li><strong>结果</strong>：输出矩阵的 <code>(0, 0)</code> 节点（即
+<code>a</code>），现在在地址映射上，可以优雅地指向 Padding 后矩阵的
+<code>x</code> 节点）。</li>
+</ul>
+<p>这正是<strong>互相关公式</strong> <span class="math inline">\(\sum
+f[n+m]g[m]\)</span> 的代码体现：</p>
+<ul>
+<li><span class="math inline">\(n = h\_pos\)</span>（基础偏移）。</li>
+<li><span class="math inline">\(m =
+h\_num\)</span>（核内正向偏移）。</li>
+</ul>
+<h3 id="implicit-padding">Implicit Padding</h3>
+<p>在我们的工程代码中：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pos_ori_w &gt;= <span class="number">0</span> &amp;&amp; pos_ori_h &gt;= <span class="number">0</span> &amp;&amp; pos_ori_w &lt; w &amp;&amp; pos_ori_h &lt; h)</span><br></pre></td></tr></table></figure>
+<p>我们通过 <code>if</code> 条件来为我们的输入隐式的补边：</p>
+<ul>
+<li><strong>优点</strong>：不需要额外开辟内存去存那些
+<code>z0, z1...</code> 的 0。</li>
+<li><strong>代价</strong>：在 GPU 上，这种 <code>if</code>
+分支（Branch）可能会导致 Warp
+Divergence（线程束歧义），降低并行效率。</li>
+</ul>
+<h3 id="explicit-padding">Explicit Padding</h3>
+<p>在极致优化的 <code>CUDA</code> 实现中，我们会先用一段专门的逻辑把带
+Padding 的大矩阵拼好（物理
+Padding），虽然费了内存，但在计算核心逻辑里就没有 <code>if</code>
+了，代码会跑得飞快。</p>
+<p>在实际应用中，我们进行 <code>padding</code> 的时机有两个：</p>
+<ol type="1">
+<li>在生成数据时遍为所有的张量进行 <code>padding</code>；
+<ul>
+<li><strong>优点</strong>：
+<ul>
+<li><strong>极致的计算性能</strong>：卷积 Kernel 内部不需要任何
+<code>if</code>
+判断，也不需要处理复杂的索引边界，代码路径极短，指令流水线非常顺畅。</li>
+<li><strong>访存连续性</strong>：对于 GPU
+来说，连续的内存访问（Coalesced Access）是性能命脉。带 Padding
+的数据可以让读取更加对齐。</li>
+</ul></li>
+<li><strong>缺点</strong>：
+<ul>
+<li><strong>内存冗余</strong>：对于一张 <span class="math inline">\(3
+\times 3\)</span> 的图片，补一圈边可能觉得没什么；但在 <span
+class="math inline">\(N\)</span> 和 <span
+class="math inline">\(C\)</span>
+很大时，多出来的这圈“零”会占用宝贵的显存带宽。</li>
+<li><strong>打破通用性</strong>：上游算子必须感知下游的需求，这增加了模块间的耦合。</li>
+</ul></li>
+</ul></li>
+<li>在生成数据时不做任何处理，在CUDA核函数的执行中进行
+<code>padding</code>：在调用卷积前，单独启动一个简单的
+<code>PadKernel</code>，把原始 <span class="math inline">\(3 \times
+3\)</span> 拷贝到一个预先申请好的 <span class="math inline">\(5 \times
+5\)</span> 显存空间里。
+<ul>
+<li><strong>性能瓶颈</strong>：这是一个
+<strong>Memory-bound（访存受限）</strong> 操作。我们为了省下卷积里的
+<code>if</code>，额外多了一次全局显存的读写（DRAM R/W），有时候这比
+<code>if</code> 还要慢。</li>
+</ul></li>
+</ol>
+<h3 id="其他的padding方式">其他的padding方式</h3>
+<ol type="1">
+<li>可以利用 <strong>GPU 的纹理内存（Texture Memory）</strong> 或
+<strong>采样器</strong>。硬件层级支持越界自动补零，这完全不消耗额外的计算指令。</li>
+<li><strong>Shared Memory
+缓存</strong>：把数据从全局显存搬运到<strong>共享内存（Shared
+Memory）</strong>时进行
+Padding。这样卷积计算的核心（最内层循环）面对的是 Shared Memory
+里带边界的数据块。</li>
+</ol>
+<h1 id="引用">引用</h1>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://mlnotebook.github.io/post/CNN1/">Convolutional
+Neural Networks - Basics</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://www.zhihu.com/question/22298352/answer/50940942">如何通俗易懂地解释卷积？
+- 果程C的回答 - 知乎</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://github.com/poloclub/cnn-explainer">cnn-explainer</a></li>
+<li><a
+target="_blank" rel="noopener" href="https://cuda.keter.host/convolution/naive_conv/">卷积算子简易实现</a></li>
+<li><a target="_blank" rel="noopener" href="https://cuda.keter.host/convolution/im2col_conv/">im2col +
+gemm 实现卷积</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cuda/" rel="tag"># cuda</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/29/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9AReduce/" rel="prev" title="CUDA编程入门：Reduce">
+                  <i class="fa fa-angle-left"></i> CUDA编程入门：Reduce
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>
