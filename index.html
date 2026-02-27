@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-count">46</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -168,6 +168,153 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">CUDA编程入门：一些常用算子的实现</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-02-09 15:24:32" itemprop="dateCreated datePublished" datetime="2026-02-09T15:24:32+08:00">2026-02-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-27 14:54:24" itemprop="dateModified" datetime="2026-02-27T14:54:24+08:00">2026-02-27</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="matrix-multiplication">Matrix Multiplication</h1>
+<h2 id="tile和thread">TILE和THREAD</h2>
+<p>首先，我们需要使用 TILE 和 THREAD
+来对我们的输入张量进行分块，分块有两种策略：<strong>连续分块</strong> 和
+<strong>交错分块</strong></p>
+<p>连续分块下，我们的内存模型为：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;thread (0, 0)&quot;)
+    t1(&quot;thread (0, 1)&quot;)
+end
+
+block:t00:5
+    columns 4
+    b00t00(&quot;tile(0, 0)&quot;) b00t01(&quot;tile(0, 1)&quot;) b00t02(&quot;tile(0, 2)&quot;) b00t03(&quot;...&quot;)
+    b00t10(&quot;tile(1, 0)&quot;) b00t11(&quot;tile(1, 1)&quot;) b00t12(&quot;tile(1, 2)&quot;) b00t13(&quot;...&quot;)
+end
+
+block:t01:5
+    columns 4
+    b01t00(&quot;tile(0, 0)&quot;) b01t01(&quot;tile(0, 1)&quot;) b01t02(&quot;tile(0, 2)&quot;) b01t03(&quot;...&quot;)
+    b01t10(&quot;tile(1, 0)&quot;) b01t11(&quot;tile(1, 1)&quot;) b01t12(&quot;tile(1, 2)&quot;) b01t13(&quot;...&quot;)
+end
+
+block:header1:10
+    columns 2
+    space:2
+    t2(&quot;thread (1, 0)&quot;)
+    t3(&quot;thread (1, 1)&quot;)
+end
+
+block:t02:5
+    columns 4
+    b02t00(&quot;tile(0, 0)&quot;) b02t01(&quot;tile(0, 1)&quot;) b02t02(&quot;tile(0, 2)&quot;) b02t03(&quot;...&quot;)
+    b02t10(&quot;tile(1, 0)&quot;) b02t11(&quot;tile(1, 1)&quot;) b02t12(&quot;tile(1, 2)&quot;) b02t13(&quot;...&quot;)
+end
+
+block:t03:5
+    columns 4
+    b03t00(&quot;tile(0, 0)&quot;) b03t01(&quot;tile(0, 1)&quot;) b03t02(&quot;tile(0, 2)&quot;) b03t03(&quot;...&quot;)
+    b03t10(&quot;tile(1, 0)&quot;) b03t11(&quot;tile(1, 1)&quot;) b03t12(&quot;tile(1, 2)&quot;) b03t13(&quot;...&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1,t2,t3 purple
+class header0,header1 transparent
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -1145,172 +1292,6 @@ n个线程，属于同一个进程的线程共享进程的资源， 比如
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">uCore文件系统</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-12-09 10:23:14" itemprop="dateCreated datePublished" datetime="2025-12-09T10:23:14+08:00">2025-12-09</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="文件系统">文件系统</h1>
-<figure>
-<img src="/images/20251208/layout.png" alt="layout">
-<figcaption aria-hidden="true">layout</figcaption>
-</figure>
-<h2 id="整体逻辑">整体逻辑</h2>
-<pre><code class="highlight mermaid">graph BT
-    %% 核心模块：easy-fs（文件系统核心逻辑）
-    subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]
-        direction BT
-        subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]
-            direction TB
-            read_block(&quot;read_block&quot;)
-            write_block(&quot;write_block&quot;)
-        end
-
-        subgraph BC [&quot;缓存层：BlockCache（块缓存）&quot;]
-            direction TB
-            read(&quot;read&quot;)
-            modify(&quot;modify&quot;)
-            bc_other(&quot;其他缓存操作...&quot;)
-        end
-
-        subgraph LAY [&quot;布局层：存储结构定义&quot;]
-            direction TB
-            SB(&quot;SuperBlock（超级块）&quot;)
-            BM(&quot;Bitmap（位图）&quot;)
-            DI(&quot;DiskInode（磁盘索引节点）&quot;)
-            DE(&quot;DirEntry（目录项）&quot;)
-            DB(&quot;DataBlock（数据块）&quot;)
-        end
-
-        subgraph BMGR [&quot;管理层：文件系统实例/接口&quot;]
-            direction TB
-            EFS(&quot;EasyFileSystem（文件系统实例）&quot;)
-            INODE(&quot;Inode（文件/目录操作接口）&quot;)
-        end
-
-        %% easy-fs 内部链路（修正方向）
-        BD --&gt;|读写物理块| BC
-        BC --&gt;|缓存读写| LAY
-        LAY --&gt;|基于布局实现| BMGR
-    end
-
-    %% 辅助工具：easy-fs 配套工具（宿主机侧）
-    subgraph easy-fs-tools [&quot;easy-fs-tools（宿主机工具）&quot;]
-        direction TB
-        pack(&quot;easy_fs_pack（打包工具）&quot;)
-        fuse(&quot;easy-fs-fuse（FUSE调试工具）&quot;)
-    end
-    easy-fs --&gt;|依赖核心逻辑| pack
-    pack --&gt;|生成镜像| fs_img[&quot;fs.img（raw格式镜像）&quot;]
-    easy-fs --&gt;|适配FUSE接口| fuse
-    fuse --&gt;|挂载调试| fs_img
-
-    %% QEMU（虚拟硬件层）
-    subgraph qemu [&quot;QEMU（虚拟硬件）&quot;]
-        direction TB
-        drive(&quot;-drive file=fs.img（后端存储）&quot;)
-        virtio_dev(&quot;-device virtio-blk-device（虚拟块设备）&quot;)
-    end
-    fs_img --&gt;|作为后端存储| drive
-    drive --&gt;|绑定到虚拟设备| virtio_dev
-
-    %% os 内核（驱动+文件系统调用）
-    subgraph os [&quot;os（内核层）&quot;]
-        direction TB
-        subgraph VIRTIO [&quot;驱动层：VirtIOBlock&quot;]
-            direction TB
-            virtio_bd(&quot;实现 BlockDevice 接口&quot;)
-            virtio_ops(&quot;virtio-blk 读写操作&quot;)
-        end
-        subgraph FS_CALL [&quot;应用层：文件系统调用&quot;]
-            direction TB
-            fs_open(&quot;open/read/write&quot;)
-            fs_exec(&quot;执行ELF文件&quot;)
-        end
-    end
-    %% 内核链路
-    qemu --&gt;|暴露虚拟硬件| virtio_dev
-    virtio_dev --&gt;|内核枚举设备| VIRTIO
-    VIRTIO --&gt;|适配接口| easy-fs
-    easy-fs --&gt;|提供文件操作| FS_CALL</code></pre>
-<h2 id="文件与文件描述符">文件与文件描述符</h2>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>

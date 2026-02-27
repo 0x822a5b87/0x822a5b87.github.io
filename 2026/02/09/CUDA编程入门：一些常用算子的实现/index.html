@@ -1,0 +1,2630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Matrix Multiplication TILE和THREAD 首先，我们需要使用 TILE 和 THREAD 来对我们的输入张量进行分块，分块有两种策略：连续分块 和 交错分块 连续分块下，我们的内存模型为： block-beta  columns 10  block:header0:10     columns 2     space:2     t0(&quot;thread (0, 0">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA编程入门：一些常用算子的实现">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="Matrix Multiplication TILE和THREAD 首先，我们需要使用 TILE 和 THREAD 来对我们的输入张量进行分块，分块有两种策略：连续分块 和 交错分块 连续分块下，我们的内存模型为： block-beta  columns 10  block:header0:10     columns 2     space:2     t0(&quot;thread (0, 0">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-09T07:24:32.000Z">
+<meta property="article:modified_time" content="2026-02-27T06:54:24.709Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/","path":"2026/02/09/CUDA编程入门：一些常用算子的实现/","title":"CUDA编程入门：一些常用算子的实现"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CUDA编程入门：一些常用算子的实现 | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#matrix-multiplication"><span class="nav-number">1.</span> <span class="nav-text">Matrix Multiplication</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#tile%E5%92%8Cthread"><span class="nav-number">1.1.</span> <span class="nav-text">TILE和THREAD</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E7%A7%AF%E5%92%8C%E5%A4%96%E7%A7%AF"><span class="nav-number">1.2.</span> <span class="nav-text">内积和外积</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E7%A7%AF-inner-product-dot-product"><span class="nav-number">1.2.1.</span> <span class="nav-text">内积 (Inner Product &#x2F; Dot
+Product)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%96%E7%A7%AF-outer-product"><span class="nav-number">1.2.2.</span> <span class="nav-text">外积 (Outer Product)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">第一步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">第二步</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8shared-memory%E4%BC%98%E5%8C%96"><span class="nav-number">1.4.</span> <span class="nav-text">使用Shared Memory优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#matrix-transpose"><span class="nav-number">2.</span> <span class="nav-text">Matrix Transpose</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#naive-%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.1.</span> <span class="nav-text">naive 实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E5%90%88%E5%B9%B6"><span class="nav-number">2.2.</span> <span class="nav-text">写入合并</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E5%85%A5shared-memory%E5%AE%9E%E7%8E%B0%E5%90%88%E5%B9%B6%E5%86%99%E5%85%A5"><span class="nav-number">2.2.1.</span> <span class="nav-text">引入Shared
+Memory实现合并写入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.2.2.</span> <span class="nav-text">代码实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bank-conflict"><span class="nav-number">2.3.</span> <span class="nav-text">Bank Conflict</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%80%BC%E5%BE%97%E6%B3%A8%E6%84%8F%E7%9A%84%E7%BB%86%E8%8A%82"><span class="nav-number">2.4.</span> <span class="nav-text">一些值得注意的细节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.5.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#color-inversion"><span class="nav-number">3.</span> <span class="nav-text">Color Inversion</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#threads%E5%92%8Cblocks%E5%88%86%E9%85%8D%E7%AD%96%E7%95%A5"><span class="nav-number">3.1.</span> <span class="nav-text">threads和blocks分配策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0-1"><span class="nav-number">3.2.</span> <span class="nav-text">代码实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">性能分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#matrix-addition"><span class="nav-number">4.</span> <span class="nav-text">Matrix Addition</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5%E5%8A%A0%E6%B3%95%E7%9A%84%E4%B8%A4%E7%A7%8Dnaive%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.1.</span> <span class="nav-text">矩阵加法的两种naive实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E1d%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.1.1.</span> <span class="nav-text">基于1D线性模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%9F%A9%E9%98%B5%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.1.2.</span> <span class="nav-text">基于矩阵模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F%E4%BC%98%E5%8C%96"><span class="nav-number">4.2.</span> <span class="nav-text">使用向量化加速优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-number">5.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F"><span class="nav-number">5.1.</span> <span class="nav-text">向量化加速</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F"><span class="nav-number">5.1.1.</span> <span class="nav-text">什么是向量化加速</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E5%90%91%E9%87%8F%E5%8C%96"><span class="nav-number">5.1.2.</span> <span class="nav-text">如何使用向量化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E5%90%91%E9%87%8F%E5%8C%96%E5%86%85%E6%A0%B8"><span class="nav-number">5.1.2.1.</span> <span class="nav-text">定义向量化内核</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BB%E6%9C%BA%E7%AB%AF%E7%9A%84dispatch"><span class="nav-number">5.1.2.2.</span> <span class="nav-text">主机端的dispatch</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">5.1.3.</span> <span class="nav-text">向量化加速的限制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90%E9%99%90%E5%88%B6-alignment"><span class="nav-number">5.1.3.1.</span> <span class="nav-text">内存对齐限制 (Alignment)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%80%BB%E9%87%8F%E9%99%90%E5%88%B6-divisibility"><span class="nav-number">5.1.3.2.</span> <span class="nav-text">数据总量限制 (Divisibility)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E5%8E%8B%E5%8A%9B"><span class="nav-number">5.1.3.3.</span> <span class="nav-text">寄存器压力</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.1.4.</span> <span class="nav-text">向量化加速的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9A%84%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.1.4.1.</span> <span class="nav-text">基础的向量化加速实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E5%A4%8D%E6%9D%82%E7%9A%84%E5%90%91%E9%87%8F%E5%8C%96%E5%8A%A0%E9%80%9F%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.1.4.2.</span> <span class="nav-text">更复杂的向量化加速实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B4%BB%E8%B7%83%E5%BA%A6-occupancy-%E4%B8%8E%E4%BB%BB%E5%8A%A1%E5%88%86%E9%85%8D%E7%9A%84%E6%9D%83%E8%A1%A1"><span class="nav-number">5.2.</span> <span class="nav-text">活跃度 (Occupancy)
+与任务分配的权衡</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%BA%A6%E6%9D%9F%E5%8F%98%E9%87%8F"><span class="nav-number">5.2.1.</span> <span class="nav-text">核心约束变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%B9%B3%E8%A1%A1%E7%9A%84%E4%B8%89%E5%A4%A7%E6%A0%B8%E5%BF%83%E5%8E%9F%E5%88%99"><span class="nav-number">5.2.2.</span> <span class="nav-text">性能平衡的三大核心原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BB%E6%89%BE%E5%B9%B3%E8%A1%A1%E7%82%B9t_max-t-b"><span class="nav-number">5.2.3.</span> <span class="nav-text">寻找平衡点：\(T_{max} &#x3D; T &#x2F; B\)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5%E7%BB%93%E8%AE%BA-%E4%BB%A5-nvidia-t4-%E4%B8%BA%E4%BE%8B"><span class="nav-number">5.2.4.</span> <span class="nav-text">实践结论 (以 NVIDIA T4 为例)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%97%E5%AD%90%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">5.3.</span> <span class="nav-text">算子的分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AEtransformationrearrange"><span class="nav-number">5.3.1.</span> <span class="nav-text">矩阵转置（transformation&#x2F;rearrange）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sum%E7%B4%AF%E5%8A%A0"><span class="nav-number">5.3.2.</span> <span class="nav-text">sum（累加）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E6%B4%BB%E8%B7%83%E7%BA%BF%E7%A8%8B%E6%95%B0"><span class="nav-number">5.3.2.1.</span> <span class="nav-text">增加活跃线程数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5%E4%B9%98%E6%B3%95%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-number">5.4.</span> <span class="nav-text">矩阵乘法的本质</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E5%88%97%E5%BC%8F"><span class="nav-number">5.5.</span> <span class="nav-text">行列式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E5%88%97%E5%BC%8F%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-number">5.5.1.</span> <span class="nav-text">行列式的计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#detm_1m_2-detm_1detm_2"><span class="nav-number">5.5.2.</span> <span class="nav-text">\(det(M_1M_2)
+&#x3D; det(M_1)det(M_2)\)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%89%E7%A7%AF"><span class="nav-number">5.6.</span> <span class="nav-text">叉积</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%A4%E7%82%B9%E5%AE%9A%E7%BA%BF%E4%B8%89%E7%82%B9%E5%AE%9A%E9%9D%A2"><span class="nav-number">5.6.1.</span> <span class="nav-text">两点定线，三点定面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%89%E7%A7%AF%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-number">5.6.2.</span> <span class="nav-text">叉积的计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%89%E7%A7%AF%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-number">5.6.3.</span> <span class="nav-text">叉积的本质</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9E%82%E7%9B%B4"><span class="nav-number">5.6.3.1.</span> <span class="nav-text">垂直</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%95%BF%E5%BA%A6"><span class="nav-number">5.6.3.2.</span> <span class="nav-text">长度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F"><span class="nav-number">5.7.</span> <span class="nav-text">特征向量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%AC%E5%BC%8F%E4%B8%8E%E5%AE%9A%E4%B9%89"><span class="nav-number">5.7.1.</span> <span class="nav-text">公式与定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F%E6%9C%89%E4%BB%80%E4%B9%88%E7%94%A8"><span class="nav-number">5.7.2.</span> <span class="nav-text">特征向量有什么用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">5.7.3.</span> <span class="nav-text">特征向量的例子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%BE%E5%88%B0%E6%9B%B4%E5%A4%9A%E7%9A%84%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F"><span class="nav-number">5.7.4.</span> <span class="nav-text">找到更多的特征向量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F%E7%9A%84%E7%9A%84%E5%90%AB%E4%B9%89"><span class="nav-number">5.7.5.</span> <span class="nav-text">特征向量的的含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F%E7%9A%84%E4%B8%80%E4%B8%AA%E5%85%B8%E5%9E%8B%E5%BA%94%E7%94%A8"><span class="nav-number">5.7.6.</span> <span class="nav-text">特征向量的一个典型应用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86%E7%9F%A9%E9%98%B5%E8%BD%AC%E6%8D%A2%E4%B8%BA%E7%89%B9%E5%AE%9A%E5%9F%BA%E4%B8%8B%E7%9A%84%E5%AF%B9%E8%A7%92%E7%9F%A9%E9%98%B5"><span class="nav-number">5.7.6.1.</span> <span class="nav-text">将矩阵转换为特定基下的对角矩阵</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">5.7.6.2.</span> <span class="nav-text">一个简单的例子</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#block-stride-%E5%92%8C-grid-stride-%E5%AF%B9%E7%BC%93%E5%AD%98%E5%88%A9%E7%94%A8%E7%8E%87%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">5.8.</span> <span class="nav-text">block stride 和
+grid stride 对缓存利用率的差别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#block-stride"><span class="nav-number">5.8.1.</span> <span class="nav-text">Block Stride</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#grid-stride"><span class="nav-number">5.8.2.</span> <span class="nav-text">Grid Stride</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">46</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="CUDA编程入门：一些常用算子的实现 | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA编程入门：一些常用算子的实现
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-02-09 15:24:32" itemprop="dateCreated datePublished" datetime="2026-02-09T15:24:32+08:00">2026-02-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-27 14:54:24" itemprop="dateModified" datetime="2026-02-27T14:54:24+08:00">2026-02-27</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="matrix-multiplication">Matrix Multiplication</h1>
+<h2 id="tile和thread">TILE和THREAD</h2>
+<p>首先，我们需要使用 TILE 和 THREAD
+来对我们的输入张量进行分块，分块有两种策略：<strong>连续分块</strong> 和
+<strong>交错分块</strong></p>
+<p>连续分块下，我们的内存模型为：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;thread (0, 0)&quot;)
+    t1(&quot;thread (0, 1)&quot;)
+end
+
+block:t00:5
+    columns 4
+    b00t00(&quot;tile(0, 0)&quot;) b00t01(&quot;tile(0, 1)&quot;) b00t02(&quot;tile(0, 2)&quot;) b00t03(&quot;...&quot;)
+    b00t10(&quot;tile(1, 0)&quot;) b00t11(&quot;tile(1, 1)&quot;) b00t12(&quot;tile(1, 2)&quot;) b00t13(&quot;...&quot;)
+end
+
+block:t01:5
+    columns 4
+    b01t00(&quot;tile(0, 0)&quot;) b01t01(&quot;tile(0, 1)&quot;) b01t02(&quot;tile(0, 2)&quot;) b01t03(&quot;...&quot;)
+    b01t10(&quot;tile(1, 0)&quot;) b01t11(&quot;tile(1, 1)&quot;) b01t12(&quot;tile(1, 2)&quot;) b01t13(&quot;...&quot;)
+end
+
+block:header1:10
+    columns 2
+    space:2
+    t2(&quot;thread (1, 0)&quot;)
+    t3(&quot;thread (1, 1)&quot;)
+end
+
+block:t02:5
+    columns 4
+    b02t00(&quot;tile(0, 0)&quot;) b02t01(&quot;tile(0, 1)&quot;) b02t02(&quot;tile(0, 2)&quot;) b02t03(&quot;...&quot;)
+    b02t10(&quot;tile(1, 0)&quot;) b02t11(&quot;tile(1, 1)&quot;) b02t12(&quot;tile(1, 2)&quot;) b02t13(&quot;...&quot;)
+end
+
+block:t03:5
+    columns 4
+    b03t00(&quot;tile(0, 0)&quot;) b03t01(&quot;tile(0, 1)&quot;) b03t02(&quot;tile(0, 2)&quot;) b03t03(&quot;...&quot;)
+    b03t10(&quot;tile(1, 0)&quot;) b03t11(&quot;tile(1, 1)&quot;) b03t12(&quot;tile(1, 2)&quot;) b03t13(&quot;...&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1,t2,t3 purple
+class header0,header1 transparent
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>在连续分块模型下，我们的内存访问模型是这样的：在 <code>t0</code>
+时刻，线程访问的是完全不连续的节点，在最后输出结果时，<code>t0.tile0</code>
+和 <code>t1.tile0</code> 将不是连续的内存地址，无法合并访问；：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;thread (0, 0)&quot;)
+    t1(&quot;thread (0, 1)&quot;)
+end
+
+block:t00:5
+    columns 4
+    b00t00(&quot;tile(0, 0)&quot;) b00t01(&quot;tile(0, 1)&quot;) b00t02(&quot;tile(0, 2)&quot;) b00t03(&quot;...&quot;)
+    b00t10(&quot;tile(1, 0)&quot;) b00t11(&quot;tile(1, 1)&quot;) b00t12(&quot;tile(1, 2)&quot;) b00t13(&quot;...&quot;)
+end
+
+block:t01:5
+    columns 4
+    b01t00(&quot;tile(0, 0)&quot;) b01t01(&quot;tile(0, 1)&quot;) b01t02(&quot;tile(0, 2)&quot;) b01t03(&quot;...&quot;)
+    b01t10(&quot;tile(1, 0)&quot;) b01t11(&quot;tile(1, 1)&quot;) b01t12(&quot;tile(1, 2)&quot;) b01t13(&quot;...&quot;)
+end
+
+block:header1:10
+    columns 2
+    space:2
+    t2(&quot;thread (1, 0)&quot;)
+    t3(&quot;thread (1, 1)&quot;)
+end
+
+block:t02:5
+    columns 4
+    b02t00(&quot;tile(0, 0)&quot;) b02t01(&quot;tile(0, 1)&quot;) b02t02(&quot;tile(0, 2)&quot;) b02t03(&quot;...&quot;)
+    b02t10(&quot;tile(1, 0)&quot;) b02t11(&quot;tile(1, 1)&quot;) b02t12(&quot;tile(1, 2)&quot;) b02t13(&quot;...&quot;)
+end
+
+block:t03:5
+    columns 4
+    b03t00(&quot;tile(0, 0)&quot;) b03t01(&quot;tile(0, 1)&quot;) b03t02(&quot;tile(0, 2)&quot;) b03t03(&quot;...&quot;)
+    b03t10(&quot;tile(1, 0)&quot;) b03t11(&quot;tile(1, 1)&quot;) b03t12(&quot;tile(1, 2)&quot;) b03t13(&quot;...&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1,t2,t3 purple
+class header0,header1 transparent
+class b00t00,b01t00,b02t00,b03t00 green
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>如果我们使用交错分块的话，我们的内存访问模型是这样的：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;tile (0, 0)&quot;)
+    t1(&quot;tile (0, 1)&quot;)
+end
+
+block:t00:5
+    columns 3
+    tile00t00(&quot;thrd(0, 0)&quot;) tile00t01(&quot;thrd(0, 1)&quot;) tile00t03(&quot;...&quot;)
+    tile00t10(&quot;thrd(1, 0)&quot;) tile00t11(&quot;thrd(1, 1)&quot;) tile00t13(&quot;...&quot;)
+end
+
+block:t01:5
+    columns 3
+    tile01t00(&quot;thrd(0, 0)&quot;) tile01t01(&quot;thrd(0, 1)&quot;)  tile01t03(&quot;...&quot;)
+    tile01t10(&quot;thrd(1, 0)&quot;) tile01t11(&quot;thrd(1, 1)&quot;)  tile01t13(&quot;...&quot;)
+end
+
+block:header1:10
+    columns 2
+    space:2
+    t2(&quot;tile (1, 0)&quot;)
+    t3(&quot;tile (1, 1)&quot;)
+end
+
+block:t02:5
+    columns 3
+    tile02t00(&quot;thrd(0, 0)&quot;) tile02t01(&quot;thrd(0, 1)&quot;)  tile02t03(&quot;...&quot;)
+    tile02t10(&quot;thrd(1, 0)&quot;) tile02t11(&quot;thrd(1, 1)&quot;)  tile02t13(&quot;...&quot;)
+end
+
+block:t03:5
+    columns 3
+    tile03t00(&quot;thrd(0, 0)&quot;) tile03t01(&quot;thrd(0, 1)&quot;)  tile03t03(&quot;...&quot;)
+    tile03t10(&quot;thrd(1, 0)&quot;) tile03t11(&quot;thrd(1, 1)&quot;)  tile03t13(&quot;...&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1,t2,t3 purple
+class header0,header1 transparent
+class b00t00,b01t00,b02t00,b03t00 green
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>那么，在数据输出的时候，<code>t0.tile0</code>, <code>t1.tile0</code>
+是连续输出的，可以合并访问。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;tile (0, 0)&quot;)
+    t1(&quot;tile (0, 1)&quot;)
+end
+
+block:t00:5
+    columns 3
+    tile00t00(&quot;thrd(0, 0)&quot;) tile00t01(&quot;thrd(0, 1)&quot;) tile00t03(&quot;...&quot;)
+    tile00t10(&quot;thrd(1, 0)&quot;) tile00t11(&quot;thrd(1, 1)&quot;) tile00t13(&quot;...&quot;)
+end
+
+block:t01:5
+    columns 3
+    tile01t00(&quot;thrd(0, 0)&quot;) tile01t01(&quot;thrd(0, 1)&quot;)  tile01t03(&quot;...&quot;)
+    tile01t10(&quot;thrd(1, 0)&quot;) tile01t11(&quot;thrd(1, 1)&quot;)  tile01t13(&quot;...&quot;)
+end
+
+block:header1:10
+    columns 2
+    space:2
+    t2(&quot;tile (1, 0)&quot;)
+    t3(&quot;tile (1, 1)&quot;)
+end
+
+block:t02:5
+    columns 3
+    tile02t00(&quot;thrd(0, 0)&quot;) tile02t01(&quot;thrd(0, 1)&quot;)  tile02t03(&quot;...&quot;)
+    tile02t10(&quot;thrd(1, 0)&quot;) tile02t11(&quot;thrd(1, 1)&quot;)  tile02t13(&quot;...&quot;)
+end
+
+block:t03:5
+    columns 3
+    tile03t00(&quot;thrd(0, 0)&quot;) tile03t01(&quot;thrd(0, 1)&quot;)  tile03t03(&quot;...&quot;)
+    tile03t10(&quot;thrd(1, 0)&quot;) tile03t11(&quot;thrd(1, 1)&quot;)  tile03t13(&quot;...&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1,t2,t3 purple
+class header0,header1 transparent
+class tile00t00,tile00t01,tile00t03 green
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="内积和外积">内积和外积</h2>
+<h3 id="内积-inner-product-dot-product">内积 (Inner Product / Dot
+Product)</h3>
+<p>内积的逻辑是锁定 <span class="math inline">\(C\)</span>
+矩阵中的<strong>一个点</strong>，一口气算完它。这里由于内积我们比较熟悉，就不画图了。
+<span class="math display">\[
+C_{i,j} = \sum_{k=0}^{N-1} A_{i,k} \cdot B_{k,j}
+\]</span></p>
+<h3 id="外积-outer-product">外积 (Outer Product)</h3>
+<p>外积的逻辑是锁定共享维度 <span class="math inline">\(k\)</span>
+的<strong>一个切面</strong>，更新 <span class="math inline">\(C\)</span>
+矩阵中的<strong>一片区域</strong>。 <span class="math display">\[
+C += \text{col}_k(A) \otimes \text{row}_k(B)
+\]</span></p>
+<p>假设我们存在如下一个矩阵乘法：</p>
+<h4 id="第一步">第一步</h4>
+<p>第一步，图中黄色的块计算，得到第一个矩阵：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:4
+    t0(&quot;A&quot;)
+    t1(&quot;B&quot;)
+end
+
+block:t00:5
+    columns 2
+    1(&quot;1&quot;) 2(&quot;2&quot;)
+    3(&quot;3&quot;) 4(&quot;4&quot;)
+    5(&quot;5&quot;) 6(&quot;6&quot;)
+end
+
+block:t01:5
+    columns 2
+    a(&quot;a&quot;) b(&quot;b&quot;)
+    c(&quot;c&quot;) d(&quot;d&quot;)
+    space:2
+end
+
+class header0 transparent
+class t00,t01 animate
+class t0,t1 purple
+class 1,3,5 yellow
+class a,b yellow
+class 2,4,6,c,d gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+1(&quot;1 * a&quot;) 2(&quot;1 * b&quot;)
+3(&quot;3 * a&quot;) 4(&quot;3 * b&quot;)
+5(&quot;5 * a&quot;) 6(&quot;5 * b&quot;)
+
+class 1,2,3,4,5,6 green
+
+classDef green fill:#695,color:#fff,font-weight:bold;</code></pre>
+<h4 id="第二步">第二步</h4>
+<p>第二步，图中黄色的块进行计算，得到第二个矩阵</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:4
+    t0(&quot;A&quot;)
+    t1(&quot;B&quot;)
+end
+
+block:t00:5
+    columns 2
+    1(&quot;1&quot;) 2(&quot;2&quot;)
+    3(&quot;3&quot;) 4(&quot;4&quot;)
+    5(&quot;5&quot;) 6(&quot;6&quot;)
+end
+
+block:t01:5
+    columns 2
+    a(&quot;a&quot;) b(&quot;b&quot;)
+    c(&quot;c&quot;) d(&quot;d&quot;)
+    space:2
+end
+
+class header0 transparent
+class t00,t01 animate
+class t0,t1 purple
+class 1,3,5,a,b gray
+class 2,4,6,c,d yellow
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+1(&quot;2 * c&quot;) 2(&quot;2 * d&quot;)
+3(&quot;4 * c&quot;) 4(&quot;4 * d&quot;)
+5(&quot;6 * c&quot;) 6(&quot;6 * d&quot;)
+
+class 1,2,3,4,5,6 green
+
+classDef green fill:#695,color:#fff,font-weight:bold;</code></pre>
+<p>在将得到的两个矩阵相加得到：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+1(&quot;1 * a + 2 * c&quot;) 2(&quot;1 * b + 2 * d&quot;)
+3(&quot;3 * a + 4 * c&quot;) 4(&quot;3 * b + 4 * d&quot;)
+5(&quot;5 * a + 6 * c&quot;) 6(&quot;5 * b + 6 * d&quot;)
+
+class 1,2,3,4,5,6 green
+
+classDef green fill:#695,color:#fff,font-weight:bold;</code></pre>
+<p>伪代码可以描述为：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; <span class="built_in">columns</span>(A); k++) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> a_row = <span class="number">0</span>; a_col &lt; <span class="built_in">rows</span>(A); a_row++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> b_col = <span class="number">0</span>; b_row &lt; <span class="built_in">columns</span>(B); b_col++) &#123;</span><br><span class="line">            matrix[a_row][b_col] += A[a_row][k] * B[k][b_col];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们还可以进行一次优化，这样，我们可以以浪费 <code>rows(A)</code> +
+<code>columns(B)</code> 个寄存器的代价，将一定的Shared
+Memory访问转换为寄存器访问：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; <span class="built_in">columns</span>(A); k++) &#123;</span><br><span class="line">    <span class="type">float</span> col_of_a[<span class="built_in">rows</span>(A)];</span><br><span class="line">    <span class="type">float</span> row_of_b[<span class="built_in">columns</span>(B)];</span><br><span class="line">    <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> a_row = <span class="number">0</span>; a_row &lt; <span class="built_in">rows</span>(A); a_row++) &#123;</span><br><span class="line">        col_of_a[a_row] = A[a_row][k];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> b_col = <span class="number">0</span>; b_col &lt; <span class="built_in">columns</span>(B); b_row++) &#123;</span><br><span class="line">        row_of_b[b_col] = B[k][b_col];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">#<span class="keyword">pragma</span> unroll    </span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> a_row = <span class="number">0</span>; a_col &lt; <span class="built_in">rows</span>(A); a_row++) &#123;</span><br><span class="line">    <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> b_col = <span class="number">0</span>; b_row &lt; <span class="built_in">columns</span>(B); b_col++) &#123;</span><br><span class="line">            matrix[a_row][b_col] += col_of_a[i] * row_of_b[j];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="实现">实现</h2>
+<p>于是，我们通过这个方式实现了第一个版本：基于 <code>TILE</code>
+，<code>寄存器</code>，<code>内积转外积</code> 的优化逻辑。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ceil(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> THREAD_TILE_X = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> THREAD_TILE_Y = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BLOCK_SIZE_X = <span class="number">16</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BLOCK_SIZE_Y = <span class="number">16</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> STRIDE_X = BLOCK_SIZE_X * THREAD_TILE_X;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> STRIDE_Y = BLOCK_SIZE_Y * THREAD_TILE_Y;</span><br><span class="line"></span><br><span class="line"><span class="comment">// v1 版本，我们引入TILE机制实现线程粗化逻辑，同时我们通过将内积转换为外积来优化性能。</span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_multiplication_kernel</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *A, <span class="type">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C,</span></span></span><br><span class="line"><span class="params"><span class="function">                                             <span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> K)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 初始化结果数组</span></span><br><span class="line">    <span class="type">float</span> accum[THREAD_TILE_Y][THREAD_TILE_X];</span><br><span class="line">    <span class="comment">// 防止编译器优化到数组到显存</span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i_row = <span class="number">0</span>; i_row &lt; THREAD_TILE_Y; ++i_row) &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i_col = <span class="number">0</span>; i_col &lt; THREAD_TILE_X; ++i_col) &#123;</span><br><span class="line">            accum[i_row][i_col] = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 现在我们要开始从内存读取数据并累加到结果数组</span></span><br><span class="line">    <span class="comment">// 按照我们的交错分布，我们在 accum[i_row][i_col] 这一个元素，对应的输出的点应该是</span></span><br><span class="line">    <span class="comment">// row = blockIdx.y * STRIDE_Y + i_row * BLOCK_SIZE_Y + threadIdx.y</span></span><br><span class="line">    <span class="comment">// col = blockIdx.x * STRIDE_X + i_col * BLOCK_SIZE_X + threadIdx.x</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// row = block行偏移量 + TILE行偏移量 + 线程相对行偏移量</span></span><br><span class="line">    <span class="comment">// block 行偏移量是相同的，i_row 对于所有的线程相同，而在block中左右相邻的线程y是一样的</span></span><br><span class="line">    <span class="comment">// 也就是说 row 的完全一致的，可以通过广播实现访问</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// col = block列偏移量 + TILE列偏移量 + 线程相对列偏移量</span></span><br><span class="line">    <span class="comment">// 这里block列偏移量是固定的，i_col 对所有的线程都是相同的，所以相邻线程的TILE列偏移量相同，</span></span><br><span class="line">    <span class="comment">// 唯一不同的是 threadIdx.x，而这个值不同线程之间是连续的，最后他们在内存中的数据可以合并访问</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> tile_row_offset = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.y * STRIDE_Y + threadIdx.y);</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> tile_col_offset = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.x * STRIDE_X + threadIdx.x);</span><br><span class="line">    <span class="type">float</span> col_of_a[THREAD_TILE_Y];</span><br><span class="line">    <span class="type">float</span> row_of_b[THREAD_TILE_X];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i_factor = <span class="number">0</span>; i_factor &lt; N; ++i_factor) &#123;</span><br><span class="line">        <span class="comment">// 关于 TILE 的遍历，我们可以看到 TILE 不是连续的</span></span><br><span class="line">        <span class="comment">// 因为这里在A的行和B的列的移动，是通过最外层的for循环实现的</span></span><br><span class="line">        <span class="comment">// 这里的 col_of_a 和 row_of_b 其实是TILE负责的区域在变化</span></span><br><span class="line">        <span class="comment">// 这里的逻辑其实可以理解为：</span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i_row = <span class="number">0</span>; i_row &lt; THREAD_TILE_Y; ++i_row) &#123;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> y = tile_row_offset + i_row * BLOCK_SIZE_Y;</span><br><span class="line">            <span class="comment">// 这个位置，同一个 block 下存在左右相邻线程 y 相等，那么他们访问的是同一个地址，</span></span><br><span class="line">            <span class="comment">// 可以通过广播传输数据。</span></span><br><span class="line">            col_of_a[i_row] = y &lt; M ? A[y * N + i_factor] : <span class="number">0.0f</span>;</span><br><span class="line">        &#125;</span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i_col = <span class="number">0</span>; i_col &lt; THREAD_TILE_X; ++i_col) &#123;</span><br><span class="line">            <span class="comment">// 这个位置，同一个 block 内，线程地址连续，可以合并访问。</span></span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> x = tile_col_offset + i_col * BLOCK_SIZE_X;</span><br><span class="line">            row_of_b[i_col] = x &lt; K ? B[i_factor * K + x] : <span class="number">0.0f</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i_row = <span class="number">0</span>; i_row &lt; THREAD_TILE_Y; ++i_row) &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> i_col = <span class="number">0</span>; i_col &lt; THREAD_TILE_X; ++i_col) &#123;</span><br><span class="line">                accum[i_row][i_col] += col_of_a[i_row] * row_of_b[i_col];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; THREAD_TILE_Y; i++) &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; THREAD_TILE_X; j++) &#123;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> row_of_c = tile_row_offset + i * BLOCK_SIZE_Y;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> col_of_c = tile_col_offset + j * BLOCK_SIZE_X;</span><br><span class="line">            <span class="keyword">if</span> (row_of_c &lt; M &amp;&amp; col_of_c &lt; K) &#123;</span><br><span class="line">                C[row_of_c * K + col_of_c] = accum[i][j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// A, B, C are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *A, <span class="type">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C, <span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> K)</span> </span>&#123;</span><br><span class="line">    <span class="function">dim3 <span class="title">threadsPerBlock</span><span class="params">(BLOCK_SIZE_X, BLOCK_SIZE_Y)</span></span>;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> stride_x = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadsPerBlock.x) * THREAD_TILE_X;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> stride_y = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadsPerBlock.y) * THREAD_TILE_Y;</span><br><span class="line">    <span class="function">dim3 <span class="title">blocksPerGrid</span><span class="params">(ceil(K, stride_x), ceil(M, stride_y))</span></span>;</span><br><span class="line">    matrix_multiplication_kernel&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(A, B, C, M, N, K);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="使用shared-memory优化">使用Shared Memory优化</h2>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ceil(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> THREAD_TILE_X = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> THREAD_TILE_Y = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BLOCK_SIZE_X = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BLOCK_SIZE_Y = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> THREAD_COUNT = BLOCK_SIZE_X * BLOCK_SIZE_Y;</span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BX = BLOCK_SIZE_X * THREAD_TILE_X;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BY = BLOCK_SIZE_Y * THREAD_TILE_Y;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BK = <span class="number">32</span>;</span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_multiplication_kernel</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *A, <span class="type">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C,</span></span></span><br><span class="line"><span class="params"><span class="function">                                             <span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> K)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 我们把输出张量划分为多个 block，每个 block 又继续划分多个 THREAD</span></span><br><span class="line">    <span class="comment">// 每个THREAD 继续划分为多个 TILE</span></span><br><span class="line">    <span class="comment">// 这里 ssm_a 和 ssm_b 需要提供一个能力：在同一个 block 中，</span></span><br><span class="line">    <span class="comment">// 线程每次 for 循环移动时，覆盖当前 block 的所有线程的所有TILE所需要的数据</span></span><br><span class="line">    <span class="comment">// 一次读取，多次使用。</span></span><br><span class="line">    <span class="comment">// 那么，结合上面的结论和矩阵乘法的要求（计算元素 (x,y) 需要 A 的第 x 行和 B 的第 y 列）</span></span><br><span class="line">    <span class="comment">// 我们可以做出如下推论：</span></span><br><span class="line">    <span class="comment">// ssm_a 需要的矩阵是高度是 THREAD_TILE_Y * BLOCK_SIZE_Y</span></span><br><span class="line">    <span class="comment">// ssm_b 需要的矩阵是宽度是 THREAD_TILE_X * BLOCK_SIZE_X</span></span><br><span class="line">    <span class="comment">// 而 ssm_a 的宽度和 ssm_b 的高度则没有限制，只需要满足 ssm_a.width == ssm_b.height</span></span><br><span class="line">    <span class="comment">// 因为 :</span></span><br><span class="line">    <span class="comment">// 1. ssm_a 需要整行，它可以看做一个从索引0开始，向右划到到N结束的滑动块；</span></span><br><span class="line">    <span class="comment">// 2. ssm_b 需要整列，它可以看做一个从索引0开始，向下滑动到N结束的滑动块；</span></span><br><span class="line">    <span class="comment">// 也就是我们说，我们可以如下声明我们的 ssm_a 和 ssm_b，这里的 BK 是任意值都可以实现逻辑，只是性能不同</span></span><br><span class="line">    __shared__ <span class="type">float</span> ssm_a[BY][BK];</span><br><span class="line">    __shared__ <span class="type">float</span> ssm_b[BK][BX];</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> accum[THREAD_TILE_Y][THREAD_TILE_X] = &#123;&#125;;</span><br><span class="line">    <span class="type">float</span> reg_for_a[THREAD_TILE_Y];</span><br><span class="line">    <span class="type">float</span> reg_for_b[THREAD_TILE_X];</span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> tid = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadIdx.y * BLOCK_SIZE_X + threadIdx.x);</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> local_row = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadIdx.y);</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> local_col = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadIdx.x);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i_k = <span class="number">0</span>; i_k &lt; <span class="built_in">ceil</span>(N, BK); i_k++) &#123;</span><br><span class="line">        <span class="comment">// 每次计算当前TILE之前，我们要把所有的重新读取数据到ssm</span></span><br><span class="line">        <span class="comment">// 这里需要注意的是，当我们在搬运数据的时候，我们并不考虑TILE的概念</span></span><br><span class="line">        <span class="comment">// 从A和B搬运数据到ssm是一个完全独立的过程，它是输入张量某个区域到ssm的一比一映射</span></span><br><span class="line">        <span class="comment">// 那么，我们所需要考虑的就是：到底把哪个区域映射到我们的 ssm</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 1. 对于 ssm_a，它的 x 轴随着 i_k 移动，y轴随着 block 移动；</span></span><br><span class="line">        <span class="comment">// 2. 对于 ssm_b，它的 y 轴随着 i_k 移动，x 轴随着 block 移动。</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 对于 ssm_a，假设我们当前 block 的第一个线程的坐标是：</span></span><br><span class="line">        <span class="comment">// ty = blockIdx.y * blockDim.y + threadIdx.y</span></span><br><span class="line">        <span class="comment">// 那么我们需要填充到 ssm_a 的信息就是：</span></span><br><span class="line">        <span class="comment">// [(i_k * BK, ty), ((i_k + 1) * BK, ty))</span></span><br><span class="line">        <span class="comment">// [(i_k * BK, ty + 1), ((i_k + 1) * BK, ty + 1))</span></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="comment">// [(i_k * BK, ty + BY - 1), ((i_k + 1) * BK, ty + BY - 1))</span></span><br><span class="line">        <span class="comment">// 得到一个 BY * BK 的矩阵，我们可以把这个矩阵看做一个整体，那么我们可以通过如下代码来实现搬运</span></span><br><span class="line">        <span class="comment">// for (int i = 0; i &lt; BY; i++) &#123;</span></span><br><span class="line">        <span class="comment">//     for (int j = 0; j &lt; BX; j++) &#123;</span></span><br><span class="line">        <span class="comment">//         ssm_a[x][y] = value;</span></span><br><span class="line">        <span class="comment">//     &#125;</span></span><br><span class="line">        <span class="comment">// &#125;</span></span><br><span class="line">        <span class="comment">// 我们需要将这个逻辑转换为GPU上实现的逻辑</span></span><br><span class="line">        <span class="comment">// 每个线程搬运一个数据，那么总共需要 (BY * BK) / (BLOCK_SIZE_X * BLOCK_SIZE_Y) 次（向上取整）</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="built_in">ceil</span>(BY * BK, THREAD_COUNT); ++i) &#123;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> load_id = i * THREAD_COUNT + tid;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> r = load_id / BK;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> c = load_id % BK;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> global_r = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.y * BY + r);</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> global_c = i_k * BK + c;</span><br><span class="line">            <span class="keyword">if</span> (global_r &lt; M &amp;&amp; global_c &lt; N) &#123;</span><br><span class="line">                ssm_a[r][c] = A[global_r * N + global_c];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                ssm_a[r][c] = <span class="number">0.0f</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 对于 ssm_b，假设我们当前 block 的第一个线程的坐标是：</span></span><br><span class="line">        <span class="comment">// tx = blockIdx.x * blockDim.x + threadIdx.x</span></span><br><span class="line">        <span class="comment">// 那么我们需要填充到 ssm_b 的信息就是：</span></span><br><span class="line">        <span class="comment">// [(tx, i_k * BX), (tx, (i_k + 1) * BX))</span></span><br><span class="line">        <span class="comment">// [(tx + 1, i_k * BX), (tx + 1, (i_k + 1) * BX))</span></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="comment">// [(tx + BK - 1, i_k * BX), (tx + BK - 1, (i_k + 1) * BX))</span></span><br><span class="line">        <span class="comment">// 得到一个 BK * BX 的矩阵</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="built_in">ceil</span>(BK * BX, THREAD_COUNT); i++) &#123;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> load_id = i * THREAD_COUNT + tid;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> r = load_id / BX;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> c = load_id % BX;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> global_r = i_k * BK + r;</span><br><span class="line">            <span class="type">const</span> <span class="type">int</span> global_c = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.x * BX + c);</span><br><span class="line">            <span class="keyword">if</span> (global_r &lt; N &amp;&amp; global_c &lt; K) &#123;</span><br><span class="line">                ssm_b[r][c] = B[global_r * K + global_c];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                ssm_b[r][c] = <span class="number">0.0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 我们使用外积的方式来计算结果，外积可以看做是 [M * 1] * [1 * N] 的矩阵乘法，得到一个 [M * N] 的矩阵</span></span><br><span class="line">        <span class="comment">// 每个线程负责一个TILE，注意，在之前我们的逻辑中</span></span><br><span class="line">        <span class="comment">// 我们特意使用了TILE和线程交错排布的模式，但是这里我们改用了</span></span><br><span class="line">        <span class="comment">// TILE紧密排布的模式(TILE0, TILE1, ...)，因为之前我们是访问显存，</span></span><br><span class="line">        <span class="comment">// 而现在访问的是寄存器和SharedMemory，不再需要考虑合并读取。</span></span><br><span class="line">        <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; BK; k++) &#123;</span><br><span class="line">            <span class="comment">// 这里，进入我们的累加循环，我们的矩阵乘法是 [THREAD_TILE_Y * BK] * [BK * THREAD_TILE_X]</span></span><br><span class="line">            <span class="comment">// 这个位置非常容易误解成我们浪费了一些元素，因为我们把内积转换成了外积</span></span><br><span class="line">            <span class="comment">// 如果我们采用如下的方式：</span></span><br><span class="line">            <span class="comment">// for (int i = 0; i &lt; BY; i++)&#123;&#125;</span></span><br><span class="line">            <span class="comment">// for (int i = 0; i &lt; BX; i++)&#123;&#125;</span></span><br><span class="line">            <span class="comment">// 我们计算的就不是 TILE 的结果，而是整个block的结果，那样我们相当于多个线程重复计算了</span></span><br><span class="line">            <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; THREAD_TILE_Y; i++) &#123;</span><br><span class="line">                reg_for_a[i] = ssm_a[local_row * THREAD_TILE_Y + i][k];</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; THREAD_TILE_X; i++) &#123;</span><br><span class="line">                reg_for_b[i] = ssm_b[k][local_col * THREAD_TILE_X + i];</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> r = <span class="number">0</span>; r &lt; THREAD_TILE_Y; r++) &#123;</span><br><span class="line">                <span class="meta">#<span class="keyword">pragma</span> unroll</span></span><br><span class="line">                <span class="keyword">for</span>(<span class="type">int</span> c = <span class="number">0</span>; c &lt; THREAD_TILE_X; c++) &#123;</span><br><span class="line">                    accum[r][c] += reg_for_a[r] * reg_for_b[c];</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> r = <span class="number">0</span>; r &lt; THREAD_TILE_Y; r++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> c = <span class="number">0</span>; c &lt; THREAD_TILE_X; c++) &#123;</span><br><span class="line">            <span class="type">int</span> global_r = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.y * BY + threadIdx.y * THREAD_TILE_Y + r);</span><br><span class="line">            <span class="type">int</span> global_c = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(blockIdx.x * BX + threadIdx.x * THREAD_TILE_X + c);</span><br><span class="line">            <span class="keyword">if</span> (global_r &lt; M &amp;&amp; global_c &lt; K) &#123;</span><br><span class="line">                C[global_r * K + global_c] = accum[r][c];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// A, B, C are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">const</span> <span class="type">float</span> *A, <span class="type">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C, <span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> K)</span> </span>&#123;</span><br><span class="line">    <span class="function">dim3 <span class="title">threadsPerBlock</span><span class="params">(BLOCK_SIZE_X, BLOCK_SIZE_Y)</span></span>;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> stride_x = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadsPerBlock.x) * THREAD_TILE_X;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> stride_y = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(threadsPerBlock.y) * THREAD_TILE_Y;</span><br><span class="line">    <span class="function">dim3 <span class="title">blocksPerGrid</span><span class="params">(ceil(K, stride_x), ceil(M, stride_y))</span></span>;</span><br><span class="line"></span><br><span class="line">    matrix_multiplication_kernel&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(A, B, C, M, N, K);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="matrix-transpose">Matrix Transpose</h1>
+<h2 id="naive-实现">naive 实现</h2>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_transpose_kernel</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* input, <span class="type">float</span>* output, <span class="type">int</span> rows, <span class="type">int</span> cols)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> x = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="type">int</span> y = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="keyword">if</span> (x &lt; cols &amp;&amp; y &lt; rows) &#123;</span><br><span class="line">        output[x * rows + y] = input[y * cols + x];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="写入合并">写入合并</h2>
+<p>当我们读取数据时，<code>input[y * cols + x]</code>
+是可以连续访问的，而 <code>output[x * rows + y]</code>
+是不能连续访问，这个位置的逻辑和CUDA线程底层调度逻辑有关：<strong>合并访问的前提是线程访问地址连续，且线程在
+Warp 中连续</strong>。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    b0(&quot;warp0 - (0, 0)&quot;) b1(&quot;warp1 - (1, 0)&quot;)
+    b2(&quot;warp2 - (0, 1)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+block:z1:1
+    columns 2
+    b4(&quot;warp0 - (0, 0)&quot;) b5(&quot;warp1 - (1, 0)&quot;)
+    b6(&quot;warp2 - (0, 1)&quot;) b7(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b1 green
+class b2,b3 blue
+
+class b4,b6 yellow
+class b5,b7 orange
+
+class z0,z1 animate
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>假设我们声明了一个 <code>2 * 2</code> 的 <code>warp</code>。</p>
+<p>那么对于 <code>input</code>：</p>
+<ul>
+<li><code>(0, 0)</code> 和 <code>(1, 0)</code> 访问的地址分别为
+<code>0</code> 和 <code>1</code>；</li>
+<li><code>(0, 1)</code> 和 <code>(1, 1)</code> 访问的地址分别为
+<code>2</code> 和 <code>3</code>；</li>
+</ul>
+<p>而他们不仅仅访问地址连续，他们在warp中也是连续的，所以他们可以合并访问；</p>
+<p>而对于 <code>output</code>：</p>
+<ul>
+<li><code>(0, 0)</code> 和 <code>(0, 1)</code> 访问的地址分别为
+<code>0</code> 和 <code>1</code>；</li>
+<li><code>(1, 0)</code> 和 <code>(1, 1)</code> 访问的地址分别为
+<code>2</code> 和 <code>3</code>；</li>
+</ul>
+<p>当一个 Warp 执行访存指令时，显存控制器会查看这 <code>4</code>
+个线程<strong>在这一瞬间</strong>发出的所有请求：</p>
+<ul>
+<li><span class="math inline">\(T_0\)</span> 访问 <code>0</code></li>
+<li><span class="math inline">\(T_1\)</span> 访问 <code>2</code></li>
+<li><span class="math inline">\(T_2\)</span> 访问 <code>1</code></li>
+<li><span class="math inline">\(T_3\)</span> 访问 <code>3</code></li>
+</ul>
+<p><strong>从显存控制器的视角来看：</strong> 它看到 <span
+class="math inline">\(T_0\)</span> 要 <code>Addr 0</code>，<span
+class="math inline">\(T_2\)</span> 要
+<code>Addr 1</code>。虽然这两个地址连在一起，但它们被分配到了不同的<strong>掩码（Mask）</strong>位上。在硬件内部，合并（Coalescing）是基于
+<strong>Warp Lane ID</strong>（即线程在 Warp 中的编号）顺序进行的。如果
+<span class="math inline">\(T_0\)</span> 访问 <span
+class="math inline">\(A\)</span>，而 <span
+class="math inline">\(T_1\)</span> 访问的不是 <span
+class="math inline">\(A+1\)</span>，硬件就会认为这个请求是“发散”的。它不会去扫描整个
+Warp 看看 <span class="math inline">\(T_8\)</span> 是否刚好要 <span
+class="math inline">\(A+1\)</span>
+并把它们拼起来。它会直接判定：这组请求无法合并为一个简单的
+<strong>128-byte 事务</strong>，必须拆分成多个 <strong>32-byte
+事务</strong> 甚至更小的请求。</p>
+<h3 id="引入shared-memory实现合并写入">引入Shared
+Memory实现合并写入</h3>
+<p>换个思路，我们可以先读取数据：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    b0(&quot;warp0 - (0, 0)&quot;) b1(&quot;warp1 - (1, 0)&quot;)
+    b2(&quot;warp2 - (0, 1)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b1 green
+class b2,b3 blue
+class z0 animate
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>当我们转换时，我们先将转换后的数据写入到 Shared
+Memory，此时我们无需考虑顺序写入的问题：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    sm(&quot;Shared Memory&quot;):2
+    b0(&quot;warp0 - (0, 0)&quot;) b2(&quot;warp2 - (0, 1)&quot;)
+    b1(&quot;warp1 - (1, 0)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b1 green
+class b2,b3 blue
+class z0 animate
+class sm purple
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>随后，我们再将 Shared Memory 中的数据原样输出：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    sm(&quot;显存&quot;):2
+    b0(&quot;warp0 - (0, 0)&quot;) b2(&quot;warp2 - (0, 1)&quot;)
+    b1(&quot;warp1 - (1, 0)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b2 green
+class b1,b3 blue
+class z0 animate
+class sm purple
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>即可完成合并写入。</p>
+<h3 id="代码实现">代码实现</h3>
+<p>整个过程可以描述为：</p>
+<ol type="1">
+<li><p>我们先通过 <code>blockIdx.y * TY</code> 和
+<code>blockIdx.x * TX</code> 找到我们 <code>block</code>
+的基准偏移量；</p></li>
+<li><p>此时，我们需要通过这个基准偏移量去访问内部的 Shared
+Memory。此时，我们对</p></li>
+<li><p>当我们转置矩阵前，x 表示 col，y 表示
+row，此时访问显存是连续的。</p></li>
+<li><p>转置之后，x 表示 row，y 表示
+col，此时访问显存变得不连续。但是，我们先把数据写入到
+SM，此时不用考虑合并访问的问题。</p></li>
+<li><p>最后在输出的时候，我们先找到 block 的基准索引，并使用 (x, y)
+作为偏移量去输出。此时出现一个神奇的情况：</p>
+<ol type="1">
+<li>在 output 这边，x 表示的是列，它可以合并访问；</li>
+<li>在 sm 这边，x 表示的是行，它不需要考虑合并访问。</li>
+</ol></li>
+</ol>
+<p><strong>这里，我们是通过将线程的职责做了转置 --
+本来应该去访问行的线程，我们现在让他去访问列了。</strong></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CEIL_DIV(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> TX = <span class="number">16</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> TY = <span class="number">16</span>;</span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_transpose_kernel</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* input, <span class="type">float</span>* output, <span class="type">int</span> rows, <span class="type">int</span> cols)</span> </span>&#123;</span><br><span class="line">    __shared__ <span class="type">float</span> ssm[TY][TX];</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> local_row = threadIdx.y;</span><br><span class="line">    <span class="type">int</span> local_col = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> block_row = blockIdx.y * TY;</span><br><span class="line">    <span class="type">int</span> block_col = blockIdx.x * TX;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> global_row = block_row + local_row;</span><br><span class="line">    <span class="type">int</span> global_col = block_col + local_col;</span><br><span class="line">    <span class="keyword">if</span> (global_col &lt; cols &amp;&amp; global_row &lt; rows) &#123;</span><br><span class="line">        <span class="comment">// 转置矩阵到sm</span></span><br><span class="line">        ssm[local_row][local_col] = input[global_row * cols + global_col];</span><br><span class="line">    &#125;</span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line marked">    <span class="type">int</span> gx_out = block_row + local_col;</span><br><span class="line marked">    <span class="type">int</span> gy_out = block_col + local_row;</span><br><span class="line marked">    <span class="keyword">if</span> (gx_out &lt; rows &amp;&amp; gy_out &lt; cols) &#123;</span><br><span class="line marked">        output[gy_out * rows + gx_out] = ssm[local_col][local_row];</span><br><span class="line marked">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// input, output are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* input, <span class="type">float</span>* output, <span class="type">int</span> rows, <span class="type">int</span> cols)</span> </span>&#123;</span><br><span class="line">    <span class="function">dim3 <span class="title">threadsPerBlock</span><span class="params">(TX, TY)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">blocksPerGrid</span><span class="params">(CEIL_DIV(cols, TX), CEIL_DIV(rows, TY))</span></span>;</span><br><span class="line"></span><br><span class="line">    matrix_transpose_kernel&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(input, output, rows, cols);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="bank-conflict">Bank Conflict</h2>
+<p>在我们的代码中，有两个位置会访问 Shared Memory：</p>
+<ul>
+<li><code>ssm[local_row][local_col]</code> 这里我们每个线程访问的
+<code>bank</code> 等于
+<code>(local_row * TY + local_col) % 32</code>，也就是说：只要我们的
+<code>local_row</code> 是连续的，就不会产生
+<code>bank conflict</code>；</li>
+<li><code>ssm[local_col][local_row]</code> 这里我们每个线程访问的
+<code>bank</code> 等于
+<code>(local_col * TY + local_row) % 32</code>，此时，<code>local_row</code>(threadIdx.y)
+不变，而 <code>local_col</code> 递增：
+<ul>
+<li>如果 <code>local_col</code> 等于 <code>32</code>，那么会发生
+<code>32-way bank conflict</code></li>
+<li>如果 <code>local_col</code> 等于 <code>16</code>，那么会发生
+<code>16-way bank conflict</code></li>
+</ul></li>
+</ul>
+<p>我们可以通过 <code>__shared__ float ssm[TY][TX + 1];</code>
+避免这个问题。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CEIL_DIV(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> TX = <span class="number">16</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> TY = <span class="number">16</span>;</span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_transpose_kernel</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* input, <span class="type">float</span>* output, <span class="type">int</span> rows, <span class="type">int</span> cols)</span> </span>&#123;</span><br><span class="line marked">    __shared__ <span class="type">float</span> ssm[TY][TX + <span class="number">1</span>];</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">if</span> (global_col &lt; cols &amp;&amp; global_row &lt; rows) &#123;</span><br><span class="line">        <span class="comment">// 转置矩阵到sm</span></span><br><span class="line marked">        ssm[local_row][local_col] = input[global_row * cols + global_col];</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">if</span> (gx_out &lt; rows &amp;&amp; gy_out &lt; cols) &#123;</span><br><span class="line marked">        output[gy_out * rows + gx_out] = ssm[local_col][local_row];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="一些值得注意的细节">一些值得注意的细节</h2>
+<p>代码中位移需要注意的是以下两行：</p>
+<ul>
+<li><code>int gx_out = blockIdx.y * TY + tx;</code></li>
+<li><code>int gy_out = blockIdx.x * TX + ty;</code></li>
+</ul>
+<p><strong>这里，我们会发现一个重要的前提：被转置的矩阵可以不是对称的，但是我们block中的TILE必须是对称的。</strong></p>
+<p>对于那些可以完全填满我们的 <code>TX * TY</code>
+整个TILE的块，逻辑很简单，会直接发生一个转置。<strong>而对于那些不能填满我们的TILE的块，会存在一些特殊的逻辑。</strong>我们以一个
+<code>2 * 3</code> 的矩阵作为例子说明：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 3
+    b0(&quot;(0, 0)&quot;) b1(&quot;(1, 0)&quot;) b2(&quot;(2, 0)&quot;)
+    b3(&quot;(0, 1)&quot;) b4(&quot;(1, 1)&quot;) b5(&quot;(2, 1)&quot;)
+end
+
+class b0,b1,b2 green
+class b3,b4,b5 light_green
+
+class z0 animate
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>转置后我们得到的是一个 <code>3 * 2</code> 的矩阵：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    b0(&quot;(0, 0)&quot;) 
+    b3(&quot;(1, 0)&quot;)
+    b1(&quot;(0, 1)&quot;)
+    b4(&quot;(1, 1)&quot;)
+    b2(&quot;(0, 2)&quot;)
+    b5(&quot;(1, 2)&quot;)
+end
+
+class b0,b3 green
+class b1,b4 light_green
+class b2,b5 blue
+
+class z0 animate
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而我们的线程的索引则是（这里，我们假设线程是 <code>3 * 3</code>
+可以全部覆盖的），可以看到：</p>
+<ul>
+<li><code>(2, 0)</code> 和 <code>(2, 1)</code>
+这两个节点将会被不会被计算，因为他们不满足判定条件；</li>
+<li>而 <code>(0, 2)</code> 和 <code>(1, 2)</code>
+这两个节点则会覆盖我们新输出的矩阵。</li>
+</ul>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 3
+    b0(&quot;(0, 0)&quot;)
+    b1(&quot;(1, 0)&quot;)
+    b2(&quot;(2, 0)&quot;)
+    b3(&quot;(0, 1)&quot;)
+    b4(&quot;(1, 1)&quot;)
+    b5(&quot;(2, 1)&quot;)
+    b6(&quot;(0, 2)&quot;)
+    b7(&quot;(1, 2)&quot;)
+    b8(&quot;(2, 2)&quot;)
+end
+
+class b0,b1 green
+class b3,b4 light_green
+class b6,b7 blue
+class b2,b5,b8 error
+class 
+
+class z0 animate
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="总结">总结</h2>
+<p>无论我们在写多么复杂的算子（转置、矩阵乘法、卷积），我们脑子里那个<strong>“基准（Base）+
+偏移（Offset）”</strong>的分级坐标系就是一切逻辑的锚点。 <span
+class="math display">\[
+GlobalIndex = \underbrace{BlockIdx \times BlockDim}_{基准偏移量 (宏观)}
++ \underbrace{ThreadIdx}_{内部偏移量 (微观)}
+\]</span> 对于使用了线程粗化技术的，我们的 <code>BlockDim</code>
+需要修改为步长： <span class="math display">\[
+GlobalIndex = \underbrace{BlockIdx \times Stride}_{基准偏移量 (宏观)} +
+\underbrace{ThreadIdx}_{内部偏移量 (微观)}
+\]</span></p>
+<h1 id="color-inversion">Color Inversion</h1>
+<h2 id="threads和blocks分配策略">threads和blocks分配策略</h2>
+<p>在处理大带宽需求的图像算子时，我们遵循两个核心策略来压榨 GPU
+性能：</p>
+<ul>
+<li><strong>向量化访存 (Vectorized Access)</strong>：通过将
+<code>unsigned char*</code> 强转为
+<code>uchar4*</code>，利用单条指令加载 128-bit 数据（4
+个像素），将访存压力降至原来的 1/4。</li>
+<li><strong>线程粗化 (Thread Coarsening)</strong>：通过参数
+<code>BK</code>
+让单个线程处理多个连续像素。这能有效分摊坐标计算和指令发射的开销。</li>
+</ul>
+<h2 id="代码实现-1">代码实现</h2>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CEIL_DIV(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BX = <span class="number">32</span>;          <span class="comment">// block中的x线程</span></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BY = <span class="number">8</span>;          <span class="comment">// block中的y线程</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BK = <span class="number">16</span>;          <span class="comment">// block内x轴步长，每次处理BK组RGB元素</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> SX = BX * BK;     <span class="comment">// block的x轴步长，每个RGB元素占据四个字节</span></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> SY = BY;          <span class="comment">// block的y轴步长，我们这里y轴为1</span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">invert_kernel</span><span class="params">(<span class="type">unsigned</span> <span class="type">char</span>* image, <span class="type">int</span> width, <span class="type">int</span> height)</span> </span>&#123;</span><br><span class="line">    uchar4* pixel4 = <span class="built_in">reinterpret_cast</span>&lt;uchar4*&gt;(image);</span><br><span class="line">    <span class="comment">// 注意，这里我们使用的是TILE和线程交错排布，所以相对偏移量不需要乘以BK</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> gx = blockIdx.x * SX + threadIdx.x;</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> gy = blockIdx.y * SY + threadIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; BK; i++) &#123;</span><br><span class="line">        <span class="type">const</span> <span class="type">int</span> tx = gx + i * BX;</span><br><span class="line">        <span class="keyword">if</span> (tx &lt; width &amp;&amp; gy &lt; height) &#123;</span><br><span class="line">            <span class="type">int</span> idx = gy * width + (gx + i * BX);</span><br><span class="line">            uchar4 pixel = pixel4[idx];</span><br><span class="line">            pixel.x = <span class="number">255</span> - pixel.x;</span><br><span class="line">            pixel.y = <span class="number">255</span> - pixel.y;</span><br><span class="line">            pixel.z = <span class="number">255</span> - pixel.z;</span><br><span class="line">            pixel4[idx] = pixel;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// image_input, image_output are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">unsigned</span> <span class="type">char</span>* image, <span class="type">int</span> width, <span class="type">int</span> height)</span> </span>&#123;</span><br><span class="line">    <span class="function">dim3 <span class="title">threadsPerBlock</span><span class="params">(BX, BY)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">blocksPerGrid</span><span class="params">(CEIL_DIV(width, SX), CEIL_DIV(height, SY))</span></span>;</span><br><span class="line">    invert_kernel&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(image, width, height);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="性能分析">性能分析</h2>
+<p>在我们这个<strong>使用了x轴线程粗化技术</strong>的代码中，我们存在一个严重的问题：我们在
+<code>TESLA</code> 上，我们的 <code>BK</code>
+越小，反而执行的性能越快！而在我自己的 <code>4060 TI</code>
+上却完全是正好相反的：</p>
+<table>
+<thead>
+<tr class="header">
+<th><code>WIDTH</code></th>
+<th><code>BX</code></th>
+<th><code>BY</code></th>
+<th><code>HEIGHT</code></th>
+<th><code>BK</code></th>
+<th><code>TESLA T4</code></th>
+<th><code>4060 TI</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5120</td>
+<td>32</td>
+<td>8</td>
+<td>4096</td>
+<td>1</td>
+<td>0.72ms</td>
+<td>862257ns</td>
+</tr>
+<tr class="even">
+<td>5120</td>
+<td>32</td>
+<td>8</td>
+<td>4096</td>
+<td>8</td>
+<td>0.86ms</td>
+<td>569921ns</td>
+</tr>
+<tr class="odd">
+<td>5120</td>
+<td>32</td>
+<td>8</td>
+<td>4096</td>
+<td>16</td>
+<td>0.89ms</td>
+<td>588599ns</td>
+</tr>
+</tbody>
+</table>
+<p>这是一个很神奇的现象，我们下面仔细研究一下这个问题。先来看看T4和4060
+TI的差别：</p>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>关键参数</strong></th>
+<th><strong>Tesla T4 (Turing)</strong></th>
+<th><strong>RTX 4060 Ti (Ada)</strong></th>
+<th><strong>对优化的影响</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>显存位宽</strong></td>
+<td><strong>256-bit</strong></td>
+<td><strong>128-bit</strong></td>
+<td><strong>4060 Ti 的总线更窄，更依赖缓存命率</strong></td>
+</tr>
+<tr class="even">
+<td><strong>L2 缓存容量</strong></td>
+<td><strong>4 MB</strong></td>
+<td><strong>32 MB</strong></td>
+<td><strong>核心差异点</strong>。L2 越大，重复访存的代价越低</td>
+</tr>
+<tr class="odd">
+<td><strong>架构代次</strong></td>
+<td>Turing (2018)</td>
+<td>Ada Lovelace (2023)</td>
+<td>架构越新，单核指令周期（IPC）越高</td>
+</tr>
+<tr class="even">
+<td><strong>SM 数量</strong></td>
+<td>40</td>
+<td>34</td>
+<td>SM 越多，能并行的 Block 数量越多</td>
+</tr>
+<tr class="odd">
+<td><strong>显存带宽</strong></td>
+<td>320 GB/s</td>
+<td>288 GB/s</td>
+<td>T4 原始带宽甚至略高，但 4060 Ti 靠 L2 补齐</td>
+</tr>
+<tr class="even">
+<td><strong>单精度浮点性能</strong></td>
+<td>8.1 TFLOPS</td>
+<td>22.1 TFLOPS</td>
+<td>4060 Ti 的计算能力是 T4 的 2.7 倍</td>
+</tr>
+<tr class="odd">
+<td><strong>核心频率 (Boost)</strong></td>
+<td>~1590 MHz</td>
+<td>~2535 MHz</td>
+<td>4060 Ti 跑指令的速度明显快得多</td>
+</tr>
+</tbody>
+</table>
+<p>在这些参数中，<code>架构代次</code>，<code>SM数量</code>，<code>显存带宽</code>，<code>单精度浮点性能</code>，<code>核心频率</code>
+这几个参数只会影响我们程序的绝对运行时间，不会影响我们在不同配置下的计算时间，所以我们主要需要关注的是：</p>
+<ul>
+<li><code>L2缓存容量</code> T4 的 L2 只有 4MB。当我们使用大
+<code>BK</code> 时，每个线程处理的数据范围变大，在 40 个 SM
+并发的情况下，很容易就把这 4MB
+撑爆，导致缓存频繁失效，不得不去慢速的显存读取数据。而 4060 TI
+拥有更大的缓存，这意味着我们缓存命中的情况更高；</li>
+<li><code>显存位宽</code>：理论上，更高的显存位宽会带来更大的显存读取流量，但是这里有可能会因为L2缓存过小的原因浪费。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ncu --metrics l1tex__t_sector_hit_rate.pct,lts__t_sector_hit_rate.pct,sm__inst_executed.avg.per_cycle_active,sm__warps_active.avg ./build/color_inversion</span><br></pre></td></tr></table></figure>
+<p>我们得到了如下输出：</p>
+<figure class="highlight brainfuck"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">Section: Command line profiler metrics</span></span><br><span class="line"><span class="literal">--------------------------------------</span> <span class="literal">-----------</span> <span class="literal">------------</span></span><br><span class="line"><span class="comment">Metric Name                            Metric Unit Metric Value</span></span><br><span class="line"><span class="literal">--------------------------------------</span> <span class="literal">-----------</span> <span class="literal">------------</span></span><br><span class="line"><span class="comment">l1tex__t_sector_hit_rate</span><span class="string">.</span><span class="comment">pct                     %        48</span><span class="string">.</span><span class="comment">85</span></span><br><span class="line"><span class="comment">lts__t_sector_hit_rate</span><span class="string">.</span><span class="comment">pct                       %        50</span><span class="string">.</span><span class="comment">03</span></span><br><span class="line"><span class="comment">sm__inst_executed</span><span class="string">.</span><span class="comment">avg</span><span class="string">.</span><span class="comment">per_cycle_active  inst/cycle         0</span><span class="string">.</span><span class="comment">27</span></span><br><span class="line"><span class="comment">sm__warps_active</span><span class="string">.</span><span class="comment">avg                          warp  56986735</span><span class="string">.</span><span class="comment">50</span></span><br><span class="line"><span class="literal">--------------------------------------</span> <span class="literal">-----------</span> <span class="literal">------------</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>l1tex__t_sector_hit_rate.pct</code> 和
+<code>lts__t_sector_hit_rate.pct</code> 显示有 <strong>50%</strong>
+的命中率。这其实印证了 <strong>写入分配（Write Allocation）</strong>
+机制： 在现代 GPU 中，当我们往显存写数据时，系统会先检查这块地址是否在
+L2 中。由于我们处理的是连续像素（<code>uchar4</code>），线程 A
+读取了像素，线程 B 随后写入。<strong>读操作</strong>产生的 Cache Line
+被保留在 L2 中，使得紧随其后的<strong>写操作</strong>直接命中了缓存。这
+50% 的命中率意味着我们的<strong>写操作几乎全部在 L2
+内部完成</strong>，极大地缓解了 4060 Ti 那窄小的 128-bit 总线压力。</li>
+<li><strong><code>sm__inst_executed.avg.per_cycle_active</code>
+(0.27)</strong> ：表示指令执行效率：0.27
+inst/cycle，因为这是一个典型的<strong>访存受限（Memory-bound）</strong>算子。核心大部分时间都在等待显存返回数据，而不是在忙着做计算。</li>
+</ul>
+<h1 id="matrix-addition">Matrix Addition</h1>
+<h2 id="矩阵加法的两种naive实现">矩阵加法的两种naive实现</h2>
+<p>我们基于 <code>1D线性模型</code> 和 <code>基于矩阵模型</code>
+两种不同的逻辑实现了矩阵加法，然而，<strong>基于1D线性模型的实现速度接近于基于矩阵模型的两倍。</strong>这里主要的性能差距是由于：</p>
+<ol type="1">
+<li>线性模型的判定条件 <code>idx &lt; N * N</code> 在最后计算结束的那个
+<code>block</code> 之前，所有的判定均为真；而
+<code>tx &lt; N &amp;&amp; ty &lt; N</code>，假设 <code>N % tx</code>
+或者 <code>N % ty</code> 有一个不为零的话，那么每个 <code>block</code>
+都会出现空转线程；</li>
+<li>2D 布局在逻辑上是块状的，但显存是线性的。一旦 <span
+class="math inline">\(N\)</span> 的宽度没对齐到硬件的 Cache Line（通常是
+128 字节），2D
+访问在每一行的末尾都会产生<strong>内存空洞</strong>。</li>
+<li><code>1D模型</code> 指令强度更高：
+<ul>
+<li><code>1D模型</code> 中，计算索引只需要一条 MAD
+指令：<code>blockIdx.x * blockDim.x + threadIdx.x</code>；</li>
+<li><code>2D模型</code> 中，计算索引需要三条 MAD 指令：
+<ul>
+<li><code>tx = blockIdx.x * blockDim.x + threadIdx.x</code></li>
+<li><code>ty = blockIdx.y * blockDim.y + threadIdx.y</code></li>
+<li><code>idx = ty * N + tx</code></li>
+</ul></li>
+</ul></li>
+<li>寄存器压力更大：每一个中间变量（<code>tx</code>, <code>ty</code>,
+<code>bx</code>, <code>by</code>）都需要占用线程的寄存器。而
+<code>1D模型</code> 中只有两个中间变量用于计算索引；</li>
+</ol>
+<h3 id="基于1d线性模型">基于1D线性模型</h3>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_add_scalar</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* A, <span class="type">const</span> <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> bx = blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="type">int</span> tx = bx + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (tx &lt; N * N) &#123;</span><br><span class="line">        C[tx] = A[tx] + B[tx];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// A, B, C are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* A, <span class="type">const</span> <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> threadsPerBlock = <span class="number">256</span>;</span><br><span class="line">    <span class="type">int</span> blocksPerGrid = (N * N + threadsPerBlock - <span class="number">1</span>) / threadsPerBlock;</span><br><span class="line"></span><br><span class="line">    matrix_add_scalar&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(A, B, C, N);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="基于矩阵模型">基于矩阵模型</h3>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CEIL_DIV(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BX = <span class="number">32</span>;</span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BY = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_add_scalar</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* A, <span class="type">const</span> <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> bx = blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="type">int</span> by = blockIdx.y * blockDim.y;</span><br><span class="line">    <span class="type">int</span> tx = bx + threadIdx.x;</span><br><span class="line">    <span class="type">int</span> ty = by + threadIdx.y;</span><br><span class="line">    <span class="keyword">if</span> (tx &lt; N &amp;&amp; ty &lt; N) &#123;</span><br><span class="line">        <span class="type">int</span> idx = ty * N + tx;</span><br><span class="line">        C[idx] = A[idx] + B[idx];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// A, B, C are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* A, <span class="type">const</span> <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="function">dim3 <span class="title">threadsPerBlock</span><span class="params">(BX, BY)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">blocksPerGrid</span><span class="params">(CEIL_DIV(N, BX), CEIL_DIV(N, BY))</span></span>;</span><br><span class="line"></span><br><span class="line">    matrix_add_scalar&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(A, B, C, N);</span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="使用向量化加速优化">使用向量化加速优化</h2>
+<p><strong>根据我们前面的对于 <code>1D</code> 和 <code>2D</code>
+模型的分析，我们可以确认：对于 <code>element-wise</code>
+的算子，我们优先使用 <code>1D</code> 模型</strong>。</p>
+<p>在我们的代码中，我们直接将 <code>N * N</code> 的矩阵转换为一个包含
+<code>N * N / 4</code> 个数字的数组，这样编程逻辑更加清晰简洁。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CEIL_DIV(x, y) (((x) + (y) - 1) / (y))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> BX = <span class="number">256</span>;</span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_add_vectorized</span><span class="params">(<span class="type">const</span> float4* A, <span class="type">const</span> float4* B, float4* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> tx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (tx &lt; N) &#123;</span><br><span class="line">        float4 a = A[tx];</span><br><span class="line">        float4 b = B[tx];</span><br><span class="line">        C[tx] = <span class="built_in">make_float4</span>(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">matrix_add_scalar</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* A, <span class="type">const</span> <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> bx = blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="type">int</span> tx = bx + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (tx &lt; N) &#123;</span><br><span class="line">        C[tx] = A[tx] + B[tx];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// A, B, C are device pointers (i.e. pointers to memory on the GPU)</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">const</span> <span class="type">float</span>* A, <span class="type">const</span> <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> threadsPerBlock = BX;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> total_elements = N * N;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">reinterpret_cast</span>&lt;<span class="type">size_t</span>&gt;(A) % <span class="number">16</span> == <span class="number">0</span></span><br><span class="line">        &amp;&amp; <span class="built_in">reinterpret_cast</span>&lt;<span class="type">size_t</span>&gt;(B) % <span class="number">16</span> == <span class="number">0</span></span><br><span class="line">        &amp;&amp; <span class="built_in">reinterpret_cast</span>&lt;<span class="type">size_t</span>&gt;(C) % <span class="number">16</span> == <span class="number">0</span></span><br><span class="line">        &amp;&amp; (N * N) % <span class="number">4</span> == <span class="number">0</span>) &#123;</span><br><span class="line"></span><br><span class="line">        total_elements /= <span class="number">4</span>;</span><br><span class="line">        <span class="function">dim3 <span class="title">blocksPerGrid</span><span class="params">(CEIL_DIV(total_elements, threadsPerBlock))</span></span>;</span><br><span class="line">        <span class="type">const</span> float4 * vA = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">const</span> float4*&gt;(A);</span><br><span class="line">        <span class="type">const</span> float4 * vB = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">const</span> float4*&gt;(B);</span><br><span class="line">        float4 * vC = <span class="built_in">reinterpret_cast</span>&lt;float4*&gt;(C);</span><br><span class="line">        matrix_add_vectorized&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(vA, vB, vC, total_elements);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        dim3 <span class="built_in">blocksPerGrid</span>(<span class="built_in">CEIL_DIV</span>(total_elements, threadsPerBlock));</span><br><span class="line">        matrix_add_scalar&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(A, B, C, total_elements);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">cudaDeviceSynchronize</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="qa">QA</h1>
+<h2 id="向量化加速">向量化加速</h2>
+<h3 id="什么是向量化加速">什么是向量化加速</h3>
+<p>在 CUDA 中，默认的读写是标量（Scalar）模式。比如 <code>float</code>
+是 32 位（4 字节）。</p>
+<ul>
+<li><strong>标量模式</strong>：每个线程发出指令：“给我拿 4
+字节数据”。</li>
+<li><strong>向量模式</strong>：每个线程发出指令：“给我拿 16
+字节数据”（使用 <code>float4</code>）。</li>
+</ul>
+<p>当我们使用 <code>float4</code> 时，编译器会生成
+<code>LDG.E.128</code>（Load Global 128-bit）指令：</p>
+<ol type="1">
+<li><strong>减少指令数</strong>：读取 16 字节，标量要跑 4
+次指令发射循环，向量只需 1 次。</li>
+<li><strong>合并事务利用率</strong>：GPU 的显存控制器（Memory
+Controller）天生喜欢大块、连续的请求。128-bit（16
+字节）是单个线程能发起的最大合法访问宽度，它能完美填满内存总线的带宽空隙。</li>
+</ol>
+<h3 id="如何使用向量化">如何使用向量化</h3>
+<p>使用向量化通常分为三个步骤：<strong>定义内核、对齐检查、分流调用</strong>。</p>
+<h4 id="定义向量化内核">定义向量化内核</h4>
+<p>利用 CUDA 内置的向量类型，如 <code>int2</code>, <code>float2</code>,
+<code>float4</code>, <code>uchar4</code>。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">vectorized_kernel</span><span class="params">(<span class="type">const</span> float4* A, <span class="type">const</span> float4* B, float4* C, <span class="type">int</span> n_v4)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (idx &lt; n_v4) &#123;</span><br><span class="line">        <span class="comment">// 一次操作 16 字节</span></span><br><span class="line">        float4 a = A[idx]; </span><br><span class="line">        float4 b = B[idx];</span><br><span class="line">        float4 res;</span><br><span class="line">        res.x = a.x + b.x;</span><br><span class="line">        res.y = a.y + b.y;</span><br><span class="line">        res.z = a.z + b.z;</span><br><span class="line">        res.w = a.w + b.w;</span><br><span class="line">        C[idx] = res;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="主机端的dispatch">主机端的dispatch</h4>
+<p>首先，我们必须判断环境是否允许开启加速。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">solve</span><span class="params">(<span class="type">float</span>* A, <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> N)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 限制条件检查</span></span><br><span class="line">    <span class="type">bool</span> can_vectorize = ((<span class="type">size_t</span>)A % <span class="number">16</span> == <span class="number">0</span>) &amp;&amp; </span><br><span class="line">                         ((<span class="type">size_t</span>)B % <span class="number">16</span> == <span class="number">0</span>) &amp;&amp; </span><br><span class="line">                         ((<span class="type">size_t</span>)C % <span class="number">16</span> == <span class="number">0</span>) &amp;&amp; </span><br><span class="line">                         (N % <span class="number">4</span> == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (can_vectorize) &#123;</span><br><span class="line">        vectorized_kernel&lt;&lt;&lt;...&gt;&gt;&gt;((float4*)A, (float4*)B, (float4*)C, N / <span class="number">4</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        scalar_kernel&lt;&lt;&lt;...&gt;&gt;&gt;(A, B, C, N);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="向量化加速的限制">向量化加速的限制</h3>
+<p>向量化虽然快，但它是<strong>“带镣铐的舞者”</strong>。如果不遵守以下限制，程序会直接报错或崩溃。</p>
+<h4 id="内存对齐限制-alignment">内存对齐限制 (Alignment)</h4>
+<ul>
+<li><p><strong>规则</strong>：地址必须是向量大小的整数倍。</p></li>
+<li><p><strong>具体要求</strong>：<code>float4</code> 访问的地址必须能被
+<strong>16 字节</strong> 整除。</p></li>
+<li><p><strong>后果</strong>：如果地址是 <code>0x...08</code>（对齐了 8
+字节但没对齐 16 字节），强行执行 <code>float4</code> 会报
+<code>Misaligned Address</code> 错误。</p></li>
+</ul>
+<h4 id="数据总量限制-divisibility">数据总量限制 (Divisibility)</h4>
+<ul>
+<li><p><strong>规则</strong>：总元素数量必须能被向量长度整除。</p></li>
+<li><p><strong>现实</strong>：如果我们的数组有 103 个
+<code>float</code>，我们按 <code>float4</code> 处理（103 / 4 =
+25.75），最后 3 个元素就会被漏掉或者越界访问。</p></li>
+<li><p><strong>对策</strong>：通常需要写“三段式”代码：处理开头的非对齐部分
+-&gt; 处理中间的向量部分 -&gt; 处理末尾的残余部分。</p></li>
+</ul>
+<h4 id="寄存器压力">寄存器压力</h4>
+<ul>
+<li><strong>规则</strong>：向量化会增加单个线程对寄存器的占用。</li>
+<li><strong>影响</strong>：一个 <code>float4</code> 变量直接占用 4 个 32
+位寄存器。如果我们的内核逻辑非常复杂，向量化可能导致
+<strong>Occupancy（占用率）</strong> 下降。</li>
+<li><strong>权衡</strong>：在 4060 Ti
+这种寄存器资源丰富的卡上通常不是问题，但在一些老旧显卡上，过度向量化可能反而变慢。</li>
+</ul>
+<h3 id="向量化加速的实现">向量化加速的实现</h3>
+<blockquote>
+<p>向量化加速要求满足：</p>
+<ol type="1">
+<li>初始地址内存对齐 16 字节；</li>
+<li>数据总量对齐，总长度对齐向量长度；</li>
+</ol>
+<p>那么，我们可以将输入数组拆分为三段：</p>
+<ol type="1">
+<li><strong>Prologue (前导段)</strong>：处理 <code>ptr % 16 != 0</code>
+的部分。让指针“跑”到最近的 16 字节对齐点。</li>
+<li><strong>Main Body (主体段)</strong>：这里是真正的
+<strong>高速公路</strong>。没有任何 <code>if</code> 判断，全速执行
+<code>float4</code> 指令。</li>
+<li><strong>Epilogue (收尾段)</strong>：处理最后剩下的
+<code>n % 4</code> 个元素。</li>
+</ol>
+</blockquote>
+<p>考虑下面的这个：<code>[0x2008, 0x2108]</code>
+的数组，我们将他分为了三段：</p>
+<ul>
+<li><code>prologue</code> 是包含了两个元素；</li>
+<li><code>main body</code> 包含了中间 <code>60</code>
+个满足向量化加速的元素；</li>
+<li><code>epilogue</code> 包含了结尾的剩余两个元素；</li>
+</ul>
+<p>这里值得注意的是：</p>
+<ul>
+<li>我们本身的总长度为
+<code>256</code>，是满足向量化访问的长度的，但是起始索引
+<code>0x2008</code> 不满足向量化访问逻辑。所以我们切分掉了一部分。</li>
+<li>而切分掉一部分之后，我们本来可以满足向量化访问的数组长度变得不能向量化访问了，我们又需要在结尾增加一个
+<code>epilogue</code>。</li>
+</ul>
+<pre><code class="highlight mermaid">block-beta
+
+columns 8
+
+header0(&quot;Prologue&quot;):2
+header1(&quot;Main Body&quot;):4
+header2(&quot;Epilogue&quot;):2
+
+block:z1:2
+    1(&quot;0x2008&quot;)
+    2(&quot;0x200c&quot;)
+end
+
+block:z2:4
+    3(&quot;0x2010&quot;)
+    4(&quot;0x2014&quot;)
+    5(&quot;...&quot;)
+    6(&quot;0x2100&quot;)
+end
+
+block:z3:2
+    7(&quot;0x2104&quot;)
+    8(&quot;0x2108&quot;)
+end
+
+class header0,header1,header2 purple
+class z1,z2,z3 animate
+class 1,2,7,8 gray
+class 3,4,5,6 green
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h4 id="基础的向量化加速实现">基础的向量化加速实现</h4>
+<p>假设我们现在存在
+<code>A</code>，<code>B</code>，<code>C</code>，他们的初始地址对于16字节对齐都有一个相同的偏移量，那么我们可以使用如下的方法：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">solve_robust</span><span class="params">(<span class="type">float</span>* A, <span class="type">float</span>* B, <span class="type">float</span>* C, <span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// --- 步骤 1: 头部对齐 (Prologue) ---</span></span><br><span class="line">    <span class="comment">// 计算需要先用标量处理多少个元素才能使 A 对齐到 16 字节</span></span><br><span class="line">    <span class="type">int</span> prologue_elements = (<span class="number">16</span> - ((<span class="type">size_t</span>)A % <span class="number">16</span>)) / <span class="built_in">sizeof</span>(<span class="type">float</span>);</span><br><span class="line">    <span class="keyword">if</span> (prologue_elements == <span class="number">4</span>) prologue_elements = <span class="number">0</span>; <span class="comment">// 已经对齐了</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (prologue_elements &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 启动一个极小的核函数处理这几个元素，或者在下面统一处理</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// --- 步骤 2: 主体向量化 (Main Body) ---</span></span><br><span class="line">    <span class="type">int</span> main_start = prologue_elements;</span><br><span class="line">    <span class="type">int</span> main_elements = (n - main_start) / <span class="number">4</span> * <span class="number">4</span>; <span class="comment">// 保证是 4 的倍数</span></span><br><span class="line">    <span class="keyword">if</span> (main_elements &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="type">int</span> n_v4 = main_elements / <span class="number">4</span>;</span><br><span class="line">        vectorized_kernel&lt;&lt;&lt;...&gt;&gt;&gt;(</span><br><span class="line">            (float4*)(A + main_start), </span><br><span class="line">            (float4*)(B + main_start), </span><br><span class="line">            (float4*)(C + main_start), </span><br><span class="line">            n_v4</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// --- 步骤 3: 尾部处理 (Epilogue) ---</span></span><br><span class="line">    <span class="type">int</span> tail_start = main_start + main_elements;</span><br><span class="line">    <span class="keyword">if</span> (tail_start &lt; n) &#123;</span><br><span class="line">        scalar_kernel&lt;&lt;&lt;...&gt;&gt;&gt;(A + tail_start, B + tail_start, C + tail_start, n - tail_start);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="更复杂的向量化加速实现">更复杂的向量化加速实现</h4>
+<p>我们还存在一些更复杂的向量化实现场景，假设我们存在如下的一个场景：</p>
+<ul>
+<li><code>A % 16 == 4</code></li>
+<li><code>B % 16 == 8</code></li>
+<li><code>C % 16 == c</code></li>
+</ul>
+<p>在这种情况下，我们三个数组中需要裁剪掉不同的长度。</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 9
+
+space
+header0(&quot;addr % 16 = 4&quot;):2
+header1(&quot;addr % 16 = 8&quot;):2
+header2(&quot;addr % 16 = c&quot;):2
+header3(&quot;addr % 16 = 0&quot;):2
+
+A
+block:z1:8
+    1(&quot;0x2004&quot;) 2(&quot;0x2008&quot;) 3(&quot;0x200c&quot;) 4(&quot;0x2010&quot;) 
+end
+
+B
+block:z2:8
+    columns 4
+    space
+    5(&quot;0x4008&quot;) 6(&quot;0x400c&quot;) 7(&quot;0x4010&quot;)
+end
+
+C
+block:z3:8
+    columns 4
+    space:2
+    9(&quot;0x200c&quot;) a(&quot;0x2010&quot;)
+end
+
+class header0,header1,header2,header3 purple
+class z1,z2,z3 animate
+class A,B,C purple
+class 1,2,3,5,6,9 gray
+
+class 4,7,a green
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>为此，我们需要引入一个叫 <code>__shfl_down_sync</code>
+的技术：它允许我们在 <code>block</code> 中进行跨线程的数据共享。</p>
+<ol type="1">
+<li>我们依然是先划分出来一个 <code>prologue</code> 段，并且使用标量进行
+<code>A[0] ~ A[2]</code>，<code>B[0] ~ B[2]</code>
+，<code>C[0] ~ C[2]</code> 这一部分的计算；</li>
+<li>随后，我们对于这三个数组，都从索引 <code>3</code>
+开始计算，此时他们都是对齐的，问题在于，他们现在的数据形式如下：
+<ul>
+<li>线程一持有 <code>A[3] ~ A[6]</code>，<code>B[3] ~ B[6]</code>，
+<code>C[3] ~ C[6]</code>；</li>
+<li>线程二持有 <code>A[7] ~ A[10]</code>，<code>B[7] ~ B[10]</code>，
+<code>C[7] ~ C[10]</code>；</li>
+<li>...</li>
+</ul></li>
+<li>此时，我们在计算中的逻辑是，<code>A[3] ~ A[6]</code>
+分别对应了线程一的部分数据和线程二的部分数据，我们只需要通过
+<code>__shfl_down_sync</code> 将它从线程二共享到线程一即可。</li>
+</ol>
+<p><strong>但是，通常来说，这个算法的实现过于复杂，所以在工业界我们会倾向于在前后填充一些
+<code>padding</code> 来实现向量化访问。</strong></p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 11
+
+space
+header0(&quot;addr % 16 = 0&quot;):2
+header1(&quot;addr % 16 = 4&quot;):2
+header2(&quot;addr % 16 = 8&quot;):2
+header3(&quot;addr % 16 = c&quot;):2
+header4(&quot;addr % 16 = 0&quot;):2
+
+A
+block:z1:10
+    p0(&quot;padding&quot;)
+    1(&quot;0x2004&quot;) 2(&quot;0x2008&quot;) 3(&quot;0x200c&quot;) 4(&quot;0x2010&quot;) 
+end
+
+B
+block:z2:10
+    columns 6
+    p1(&quot;padding&quot;) p2(&quot;padding&quot;)
+    5(&quot;0x4008&quot;) 6(&quot;0x400c&quot;) 7(&quot;0x4010&quot;)
+end
+
+C
+block:z3:10
+    columns 6
+    p3(&quot;padding&quot;) p4(&quot;padding&quot;) p5(&quot;padding&quot;)
+    9(&quot;0x200c&quot;) a(&quot;0x2010&quot;)
+end
+
+class header0,header1,header2,header3,header4 purple
+class z1,z2,z3 animate
+class A,B,C purple
+class 1,2,3,5,6,9 gray
+class 4,7,a green
+class p0,p1,p2,p3,p4,p5 pink
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="活跃度-occupancy-与任务分配的权衡">活跃度 (Occupancy)
+与任务分配的权衡</h2>
+<p>在 CUDA
+算子开发中，选择合适的线程块（Block）大小并非随意的决定，而是一场基于硬件物理限制的博弈。其核心目标是在<strong>合并访问</strong>、<strong>延迟隐藏</strong>与<strong>硬件利用率</strong>之间找到最优平衡。</p>
+<h3 id="核心约束变量">核心约束变量</h3>
+<p>为了进行量化分析，我们首先定义 SM（Streaming
+Multiprocessor）的两个关键硬件瓶颈：</p>
+<ul>
+<li><strong><span class="math inline">\(B\)</span> (Max Blocks per
+SM)</strong>：单个 SM 能同时调度的 Block 数量上限。</li>
+<li><strong><span class="math inline">\(T\)</span> (Max Threads per
+SM)</strong>：单个 SM 能同时承载的活跃线程总数上限。</li>
+</ul>
+<h3 id="性能平衡的三大核心原则">性能平衡的三大核心原则</h3>
+<blockquote>
+<p>延迟隐藏 (Latency Hiding) 需求</p>
+</blockquote>
+<p>GPU 通过在不同的 Warp
+间快速切换来掩盖指令延迟（尤其是高昂的访存延迟）。为了实现这一点，我们期望
+SM 中活跃的 Block 数量尽量<strong>逼近上限 <span
+class="math inline">\(B\)</span></strong>。如果活跃 Block 太少，当现有
+Warp 都在等待数据时，调度器将无任务可换，导致硬件空转。</p>
+<blockquote>
+<p>硬件利用率 (Utilization) 需求</p>
+</blockquote>
+<p>我们期望单个 SM 上的线程总数尽量<strong>逼近上限 <span
+class="math inline">\(T\)</span></strong>。只有当足够的线程在工作时，GPU
+的计算单元（CUDA Cores）和指令流水线才能被填满。</p>
+<blockquote>
+<p>访存合并 (Memory Coalescing) 需求</p>
+</blockquote>
+<p>为了充分利用总线带宽，Block 的 X 轴线程数必须是 <strong>Warp
+大小（32）的倍数</strong>。这是所有性能优化的前提。</p>
+<h3 id="寻找平衡点t_max-t-b">寻找平衡点：<span
+class="math inline">\(T_{max} = T / B\)</span></h3>
+<p>基于上述约束，我们可以推导出一个理想的平衡点模型：</p>
+<blockquote>
+<p>线程数过少 (Small Blocks)</p>
+</blockquote>
+<p>如果单个 Block 的线程数 <span class="math inline">\(t &lt;
+T/B\)</span>：</p>
+<ul>
+<li><strong>后果</strong>：当 Block 数量达到上限 <span
+class="math inline">\(B\)</span> 时，总线程数 <span
+class="math inline">\(B \times t\)</span> 仍远小于 <span
+class="math inline">\(T\)</span>。</li>
+<li><strong>结论</strong>：硬件资源被浪费，由于线程总数不足，无法填满计算吞吐量。</li>
+</ul>
+<blockquote>
+<p>线程数过多 (Large Blocks)</p>
+</blockquote>
+<p>如果单个 Block 的线程数 <span class="math inline">\(t\)</span>
+极大：</p>
+<ul>
+<li><strong>后果</strong>：总线程数很快达到 <span
+class="math inline">\(T\)</span>，导致活跃 Block 数量远小于 <span
+class="math inline">\(B\)</span>。</li>
+<li><strong>结论</strong>：不利于延迟隐藏，调度器缺乏足够的 Block
+粒度进行切换。</li>
+</ul>
+<p><strong>最佳策略</strong>是在保证合并访问的前提下，使单 Block
+线程数尽量满足： <span class="math display">\[
+t \approx \frac{T}{B}
+\]</span> 在这种状态下，SM 能同时达到 Block
+数量与线程数量的利用率峰值。</p>
+<h3 id="实践结论-以-nvidia-t4-为例">实践结论 (以 NVIDIA T4 为例)</h3>
+<p>在 T4 架构中，<span class="math inline">\(B=32\)</span>，<span
+class="math inline">\(T=1024\)</span>。</p>
+<ul>
+<li><strong>理论平衡点</strong>：<span class="math inline">\(1024 / 32 =
+32\)</span> 线程/Block。</li>
+<li><strong>工程建议</strong>：考虑到寄存器分配和更强的延迟隐藏需求，通常选择平衡点的
+<strong>4~8 倍</strong>（即 <strong>128 或 256</strong>
+个线程/Block）作为最优配置。</li>
+</ul>
+<h2 id="算子的分类">算子的分类</h2>
+<p>在 CUDA 性能调优的领域，根据<strong>数据访问模式（Memory Access
+Pattern）*<em>和*</em>计算密集度（Arithmetic
+Intensity）</strong>，我们通常将算子分为四大类：</p>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 23%" />
+<col style="width: 30%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>类型</th>
+<th>特点</th>
+<th>典型算子</th>
+<th>优化核心</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Element-wise</td>
+<td>每个输出点仅依赖于对应的输入点</td>
+<td>1. 矩阵加法<br/>2. 颜色反转<br/>3. ReLU激活函数<br/>4.
+图像二值化<br/>5. 归一化</td>
+<td><strong>访存带宽</strong>：<br/>1. 合并访问（Coalescing）<br/>2.
+向量化读写（<code>float4</code> / <code>uchar4</code>）</td>
+</tr>
+<tr class="even">
+<td>Reduction</td>
+<td>多个输入转换为少个输出</td>
+<td>1. sum<br/>2. mean<br/>3. max/min<br/>4. avg</td>
+<td><strong>线程间通信与同步</strong><br/>1. 通过 Shared Memory
+来降低分层处理时的缓存利用率；<br/>2.
+提高线程密度，因为在计算时合法线程会逐渐减小，我们希望一个warp中保持足够多的合法线程；</td>
+</tr>
+<tr class="odd">
+<td><code>Spatial</code>/<code>Sliding Window</code></td>
+<td>计算一个输出点需要访问输入点及其<strong>周围的元素</strong></td>
+<td>1. convolution<br/>2. 高斯模糊<br/>3. 边缘检测<br/>4. 池化</td>
+<td><strong>数据重用</strong>：<br/>1. 通过 Shared Memory
+来提高缓存利用率。</td>
+</tr>
+<tr class="even">
+<td><code>Transformation</code>/<code>Rearrange</code></td>
+<td>计算几乎为零，主要是变换和重排</td>
+<td>1. 矩阵转置<br/>2. 张量维度重排</td>
+<td><strong>解决访存冲突</strong>：<br />1.
+通过额外引入两次（或更多次）缓存访问（一次读一次写）来解决访存冲突。</td>
+</tr>
+</tbody>
+</table>
+<h3
+id="矩阵转置transformationrearrange">矩阵转置（transformation/rearrange）</h3>
+<p>当我们读取数据时，<code>input[y * cols + x]</code>
+是可以连续访问的：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    header0(&quot;读数据&quot;):2
+    block:z2:2
+        b0(&quot;warp0 - (0, 0)&quot;) b1(&quot;warp1 - (1, 0)&quot;)
+    end
+    block:z3:2
+        b2(&quot;warp2 - (0, 1)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+    end
+end
+
+
+class b0,b1 green
+class b2,b3 blue
+
+class b4,b6 yellow
+class b5,b7 orange
+
+class z0,z1 transparent
+class header0 purple
+
+class z2 light_green
+class z3 yellow
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而 <code>output[x * rows + y]</code> 是不能连续访问：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    block:z4:2
+        columns 1
+        space:1
+        header0(&quot;写数据&quot;)
+    end
+    block:z2:1
+        columns 1
+        b0(&quot;warp0 - (0, 0)&quot;) b2(&quot;warp2 - (0, 1)&quot;)
+    end
+    block:z3:1
+        columns 1
+        b1(&quot;warp1 - (1, 0)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+    end
+end
+
+
+class b0,b2 green
+class b1,b3 blue
+
+class z0,z1,z4 transparent
+class z2,z3 error
+class header0 purple
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>换个思路，我们可以先读取数据：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    b0(&quot;warp0 - (0, 0)&quot;) b1(&quot;warp1 - (1, 0)&quot;)
+    b2(&quot;warp2 - (0, 1)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b1 green
+class b2,b3 blue
+class z0 animate
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>当我们转换时，我们先将转换后的数据写入到 Shared
+Memory，此时我们无需考虑顺序写入的问题：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    sm(&quot;Shared Memory&quot;):2
+    b0(&quot;warp0 - (0, 0)&quot;) b2(&quot;warp2 - (0, 1)&quot;)
+    b1(&quot;warp1 - (1, 0)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b1 green
+class b2,b3 blue
+class z0 animate
+class sm purple
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>随后，我们再将 Shared Memory 中的数据原样输出：</p>
+<pre><code class="highlight mermaid">block-beta
+
+columns 2
+
+block:z0:1
+    columns 2
+    sm(&quot;显存&quot;):2
+    b0(&quot;warp0 - (0, 0)&quot;) b2(&quot;warp2 - (0, 1)&quot;)
+    b1(&quot;warp1 - (1, 0)&quot;) b3(&quot;warp3 - (1, 1)&quot;)
+end
+
+class b0,b2 green
+class b1,b3 blue
+class z0 animate
+class sm purple
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>即可完成合并写入。</p>
+<h3 id="sum累加">sum（累加）</h3>
+<h4 id="增加活跃线程数">增加活跃线程数</h4>
+<pre><code class="highlight mermaid">block-beta
+columns 9
+
+t0
+block:b0:2
+    t0_0(&quot;t0&quot;) t0_1(&quot;t1&quot;)
+end
+block:b1:2
+    t0_2(&quot;t2&quot;) t0_3(&quot;t3&quot;)
+end
+block:b2:2
+    t0_4(&quot;t4&quot;) t0_5(&quot;t5&quot;)
+end
+block:b3:2
+    t0_6(&quot;t6&quot;) t0_7(&quot;t7&quot;)
+end
+
+space:9
+t1
+block:b4:2
+    t1_0(&quot;t0&quot;) t1_1(&quot;t1&quot;)
+end
+block:b5:2
+    t1_2(&quot;t2&quot;) t1_3(&quot;t3&quot;)
+end
+block:b6:2
+    t1_4(&quot;t4&quot;) t1_5(&quot;t5&quot;)
+end
+block:b11:2
+    t1_6(&quot;t6&quot;) t1_7(&quot;t7&quot;)
+end
+
+space:9
+t2
+block:b7:2
+    t2_0(&quot;t0&quot;) t2_1(&quot;t1&quot;)
+end
+block:b8:2
+    t2_2(&quot;t2&quot;) t2_3(&quot;t3&quot;)
+end
+block:b9:2
+    t3_4(&quot;t4&quot;) t3_5(&quot;t5&quot;)
+end
+block:b10:2
+    t3_6(&quot;t6&quot;) t3_7(&quot;t7&quot;)
+end
+
+
+t0_0 --&gt; t1_0
+t0_4 --&quot;t0&quot;--&gt; t1_0
+
+t0_1 --&gt; t1_1
+t0_5 --&quot;t1&quot;--&gt; t1_1
+
+t0_2 --&gt; t1_2
+t0_6 --&quot;t2&quot;--&gt; t1_2
+
+t0_3 --&gt; t1_3
+t0_7 --&quot;t3&quot;--&gt; t1_3
+
+
+t1_0 --&gt; t2_0
+t1_1 --&gt; t2_0
+
+class t0,t1,t2 purple
+class b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 animate
+
+class t0_0,t0_1,t0_2,t0_3 green
+class t1_0,t1_1,t2_0 green
+
+class t0_4,t0_5,t0_6,t0_7,t1_2,t1_3,t1_4,t1_5,t1_6,t1_7,t2_1,t2_2,t2_3,t3_4,t3_5,t3_6,t3_7 gray
+
+%% 样式定义
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2 id="矩阵乘法的本质">矩阵乘法的本质</h2>
+<p><strong>矩阵变换的本质就是，假设存在矩阵坐标轴A和矩阵坐标轴B，他们分别以
+<span class="math inline">\((\hat{\imath}_{A},
+\hat{\jmath}_{A})\)</span> 和 <span
+class="math inline">\((\hat{\imath}_{B}, \hat{\jmath}_{B})\)</span>
+为基。那么在进行基 A * B 之后，得到了矩阵B中坐标为 <span
+class="math inline">\((x, y)\)</span>
+的坐标在矩阵A对应的坐标。</strong></p>
+<blockquote>
+<ol type="1">
+<li>更简洁的来说，就是通过矩阵乘法，我们知道了B矩阵的 (x, y) 对应于 A
+矩阵的坐标地址；</li>
+<li>从程序员的视角，我们可以认为是将B矩阵的指针，转换成了A矩阵可以访问的</li>
+</ol>
+</blockquote>
+假设我们的某个点的坐标是 <span class="math inline">\((x,
+y)\)</span>，我们的最开始矩阵 <span class="math inline">\(\hat{\imath} =
+(1, 0)\)</span> 并且 <span class="math inline">\(\hat{\jmath} = (0,
+1)\)</span>，那么我们的此时的基可以记为 <span
+class="math inline">\(M_0\)</span> <span class="math display">\[
+M_0 = \begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; 1
+\end{bmatrix}
+\]</span> 我们可以看到 <span class="math inline">\((x * \hat{\imath}, y
+* \hat{\jmath})\)</span> 就可以表示我们向量在当前的基上的坐标： $$ point
+=
+<span class="math display">\[\begin{bmatrix}
+x \\
+y
+\end{bmatrix}\]</span>
+<span class="math display">\[\begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; 1
+\end{bmatrix}\]</span>
+<p>=</p>
+<span class="math display">\[\begin{bmatrix}
+x \\
+y
+\end{bmatrix}\]</span>
+<p>$$</p>
+<p>随后，我们进行了一次矩阵旋转， <span
+class="math inline">\(\hat{\imath_1} = (0, 1)\)</span> 并且 <span
+class="math inline">\(\hat{\jmath_1} = (-1, 0)\)</span>，可以记为 <span
+class="math inline">\(M_1\)</span> <span class="math display">\[
+M_1 = \begin{bmatrix}
+0 &amp; -1 \\
+1 &amp; 0
+\end{bmatrix}
+\]</span> 那么，我们进行矩阵变换之后，我们的坐标应该是 <span
+class="math inline">\((x * \hat{\imath} *\hat{\imath_1}, y *
+\hat{\jmath} * \hat{\jmath_1})\)</span>，此时，如果我们把 <span
+class="math inline">\(\hat{\imath} * \hat{\imath_1}\)</span> 和 <span
+class="math inline">\(\hat{\jmath} * \hat{\jmath_1}\)</span>
+先计算出来，那么我们就得到了一个全新的矩阵： <span
+class="math display">\[
+M_2 = M0 \times M1 \
+=
+\begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; 1
+\end{bmatrix}
+\times
+\begin{bmatrix}
+    0 &amp; -1 \\
+    1 &amp; 0
+\end{bmatrix} \
+=
+\begin{bmatrix}
+0 &amp; -1 \\
+1 &amp; 0 \\
+\end{bmatrix}
+\]</span>
+我们可以认为，这两个变换复合到一起形成了一个新的变换，而这个变换的基就是我们上面的结果：此时我们可以使用
+<span class="math inline">\((x * \hat{\imath}_{new}, y *
+\hat{\jmath}_{new})\)</span> 直接得到我们在进行复合变换之后的点。</p>
+<h2 id="行列式">行列式</h2>
+<p><strong>行列式（Determinant）的作用是：衡量一个由矩阵定义的线性变换，对空间区域（面积或体积）所造成的“缩放比例”。</strong></p>
+<p>行列式会计算由矩阵定义的线性变换，将原始单位面积（由标准基 <span
+class="math inline">\(\hat{i}, \hat{j}\)</span>
+围成）变换为新面积（由变换后的基 <span
+class="math inline">\(\hat{i}&#39;, \hat{j}&#39;\)</span>
+围成）时的<strong>缩放倍率</strong>。</p>
+<p>对于矩阵的基 <span class="math inline">\(\hat{i}\)</span> 和 <span
+class="math inline">\(\hat{j}\)</span> ：</p>
+<ul>
+<li><strong>矩阵的列</strong>：其实就是原始的基向量 <span
+class="math inline">\(\hat{i}\)</span> 和 <span
+class="math inline">\(\hat{j}\)</span>
+在变换之后<strong>落在了哪里</strong>。</li>
+<li><strong>行列式的值</strong>：就是看变换后的那两个新向量张开的图形，比原始基向量张开的单位图形（面积为
+1 的正方形）<strong>大了多少倍</strong>。</li>
+</ul>
+<h3 id="行列式的计算">行列式的计算</h3>
+<p>对于一个 i hat 和 j hat 如下的坐标系，它的单个坐标块的面积如何计算？
+<span class="math display">\[
+\begin{bmatrix}
+a &amp; b \\
+c &amp; d
+\end{bmatrix}
+\]</span> 面积有三个基本特性：</p>
+<ol type="1">
+<li><strong>单位面积</strong>：标准基 <span
+class="math inline">\(\begin{bmatrix} 1 &amp; 0 \\ 0 &amp; 1
+\end{bmatrix}\)</span> 围成的面积是 <span
+class="math inline">\(1\)</span>。</li>
+<li><strong>伸缩性</strong>：如果把一个基向量拉长 <span
+class="math inline">\(k\)</span> 倍，面积也变为 <span
+class="math inline">\(k\)</span> 倍。</li>
+<li><strong>叠加性</strong>：如果基向量是两个向量的和，面积可以拆分。</li>
+</ol>
+<p>现在我们拆解矩阵 <span class="math inline">\(M = \begin{bmatrix} a
+&amp; b \\ c &amp; d \end{bmatrix}\)</span>：</p>
+<p>我们将它看作两个向量的组合：<span class="math inline">\(\vec{v}_1 =
+a\hat{\imath} + c\hat{\jmath}\)</span> 和 <span
+class="math inline">\(\vec{v}_2 = b\hat{\imath} +
+d\hat{\jmath}\)</span>。</p>
+<p>当我们把这两个组合展开并计算它们围成的“面积函数 <span
+class="math inline">\(Area(\vec{v}_1, \vec{v}_2)\)</span>”时：</p>
+<ul>
+<li><span class="math inline">\(Area(a\hat{\imath}, d\hat{\jmath}) = ad
+\times Area(\hat{\imath}, \hat{\jmath}) = ad\)</span></li>
+<li><span class="math inline">\(Area(c\hat{\jmath}, b\hat{\imath}) = cb
+\times Area(\hat{\jmath}, \hat{\imath}) = -bc\)</span> （注意：因为
+<span class="math inline">\(\hat{\jmath}\)</span> 在 <span
+class="math inline">\(\hat{\imath}\)</span>
+前面，方向反了，所以是负号）</li>
+<li><span class="math inline">\(Area(a\hat{\imath},
+b\hat{\imath})\)</span> 和 <span
+class="math inline">\(Area(c\hat{\jmath}, d\hat{\jmath})\)</span> 都是
+<span class="math inline">\(0\)</span>（因为共线，没面积）。</li>
+</ul>
+<p><strong>最后求和：<span class="math inline">\(ad -
+bc\)</span>。</strong></p>
+<h3 id="detm_1m_2-detm_1detm_2"><span class="math inline">\(det(M_1M_2)
+= det(M_1)det(M_2)\)</span></h3>
+<blockquote>
+<p>我们可以把 <strong><span
+class="math inline">\(\det(M)\)</span></strong>
+看作是一个空间的<strong>“面积缩放因子”</strong>。</p>
+<ul>
+<li><strong><span
+class="math inline">\(\det(M_2)\)</span></strong>：代表第一次变换将单位面积缩放了多少倍。</li>
+<li><strong><span
+class="math inline">\(\det(M_1)\)</span></strong>：代表第二次变换在<strong>已经变过一次</strong>的空间基础上，又缩放了多少倍。</li>
+</ul>
+<p>如果我们先将一个图形扩大了 <span class="math inline">\(3\)</span>
+倍（<span class="math inline">\(M_2\)</span>），接着又将结果扩大了 <span
+class="math inline">\(2\)</span> 倍（<span
+class="math inline">\(M_1\)</span>），那么最终的图形面积自然是原始面积的
+<span class="math inline">\(2 \times 3 = 6\)</span> 倍。这就是：</p>
+<p><span class="math display">\[\det(M_1 M_2) = \det(M_1) \times
+\det(M_2)\]</span></p>
+</blockquote>
+<p>我们也可以通过数值计算来证明：</p>
+假设： $$ M_1 =
+<span class="math display">\[\begin{bmatrix}
+a_1 &amp; b_1 \\
+c_1 &amp; d_1
+\end{bmatrix}\]</span>
+<p>\</p>
+M_2 =
+<span class="math display">\[\begin{bmatrix}
+a_2 &amp; b_2 \\
+c_2 &amp; d_2
+\end{bmatrix}\]</span>
+<p>$$</p>
+<p>那么 <span class="math inline">\(M_1M_2\)</span> 相当于对 <span
+class="math inline">\(M_2\)</span> 进行了一次矩阵线性缩放，并得到了新的
+<span class="math inline">\(\hat{\imath}\)</span> 和 <span
+class="math inline">\(\hat{\jmath}\)</span> <span
+class="math display">\[
+M_1M_2 = \begin{bmatrix}
+a_1a_2 + b_1c_2 &amp; a_1b_2 + b_1d_2 \\
+c_1a_2 + d_1c_2 &amp; c_1b_2 + d_1d_2
+\end{bmatrix}
+\]</span> 那么： <span class="math display">\[
+\begin{aligned}
+&amp; det(M_1M_2) \\
+&amp; = (a_1a_2 + b_1c_2) * (c_1b_2 + d_1d_2) - (a_1b_2 + b_1d_2) *
+(c_1a_2 + d_1c_2) \\
+&amp; = (a_1a_2c_1b_2 + a_1a_2d_1d_2 + b_1c_2c_1b_2 + b_1c_2d_1d_2) -
+(a_1b_2c_1a_2 + a_1b_2d_1c_2 + b_1d_2c_1a_2 + b_1d_2d_1c_2) \\
+&amp; = (\underbrace{a_1a_2b_2c_1}_{项目1} + a_1a_2d_1d_2 + b_1b_2c_1c_2
++ \underbrace{b_1c_2d_1d_2}_{项目2}) -
+(\underbrace{a_1a_2b_2c_1}_{项目1} + a_1b_2c_2d_1 + a_2b_1c_1d_2 +
+\underbrace{b_1c_2d_1d_2}_{项目2}) \\
+&amp; = a_1a_2d_1d_2 + b_1b_2c_1c_2 - a_1b_2c_2d_1 - a_2b_1c_1d_2
+\end{aligned}
+\]</span> 而： <span class="math display">\[
+\begin{aligned}
+&amp; det(M_1)det(M_2) \\
+&amp; = (a_1d_1 - b_1c_1) * (a_2d_2 - b_2c_2) \\
+&amp; = a_1a_2d_1d_2 + b_1b_2c_1c_2 - a_2b_1c_1d_2 - a_1b_2c_2d_1
+\end{aligned}
+\]</span></p>
+<h2 id="叉积">叉积</h2>
+<p>在我们的线性代数中：</p>
+<ul>
+<li><code>矩阵乘法</code>：可以看做是对 <span
+class="math inline">\(\hat{\imath}\)</span> 和 <span
+class="math inline">\(\hat{\jmath}\)</span> 的变换，当 <span
+class="math inline">\(\hat{\imath}\)</span> 和 <span
+class="math inline">\(\hat{\jmath}\)</span>
+变换之后，原来的点的位置也会相应的改变；</li>
+<li><code>点积</code> 求两个向量潜在的相似度，例如 a 和 b 的点积 /
+(a的绝对值 * b的绝对值) 得到的值可以表示 a 和 b 的相似度；</li>
+<li><code>叉积</code>
+试图用两个向量<strong>撑开一个空间</strong>，对于三维向量 <span
+class="math inline">\(v\)</span> 和三维向量 <span
+class="math inline">\(u\)</span>，虽然他们是三维向量，但是因为他们只有两个向量，所以我们可以在三维的向量空间里找到有且仅有的一个平面覆盖到这两个向量。而他们的叉积结果就是正好垂直于这个平面的一个向量，向量的长度和方向取决于
+a 和 b。</li>
+</ul>
+<h3 id="两点定线三点定面">两点定线，三点定面</h3>
+<p>在三维空间中，无论我们如何随机地扔出两个向量 <span
+class="math inline">\(\vec{a}\)</span> 和 <span
+class="math inline">\(\vec{b}\)</span>：</p>
+<ul>
+<li>只要它们不是共线的（即不在同一条直线上），它们就一定会<strong>张开（Span）</strong>出一个且仅有一个无限延伸的平面。</li>
+<li>从<strong>秩（Rank）</strong>的角度看：这两个向量构成的矩阵 Rank 为
+2，这意味着它们在三维世界里圈出了一块“二维领地”。</li>
+<li><strong>例外情况</strong>：如果 <span
+class="math inline">\(\vec{a}\)</span> 和 <span
+class="math inline">\(\vec{b}\)</span>
+指向相同或相反方向，它们只能定出一条线，此时平面不唯一（有无数个平面可以包含这条线），而这时它们的<strong>叉积正好为
+0</strong>，也印证了无法确定唯一的垂直方向。</li>
+</ul>
+<p>叉积 <span class="math inline">\(\vec{a} \times \vec{b}\)</span>
+的结果 <span class="math inline">\(\vec{c}\)</span>
+就是这个平面的<strong>法向量（Normal Vector）</strong>：</p>
+<ul>
+<li><strong>垂直的唯一性</strong>：在三维空间里，垂直于一个平面的方向是唯一的（除了正反之分）。叉积利用这一点，为我们找到了那个“逃离”平面的出口。</li>
+<li><strong>长度的内涵</strong>：这个 <span
+class="math inline">\(\vec{c}\)</span> 的长度不是随机的，它锁定了 <span
+class="math inline">\(\vec{a}\)</span> 和 <span
+class="math inline">\(\vec{b}\)</span>
+围成的平行四边形的<strong>面积</strong>。面积越大，生成的向量越长。</li>
+<li><strong>方向的内涵</strong>：通过“右手定则”，它不仅找出了垂直的方向，还定义了平面的<strong>朝向</strong>（是向上推还是向下钻）。</li>
+</ul>
+<h3 id="叉积的计算">叉积的计算</h3>
+<p>在三维空间中，给定两个向量 <span class="math inline">\(\vec{a} =
+(a_1, a_2, a_3)\)</span> 和 <span class="math inline">\(\vec{b} = (b_1,
+b_2, b_3)\)</span>，它们的叉积 <span class="math inline">\(\vec{a}
+\times \vec{b}\)</span>
+的计算通常有三种表达方式，分别对应不同的使用场景。</p>
+<p>我们将标准基向量 <span class="math inline">\(\hat{i}, \hat{j},
+\hat{k}\)</span> 放在第一行，构造一个伪行列式： <span
+class="math display">\[
+\vec{a} \times \vec{b} = \det \begin{bmatrix} \hat{i} &amp; \hat{j}
+&amp; \hat{k} \\ a_1 &amp; a_2 &amp; a_3 \\ b_1 &amp; b_2 &amp; b_3
+\end{bmatrix}
+\]</span> <strong>展开步骤：</strong>利用代数余子式展开（注意中间 <span
+class="math inline">\(\hat{j}\)</span>
+项的<strong>负号</strong>，我们的符号为
+<code>+</code>，<code>-</code>，<code>+</code>）：</p>
+<ol type="1">
+<li><strong><span class="math inline">\(\hat{i}\)</span>
+分量</strong>：划掉第一行第一列，算剩下的 <span class="math inline">\(2
+\times 2\)</span> 行列式：<span class="math inline">\((a_2b_3 -
+a_3b_2)\)</span></li>
+<li><strong><span class="math inline">\(\hat{j}\)</span>
+分量</strong>：划掉第一行第二列，算剩下的再取反：<span
+class="math inline">\(-(a_1b_3 - a_3b_1) = (a_3b_1 -
+a_1b_3)\)</span></li>
+<li><strong><span class="math inline">\(\hat{k}\)</span>
+分量</strong>：划掉第一行第三列，算剩下的：<span
+class="math inline">\((a_1b_2 - a_2b_1)\)</span></li>
+</ol>
+<p>我们得到 <span class="math display">\[
+\vec{a} \times \vec{b} = \begin{pmatrix} a_2b_3 - a_3b_2 \\ a_3b_1 -
+a_1b_3 \\ a_1b_2 - a_2b_1 \end{pmatrix}
+\]</span></p>
+<h3 id="叉积的本质">叉积的本质</h3>
+<p>叉积的本质是数学家最初想要寻找一个运算，能够同时满足：</p>
+<ol type="1">
+<li>结果必须垂直于 <span class="math inline">\(\vec{a}\)</span> 和 <span
+class="math inline">\(\vec{b}\)</span>。</li>
+<li>结果的长度必须等于 <span class="math inline">\(\vec{a}\)</span> 和
+<span class="math inline">\(\vec{b}\)</span> 张开的平行四边形面积。</li>
+</ol>
+<p>而我们的公式是一个伪行列式：真实的行列式需要满足矩阵是 <span
+class="math inline">\(n * n\)</span>
+的，这里我们的伪行列式任意一步计算之前都是删除第一行，再使用行列式的计算。</p>
+<p>那么，我们现在有三个向量 <span class="math inline">\(\vec{a} = (a_1,
+a_2, a_3)\)</span> ，<span class="math inline">\(\vec{b} = (b_1, b_2,
+b_3)\)</span>，<span class="math inline">\(\vec{c} = {\begin{pmatrix}
+a_2b_3 - a_3b_2, a_3b_1 - a_1b_3, a_1b_2 - a_2b_1
+\end{pmatrix}}\)</span>。我们开始证明它满足我们对叉积的定义。</p>
+<h4 id="垂直">垂直</h4>
+<p>要证明一个向量垂直于一个平面，只需要证明它<strong>同时垂直于该平面内的两个不共线向量</strong>（即
+<span class="math inline">\(\vec{a}\)</span> 和 <span
+class="math inline">\(\vec{b}\)</span>）。在向量代数中，“垂直”等价于“点积为
+0”。</p>
+<p>我们将 <span class="math inline">\(\vec{a}\)</span> 的分量与 <span
+class="math inline">\(\vec{c}\)</span> 的分量对应相乘：</p>
+<p><span class="math display">\[\vec{a} \cdot \vec{c} = a_1({a_2b_3 -
+a_3b_2}) + a_2({a_3b_1 - a_1b_3}) + a_3({a_1b_2 - a_2b_1})\]</span></p>
+<p>展开括号：</p>
+<p><span class="math display">\[\vec{a} \cdot \vec{c} =
+\textcolor{red}{a_1a_2b_3} - \textcolor{green}{a_1a_3b_2} +
+\textcolor{blue}{a_2a_3b_1} - \textcolor{red}{a_2a_1b_3} +
+\textcolor{green}{a_3a_1b_2} - \textcolor{blue}{a_3a_2b_1}\]</span></p>
+<p><strong>结论</strong>：<span class="math inline">\(\vec{a} \cdot
+\vec{c} = 0\)</span>。同理可证 <span class="math inline">\(\vec{b} \cdot
+\vec{c} = 0\)</span>。</p>
+<p>因为 <span class="math inline">\(\vec{c}\)</span>
+与平面内的两条基准线都垂直，所以它必然垂直于整个平面。</p>
+<h4 id="长度">长度</h4>
+<p>平行四边形的面积公式为：<span class="math inline">\(S = \|\vec{a}\|
+\|\vec{b}\| \sin\theta\)</span>。 我们可以通过证明 <span
+class="math inline">\(\|\vec{c}\|^2 = (\|\vec{a}\| \|\vec{b}\|
+\sin\theta)^2\)</span> 来证明这个结果。</p>
+<p><span class="math display">\[\|\vec{c}\|^2 = (a_2b_3 - a_3b_2)^2 +
+(a_3b_1 - a_1b_3)^2 + (a_1b_2 - a_2b_1)^2\]</span></p>
+<p>数学家拉格朗日证明了一个极其漂亮的代数恒等式，它直接连接了“分量平方和”与“模长及点积”：</p>
+<p><span class="math display">\[(a_2b_3 - a_3b_2)^2 + (a_3b_1 -
+a_1b_3)^2 + (a_1b_2 - a_2b_1)^2 = (\sum a_i^2)(\sum b_i^2) - (\sum
+a_ib_i)^2\]</span></p>
+<p>翻译成向量符号就是：</p>
+<p><span class="math display">\[\|\vec{a} \times \vec{b}\|^2 =
+\|\vec{a}\|^2 \|\vec{b}\|^2 - (\vec{a} \cdot \vec{b})^2\]</span></p>
+<p>我们知道点积 <span class="math inline">\(\vec{a} \cdot \vec{b} =
+\|\vec{a}\| \|\vec{b}\| \cos\theta\)</span>，代入上式：</p>
+<p><span class="math display">\[\|\vec{c}\|^2 = \|\vec{a}\|^2
+\|\vec{b}\|^2 - (\|\vec{a}\| \|\vec{b}\| \cos\theta)^2\]</span></p>
+<p><span class="math display">\[\|\vec{c}\|^2 = \|\vec{a}\|^2
+\|\vec{b}\|^2 (1 - \cos^2\theta)\]</span></p>
+<p>利用三角恒等式 <span class="math inline">\(1 - \cos^2\theta =
+\sin^2\theta\)</span>：</p>
+<p><span class="math display">\[\|\vec{c}\|^2 = \|\vec{a}\|^2
+\|\vec{b}\|^2 \sin^2\theta\]</span></p>
+<p><span class="math display">\[\|\vec{c}\| = \|\vec{a}\| \|\vec{b}\|
+\sin\theta\]</span></p>
+<p>得证。</p>
+<h2 id="特征向量">特征向量</h2>
+<blockquote>
+<p>当一个空间发生线性变换（比如拉伸、剪切）时，绝大多数向量都会偏离原来的方向。但有一部分特殊的向量，它们在变换后<strong>依然保持在原有的直线上</strong>，只是长度变长或变短了（甚至反向）。</p>
+</blockquote>
+<h3 id="公式与定义">公式与定义</h3>
+<p>如果 <span class="math inline">\(A\)</span> 是一个方阵，<span
+class="math inline">\(v\)</span>
+是一个非零向量，如果它们满足以下关系：</p>
+<p><span class="math display">\[Av = \lambda v\]</span></p>
+<p>那么：</p>
+<ul>
+<li><strong><span class="math inline">\(v\)</span></strong> 就是矩阵
+<span class="math inline">\(A\)</span>
+的<strong>特征向量</strong>。</li>
+<li><strong><span
+class="math inline">\(\lambda\)</span></strong>（希腊字母
+Lambda）就是对应的<strong>特征值（Eigenvalue）</strong>，它代表了向量被缩放的倍数。</li>
+</ul>
+<p>我们可以从几何角度来理解线性变换对向量的影响：</p>
+<ol type="1">
+<li><strong>普通向量：</strong> 经过变换后，方向变了，长度也变了。</li>
+<li><strong>特征向量：</strong>
+变换后，<strong>方向没变</strong>（或者刚好转了 180
+度），只是被“拉伸”或“压缩”了。</li>
+</ol>
+<h3 id="特征向量有什么用">特征向量有什么用</h3>
+<ul>
+<li><strong>图像压缩：</strong> 找出图片中最主要的特征向量（主成分分析
+PCA），去掉不重要的，就能在不损失画质的情况下减小文件体积。</li>
+<li><strong>Google 搜索（PageRank）：</strong>
+网页排名算法本质上就是寻找一个巨大矩阵的特征向量，那个特征值最大的向量代表了网页的重要性。</li>
+<li><strong>振动分析：</strong>
+工程师通过特征向量来分析桥梁或摩天大楼的固有频率，确保建筑不会因为共振而倒塌。</li>
+</ul>
+<h3 id="特征向量的例子">特征向量的例子</h3>
+<p>假设，我们存在一个矩阵 <span class="math inline">\(A\)</span>，它的
+<span class="math inline">\(\hat{\imath}\)</span> 为 <span
+class="math inline">\((1, 0)\)</span>，<span
+class="math inline">\(\hat{\jmath}\)</span> 为 <span
+class="math inline">\((0,1)\)</span>。此时，我们知道 <span
+class="math inline">\(\hat{\imath}\)</span>
+这个基，它所张成的空间是x轴上的整条直线；</p>
+<p>当我们对矩阵A进行线性变换得到矩阵<span
+class="math inline">\(A_{new}\)</span>，线性变换后的 <span
+class="math inline">\(\hat{\imath}_{new}\)</span> 为 <span
+class="math inline">\((3, 0)\)</span>，而它的 <span
+class="math inline">\(\hat{\jmath}_{new}\)</span> 为 <span
+class="math inline">\((1, 2)\)</span>。</p>
+<p>此时，对于x轴上的任意一点 <span
+class="math inline">\((a,0)\)</span>，我们可以知道它在 <span
+class="math inline">\(A_{new}\)</span>
+中的坐标为（<strong>注意，点只是列的一种表示方式，计算时我们需要以列向量
+<span class="math inline">\(\begin{bmatrix}x \\ 0\end{bmatrix}\)</span>
+的方式来计算</strong>）：</p>
+<p><span class="math display">\[
+A_{(a, 0)} = \begin{bmatrix}
+3 &amp; 1 \\
+0 &amp; 2
+\end{bmatrix}
+\begin{bmatrix}
+x \\
+0
+\end{bmatrix}
+=
+\begin{bmatrix}
+3x \\
+0
+\end{bmatrix}
+\]</span>
+<strong>我们发现，所有在x轴上的向量，它只是被拉长了，但是仍然在原向量张成的空间中（特征向量的严格定义是：变换后的向量
+<span class="math inline">\(Av\)</span> 与原向量 <span
+class="math inline">\(v\)</span>
+共线)。对于这种向量，就是我们的特征向量。</strong></p>
+<h3 id="找到更多的特征向量">找到更多的特征向量</h3>
+<blockquote>
+<p>我们可以把找到特征向量的方法分为两个不同的步骤：</p>
+<ol type="1">
+<li>找到特征向量值 <span class="math inline">\(\lambda\)</span>；</li>
+<li>通过特征向量值 <span class="math inline">\(\lambda\)</span>
+找到特征向量；</li>
+</ol>
+</blockquote>
+<p>在我们上面提到的例子中，一个 <span class="math inline">\(2 \times
+2\)</span>
+的矩阵通常有两个特征向量（除非他是旋转或者某些特殊变换），我们给出了
+<span class="math inline">\(\begin{bmatrix}x \\
+0\end{bmatrix}\)</span>，那怎么样才能找到另外一个特征向量呢？我们假设
+<span class="math inline">\(\lambda\)</span>
+为我们要找的特征向量，那么我们得到（（这里 <span
+class="math inline">\(I\)</span>
+是单位矩阵，因为矩阵不能直接减去一个常数 <span
+class="math inline">\(\lambda\)</span>））： <span
+class="math display">\[
+(A_{new} - \lambda I)v = 0
+\]</span> 如果 <span class="math inline">\(v\)</span>
+是非零向量，那么根据线性代数的原理，矩阵 <span
+class="math inline">\((A_{new} - \lambda I)\)</span>
+必须是<strong>不可逆</strong>的（即它把空间压缩了）。因此，它的<strong>行列式必须为
+0</strong>： <span class="math display">\[
+\det(A_{new} - \lambda I) = 0
+\]</span></p>
+<p>那么，对于我们的矩阵 <span class="math inline">\(A_{new} =
+\begin{bmatrix} 3 &amp; 1 \\ 0 &amp; 2
+\end{bmatrix}\)</span>，我们的特征方程是： <span class="math display">\[
+\det \left( \begin{bmatrix} 3 &amp; 1 \\ 0 &amp; 2 \end{bmatrix} -
+\begin{bmatrix} \lambda &amp; 0 \\ 0 &amp; \lambda \end{bmatrix} \right)
+= \det \begin{bmatrix} 3-\lambda &amp; 1 \\ 0 &amp; 2-\lambda
+\end{bmatrix} = 0
+\]</span></p>
+<p>那么我们可以得到： <span class="math display">\[
+(3 - \lambda) \times (2 - \lambda) = 0
+\]</span></p>
+<p>得到特征值：<span class="math inline">\(\lambda_1 = 3, \lambda_2 =
+2\)</span>。现在我们有了两个特征值。我们需要把每一个 <span
+class="math inline">\(\lambda\)</span> 分别代回方程 <span
+class="math inline">\((A - \lambda I)v = 0\)</span>，解出对应的向量
+<span class="math inline">\(v\)</span>。</p>
+<p>当 <span class="math inline">\(\lambda = 3\)</span> 时：</p>
+<p><span class="math display">\[(A - 3I)v = \begin{bmatrix} 3-3 &amp; 1
+\\ 0 &amp; 2-3 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} =
+\begin{bmatrix} 0 &amp; 1 \\ 0 &amp; -1 \end{bmatrix} \begin{bmatrix} x
+\\ y \end{bmatrix} = \begin{bmatrix} 0 \\ 0 \end{bmatrix}\]</span></p>
+<p>由第一行得出 <span class="math inline">\(0x + 1y = 0 \Rightarrow y =
+0\)</span>。</p>
+<p><span class="math inline">\(x\)</span>
+可以是任何非零值。所以特征向量是 <span
+class="math inline">\(\begin{bmatrix} 1 \\ 0 \end{bmatrix}\)</span>（即
+<span class="math inline">\(x\)</span> 轴方向）。</p>
+<p>当 <span class="math inline">\(\lambda = 2\)</span> 时：</p>
+<p><span class="math display">\[(A - 2I)v = \begin{bmatrix} 3-2 &amp; 1
+\\ 0 &amp; 2-2 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} =
+\begin{bmatrix} 1 &amp; 1 \\ 0 &amp; 0 \end{bmatrix} \begin{bmatrix} x
+\\ y \end{bmatrix} = \begin{bmatrix} 0 \\ 0 \end{bmatrix}\]</span></p>
+<p>由第一行得出 <span class="math inline">\(1x + 1y = 0 \Rightarrow y =
+-x\)</span>。</p>
+<p>所以特征向量是 <span class="math inline">\(\begin{bmatrix} 1 \\ -1
+\end{bmatrix}\)</span> 或 <span class="math inline">\(\begin{bmatrix} -1
+\\ 1 \end{bmatrix}\)</span>。</p>
+<h3 id="特征向量的的含义">特征向量的的含义</h3>
+<p><strong>特征向量描述的是一个“方向”，而不是一个具体的“点”。</strong>在我们前面计算的逻辑中，<span
+class="math inline">\(\begin{bmatrix} -1 \\ 1 \end{bmatrix}\)</span>
+是一个特征向量，而 <span class="math inline">\(\begin{bmatrix} -2 \\ 2
+\end{bmatrix}\)</span> 也是一个特征向量，只是不同的表示形式。</p>
+<h3 id="特征向量的一个典型应用">特征向量的一个典型应用</h3>
+<p>考虑我们的矩阵 <span class="math inline">\(A = \begin{bmatrix} 3
+&amp; 1 \\ 0 &amp; 2 \end{bmatrix}\)</span>，如果我们需要计算 <span
+class="math inline">\(A^{100}\)</span>，那么这将是一个地狱级的计算；而此时，我们想到的方法就是，可以将
+<span class="math inline">\(A\)</span> 转换为一个 <span
+class="math inline">\(A_{new}\)</span>，而这个 <span
+class="math inline">\(A_{new}\)</span>
+是在某个特定的基下的<strong>对角矩阵</strong>，我们假设转换后的对角矩阵是
+<span class="math inline">\(\begin{bmatrix} a &amp; 0 \\ 0 &amp;
+b\end{bmatrix}\)</span>，那么我们可以：</p>
+<ol type="1">
+<li>计算转后的矩阵 <span
+class="math inline">\(A_{new}^{100}\)</span>，因为它是对角矩阵，所以这个很简单，我们得到
+<span class="math inline">\(M_{new} = \begin{bmatrix} a^{100} &amp; 0 \\
+0 &amp; b^{100}\end{bmatrix}\)</span>；</li>
+<li>在计算完成之后，我们在把 <span
+class="math inline">\(M_{new}\)</span> 转换到原来的基得到 <span
+class="math inline">\(M\)</span>，这个就是矩阵 <span
+class="math inline">\(A^{100}\)</span> 在原来的坐标轴下的结果；</li>
+</ol>
+<h4
+id="将矩阵转换为特定基下的对角矩阵">将矩阵转换为特定基下的对角矩阵</h4>
+<p>假设矩阵 <span class="math inline">\(A\)</span> 有两个特征向量 <span
+class="math inline">\(v_1, v_2\)</span>，对应的特征值分别是 <span
+class="math inline">\(\lambda_1, \lambda_2\)</span>。</p>
+<p>根据定义，我们有两个独立的等式：</p>
+<ul>
+<li><span class="math inline">\(A v_1 = \lambda_1 v_1\)</span></li>
+<li><span class="math inline">\(A v_2 = \lambda_2 v_2\)</span></li>
+</ul>
+<p>现在，我们把这两个向量横向并排，拼成一个新矩阵 <span
+class="math inline">\(P = [v_1 \quad v_2]\)</span>。</p>
+<p>当我们用 <span class="math inline">\(A\)</span> 去乘以这个拼好的矩阵
+<span class="math inline">\(P\)</span>
+时，根据矩阵乘法规则，这等同于分别作用于每一列：</p>
+<p><span class="math display">\[A P = A [v_1 \quad v_2] = [Av_1 \quad
+Av_2]\]</span></p>
+<p>把刚才的定义代入：</p>
+<p><span class="math display">\[A P = [\lambda_1 v_1 \quad \lambda_2
+v_2] = [v_1 \quad v_2] \begin{bmatrix} \lambda_1 &amp; 0 \\ 0 &amp;
+\lambda_2 \end{bmatrix} = PD\]</span></p>
+<p>所以我们得到了一个至关重要的恒等式：</p>
+<p><span class="math display">\[AP = PD\]</span></p>
+<p>既然 <span class="math inline">\(AP = PD\)</span>，只要矩阵 <span
+class="math inline">\(P\)</span>
+是<strong>可逆的</strong>（也就是说我们的特征向量线性无关，能张开整个空间），我们就可以在等式<strong>左边</strong>同时乘以
+<span class="math inline">\(P^{-1}\)</span>：</p>
+<p><span class="math display">\[P^{-1} (AP) = P^{-1} (PD)\]</span></p>
+<p>由于 <span class="math inline">\(P^{-1}P\)</span> 等于单位矩阵 <span
+class="math inline">\(I\)</span>，等式右边就只剩下了 <span
+class="math inline">\(D\)</span>： <span class="math display">\[
+P^{-1}AP = D
+\]</span> 在这个表达式中：<span class="math inline">\(P\)</span>
+是我们的特征向量横向排列，而 <span class="math inline">\(D\)</span>
+则是我们的特征向量值的组成的对角矩阵。</p>
+<h4 id="一个简单的例子">一个简单的例子</h4>
+<p>在我们的矩阵 <span class="math inline">\(A = \begin{bmatrix} 3 &amp;
+1 \\ 0 &amp; 2 \end{bmatrix}\)</span> 中，它的特征向量是 <span
+class="math inline">\(\begin{bmatrix} 1 \\ 0 \end{bmatrix}\)</span> 和
+<span class="math inline">\(\begin{bmatrix} 1 \\ -1
+\end{bmatrix}\)</span>，他们的特征值分别是 <span
+class="math inline">\(3\)</span> 和 <span
+class="math inline">\(2\)</span>，那么我们可以得到 <span
+class="math display">\[
+P = \begin{bmatrix} 1 &amp; 1 \\ 0 &amp; -1 \end{bmatrix} \\ \\
+D = \begin{bmatrix} 3 &amp; 0 \\ 0 &amp; 2 \end{bmatrix} \\ \\
+P^{-1} =  \begin{bmatrix} 1 &amp; 1 \\ 0 &amp; -1 \end{bmatrix}
+\]</span></p>
+<p>那么 <span class="math display">\[
+P^{-1}AP = P^{-1} =  \begin{bmatrix} 1 &amp; 1 \\ 0 &amp; -1
+\end{bmatrix}
+\begin{bmatrix} 3 &amp; 1 \\ 0 &amp; 2 \end{bmatrix}
+\begin{bmatrix} 1 &amp; 1 \\ 0 &amp; -1 \end{bmatrix}
+= \begin{bmatrix} 3 &amp; 0 \\ 0 &amp; 2 \end{bmatrix}
+\]</span> 而 <span class="math display">\[
+A^{100} = (PDP^{-1})(PDP^{-1})...(PDP^{-1}) = PD^{100}P^{-1} =
+\begin{bmatrix} 1 &amp; 1 \\ 0 &amp; -1 \end{bmatrix} \begin{bmatrix}
+3^{100} &amp; 0 \\ 0 &amp; 2^{100} \end{bmatrix} \begin{bmatrix} 1 &amp;
+1 \\ 0 &amp; -1 \end{bmatrix}
+\]</span></p>
+<h2 id="block-stride-和-grid-stride-对缓存利用率的差别">block stride 和
+grid stride 对缓存利用率的差别</h2>
+<p>通常来说，<code>grid stride</code> 的缓存利用率要远高于
+<code>block stride</code> 的缓存利用率。假设要处理 N=10240
+个元素，threadsPerBlock=256：</p>
+<h3 id="block-stride">Block Stride</h3>
+<ul>
+<li>逻辑：每个 block 处理「连续的一大段数据」，步长 = blockDim.x（单
+block 线程数）；</li>
+<li>示例：
+<ul>
+<li>Block 0 处理 0~255 号元素；</li>
+<li>Block 1 处理 256~511 号元素；</li>
+<li>Block 2 处理 512~767 号元素；</li>
+<li><code>...</code></li>
+</ul></li>
+</ul>
+<h3 id="grid-stride">Grid Stride</h3>
+<ul>
+<li>逻辑：每个线程处理「跨 block 的分散数据」，步长 = gridDim.x *
+blockDim.x（整个 grid 的总线程数）；</li>
+<li>示例：
+<ul>
+<li>线程 0（Block0, Thread0）处理 0、1024、2048… 号元素；</li>
+<li>线程 1（Block0, Thread1）处理 1、1025、2049… 号元素；</li>
+<li>线程 256（Block1, Thread0）处理 256、1280、2304… 号元素；</li>
+<li>每个线程 “分散” 访问数据，覆盖整个数据集。</li>
+</ul></li>
+</ul>
+<p>我们假设存在如下的计算逻辑：</p>
+<ul>
+<li>存在 <code>block 0</code> 和 <code>block 1</code> 两个
+<code>block</code>；</li>
+<li>每次 <code>L2 Cache</code> 可以缓存两份数据；</li>
+<li>总共需要处理 <code>16</code> 份数据，每次循环处理一份；</li>
+</ul>
+<p>那么，对于下面的 <code>block stride</code> 的访问模式：</p>
+<ol type="1">
+<li><code>block 0</code> 访问 <code>data[0]</code> ，随后
+<code>L2 Cache</code> 中包含了
+<code>data[0]</code>，<code>data[1]</code>；</li>
+<li><code>block 1</code> 访问
+<code>data[8]</code>，此时缓存无效。GPU从显存重新加载
+<code>data[8]</code> 。随后 <code>L2 Cache</code> 中包含了
+<code>data[8]</code>，<code>data[9]</code>，之前的 <code>L2 Cache</code>
+失效；</li>
+<li><code>block 0</code> 访问 <code>data[1]</code> ，此时缓存无效，GPU
+从显存重新加载 <code>data[1]</code>。</li>
+</ol>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;block 0&quot;)
+    t1(&quot;block 1&quot;)
+end
+
+block:t00:5
+    columns 4
+    b00t00(&quot;data[0]&quot;) b00t01(&quot;data[1]&quot;) b00t02(&quot;data[2]&quot;) b00t03(&quot;data[3]&quot;)
+    b00t04(&quot;data[4]&quot;) b00t05(&quot;data[5]&quot;) b00t06(&quot;data[6]&quot;) b00t07(&quot;data[7]&quot;)
+end
+
+block:t01:5
+    columns 4
+    b01t00(&quot;data[8]&quot;) b01t01(&quot;data[9]&quot;) b01t02(&quot;data[a]&quot;) b01t03(&quot;data[b]&quot;)
+    b01t04(&quot;data[c]&quot;) b01t05(&quot;data[d]&quot;) b01t06(&quot;data[e]&quot;) b01t07(&quot;data[f]&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1 purple
+class header0 transparent
+
+class b00t00,b00t01 error
+class b01t00,b01t01 green
+
+class b00t02,b00t03,b00t04,b00t05,b00t06,b00t07,b01t02,b01t03,b01t04,b01t05,b01t06,b01t07 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而对于我们的 <code>grid stride</code> 的访问模式：</p>
+<ol type="1">
+<li><code>block 0</code> 访问 <code>data[0]</code> ，随后
+<code>L2 Cache</code> 中包含了
+<code>data[0]</code>，<code>data[1]</code>；</li>
+<li><code>block 1</code> 访问
+<code>data[1]</code>，缓存命中，直接从缓存读取；</li>
+<li><code>block 0</code> 访问 <code>data[1]</code>，此时缓存无效，GPU
+从显存重新加载 <code>data[1]</code>。</li>
+</ol>
+<pre><code class="highlight mermaid">block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0(&quot;block 0&quot;)
+    t1(&quot;block 1&quot;)
+end
+
+block:t00:5
+    columns 4
+    b00t00(&quot;data[0]&quot;) b00t01(&quot;data[2]&quot;) b00t02(&quot;data[4]&quot;) b00t03(&quot;data[6]&quot;)
+    b00t04(&quot;data[8]&quot;) b00t05(&quot;data[a]&quot;) b00t06(&quot;data[c]&quot;) b00t07(&quot;data[e]&quot;)
+end
+
+block:t01:5
+    columns 4
+    b01t00(&quot;data[1]&quot;) b01t01(&quot;data[3]&quot;) b01t02(&quot;data[5]&quot;) b01t03(&quot;data[7]&quot;)
+    b01t04(&quot;data[9]&quot;) b01t05(&quot;data[b]&quot;) b01t06(&quot;data[d]&quot;) b01t07(&quot;data[f]&quot;)
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1 purple
+class header0 transparent
+
+class b00t00,b01t00 green
+
+class b00t01,b01t01,b00t02,b00t03,b00t04,b00t05,b00t06,b00t07,b01t02,b01t03,b01t04,b01t05,b01t06,b01t07 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<blockquote>
+<p>也就是说，<strong>block stride 是逻辑连续，物理发散的；而 grid stride
+是逻辑跳跃，物理对齐。</strong> <code>block stride</code>
+它是在时间轴上从左到右连续的访问，而我们GPU期待的是，在同一个时间点上连续的访问
+-- 这对应于 <code>grid stride</code> 的访问模式。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CUDA/" rel="tag"># CUDA</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/02/05/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E5%8D%B7%E7%A7%AF/" rel="prev" title="CUDA编程入门：卷积">
+                  <i class="fa fa-angle-left"></i> CUDA编程入门：卷积
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

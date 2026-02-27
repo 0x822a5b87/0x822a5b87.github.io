@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-count">46</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -168,6 +168,172 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">uCore文件系统</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-09 10:23:14" itemprop="dateCreated datePublished" datetime="2025-12-09T10:23:14+08:00">2025-12-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="文件系统">文件系统</h1>
+<figure>
+<img src="/images/20251208/layout.png" alt="layout">
+<figcaption aria-hidden="true">layout</figcaption>
+</figure>
+<h2 id="整体逻辑">整体逻辑</h2>
+<pre><code class="highlight mermaid">graph BT
+    %% 核心模块：easy-fs（文件系统核心逻辑）
+    subgraph easy-fs [&quot;easy-fs（文件系统核心算法）&quot;]
+        direction BT
+        subgraph BD [&quot;抽象层：BlockDevice（块设备接口）&quot;]
+            direction TB
+            read_block(&quot;read_block&quot;)
+            write_block(&quot;write_block&quot;)
+        end
+
+        subgraph BC [&quot;缓存层：BlockCache（块缓存）&quot;]
+            direction TB
+            read(&quot;read&quot;)
+            modify(&quot;modify&quot;)
+            bc_other(&quot;其他缓存操作...&quot;)
+        end
+
+        subgraph LAY [&quot;布局层：存储结构定义&quot;]
+            direction TB
+            SB(&quot;SuperBlock（超级块）&quot;)
+            BM(&quot;Bitmap（位图）&quot;)
+            DI(&quot;DiskInode（磁盘索引节点）&quot;)
+            DE(&quot;DirEntry（目录项）&quot;)
+            DB(&quot;DataBlock（数据块）&quot;)
+        end
+
+        subgraph BMGR [&quot;管理层：文件系统实例/接口&quot;]
+            direction TB
+            EFS(&quot;EasyFileSystem（文件系统实例）&quot;)
+            INODE(&quot;Inode（文件/目录操作接口）&quot;)
+        end
+
+        %% easy-fs 内部链路（修正方向）
+        BD --&gt;|读写物理块| BC
+        BC --&gt;|缓存读写| LAY
+        LAY --&gt;|基于布局实现| BMGR
+    end
+
+    %% 辅助工具：easy-fs 配套工具（宿主机侧）
+    subgraph easy-fs-tools [&quot;easy-fs-tools（宿主机工具）&quot;]
+        direction TB
+        pack(&quot;easy_fs_pack（打包工具）&quot;)
+        fuse(&quot;easy-fs-fuse（FUSE调试工具）&quot;)
+    end
+    easy-fs --&gt;|依赖核心逻辑| pack
+    pack --&gt;|生成镜像| fs_img[&quot;fs.img（raw格式镜像）&quot;]
+    easy-fs --&gt;|适配FUSE接口| fuse
+    fuse --&gt;|挂载调试| fs_img
+
+    %% QEMU（虚拟硬件层）
+    subgraph qemu [&quot;QEMU（虚拟硬件）&quot;]
+        direction TB
+        drive(&quot;-drive file=fs.img（后端存储）&quot;)
+        virtio_dev(&quot;-device virtio-blk-device（虚拟块设备）&quot;)
+    end
+    fs_img --&gt;|作为后端存储| drive
+    drive --&gt;|绑定到虚拟设备| virtio_dev
+
+    %% os 内核（驱动+文件系统调用）
+    subgraph os [&quot;os（内核层）&quot;]
+        direction TB
+        subgraph VIRTIO [&quot;驱动层：VirtIOBlock&quot;]
+            direction TB
+            virtio_bd(&quot;实现 BlockDevice 接口&quot;)
+            virtio_ops(&quot;virtio-blk 读写操作&quot;)
+        end
+        subgraph FS_CALL [&quot;应用层：文件系统调用&quot;]
+            direction TB
+            fs_open(&quot;open/read/write&quot;)
+            fs_exec(&quot;执行ELF文件&quot;)
+        end
+    end
+    %% 内核链路
+    qemu --&gt;|暴露虚拟硬件| virtio_dev
+    virtio_dev --&gt;|内核枚举设备| VIRTIO
+    VIRTIO --&gt;|适配接口| easy-fs
+    easy-fs --&gt;|提供文件操作| FS_CALL</code></pre>
+<h2 id="文件与文件描述符">文件与文件描述符</h2>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/12/09/uCore%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -1312,236 +1478,6 @@ classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/" class="post-title-link" itemprop="url">Conclusion of Linear Algebra For Everyone</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-05-14 19:40:56" itemprop="dateCreated datePublished" datetime="2025-05-14T19:40:56+08:00">2025-05-14</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="conclusion-of-linear-algebra-for-everyone">Conclusion of
-<strong>Linear Algebra For Everyone</strong></h1>
-<h2 id="references">REFERENCES</h2>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://github.com/kenjihiranabe/The-Art-of-Linear-Algebra">The-Art-of-Linear-Algebra</a></li>
-</ul>
-<h2 id="glossary-of-terms">Glossary of Terms</h2>
-<table>
-<colgroup>
-<col style="width: 29%">
-<col style="width: 70%">
-</colgroup>
-<thead>
-<tr class="header">
-<th style="text-align: center;">terms</th>
-<th style="text-align: center;">descprition</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: center;"><code>Matrix</code></td>
-<td style="text-align: center;">A rectangular array of numbers, symbols,
-or expressions arranged in rows and columns.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Vector</code></td>
-<td style="text-align: center;">An ordered set of numbers, often
-represented as a column or row matrix.</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Scalar</code></td>
-<td style="text-align: center;">A single number, as opposed to a vector
-or matrix.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Transpose</code></td>
-<td style="text-align: center;">A matrix operation that flips a matrix
-over its .</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Determinant</code></td>
-<td style="text-align: center;">A scalar value that can be computed from
-a square matrix</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Eigenvector</code></td>
-<td style="text-align: center;">A non-zero vector that only changes by a
-scalar factor when a linear transformation is applied to it.</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Eigenvalue</code></td>
-<td style="text-align: center;">The scalar factor by which an
-eigenvector is scaled during a linear transformation.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Rank</code></td>
-<td style="text-align: center;">The dimension of the column space or row
-space of a matrix.</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Dot Product</code></td>
-<td style="text-align: center;">The scalar product of two vectors,
-obtained by multiplying the corresponding components and summing the
-results.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Cross Product</code></td>
-<td style="text-align: center;">The vector product of two vectors in
-three-dimensional space, resulting in a vector that is to the original
-vectors</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Orthogonal</code></td>
-<td style="text-align: center;">Two vectors are orthogonal if their dot
-product is zero</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>space</code></td>
-<td style="text-align: center;">Represents a collection of vectors with
-certain properties</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Vector Space</code></td>
-<td style="text-align: center;">A vector space is a set of vectors along
-with operations of vector addition and scalar multiplication that
-satisfy certain properties.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Subspace</code></td>
-<td style="text-align: center;">A subspace is a subset of a vector space
-that is itself a vector space. It contains the zero vector, is closed
-under vector addition and scalar multiplication, and satisfies the other
-properties of a vector space.</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Inner product space</code></td>
-<td style="text-align: center;">An inner product space is a vector space
-equipped with an inner product, which is a generalization of the dot
-product. The inner product defines a notion of angle and length in the
-space.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Normed Vector Space</code></td>
-<td style="text-align: center;">A normed vector space is a vector space
-equipped with a norm, which is a function that assigns a non-negative
-length to each vector and satisfies certain properties.</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Hilbert Space</code></td>
-<td style="text-align: center;">A Hilbert space is a complete inner
-product space, meaning that it is a vector space equipped with an inner
-product that is also a complete metric space with respect to the norm
-induced by the inner product.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Upper Triangular Matrix</code></td>
-<td style="text-align: center;">A Upper Triangular Matrix is a matrix in
-which all the elements below the main diagonal are zero, and all the
-elements on or above the main diagonal can be zero or non-zero.</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>Lower Triangular Matrix</code></td>
-<td style="text-align: center;">A Lower Triangular Matrix is a matrix in
-which all the elements above the main diagonal (the diagonal from the
-top left to the bottom right) are zero, and all the elements on or below
-the main diagonal can be zero or non-zero.</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>Orthogonal Matrix</code></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>CR</code></td>
-<td style="text-align: center;">C stands for Column, R stands for
-Row</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><code>LU</code></td>
-<td style="text-align: center;">Lower tirangular and Upper
-triangular</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><code>QR</code></td>
-<td style="text-align: center;">QR decomposition as Gram-Schmidt
-orthogonalization Orthogonal Q and triangular R</td>
-</tr>
-</tbody>
-</table>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/05/14/Conclusion-of-Linear-Algebra-For-Everyone/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
