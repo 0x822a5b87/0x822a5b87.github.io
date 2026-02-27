@@ -9,10 +9,7 @@ tags:
 
 ## TILE和THREAD
 
-首先，我们需要使用 TILE 和 THREAD 来对我们的输入张量进行分块，分块有两种策略：
-
-1. 连续分块；
-2. 交错分块；
+首先，我们需要使用 TILE 和 THREAD 来对我们的输入张量进行分块，分块有两种策略：**连续分块** 和 **交错分块**
 
 连续分块下，我们的内存模型为：
 
@@ -2127,6 +2124,7 @@ y
 $$
 
 
+
 随后，我们进行了一次矩阵旋转， $\hat{\imath_1} = (0, 1)$ 并且 $\hat{\jmath_1} = (-1, 0)$，可以记为 $M_1$
 $$
 M_1 = \begin{bmatrix}
@@ -2136,8 +2134,7 @@ M_1 = \begin{bmatrix}
 $$
 那么，我们进行矩阵变换之后，我们的坐标应该是 $(x * \hat{\imath} *\hat{\imath_1}, y * \hat{\jmath} * \hat{\jmath_1})$，此时，如果我们把 $\hat{\imath} * \hat{\imath_1}$ 和 $\hat{\jmath} * \hat{\jmath_1}$ 先计算出来，那么我们就得到了一个全新的矩阵：
 $$
-M_2 = M0 \times M1 \\
-
+M_2 = M0 \times M1 \
 = 
 \begin{bmatrix}
 1 & 0 \\
@@ -2147,7 +2144,7 @@ M_2 = M0 \times M1 \\
 \begin{bmatrix}
 	0 & -1 \\
 	1 & 0
-\end{bmatrix} \\
+\end{bmatrix} \
 =
 \begin{bmatrix}
 0 & -1 \\
@@ -2514,14 +2511,142 @@ $$
 
 
 
+## block stride 和 grid stride 对缓存利用率的差别
 
+通常来说，`grid stride` 的缓存利用率要远高于 `block stride` 的缓存利用率。假设要处理 N=10240 个元素，threadsPerBlock=256：
 
+### Block Stride
 
+- 逻辑：每个 block 处理「连续的一大段数据」，步长 = blockDim.x（单 block 线程数）；
+- 示例：
+  - Block 0 处理 0~255 号元素；
+  - Block 1 处理 256~511 号元素；
+  - Block 2 处理 512~767 号元素；
+  - `...`
 
+### Grid Stride
 
+- 逻辑：每个线程处理「跨 block 的分散数据」，步长 = gridDim.x * blockDim.x（整个 grid 的总线程数）；
+- 示例：
+  - 线程 0（Block0, Thread0）处理 0、1024、2048… 号元素；
+  - 线程 1（Block0, Thread1）处理 1、1025、2049… 号元素；
+  - 线程 256（Block1, Thread0）处理 256、1280、2304… 号元素；
+  - 每个线程 “分散” 访问数据，覆盖整个数据集。
 
+我们假设存在如下的计算逻辑：
 
+- 存在 `block 0` 和 `block 1` 两个 `block`；
+- 每次 `L2 Cache` 可以缓存两份数据；
+- 总共需要处理 `16` 份数据，每次循环处理一份；
 
+那么，对于下面的 `block stride` 的访问模式：
+
+1. `block 0` 访问 `data[0]` ，随后 `L2 Cache` 中包含了 `data[0]`，`data[1]`；
+2. `block 1` 访问 `data[8]`，此时缓存无效。GPU从显存重新加载 `data[8]` 。随后 `L2 Cache` 中包含了 `data[8]`，`data[9]`，之前的 `L2 Cache` 失效；
+3. `block 0` 访问 `data[1]` ，此时缓存无效，GPU 从显存重新加载 `data[1]`。
+
+```mermaid
+block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0("block 0")
+    t1("block 1")
+end
+
+block:t00:5
+    columns 4
+    b00t00("data[0]") b00t01("data[1]") b00t02("data[2]") b00t03("data[3]")
+    b00t04("data[4]") b00t05("data[5]") b00t06("data[6]") b00t07("data[7]")
+end
+
+block:t01:5
+    columns 4
+    b01t00("data[8]") b01t01("data[9]") b01t02("data[a]") b01t03("data[b]")
+    b01t04("data[c]") b01t05("data[d]") b01t06("data[e]") b01t07("data[f]")
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1 purple
+class header0 transparent
+
+class b00t00,b00t01 error
+class b01t00,b01t01 green
+
+class b00t02,b00t03,b00t04,b00t05,b00t06,b00t07,b01t02,b01t03,b01t04,b01t05,b01t06,b01t07 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+而对于我们的 `grid stride` 的访问模式：
+
+1. `block 0` 访问 `data[0]` ，随后 `L2 Cache` 中包含了 `data[0]`，`data[1]`；
+2. `block 1` 访问 `data[1]`，缓存命中，直接从缓存读取；
+3. `block 0` 访问 `data[1]`，此时缓存无效，GPU 从显存重新加载 `data[1]`。
+
+```mermaid
+block-beta
+
+columns 10
+
+block:header0:10
+    columns 2
+    space:2
+    t0("block 0")
+    t1("block 1")
+end
+
+block:t00:5
+    columns 4
+    b00t00("data[0]") b00t01("data[2]") b00t02("data[4]") b00t03("data[6]")
+    b00t04("data[8]") b00t05("data[a]") b00t06("data[c]") b00t07("data[e]")
+end
+
+block:t01:5
+    columns 4
+    b01t00("data[1]") b01t01("data[3]") b01t02("data[5]") b01t03("data[7]")
+    b01t04("data[9]") b01t05("data[b]") b01t06("data[d]") b01t07("data[f]")
+end
+
+class t00,t01,t02,t03 animate
+class t0,t1 purple
+class header0 transparent
+
+class b00t00,b01t00 green
+
+class b00t01,b01t01,b00t02,b00t03,b00t04,b00t05,b00t06,b00t07,b01t02,b01t03,b01t04,b01t05,b01t06,b01t07 gray
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+>也就是说，**block stride 是逻辑连续，物理发散的；而 grid stride 是逻辑跳跃，物理对齐。** `block stride` 它是在时间轴上从左到右连续的访问，而我们GPU期待的是，在同一个时间点上连续的访问 -- 这对应于 `grid stride` 的访问模式。
 
 
 
