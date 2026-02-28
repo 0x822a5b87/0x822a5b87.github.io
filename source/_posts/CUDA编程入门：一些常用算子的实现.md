@@ -1382,25 +1382,226 @@ extern "C" void solve(const float* A, const float* B, float* C, int N) {
 }
 ```
 
+# Reduction - `add`
 
+> Write a GPU program that performs parallel reduction on an array of 32-bit floating point numbers to compute their sum. The program should take an input array and produce a single output value containing the sum of all elements.
 
+## Sequential Indexing
 
+第一个版本，我们使用了 Sequential Indexing（顺序索引）规约的方式，将活跃的线程压缩到同一个 `warp` 中，即使在最后阶段仍然会存在 Thread Divergence，但是由于是指数级坍缩的，所以是可以接受的，这里有几个需要注意的点是：
 
+1. 通过 `(gx < N) ? input[gx] : 0.0f;` 我们既避免了 thread divergence，同时我们还为所有的超出范围的数值赋予了一个不会改变加法结果的填充值，这样我们可以不需要去进行复杂的边界判定；
+2. 通过 `for (unsigned stride = THREAD_PER_BLOCK / 2; stride > 0; stride >>= 1)`，我们将活跃线程压缩到相邻的线程中，这样执行的warp总是保持最高的活跃线程；
+3. 通过 `if (tx < stride && tx < THREAD_PER_BLOCK)` 我们避免了代价高昂的 `/` 和 `%` 操作；
 
+```cpp mark:7,8,10-17
+__global__ void naive_add(const float *input, float *output, int N)
+{
+    __shared__ float ssm[THREAD_PER_BLOCK];
 
+    const unsigned gx = blockDim.x * blockIdx.x + threadIdx.x;
+    const unsigned tx = threadIdx.x;
+    ssm[tx] = (gx < N) ? input[gx] : 0.0f;
+    __syncthreads();
 
+    for (unsigned stride = THREAD_PER_BLOCK / 2; stride > 0; stride >>= 1)
+    {
+        if (tx < stride && tx < THREAD_PER_BLOCK)
+        {
+            ssm[tx] += ssm[tx + stride];
+        }
+        __syncthreads();
+    }
 
+    if (tx == 0)
+    {
+        atomicAdd(output, ssm[0]);
+    }
+}
+```
 
+## shfl_down_sync
 
+> 我们可以查看 [常用的线程束级原语](#常用的线程束级原语) 这一章节了解一下前置知识。
 
+```cpp
+#include <cuda_runtime.h>
 
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
 
+constexpr unsigned THREAD_PER_BLOCK = 256;
 
+__global__ void add_kernel(const float *input, float *output, int N)
+{
+    __shared__ float ssm[THREAD_PER_BLOCK];
 
+    const unsigned gx = blockDim.x * blockIdx.x + threadIdx.x;
+    const unsigned tx = threadIdx.x;
+    // 注意，这里对于超出范围的我们初始化为 0.0f，这非常重要，可以有效的减少我们后续的边界条件判定
+    ssm[tx] = (gx < N) ? input[gx] : 0.0f;
+    __syncthreads();
+
+    for (unsigned stride = THREAD_PER_BLOCK / 2; stride >= 32; stride >>= 1)
+    {
+        if (tx < stride && tx < THREAD_PER_BLOCK)
+        {
+            ssm[tx] += ssm[tx + stride];
+        }
+        __syncthreads();
+    }
+
+    if (tx < 32) {
+        float val = ssm[tx];
+
+        val += __shfl_down_sync(0xffffffff, val, 16);
+        val += __shfl_down_sync(0xffffffff, val, 8);
+        val += __shfl_down_sync(0xffffffff, val, 4);
+        val += __shfl_down_sync(0xffffffff, val, 2);
+        val += __shfl_down_sync(0xffffffff, val, 1);
+
+        if (tx == 0) {
+            atomicAdd(output, ssm[0]);
+        }
+    }
+}
+
+// input, output are device pointers (i.e. pointers to memory on the GPU)
+extern "C" void solve(const float *input, float *output, int N)
+{
+    int blocksPerGrid = CEIL_DIV(N, THREAD_PER_BLOCK);
+    add_kernel<<<blocksPerGrid, THREAD_PER_BLOCK>>>(input, output, N);
+    cudaDeviceSynchronize();
+}
+```
+
+## grid stride 模式下的 reduction
+
+整体的思路是：
+
+1. 以 `grid stride` 遍历整个输入，在这种情况下，我们在充分利用 `合并访问 `和 `L2缓存` 的情况下将所有的数据汇总到初始声明的 `block` 中；`block` 中的每个线程都包含了一个已经经历初步计算的值；
+2. 对 `warp` 内的 `thread` 中的数据进行规约，将任意的 `warp` 的数据 `local_sum` 在规约后存入到 `warp` 中的第一个线程中；
+3. 对 `block` 内 `warp` 中的数据进行规约，此时，我们的目标是将 `block` 中的全部 `warp` 的数据汇总。不同于 `warp` 内可以通过 `__shfl_down_sync` 进行通信，`warp` 之间必须通过 `Shared Memory` 进行数据共享：
+   - `lane` 表示 thread 在 warp 中的索引；
+   - `wid` 表示 warp 在block 中的索引；
+4. 我们将每个 `warp` 下计算的到的数据（local_sum）存入到 `sm`，这里使用 `lane == 0` 的线程去更新（表示是 `warp` 中的第一个 `thread`），索引是 `wid`（表示 `block` 中的第 `wid` 个 `warp`），同时基于 `block` 级的 `__syncthreads()` 同步指令等待同步完成；
+5. 此时，我们得到的 `sm` 中包含了，第 `wid` 个 `warp` 下的数据。此时，我们可以利用 `warp` 中 `thread` 数量等同于 `block` 中的 `warp` 数量这个特点，使用 `lane` 去访问 `sm` 中的数据。此时，我们又可以再次利用 `__shfl_down_sync` 来传输数据。
+6. 最后，将得到的数据更新到输出。
+
+```cpp
+#include <cuda_runtime.h>
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+
+constexpr unsigned THREAD_PER_BLOCK = 256;
+
+__global__ void final_optimized_reduce(const float *input, float *output, int N)
+{
+    float local_sum = 0.0f;
+
+    // --- 1. Grid-Stride Loop ---
+    // 每个线程处理多个元素，直接消灭了启动过多 Block 的需求
+    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < N; i += blockDim.x * gridDim.x)
+    {
+        local_sum += input[i];
+    }
+
+    // 和之前以 block 作为维度不一样，我们暂时只计算 warp 内的数据
+    unsigned int mask = 0xffffffff;
+    local_sum += __shfl_down_sync(mask, local_sum, 16);
+    local_sum += __shfl_down_sync(mask, local_sum, 8);
+    local_sum += __shfl_down_sync(mask, local_sum, 4);
+    local_sum += __shfl_down_sync(mask, local_sum, 2);
+    local_sum += __shfl_down_sync(mask, local_sum, 1);
+
+    // --- 2. Block 内部归约 (利用 Shared Memory + Shuffle) ---
+    // 在当前的 CUDA 架构下，一个线程块（Block）的最大线程数限制是 1024。
+    // 由于 1024 / 32 = 32，所以一个 Block 里最多只能有 32 个 Warp
+    // lane 表示 thread 在 warp 中的索引，wid 表示 warp 在block 中的索引
+    int lane = threadIdx.x % 32;
+    int wid = threadIdx.x / 32;
+
+    __shared__ float ssm[32];
+    // 每个 Warp 的 0 号线程把结果存入共享内存
+    if (lane == 0)
+        ssm[wid] = local_sum;
+    __syncthreads();
+
+    // 对剩下的 warp 进行规约(假设 256 线程有 8 个 Warp)
+    // 这里我们按照warp的上限32个来计算，可以保证最终灵活性，但是如果追求极限性能
+    // 我们可以根据 warp 的数量来进行定制。
+    // 这里，我们让0号warp中的32个线程去读取ssm中的32个warp总和
+    if (wid == 0)
+    {
+        // 如果 Block 线程数不满 1024，超过部分补 0 (防止累加到旧的共享内存垃圾值)
+        float val = (lane < (blockDim.x / 32)) ? ssm[lane] : 0.0f;
+        val += __shfl_down_sync(mask, val, 16);
+        val += __shfl_down_sync(mask, val, 8);
+        val += __shfl_down_sync(mask, val, 4);
+        val += __shfl_down_sync(mask, val, 2);
+        val += __shfl_down_sync(mask, val, 1);
+
+        // 这样，我们计算的时候已经只需要计算 gridDim.x 次
+        if (lane == 0)
+            atomicAdd(output, val);
+    }
+}
+
+// input, output are device pointers (i.e. pointers to memory on the GPU)
+extern "C" void solve(const float *input, float *output, int N)
+{
+    int blocksPerGrid = CEIL_DIV(N, THREAD_PER_BLOCK);
+    final_optimized_reduce<<<blocksPerGrid, THREAD_PER_BLOCK>>>(input, output, N);
+    cudaDeviceSynchronize();
+}
+```
 
 
 
 # QA
+
+## 常用的线程束级原语
+
+常用的几个**线程束级原语（Warp-Level Primitives）**有以下几个：
+
+- `__shfl_down_sync` 常用语从高位索取数据，并向低位传递；
+- `__shfl_up_sync`  常用于计算**前缀和（Prefix Sum / Scan）**。每个线程拿左边人的值累加给自己；
+- `__shfl_xor_sync` 线程 `i` 与线程 `i ^ laneMask` 进行交换。
+- `__shfl_sync` 广播。比如让 0 号线程把它的结果告诉 Warp 里的所有人。
+
+值得注意的是：虽然它们名字里带有 `_sync`，但通常不把它们归类为“同步指令”（像 `__syncthreads()` 这种才叫同步指令），因为同步只是它们为了保证数据安全而附带的特性，它们的**核心本质是“数据交换”**。
+
+### __shfl_down_sync
+
+```cpp
+__SM_30_INTRINSICS_DECL__ float __shfl_down_sync(unsigned mask, float var, unsigned int delta, int width=warpSize) __DEF_IF_HOST
+```
+
+- `mask` 一个 32 位的掩码（通常是 `0xffffffff`），决定哪些线程参与。只有掩码中对应位为 1 的线程才会参与交换。
+- `var` 我们想要分享的**当前线程**手中的变量；
+- `delta` 偏移量。
+- `width` 一般来说可以使用默认值（线程束的线程数量），但是在一些更高级、更复杂的算法中，`width` 提供了一种**“逻辑分组”**的能力：假设一个 Warp 有 32 个线程，我们执行了 `__shfl_down_sync(0xffffffff, val, 1, 8)`：
+  - **线程 0-7** 组成第一组。线程 0 会拿到线程 1 的值，以此类推。但**线程 7 会拿到它自己的值**（或者根据具体实现返回原值），因为它右边没有同组的人了。它绝对不会去拿线程 8 的值。
+  - **线程 8-15** 组成第二组。线程 8 拿线程 9 的值。
+  - 以此类推。
+
+下面的这段代码中，会将当前 `warp` 的所有线程（`mask = 0xffffffff`）持有的 `val`：
+
+1. 第一次偏移量为 `16`，也就是 `thread[n] = thread[n + 16]`，对于 `n > 16` 的线程它会变成 `val += val`（即原值加原值）；这是因为，在 `__shfl_down_sync` 中，如果 `n + delta` 超出了当前分组（`width`）的边界，目标线程（n）会得到它**自己原始的 `var` 值**。
+2. 第二次偏移量为 `8`，也就是 `thread[n] = thread[n + 8]`；
+3. 以此类推。
+
+```cpp
+    if (tx < 32) {
+        float val = ssm[tx];        
+
+        val += __shfl_down_sync(0xffffffff, val, 16);
+        val += __shfl_down_sync(0xffffffff, val, 8);
+        val += __shfl_down_sync(0xffffffff, val, 4);
+        val += __shfl_down_sync(0xffffffff, val, 2);
+        val += __shfl_down_sync(0xffffffff, val, 1);
+		// ....
+    }
+```
 
 ## 向量化加速
 
@@ -2101,22 +2302,17 @@ M_0 = \begin{bmatrix}
 0 & 1
 \end{bmatrix}
 $$
-我们可以看到 $(x * \hat{\imath}, y * \hat{\jmath})$ 就可以表示我们向量在当前的基上的坐标：
+我们可以看到  $(x * \hat{\imath}, y * \hat{\jmath})$  就可以表示我们向量在当前的基上的坐标：
 $$
-point = \begin{bmatrix}
+pointer = \begin{bmatrix}
 x \\
 y
 \end{bmatrix}
-
-\times
-
-\begin{bmatrix}
+\times \begin{bmatrix}
 1 & 0 \\
 0 & 1
 \end{bmatrix}
-
 = 
-
 \begin{bmatrix}
 x \\
 y
@@ -2212,9 +2408,7 @@ M_1 = \begin{bmatrix}
 a_1 & b_1 \\
 c_1 & d_1
 \end{bmatrix}
-
 \\
-
 M_2 = \begin{bmatrix}
 a_2 & b_2 \\
 c_2 & d_2
