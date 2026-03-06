@@ -5,9 +5,9 @@ tags:
   - CUDA
 ---
 
-# Matrix Multiplication
+# 基础部分
 
-## TILE和THREAD
+## Matrix Multiplication
 
 首先，我们需要使用 TILE 和 THREAD 来对我们的输入张量进行分块，分块有两种策略：**连续分块** 和 **交错分块**
 
@@ -274,16 +274,16 @@ classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 ```
 
-## 内积和外积
+### 内积和外积
 
-### 内积 (Inner Product / Dot Product)
+#### 内积 (Inner Product / Dot Product)
 
 内积的逻辑是锁定 $C$ 矩阵中的**一个点**，一口气算完它。这里由于内积我们比较熟悉，就不画图了。
 $$
 C_{i,j} = \sum_{k=0}^{N-1} A_{i,k} \cdot B_{k,j}
 $$
 
-### 外积 (Outer Product)
+#### 外积 (Outer Product)
 
 外积的逻辑是锁定共享维度 $k$ 的**一个切面**，更新 $C$ 矩阵中的**一片区域**。
 $$
@@ -293,7 +293,7 @@ $$
 
 假设我们存在如下一个矩阵乘法：
 
-#### 第一步
+##### 第一步
 
 第一步，图中黄色的块计算，得到第一个矩阵：
 
@@ -359,7 +359,7 @@ class 1,2,3,4,5,6 green
 classDef green fill:#695,color:#fff,font-weight:bold;
 ```
 
-#### 第二步
+##### 第二步
 
 第二步，图中黄色的块进行计算，得到第二个矩阵
 
@@ -480,7 +480,7 @@ for (int k = 0; k < columns(A); k++) {
 }
 ```
 
-## 实现
+### 实现
 
 于是，我们通过这个方式实现了第一个版本：基于 `TILE` ，`寄存器`，`内积转外积` 的优化逻辑。
 
@@ -580,7 +580,7 @@ extern "C" void solve(const float *A, const float *B, float *C, int M, int N, in
 }
 ```
 
-## 使用Shared Memory优化
+### 使用Shared Memory优化
 
 ```c++
 #include <cuda_runtime.h>
@@ -739,9 +739,9 @@ extern "C" void solve(const float *A, const float *B, float *C, int M, int N, in
 }
 ```
 
-# Matrix Transpose
+## Matrix Transpose
 
-## naive 实现
+### naive 实现
 
 ```c++
 #include <cuda_runtime.h>
@@ -755,7 +755,7 @@ __global__ void matrix_transpose_kernel(const float* input, float* output, int r
 }
 ```
 
-## 写入合并
+### 写入合并
 
 当我们读取数据时，`input[y * cols + x]` 是可以连续访问的，而 `output[x * rows + y]` 是不能连续访问，这个位置的逻辑和CUDA线程底层调度逻辑有关：**合并访问的前提是线程访问地址连续，且线程在 Warp 中连续**。
 
@@ -823,7 +823,7 @@ classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 
 **从显存控制器的视角来看：** 它看到 $T_0$ 要 `Addr 0`，$T_2$ 要 `Addr 1`。虽然这两个地址连在一起，但它们被分配到了不同的**掩码（Mask）**位上。在硬件内部，合并（Coalescing）是基于 **Warp Lane ID**（即线程在 Warp 中的编号）顺序进行的。如果 $T_0$ 访问 $A$，而 $T_1$ 访问的不是 $A+1$，硬件就会认为这个请求是“发散”的。它不会去扫描整个 Warp 看看 $T_8$ 是否刚好要 $A+1$ 并把它们拼起来。它会直接判定：这组请求无法合并为一个简单的 **128-byte 事务**，必须拆分成多个 **32-byte 事务** 甚至更小的请求。
 
-### 引入Shared Memory实现合并写入
+#### 引入Shared Memory实现合并写入
 
 换个思路，我们可以先读取数据：
 
@@ -927,7 +927,7 @@ classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 
 即可完成合并写入。
 
-### 代码实现
+#### 代码实现
 
 整个过程可以描述为：
 
@@ -984,7 +984,7 @@ extern "C" void solve(const float* input, float* output, int rows, int cols) {
 }
 ```
 
-## Bank Conflict
+### Bank Conflict
 
 在我们的代码中，有两个位置会访问 Shared Memory：
 
@@ -1017,7 +1017,7 @@ __global__ void matrix_transpose_kernel(const float* input, float* output, int r
 }
 ```
 
-## 一些值得注意的细节
+### 一些值得注意的细节
 
 代码中位移需要注意的是以下两行：
 
@@ -1143,7 +1143,7 @@ classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
 classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 ```
 
-## 总结
+### 总结
 
 无论我们在写多么复杂的算子（转置、矩阵乘法、卷积），我们脑子里那个**“基准（Base）+ 偏移（Offset）”**的分级坐标系就是一切逻辑的锚点。
 $$
@@ -1154,16 +1154,16 @@ $$
 GlobalIndex = \underbrace{BlockIdx \times Stride}_{基准偏移量 (宏观)} + \underbrace{ThreadIdx}_{内部偏移量 (微观)}
 $$
 
-# Color Inversion
+## Color Inversion
 
-## threads和blocks分配策略
+### threads和blocks分配策略
 
 在处理大带宽需求的图像算子时，我们遵循两个核心策略来压榨 GPU 性能：
 
 - **向量化访存 (Vectorized Access)**：通过将 `unsigned char*` 强转为 `uchar4*`，利用单条指令加载 128-bit 数据（4 个像素），将访存压力降至原来的 1/4。
 - **线程粗化 (Thread Coarsening)**：通过参数 `BK` 让单个线程处理多个连续像素。这能有效分摊坐标计算和指令发射的开销。
 
-## 代码实现
+#### 代码实现
 
 ```c++
 #include <cuda_runtime.h>
@@ -1206,7 +1206,7 @@ extern "C" void solve(unsigned char* image, int width, int height) {
 }
 ```
 
-## 性能分析
+### 性能分析
 
 在我们这个**使用了x轴线程粗化技术**的代码中，我们存在一个严重的问题：我们在 `TESLA` 上，我们的 `BK` 越小，反而执行的性能越快！而在我自己的 `4060 TI` 上却完全是正好相反的：
 
@@ -1254,9 +1254,9 @@ ncu --metrics l1tex__t_sector_hit_rate.pct,lts__t_sector_hit_rate.pct,sm__inst_e
 - `l1tex__t_sector_hit_rate.pct` 和 `lts__t_sector_hit_rate.pct` 显示有 **50%** 的命中率。这其实印证了 **写入分配（Write Allocation）** 机制： 在现代 GPU 中，当我们往显存写数据时，系统会先检查这块地址是否在 L2 中。由于我们处理的是连续像素（`uchar4`），线程 A 读取了像素，线程 B 随后写入。**读操作**产生的 Cache Line 被保留在 L2 中，使得紧随其后的**写操作**直接命中了缓存。这 50% 的命中率意味着我们的**写操作几乎全部在 L2 内部完成**，极大地缓解了 4060 Ti 那窄小的 128-bit 总线压力。
 - **`sm__inst_executed.avg.per_cycle_active` (0.27)** ：表示指令执行效率：0.27 inst/cycle，因为这是一个典型的**访存受限（Memory-bound）**算子。核心大部分时间都在等待显存返回数据，而不是在忙着做计算。
 
-# Matrix Addition
+## Matrix Addition
 
-## 矩阵加法的两种naive实现
+### 矩阵加法的两种naive实现
 
 我们基于 `1D线性模型` 和 `基于矩阵模型` 两种不同的逻辑实现了矩阵加法，然而，**基于1D线性模型的实现速度接近于基于矩阵模型的两倍。**这里主要的性能差距是由于：
 
@@ -1270,7 +1270,7 @@ ncu --metrics l1tex__t_sector_hit_rate.pct,lts__t_sector_hit_rate.pct,sm__inst_e
      - `idx = ty * N + tx`
 4. 寄存器压力更大：每一个中间变量（`tx`, `ty`, `bx`, `by`）都需要占用线程的寄存器。而 `1D模型` 中只有两个中间变量用于计算索引；
 
-### 基于1D线性模型
+#### 基于1D线性模型
 
 ```c++
 #include <cstdio>
@@ -1294,7 +1294,7 @@ extern "C" void solve(const float* A, const float* B, float* C, int N) {
 }
 ```
 
-### 基于矩阵模型
+#### 基于矩阵模型
 
 ```c++
 #include <cstdio>
@@ -1326,7 +1326,7 @@ extern "C" void solve(const float* A, const float* B, float* C, int N) {
 }
 ```
 
-## 使用向量化加速优化
+### 使用向量化加速优化
 
 **根据我们前面的对于 `1D` 和 `2D` 模型的分析，我们可以确认：对于 `element-wise` 的算子，我们优先使用 `1D` 模型**。
 
@@ -1382,11 +1382,13 @@ extern "C" void solve(const float* A, const float* B, float* C, int N) {
 }
 ```
 
-# Reduction - `add`
+# 并行归约及其变体
+
+## Reduction - `add`
 
 > Write a GPU program that performs parallel reduction on an array of 32-bit floating point numbers to compute their sum. The program should take an input array and produce a single output value containing the sum of all elements.
 
-## Sequential Indexing
+### Sequential Indexing
 
 第一个版本，我们使用了 Sequential Indexing（顺序索引）规约的方式，将活跃的线程压缩到同一个 `warp` 中，即使在最后阶段仍然会存在 Thread Divergence，但是由于是指数级坍缩的，所以是可以接受的，这里有几个需要注意的点是：
 
@@ -1420,7 +1422,7 @@ __global__ void naive_add(const float *input, float *output, int N)
 }
 ```
 
-## shfl_down_sync
+### shfl_down_sync
 
 > 我们可以查看 [常用的线程束级原语](#常用的线程束级原语) 这一章节了解一下前置知识。
 
@@ -1474,7 +1476,7 @@ extern "C" void solve(const float *input, float *output, int N)
 }
 ```
 
-## grid stride 模式下的 reduction
+### grid stride 模式下的 reduction
 
 整体的思路是：
 
@@ -1555,7 +1557,488 @@ extern "C" void solve(const float *input, float *output, int N)
 }
 ```
 
+## Dot Product & MSE
 
+`Dot product` 和 `MSE` 的逻辑其实非常简单，就是在启动之前对算法进行乘积或者MSE操作，随后整体的代码和 `Reduction - Add`逻辑完全相同：
+
+```cpp
+#include <cuda_runtime.h>
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+
+constexpr unsigned FULl_MASK = 0xffffffff;
+constexpr unsigned THREAD_PER_BLOCK = 256;
+constexpr unsigned WARP_PER_BLOCK = CEIL_DIV(THREAD_PER_BLOCK, 32);
+
+__device__ __forceinline__ float add_reduce(float val)
+{
+    val += __shfl_down_sync(FULl_MASK, val, 16);
+    val += __shfl_down_sync(FULl_MASK, val, 8);
+    val += __shfl_down_sync(FULl_MASK, val, 4);
+    val += __shfl_down_sync(FULl_MASK, val, 2);
+    val += __shfl_down_sync(FULl_MASK, val, 1);
+    return val;
+}
+
+__global__ void mse_kernel(const float *predictions, const float *targets, float *mse, int N)
+{
+    float local_val = 0.0f;
+    unsigned tid = blockDim.x * blockIdx.x + threadIdx.x;
+    unsigned block_tile = gridDim.x * blockDim.x;
+    for (unsigned idx = tid; idx < N; idx += block_tile)
+    {
+        float delta = predictions[idx] - targets[idx];
+        local_val += delta * delta;
+    }
+
+    local_val = add_reduce(local_val);
+    __shared__ float ssm_data[32];
+    unsigned lane = threadIdx.x % 32;
+    unsigned warp_id = threadIdx.x / 32;
+    if (lane == 0)
+    {
+        ssm_data[warp_id] = local_val;
+    }
+    __syncthreads();
+    if (warp_id == 0)
+    {
+        float warp_val = lane < WARP_PER_BLOCK ? ssm_data[lane] : 0.0f;
+        warp_val = add_reduce(warp_val);
+        if (lane == 0)
+        {
+            atomicAdd(mse, warp_val / N);
+        }
+    }
+}
+
+// predictions, targets, mse are device pointers
+extern "C" void solve(const float *predictions, const float *targets, float *mse, int N)
+{
+    mse_kernel<<<120, THREAD_PER_BLOCK>>>(predictions, targets, mse, N);
+    cudaDeviceSynchronize();
+}
+```
+
+## softmax
+
+softmax 的公式如下：
+$$
+\text{Softmax}(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{n} e^{x_j}}
+$$
+然而，在实际的应用中：$e^{x_j}$ 是一个指数级的值，有相当大的概率会溢出，所以我们通常在代码的实现中会利用 `softmax` 的一个特性：
+$$
+\frac{e^{x_i - C}}{\sum e^{x_j - C}} = \frac{e^{x_i} \cdot e^{-C}}{\sum e^{x_j} \cdot e^{-C}} = \frac{e^{x_i} \cdot e^{-C}}{e^{-C} \cdot \sum e^{x_j}} = \frac{e^{x_i}}{\sum e^{x_j}}
+$$
+
+
+将整个输入都减去一个固定的值 `C` 之后，`softmax` 的值不变：为了保证所有 $e^x$ 的指数项都不超过 0（即最大值为 $e^0 = 1$），我们选择令 $C = \max(x)$。
+
+那么，在我们的整个的计算过程就需要如下操作：
+
+```cpp
+max_kernel(input, d_max, N);				// 求最大值
+reduce_exp_sum_kernel(input, d_sum, d_max, N);	// 求softmax的sum值
+softmax_kernel(input, output, N);	// 求softmax值
+```
+
+### naive实现
+
+```cpp
+#include <cuda_runtime.h>
+#include <cstdio>
+#include <float.h>
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+
+constexpr unsigned BLOCKS_FOR_TESLA = 120;
+constexpr unsigned FULl_MASK = 0xffffffff;
+constexpr unsigned THREAD_PER_BLOCK = 256;
+constexpr unsigned WARP_PER_BLOCK = CEIL_DIV(THREAD_PER_BLOCK, 32);
+
+__global__ void max_kernel(const float *input, float *max, int N)
+{
+    float local_max = -FLT_MAX;
+    unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned block_tile = gridDim.x * blockDim.x;
+    for (unsigned idx = tid; idx < N; idx += block_tile)
+    {
+        local_max = fmaxf(local_max, input[idx]);
+    }
+
+    local_max = fmaxf(local_max, __shfl_down_sync(FULl_MASK, local_max, 16));
+    local_max = fmaxf(local_max, __shfl_down_sync(FULl_MASK, local_max, 8));
+    local_max = fmaxf(local_max, __shfl_down_sync(FULl_MASK, local_max, 4));
+    local_max = fmaxf(local_max, __shfl_down_sync(FULl_MASK, local_max, 2));
+    local_max = fmaxf(local_max, __shfl_down_sync(FULl_MASK, local_max, 1));
+
+    __shared__ float ssm_max[32];
+    unsigned lane = threadIdx.x % 32;
+    unsigned warp_id = threadIdx.x / 32;
+    if (lane == 0)
+    {
+        ssm_max[warp_id] = local_max;
+    }
+    __syncthreads();
+
+    if (warp_id == 0)
+    {
+        float block_max = (lane < WARP_PER_BLOCK) ? ssm_max[lane] : -FLT_MAX;
+        block_max = fmaxf(block_max, __shfl_down_sync(FULl_MASK, block_max, 16));
+        block_max = fmaxf(block_max, __shfl_down_sync(FULl_MASK, block_max, 8));
+        block_max = fmaxf(block_max, __shfl_down_sync(FULl_MASK, block_max, 4));
+        block_max = fmaxf(block_max, __shfl_down_sync(FULl_MASK, block_max, 2));
+        block_max = fmaxf(block_max, __shfl_down_sync(FULl_MASK, block_max, 1));
+        if (lane == 0)
+        {
+            atomicMax((int *)max, __float_as_int(block_max));
+        }
+    }
+}
+
+__global__ void reduce_exp_sum_kernel(const float *input, float *max, float *sum, int N)
+{
+    float local_sum = 0;
+    unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned block_tile = gridDim.x * blockDim.x;
+    for (unsigned idx = tid; idx < N; idx += block_tile)
+    {
+        local_sum += expf(input[idx] - max[0]);
+    }
+
+    local_sum += __shfl_down_sync(FULl_MASK, local_sum, 16);
+    local_sum += __shfl_down_sync(FULl_MASK, local_sum, 8);
+    local_sum += __shfl_down_sync(FULl_MASK, local_sum, 4);
+    local_sum += __shfl_down_sync(FULl_MASK, local_sum, 2);
+    local_sum += __shfl_down_sync(FULl_MASK, local_sum, 1);
+
+    __shared__ float ssm_sum[32];
+    unsigned lane = threadIdx.x % 32;
+    unsigned warp_id = threadIdx.x / 32;
+    if (lane == 0)
+    {
+        ssm_sum[warp_id] = local_sum;
+    }
+    __syncthreads();
+
+    if (warp_id == 0)
+    {
+        float block_sum = (lane < WARP_PER_BLOCK) ? ssm_sum[lane] : 0;
+        block_sum += __shfl_down_sync(FULl_MASK, block_sum, 16);
+        block_sum += __shfl_down_sync(FULl_MASK, block_sum, 8);
+        block_sum += __shfl_down_sync(FULl_MASK, block_sum, 4);
+        block_sum += __shfl_down_sync(FULl_MASK, block_sum, 2);
+        block_sum += __shfl_down_sync(FULl_MASK, block_sum, 1);
+        if (lane == 0)
+        {
+            atomicAdd(sum, block_sum);
+        }
+    }
+}
+
+__global__ void softmax_kernel(const float *input, float* output, float *max, float *sum, int N)
+{
+    unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned block_tile = gridDim.x * blockDim.x;
+    for (unsigned idx = tid; idx < N; idx += block_tile)
+    {
+        float exp = input[idx] - *max;
+        output[idx] = expf(exp) / *sum;
+    }
+}
+
+// input, output are device pointers (i.e. pointers to memory on the GPU)
+extern "C" void solve(const float *input, float *output, int N)
+{
+    float *d_max;
+    float *d_sum;
+    cudaMallocAsync(&d_max, sizeof(float), cudaStreamDefault);
+    cudaMallocAsync(&d_sum, sizeof(float), cudaStreamDefault);
+    max_kernel<<<BLOCKS_FOR_TESLA, THREAD_PER_BLOCK>>>(input, d_max, N);
+    reduce_exp_sum_kernel<<<BLOCKS_FOR_TESLA, THREAD_PER_BLOCK>>>(input, d_max, d_sum, N);
+    softmax_kernel<<<BLOCKS_FOR_TESLA, THREAD_PER_BLOCK>>>(input, output, d_max, d_sum, N);
+
+    {
+        float h_max = 0.0f;
+        float h_sum = 0.0f;
+        cudaMemcpy(&h_max, d_max, sizeof(float), cudaMemcpyKind::cudaMemcpyDeviceToHost);
+        cudaMemcpy(&h_sum, d_sum, sizeof(float), cudaMemcpyKind::cudaMemcpyDeviceToHost);
+        printf("max = %f, sum = %f\n", h_max, h_sum);
+    }
+
+    cudaDeviceSynchronize();
+}
+
+```
+
+## 多维索引与空间转换
+
+### subarray sum
+
+> Implement a program that computes the sum of a subarray of 32-bit integers. You are given an input array `input` of length `N`, and two indices `S` and `E`. `S` and `E` are inclusive, 0-based start and end indices — compute the sum of `input[S..E]`.
+
+乍一看，`subarray sum` 和普通的 `sum` 是完全一致的逻辑，但是最大的问题在于：对于普通的通过 `cudaMemAlloc()` 分配的内存都是 `16` 字节对齐的，而当我们在计算 `sumarray sum` 时它不一定是 `16` 字节对齐的。这导致的结果就是，每一次读取数据总会需要两次读取事务，虽然一般来说，这两次读取中的前者可以通过L1缓存直接拿到数据，然而带来的性能开销是实打实的。
+
+我们有三个方案：
+
+1. 将数据划分为 `矢量加速部分` 和 `prolog` 和 `epilog` 三个部分;
+2. 将数据在一个循环中覆盖， 在计算时通过 `(idx0 + 2 >= 0 && idx0 + 2 <= max_idx) ? data.z : 0;` 的形式避免引入条件判断分支引起 thread diverge；
+3. 使用三个不同的核函数计算`矢量加速部分` 和 `prolog` 和 `epilog`。
+
+> 这是一个非常经典的高性能计算（HPC）权衡问题 -- **指令冗余（Instruction Overhead）**与**逻辑开销（Logic Overhead）**之间的矛盾。
+
+为了对比这三个方案，我们需要从 **GPU 的执行特性**（指令吞吐、线程分支、访存延迟）来深度拆解：
+
+| **维度**     | **方案 1：掩码全量计算 **              | **方案 2：单核分段 (Prolog + Loop + Epilog)** | **方案 3：多核分段 (Thrust/CUB 风格)** |
+| ------------ | -------------------------------------- | --------------------------------------------- | -------------------------------------- |
+| **核心逻辑** | `sum += (mask) ? data : 0`             | `sum += data` (主循环)                        | `sum += data` (主循环)                 |
+| **指令效率** | **中**：每个 `int` 都要多做 2 个判断。 | **高**：主循环指令极简。                      | **最高**：主循环指令极简。             |
+| **分支代价** | **极低**：无 Divergence，全员同步。    | **中**：循环前后的分支可能导致部分线程闲置。  | **低**：每个核函数内部都很纯粹。       |
+| **显存带宽** | **满血**：完美的 128-bit 对齐加载。    | **血亏/复杂**：处理开头对齐非常繁琐。         | **满血**：各司其职。                   |
+| **内核开销** | **极低**：只启动 1 次 Kernel。         | **极低**：只启动 1 次 Kernel。                | **高**：多次启动 Kernel 的 API 延迟。  |
+
+**在 GPU 上，方案 1 通常是“性价比”最高的：虽然方案 1 在主循环里多做了 `(mask) ? ... : 0`，但它在 GPU 硬件层面其实非常快。GPU 是访存密集型设备。`ld.global.v4` 从显存拿数据的延迟高达数百个周期，而 `SEL`（选择指令）或 `VSEL` 这种寄存器级别的逻辑判断只需要几个周期。**
+
+```cpp
+#include <cuda_runtime.h>
+#include <stdint.h>
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+#define CLEAR_LOWER_16(addr) ((addr) & (~0xF))
+
+constexpr unsigned THREAD_PER_BLOCK = 256;
+constexpr unsigned WARP_PER_BLOCK = CEIL_DIV(THREAD_PER_BLOCK, 32);
+
+__global__ void sum_kernel_masked(const int *base_ptr, int *output, int S, int E)
+{
+    unsigned tid = blockDim.x * blockIdx.x + threadIdx.x;
+    unsigned stride = gridDim.x * blockDim.x;
+
+    uintptr_t s_addr = reinterpret_cast<uintptr_t>(base_ptr + S);
+    uintptr_t aligned_s_addr = CLEAR_LOWER_16(s_addr);
+    unsigned vec_offset = (s_addr - aligned_s_addr) / sizeof(int);
+
+    uintptr_t e_addr = reinterpret_cast<uintptr_t>(base_ptr + E + 1);
+    unsigned vec_cnt = CEIL_DIV(e_addr - aligned_s_addr, 16);
+
+    int local_sum = 0;
+    int4 *data = reinterpret_cast<int4 *>(aligned_s_addr);
+    // idx是在包含了prolog和epilog的int4数组中的索引
+    for (unsigned idx = tid; idx < vec_cnt; idx += stride)
+    {
+        int4 val = data[idx];
+        // sub_idx是在数组 [base_ptr + S, base_ptr + E + 1) 中的索引
+        int idx_of_subarray = idx * 4 - vec_offset;
+        int max_idx = E - S;
+
+        local_sum += (0 <= idx_of_subarray && idx_of_subarray <= max_idx) ? val.x : 0;
+        local_sum += (0 <= idx_of_subarray + 1 && idx_of_subarray + 1 <= max_idx) ? val.y : 0;
+        local_sum += (0 <= idx_of_subarray + 2 && idx_of_subarray + 2 <= max_idx) ? val.z : 0;
+        local_sum += (0 <= idx_of_subarray + 3 && idx_of_subarray + 3 <= max_idx) ? val.w : 0;
+    }
+
+#pragma unroll
+    for (int offset = 16; offset > 0; offset >>= 1)
+    {
+        local_sum += __shfl_down_sync(0xFFFFFFFF, local_sum, offset);
+    }
+
+    __shared__ int ssm_sum[32];
+    int lane = threadIdx.x % 32;
+    int wid = threadIdx.x / 32;
+    if (lane == 0)
+    {
+        ssm_sum[wid] = local_sum;
+    }
+    __syncthreads();
+
+    if (wid == 0)
+    {
+        int block_sum = (lane < WARP_PER_BLOCK) ? ssm_sum[lane] : 0;
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1)
+        {
+            block_sum += __shfl_down_sync(0xFFFFFFFF, block_sum, offset);
+        }
+        if (lane == 0)
+        {
+            atomicAdd(output, block_sum);
+        }
+    }
+}
+
+extern "C" void solve(const int *input, int *output, int N, int S, int E)
+{
+    cudaMemset(output, 0, sizeof(int));
+    if (E < S)
+        return;
+
+    sum_kernel_masked<<<160, THREAD_PER_BLOCK>>>(input, output, S, E);
+    cudaDeviceSynchronize();
+}
+```
+
+### subarray sum 2d
+
+```cpp
+#include <cuda_runtime.h>
+#include <stdint.h>
+
+#define WARP_SIZE 32
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+#define CLEAR_LOWER_16(addr) ((addr) & (~0xFULL))
+
+// Assuming that we cover the 2D space by a 1D grid
+__global__ void sum_kernel_2d_masked(const int *base_ptr, int *output,
+                                     int M, int S_ROW, int E_ROW, int S_COL, int E_COL)
+{
+    int local_sum = 0;
+    // 计算全局的tid，我们需要使用tid去计算当前线程所归属的warp
+    // 这个warp决定了我们处理哪一行
+    int global_tid = blockDim.x * blockIdx.x + threadIdx.x;
+    int global_wid = global_tid / WARP_SIZE;
+    int lane = threadIdx.x % 32;
+    // 总的warp数量，决定了我们外层循环时的时间
+    int total_warps = (gridDim.x * blockDim.x) / WARP_SIZE;
+
+    int sub_w = E_COL - S_COL + 1;
+    int sub_h = E_ROW - S_ROW + 1;
+
+    // 总共有 sub_h 行，我们每个warp负责其中的一行
+    for (int idx = global_wid; idx < sub_h; idx += total_warps)
+    {
+        // 通过基准行和偏移量找到目标行的入口地址
+        int row = S_ROW + idx;
+        const int *row_ptr = base_ptr + row * M + S_COL;
+
+        // 通过入口地址计算一个可以16字节对齐的指针
+        uintptr_t s_addr = reinterpret_cast<uintptr_t>(row_ptr);
+        uintptr_t aligned_row_ptr = CLEAR_LOWER_16(s_addr);
+        int vec_offset = static_cast<int>(s_addr - aligned_row_ptr) / sizeof(int);
+
+        uintptr_t e_addr = reinterpret_cast<uintptr_t>(row_ptr + sub_w);
+        int vec_num = CEIL_DIV((e_addr - aligned_row_ptr), 16);
+
+        const int4 *data = reinterpret_cast<const int4 *>(aligned_row_ptr);
+        for (int i = lane; i < vec_num; i += WARP_SIZE)
+        {
+            int4 val = data[i];
+            int idx_of_sub = i * 4 - vec_offset;
+
+            local_sum += (0 <= idx_of_sub && idx_of_sub < sub_w) ? val.x : 0;
+            local_sum += (0 <= idx_of_sub + 1 && idx_of_sub + 1 < sub_w) ? val.y : 0;
+            local_sum += (0 <= idx_of_sub + 2 && idx_of_sub + 2 < sub_w) ? val.z : 0;
+            local_sum += (0 <= idx_of_sub + 3 && idx_of_sub + 3 < sub_w) ? val.w : 0;
+        }
+    }
+
+#pragma unroll
+    for (int offset = 16; offset > 0; offset >>= 1)
+    {
+        local_sum += __shfl_down_sync(0xFFFFFFFF, local_sum, offset);
+    }
+    if (lane == 0)
+    {
+        atomicAdd(output, local_sum);
+    }
+}
+
+extern "C" void solve(const int *input, int *output, int N, int M,
+                      int S_ROW, int E_ROW, int S_COL, int E_COL)
+{
+    cudaMemset(output, 0, sizeof(int));
+    if (E_ROW < S_ROW || E_COL < S_COL)
+    {
+        return;
+    }
+    // 启动 120 个 Block，每个 Block 256 线程，占满典型 GPU
+    sum_kernel_2d_masked<<<120, 256>>>(input, output, M, S_ROW, E_ROW, S_COL, E_COL);
+}
+```
+
+### subarray sum 3d
+
+```cpp
+#include <cuda_runtime.h>
+#include <stdint.h>
+#include <cstdio>
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+#define CLEAR_LOWER_16(addr) ((addr) & (~0xFULL))
+
+__global__ void sum_kernel_3d_masked(const int *base_ptr, int *output,
+                                     int W, int H,
+                                     int S_D, int E_D, int S_H, int E_H, int S_W, int E_W)
+{
+    // init parameters
+    int global_tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int global_wid = global_tid / warpSize;
+    int lane = threadIdx.x % warpSize;
+    int total_warps = (gridDim.x * blockDim.x) / 32;
+
+    // init target info
+    int sub_w = E_W - S_W + 1;
+    int sub_h = E_H - S_H + 1;
+    int sub_d = E_D - S_D + 1;
+    int total_lines = sub_d * sub_h;
+
+    // init start parameters
+    int local_sum = 0;
+    for (int idx = global_wid; idx < total_lines; idx += total_warps)
+    {
+        int deep = idx / sub_h;
+        int row_in_deep = idx % sub_h;
+
+        int curr_d = S_D + deep;
+        int curr_h = S_H + row_in_deep;
+
+        const int *row_ptr = base_ptr + (size_t)curr_d * W * H + (size_t)curr_h * W + S_W;
+        uintptr_t s_addr = reinterpret_cast<uintptr_t>(row_ptr);
+        uintptr_t s_aligned_addr = CLEAR_LOWER_16(s_addr);
+        int vec_offset = (s_addr - s_aligned_addr) / sizeof(int);
+        // printf("s_addr = %p, s_aligned_addr = %p, vec_offset = %d\n", s_addr, s_aligned_addr, vec_offset);
+
+        uintptr_t e_addr = reinterpret_cast<uintptr_t>(row_ptr + sub_w);
+        int vec_num = CEIL_DIV(e_addr - s_aligned_addr, 16);
+        const int4 *data_line = reinterpret_cast<const int4 *>(s_aligned_addr);
+        for (int line_idx = lane; line_idx < vec_num; line_idx += warpSize)
+        {
+            int4 val = data_line[line_idx];
+            int s_ptr_val = line_idx * 4 - vec_offset;
+            local_sum += (0 <= s_ptr_val + 0 && s_ptr_val + 0 < sub_w) ? val.x : 0;
+            local_sum += (0 <= s_ptr_val + 1 && s_ptr_val + 1 < sub_w) ? val.y : 0;
+            local_sum += (0 <= s_ptr_val + 2 && s_ptr_val + 2 < sub_w) ? val.z : 0;
+            local_sum += (0 <= s_ptr_val + 3 && s_ptr_val + 3 < sub_w) ? val.w : 0;
+        }
+    }
+
+#pragma unroll
+    for (int delta = 16; delta > 0; delta >>= 1)
+    {
+        local_sum += __shfl_down_sync(0xFFFFFFFF, local_sum, delta);
+    }
+
+    if (lane == 0)
+    {
+        atomicAdd(output, local_sum);
+    }
+}
+
+extern "C" void solve(const int *input, int *output,
+                      int D, int H, int W,
+                      int S_D, int E_D, int S_H, int E_H, int S_W, int E_W)
+{
+    cudaMemset(output, 0, sizeof(int));
+    if (E_D < S_D || E_H < S_H || E_W < S_W)
+    {
+        return;
+    }
+    sum_kernel_3d_masked<<<120, 256>>>(
+        input, output,
+        W, H,
+        S_D, E_D, S_H, E_H, S_W, E_W);
+}
+```
 
 # QA
 
@@ -2705,6 +3188,72 @@ $$
 
 
 
+## 网格布局的选择
+
+我们的网格布局可以使用 `1D`， `2D`， `3D` 等不同的选择，例如：
+
+```cpp
+extern "C" void solve()
+{
+    dim3 block_1d(256);
+    dim3 block_2d(32, 8);
+    dim3 block_3d(32, 4, 2);
+}
+```
+
+那我们应该如何选择具体使用哪种模式呢？
+
+选择 CUDA 网格布局（Grid/Block Layout）的维度，本质上是在**逻辑表达的可读性**与**底层硬件的执行效率**之间寻找平衡。虽然硬件最终都会将所有线程拉平为一维的 **Warp**（每 32 个连续线程一组），但不同的布局选择会直接影响缓存命中率、索引计算开销以及代码的通用性。
+
+### 一维布局
+
+一维布局是极致性能与底层库的首选，当我们追求极致的内存带宽利用率，或者在编写类似 **CUB/CUTLASS** 这种底层算子时，1D 是最佳选择。
+
+- **适用场景**：
+  - **线性数据处理**：如向量加法、一维规约（Reduction）。
+  - **极致优化的 2D/3D 算子**：如我们之前研究的子矩阵求和。通过手动将 2D 任务映射到 1D Warp，可以更精准地控制内存对齐（`int4` 加载）和任务分发。
+- **优点**：
+  - **计算开销最小**：索引计算仅需 `blockIdx.x * blockDim.x + threadIdx.x`，不涉及多维乘法。
+  - **负载均衡最佳**：配合 **Grid-Stride Loop**，可以像“任务队列”一样平滑处理任何尺寸的数据，避免了多维布局在边缘处产生的空转线程。
+- **缺点**：逻辑抽象，处理具有复杂几何关系（如 2D 邻域）的算法时，代码极其难读。
+
+### 二维布局
+
+2D 布局是图像处理、视觉算法和稠密矩阵运算中最常用的模式。
+
+- **适用场景**：
+  - **图像处理**：卷积（Convolution）、滤波（Filtering）、仿射变换。
+  - **矩阵运算**：矩阵转置（Transpose）、简单的矩阵乘法（GEMM）。
+  - **空间相关算法**：Stencil 计算（如热传导模拟）。
+- **优点**：
+  - **空间局部性（Spatial Locality）**：GPU 的 L1/L2 缓存和纹理缓存（Texture Cache）针对二维空间有优化。2D 布局能让相邻线程访问内存中相邻或“逻辑邻域”的数据，提高缓存命中率。
+  - **直观映射**：线程坐标 `(x, y)` 直接对应像素坐标，大大降低了边界处理（Halo Region）的编写难度。
+- **选择建议**：通常将 `block.x` 设置为 32（一个 Warp 的大小），`block.y` 设置为 4、8 或 16。
+
+### 三维布局
+
+3D 布局通常用于处理体数据（Volumetric Data）或复杂的科学计算。
+
+- **适用场景**：
+  - **体素渲染 (Voxel Rendering)**：医学影像处理（CT/MRI）、流体力学模拟（CFD）。
+  - **3D 物理模拟**：天气预测、地震波模拟。
+- **优点**：
+  - **简化坐标计算**：在处理三维张量时，避免了手动将 `(x, y, z)` 展平为一维索引的痛苦。
+- **缺点**：
+  - **容易超出限制**：单个 Block 的总线程数不能超过 1024。如果我们写 `(32, 8, 8)`，总数就是 2048，内核将无法启动。
+
+### 一维布局和二维布局的实例
+
+我们以两个典型的例子：`array sum` 和 `convolution` 来作为例子说明我们对于网格布局的选择：
+
+#### array sum
+
+`array sum` 当我们在计算一个二维数组的和时，我们通常会将二维数组拉平到一维数组，以获取更高的性能。
+
+#### convolution
+
+卷积的计算非常典型，在卷积的计算中，如果卷积核函数是一个 `3 * 3` 的矩阵，那么访问矩阵周围的元素是必要的。此时如果我们不使用二维矩阵，那么整个矩阵的索引计算将十分的琐碎并且复杂。
+
 ## block stride 和 grid stride 对缓存利用率的差别
 
 通常来说，`grid stride` 的缓存利用率要远高于 `block stride` 的缓存利用率。假设要处理 N=10240 个元素，threadsPerBlock=256：
@@ -2841,10 +3390,6 @@ classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
 ```
 
 >也就是说，**block stride 是逻辑连续，物理发散的；而 grid stride 是逻辑跳跃，物理对齐。** `block stride` 它是在时间轴上从左到右连续的访问，而我们GPU期待的是，在同一个时间点上连续的访问 -- 这对应于 `grid stride` 的访问模式。
-
-
-
-
 
 
 
