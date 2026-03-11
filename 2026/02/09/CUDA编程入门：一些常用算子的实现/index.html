@@ -27,7 +27,7 @@
 <meta property="og:description" content="基础部分 Matrix Multiplication 首先，我们需要使用 TILE 和 THREAD 来对我们的输入张量进行分块，分块有两种策略：连续分块 和 交错分块 连续分块下，我们的内存模型为： block-beta  columns 10  block:header0:10     columns 2     space:2     t0(&quot;thread (0, 0)&quot;">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-02-09T07:24:32.000Z">
-<meta property="article:modified_time" content="2026-03-09T13:03:04.107Z">
+<meta property="article:modified_time" content="2026-03-11T13:45:27.657Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -154,8 +154,8 @@ Parallelism)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link"
 Effect)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E9%AB%98%E7%A7%A9%E7%9A%84%E8%A1%A8%E8%BE%BE%E8%83%BD%E5%8A%9B-rank-of-attention-matrix"><span class="nav-number">4.12.3.</span> <span class="nav-text">提高“秩”的表达能力
 (Rank of Attention Matrix)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%B6%88%E9%99%A4%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E5%99%AA%E5%A3%B0"><span class="nav-number">4.13.</span> <span class="nav-text">如何消除多头注意力的噪声</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#w_o-%E7%9A%84%E9%9D%99%E9%9F%B3%E5%8A%9F%E8%83%BD-the-gatekeeper"><span class="nav-number">4.13.1.</span> <span class="nav-text">\(W_o\) 的“静音”功能 (The Gatekeeper)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E8%BF%9E%E6%8E%A5%E7%9A%84%E4%BF%9D%E5%BA%95-residual-connection"><span class="nav-number">4.13.2.</span> <span class="nav-text">残差连接的“保底” (Residual
 Connection)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%97%E4%BD%99%E5%85%B6%E5%AE%9E%E6%98%AF%E4%B8%80%E7%A7%8D%E7%A8%B3%E5%81%A5%E6%80%A7-redundancy-as-robustness"><span class="nav-number">4.13.3.</span> <span class="nav-text">“冗余”其实是一种稳健性
-(Redundancy as Robustness)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#transformer%E7%9A%84%E5%85%A8%E8%AE%AD%E7%BB%83%E6%B5%81%E7%A8%8B"><span class="nav-number">4.14.</span> <span class="nav-text">transformer的全训练流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#transformer%E4%B8%AD%E7%9A%84%E7%9F%A9%E9%98%B5%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">4.15.</span> <span class="nav-text">transformer中的矩阵的物理意义</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%B1%8F%E8%94%BD%E6%9C%AA%E6%9D%A5%E7%9A%84token"><span class="nav-number">4.15.1.</span> <span class="nav-text">为什么要屏蔽未来的token？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0loss%E7%9A%84%E7%9E%AC%E9%97%B4%E5%BD%92%E9%9B%B6"><span class="nav-number">4.15.1.1.</span> <span class="nav-text">损失函数（Loss）的瞬间归零</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%ADbackpropagation%E4%B8%AD%E7%9A%84%E8%99%9A%E5%81%87%E5%85%B3%E8%81%94"><span class="nav-number">4.15.1.2.</span> <span class="nav-text">反向传播（Backpropagation）中的虚假关联</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">4.15.2.</span> <span class="nav-text">训练和推理的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#block-stride-%E5%92%8C-grid-stride-%E5%AF%B9%E7%BC%93%E5%AD%98%E5%88%A9%E7%94%A8%E7%8E%87%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">4.16.</span> <span class="nav-text">block stride 和
-grid stride 对缓存利用率的差别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#block-stride"><span class="nav-number">4.16.1.</span> <span class="nav-text">Block Stride</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#grid-stride"><span class="nav-number">4.16.2.</span> <span class="nav-text">Grid Stride</span></a></li></ol></li></ol></li></ol></div>
+(Redundancy as Robustness)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#transformer%E7%9A%84%E5%85%A8%E8%AE%AD%E7%BB%83%E6%B5%81%E7%A8%8B"><span class="nav-number">4.14.</span> <span class="nav-text">transformer的全训练流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#transformer%E4%B8%AD%E7%9A%84%E7%9F%A9%E9%98%B5%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">4.15.</span> <span class="nav-text">transformer中的矩阵的物理意义</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%B1%8F%E8%94%BD%E6%9C%AA%E6%9D%A5%E7%9A%84token"><span class="nav-number">4.15.1.</span> <span class="nav-text">为什么要屏蔽未来的token？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0loss%E7%9A%84%E7%9E%AC%E9%97%B4%E5%BD%92%E9%9B%B6"><span class="nav-number">4.15.1.1.</span> <span class="nav-text">损失函数（Loss）的瞬间归零</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%ADbackpropagation%E4%B8%AD%E7%9A%84%E8%99%9A%E5%81%87%E5%85%B3%E8%81%94"><span class="nav-number">4.15.1.2.</span> <span class="nav-text">反向传播（Backpropagation）中的虚假关联</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">4.15.2.</span> <span class="nav-text">训练和推理的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ffnfeed-forward-network"><span class="nav-number">4.16.</span> <span class="nav-text">FFN(Feed-Forward Network)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%BF%80%E6%B4%BB"><span class="nav-number">4.16.1.</span> <span class="nav-text">非线性激活</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#residual-connection"><span class="nav-number">4.16.2.</span> <span class="nav-text">Residual Connection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AF%8F%E4%B8%80%E5%B1%82%E7%9A%84%E5%9B%BA%E5%AE%9A%E7%9F%A9%E9%98%B5"><span class="nav-number">4.16.3.</span> <span class="nav-text">每一层的固定矩阵</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#block-stride-%E5%92%8C-grid-stride-%E5%AF%B9%E7%BC%93%E5%AD%98%E5%88%A9%E7%94%A8%E7%8E%87%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">4.17.</span> <span class="nav-text">block stride 和
+grid stride 对缓存利用率的差别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#block-stride"><span class="nav-number">4.17.1.</span> <span class="nav-text">Block Stride</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#grid-stride"><span class="nav-number">4.17.2.</span> <span class="nav-text">Grid Stride</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -236,7 +236,7 @@ grid stride 对缓存利用率的差别</span></a><ol class="nav-child"><li clas
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-09 21:03:04" itemprop="dateModified" datetime="2026-03-09T21:03:04+08:00">2026-03-09</time>
+      <time title="修改时间：2026-03-11 21:45:27" itemprop="dateModified" datetime="2026-03-11T21:45:27+08:00">2026-03-11</time>
     </span>
 
   
@@ -3294,7 +3294,7 @@ class="math inline">\(Q, K, V\)</span>
 已经融合其他的维度的信息（在矩阵乘法中实现的）。此时我们进入
 <code>transformer</code>
 的第一个关键机制：分头。如我们前面所说的，分头主要是因为在同一个input中，同一个token再与其他的不同token结合计算
-<span class="math inline">\(Q\timesK^T\)</span> 时侧重点不一样，然而
+<span class="math inline">\(Q \times K^T\)</span> 时侧重点不一样，然而
 softmax
 算法会使得部分语义会被忽略，所以我们需要分头，在不同的头里训练出这个头里最值得注意的维度，同时把所有的维度结合起来才是真正的数据。</li>
 <li>为此，我们的输入的形状被改变：[4, 16, 8, 32]；</li>
@@ -3479,6 +3479,211 @@ class="math inline">\([V_0, V_1, \dots, V_N]\)</span>。</li>
 <li>得到的结果经过 FFN 和线性层，最终输出第 <span
 class="math inline">\(N+1\)</span> 个词的概率分布。</li>
 </ol></li>
+</ul>
+<h2 id="ffnfeed-forward-network">FFN(Feed-Forward Network)</h2>
+<blockquote>
+<p>如果说 <strong>Attention（注意力机制）</strong> 的作用是让 Token
+之间进行“信息交换”和“找关系”，那么 <strong>FFN</strong> 的作用就是对每个
+Token 进行<strong>“深度加工”和“知识提取”</strong>。</p>
+<p>它的核心逻辑可以总结为：<strong>“先升维空间进行非线性转换，再降维整合。”</strong></p>
+</blockquote>
+<p>我们可以再次回顾我们的整个的 <code>attention</code> 计算过程： <span
+class="math display">\[
+\text{Attention}(Q, K, V) =
+\text{Softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\]</span> 整个的过程转换是：</p>
+<ol type="1">
+<li><span class="math inline">\(E_{token}\)</span>
+将token转换为向量；</li>
+<li><span class="math inline">\(E_{position}\)</span>
+为向量增加位置向量信息；</li>
+<li>和每一层的 <span class="math inline">\(W_{Q} W_{K} W_{V}\)</span>
+相乘，得到 <span class="math inline">\(Q, K,
+V\)</span>，<strong>注意，在这里我们的 <span class="math inline">\(Q, K,
+V\)</span>
+中的每一个向量，都已经包含根据权重矩阵分配后的每一个元素的向量的全部维度的值；换句话说，这些维度已经融合了
+-- 我们中有我，我中有我们。</strong></li>
+<li><span class="math inline">\(Attention\)</span> 中
+<ol type="1">
+<li>我们先在括号中通过计算得到了一个矩阵 <span
+class="math inline">\(\text{Softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)\)</span>，
+这个矩阵中的每一个元素 <span class="math inline">\(E_{ij}\)</span>
+都包含了 <span class="math inline">\(Q_i\)</span> 和 <span
+class="math inline">\(K_j\)</span>
+的结合计算的分数；也就是此时，我们开始出现单个token和单个token的融合，这是一个
+<span class="math inline">\(N * N\)</span> 的矩阵；</li>
+<li>此时，我们已经得到了分数，我们需要将这个分数再次还原为语义：<span
+class="math inline">\(Output = \text{Score}_{n \times n} \times V_{n
+\times 512}\)</span>，V的每一行代表一个 token
+的维度内容（Value），每一列（共 512 列）代表特征的不同维度。</li>
+<li>此时，我们的分数矩阵的 <span class="math inline">\(E_{ij}\)</span>
+是 <span class="math inline">\(Q_i\)</span> 和 <span
+class="math inline">\(K_j\)</span> 的结合后计算的分数；我们的V矩阵的元素
+<span class="math inline">\(E_{ij}\)</span> 是 <code>token[i]</code>
+的第 <code>j</code>
+个维度的value；那么我们就将<strong>token的两两结合，转换成了全部的token集合</strong>。</li>
+</ol></li>
+</ol>
+<p><strong>在经历了上面的全部步骤之后，我们现在得到了一个 <span
+class="math inline">\(N * d_{model}\)</span> 的矩阵，其中 <span
+class="math inline">\(E_{ij}\)</span> 表示了 <code>token[i]</code> 和
+<code>所有token的第j个维度的value的结合</code></strong></p>
+<p>在这个过程中：</p>
+<ol type="1">
+<li><code>&lt;3&gt;</code>
+这一步的物理意义是<strong>特征转换（Projection）</strong>；</li>
+<li><code>&lt;4.3&gt;</code> 这一步的物理意义是** <strong>Global Context
+Injection（全局语境注入）</strong>。**</li>
+</ol>
+<p><strong>随后，我们进入到我们真正的逻辑推理（FFN）：我们之前的
+<code>Attention</code> 阶段，都是对我们已经存在的信息的提取。而
+<code>FFN</code>
+在实际上执行了两个事：非线性决策和模式存储</strong>。</p>
+<h3 id="非线性激活">非线性激活</h3>
+<p>在数学上，Attention
+无论怎么算，本质上都是在做<strong>加权平均</strong>（线性组合）：例如，在我们前面提到的最终矩阵中，<span
+class="math inline">\(E_{ij}\)</span> 表示了 <code>token[i]</code> 和
+<code>所有token的第j个维度的value的结合</code>。<strong>而这个矩阵是基于线性组合得到的，这意味着我们无法产生任何的复杂推理：例如，在线性组合下，水烧到200°时仍然是水，然而水在100°时便变成了水蒸气，这个过程并不是线性的。</strong></p>
+<p><strong>此时，我们就需要引入我们的各种激活函数：<code>ReLU</code>，<code>GeLU</code></strong>：在引入这些函数之后，我们可以将我们的线性组合改变为非线性组合。简单来说，假设某个值不满足一定的条件，我们就认为它已经失效（这里失效是一个代称，例如我认为
+<code>token[i]</code> 和 <code>token[j]</code>
+之间没有任何关联，那么他们不应该有任何的语义关联）。</p>
+<p>当我们把成千上万个这种“折断的线”组合在一起时，神奇的事情发生了：</p>
+<ol type="1">
+<li><strong>分段拟合</strong>：我们可以用无数段折线，去模拟任何复杂的曲线（这在数学上叫<strong>通用近似定理</strong>）。</li>
+<li><strong>逻辑门控</strong>：
+<ul>
+<li>某个神经元的输入是 <span class="math inline">\(x\)</span>。如果
+<span class="math inline">\(x\)</span>
+代表“文本中出现了‘不’这个字”，且其强度为负。</li>
+<li>经过 ReLU 后，这个负值变成了 0。</li>
+<li><strong>物理含义</strong>：这个特征被“过滤”掉了，或者说这个逻辑分支被“关闭”了。</li>
+<li>只有当特征强度跨过某个阈值时，神经元才会“亮起来”（激活）。这种“亮”与“不亮”，本质上就是计算机底层的
+<strong>0 和 1</strong>，也就是 <strong>“如果...那么...”</strong>。</li>
+</ul></li>
+</ol>
+<p><strong>总结来说，线性系统负责“联想”（比如
+Attention：这个词和那个词有关系），而非线性系统负责“判断”（比如
+FFN：既然有这个关系，那么结论是 A 而不是 B）。</strong></p>
+<p>而在这个过程中，<code>FFN</code>
+会包含两个线性层和一个非线性开关：</p>
+<ol type="1">
+<li><strong>第一步：升维投影</strong>
+<ul>
+<li>*输入<strong>：<span class="math inline">\([N,
+512]\)</span></strong></li>
+<li>算子<strong>：<span class="math inline">\(W_{up}\)</span>，形状为
+</strong><span class="math inline">\([512, 2048]\)</span></li>
+<li>计算**：<span class="math inline">\(N \times 512\)</span> 乘以 <span
+class="math inline">\(512 \times 2048 = [N, 2048]\)</span></li>
+</ul></li>
+<li><strong>第二步：非线性“开关”</strong>
+<ul>
+<li>对这个 <span class="math inline">\(N \times 2048\)</span>
+的结果进行激活函数处理（如 ReLU）。</li>
+</ul></li>
+<li><strong>第三步：降维整合</strong>
+<ul>
+<li><strong>输入</strong>：<span class="math inline">\([N,
+2048]\)</span></li>
+<li><strong>算子</strong>：<span
+class="math inline">\(W_{down}\)</span>，形状为 <strong><span
+class="math inline">\([2048, 512]\)</span></strong></li>
+<li>*计算**：<span class="math inline">\(N \times 2048\)</span> 乘以
+<span class="math inline">\(2048 \times 512 = [N, 512]\)</span></li>
+</ul></li>
+</ol>
+<p>这个矩阵不是人工定义的，也不是数学公式生成的，它和 <span
+class="math inline">\(W_Q, W_K, W_V\)</span>
+一样，是<strong>模型在预训练阶段（Pre-training）从海量数据中“卷”出来的。</strong></p>
+<ul>
+<li><strong>初始化</strong>：在模型刚开始训练时，这个 <span
+class="math inline">\(512 \times 2048\)</span>
+的矩阵里全是随机生成的乱码数字（比如服从正态分布的随机数）。</li>
+<li><strong>进化过程</strong>：
+<ol type="1">
+<li>模型尝试用这些随机数去做推理，结果肯定是一塌糊涂。</li>
+<li>通过<strong>反向传播（Backpropagation）</strong>，模型计算出：如果我想准确预测下一个词，这个
+<span class="math inline">\(512 \times 2048\)</span>
+矩阵里的每一个数字应该往哪个方向微调一点点。</li>
+<li>经过数万亿个 Token 的“喂养”，这些数字逐渐形成了逻辑。</li>
+</ol></li>
+</ul>
+<h3 id="residual-connection">Residual Connection</h3>
+<p>在我们的流程中，每一层 Attention 和 FFN 后面其实都跟着一个公式：</p>
+<p><span class="math display">\[Output = x +
+\text{Sublayer}(x)\]</span></p>
+<p><strong>在现代 Transformer
+架构（特别是带有残差连接的结构）中，Attention 和 FFN
+的作用就是计算出一个“增量”（Delta），也就是我们公式中的<span
+class="math inline">\(Sublayer(x)\)</span></strong>。</p>
+<p>如果说 Attention 和 FFN
+是在对信息做“减法”和“提纯”（只保留重要信息），那么残差连接就是把原始输入直接“复制”一份带到下一层。这保证了：</p>
+<ul>
+<li><strong>防止信息丢失</strong>：即便某一层逻辑跑偏了，原始信息依然存在，模型有纠错的机会。</li>
+<li><strong>解决梯度消失</strong>：在反向传播（训练）时，梯度通过这条“加法通道”直接回传，不会在深层矩阵中磨损殆尽。</li>
+</ul>
+<p><strong>我们在这个
+<code>查询embedding向量 -&gt; 训练得到增量 -&gt; 得到最新新的向量 -&gt; 和实际输入不匹配 -&gt; 反向传播 -&gt; 修改权重矩阵和FFN矩阵，embedding向量</code></strong>
+的过程中逐渐逼近我们的最优解。</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 27%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>描述</strong></th>
+<th><strong>深度学习专业术语</strong></th>
+<th><strong>物理本质</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>查询 Embedding 向量</strong></td>
+<td><strong>Forward Pass（前向传播）</strong></td>
+<td>将原始符号映射到高维空间。</td>
+</tr>
+<tr class="even">
+<td><strong>训练得到增量 (<span
+class="math inline">\(\Delta\)</span>)</strong></td>
+<td><strong>Residual Function (<span
+class="math inline">\(Sublayer\)</span>)</strong></td>
+<td>Attention 搬运语境，FFN 处理逻辑，产生修正量。</td>
+</tr>
+<tr class="odd">
+<td><strong>得到最新的向量</strong></td>
+<td><strong>Hidden State Update</strong></td>
+<td><span class="math inline">\(x_{new} = x_{old} +
+\Delta\)</span>。向量在空间中完成位移。</td>
+</tr>
+<tr class="even">
+<td><strong>和实际输入不匹配</strong></td>
+<td><strong>Loss Function（损失函数）</strong></td>
+<td>计算预测的概率分布与真实标签（Next
+Token）的<strong>交叉熵</strong>。</td>
+</tr>
+<tr class="odd">
+<td><strong>反向传播</strong></td>
+<td><strong>Backpropagation</strong></td>
+<td>链式法则求导，将“误差信号”从顶层原路传回底层。</td>
+</tr>
+<tr class="even">
+<td><strong>修改权重矩阵/embedding向量</strong></td>
+<td><strong>Optimizer Update（优化器更新）</strong></td>
+<td>使用 AdamW 等算法，按梯度方向微调 <span class="math inline">\(W_Q,
+W_K, W_V\)</span> 和 FFN。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="每一层的固定矩阵">每一层的固定矩阵</h3>
+<ul>
+<li><strong><span class="math inline">\(W_Q, W_K, W_V\)</span>
+(512x512)</strong>：训练出来的，负责<strong>提取社交特征</strong>。</li>
+<li><strong>FFN <span class="math inline">\(W_{up}\)</span>
+(512x2048)</strong>：训练出来的，负责<strong>扩充逻辑空间</strong>。</li>
+<li><strong>FFN <span class="math inline">\(W_{down}\)</span>
+(2048x512)</strong>：训练出来的，负责<strong>收敛推理结果</strong>。</li>
 </ul>
 <h2 id="block-stride-和-grid-stride-对缓存利用率的差别">block stride 和
 grid stride 对缓存利用率的差别</h2>
