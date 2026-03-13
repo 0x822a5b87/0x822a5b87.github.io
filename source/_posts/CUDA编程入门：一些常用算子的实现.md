@@ -3931,20 +3931,41 @@ $$Output = x + \text{Sublayer}(x)$$
 
 **我们在这个 `查询embedding向量 -> 训练得到增量 -> 得到最新新的向量 -> 和实际输入不匹配 -> 反向传播 -> 修改权重矩阵和FFN矩阵，embedding向量`** 的过程中逐渐逼近我们的最优解。
 
-| **描述**                       | **深度学习专业术语**               | **物理本质**                                               |
-| ------------------------------ | ---------------------------------- | ---------------------------------------------------------- |
-| **查询 Embedding 向量**        | **Forward Pass（前向传播）**       | 将原始符号映射到高维空间。                                 |
-| **训练得到增量 ($\Delta$)**    | **Residual Function ($Sublayer$)** | Attention 搬运语境，FFN 处理逻辑，产生修正量。             |
-| **得到最新的向量**             | **Hidden State Update**            | $x_{new} = x_{old} + \Delta$。向量在空间中完成位移。       |
-| **和实际输入不匹配**           | **Loss Function（损失函数）**      | 计算预测的概率分布与真实标签（Next Token）的**交叉熵**。   |
-| **反向传播**                   | **Backpropagation**                | 链式法则求导，将“误差信号”从顶层原路传回底层。             |
-| **修改权重矩阵/embedding向量** | **Optimizer Update（优化器更新）** | 使用 AdamW 等算法，按梯度方向微调 $W_Q, W_K, W_V$ 和 FFN。 |
+| **描述**                    | **深度学习专业术语**               | **物理本质**                                               |
+| --------------------------- | ---------------------------------- | ---------------------------------------------------------- |
+| **查询 Embedding 向量**     | **Forward Pass（前向传播）**       | 将原始符号映射到高维空间。                                 |
+| **训练得到增量 ($\Delta$)** | **Residual Function ($Sublayer$)** | Attention 搬运语境，FFN 处理逻辑，产生修正量。             |
+| **得到最新的向量**          | **Hidden State Update**            | $x_{new} = x_{old} + \Delta$。向量在空间中完成位移。       |
+| **和实际输入不匹配**        | **Loss Function（损失函数）**      | 计算预测的概率分布与真实标签（Next Token）的**交叉熵**。   |
+| **反向传播**                | **Backpropagation**                | 链式法则求导，将“误差信号”从顶层原路传回底层。             |
+| **修改权重矩阵/embedding**  | **Optimizer Update（优化器更新）** | 使用 AdamW 等算法，按梯度方向微调 $W_Q, W_K, W_V$ 和 FFN。 |
 
 ### 每一层的固定矩阵
 
 - **$W_Q, W_K, W_V$ (512x512)**：训练出来的，负责**提取社交特征**。
 - **FFN $W_{up}$ (512x2048)**：训练出来的，负责**扩充逻辑空间**。
 - **FFN $W_{down}$ (2048x512)**：训练出来的，负责**收敛推理结果**。
+
+### 不同层的物理逻辑
+
+1. **Input** $\to$ **Embedding** + **Positional Encoding** (得到初始 $x$)
+
+2. **进入第 $L$ 层**：
+
+   - $x \to W_{Q,K,V} \to Q, K, V$ (特征投影)
+
+   - $\text{Softmax}(\frac{QK^T}{\sqrt{d_k}}) \cdot V \to$ **Context Vector** (全局社交)
+
+   - **Context Vector** $\cdot W_O \to$ **$\Delta_{attn}$** (多头融合)
+
+   - $x + \Delta_{attn} \to$ **LayerNorm** $\to$ **$x_{mid}$** (第一次残差与归一化)
+
+   - $x_{mid} \to FFN \to$ **$\Delta_{ffn}$** (深度逻辑推理)
+
+   - $x_{mid} + \Delta_{ffn} \to$ **LayerNorm** $\to$ **$x_{out}$** (第二次残差与归一化)
+   - **$x_{out}$ 作为下一层的输入**，循环往复。
+
+**最后一层输出** $\to$ **Output Linear** $\to$ **Softmax** $\to$ **预测单词**。
 
 ## block stride 和 grid stride 对缓存利用率的差别
 
