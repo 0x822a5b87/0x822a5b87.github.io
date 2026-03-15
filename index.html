@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">46</span>
+          <span class="site-state-item-count">47</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -168,6 +168,123 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/03/13/transformer%E7%9A%84cheatsheet/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/03/13/transformer%E7%9A%84cheatsheet/" class="post-title-link" itemprop="url">transformer的cheatsheet</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-03-13 17:34:51" itemprop="dateCreated datePublished" datetime="2026-03-13T17:34:51+08:00">2026-03-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-15 21:32:41" itemprop="dateModified" datetime="2026-03-15T21:32:41+08:00">2026-03-15</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>本文记录了学习 <code>transformer</code> 架构中的一些疑问。</p>
+</blockquote>
+<h1 id="transformer-的数据流转"><code>transformer</code> 的数据流转</h1>
+<ol type="1">
+<li><p><strong>Input</strong> <span class="math inline">\(\to\)</span>
+<strong>Embedding</strong> + <strong>Positional Encoding</strong>
+(得到初始 <span class="math inline">\(x\)</span>)</p></li>
+<li><p><strong>进入第 <span class="math inline">\(L\)</span>
+层</strong>：</p>
+<ul>
+<li><p><span class="math inline">\(x \to W_{Q,K,V} \to Q, K, V\)</span>
+(特征投影)</p></li>
+<li><p><span class="math inline">\(\text{Softmax}(\frac{QK^T}{\sqrt{d_k}}) \cdot V
+\to\)</span> <strong>Context Vector</strong> (全局社交)</p></li>
+<li><p><strong>Context Vector</strong> <span class="math inline">\(\cdot
+W_O \to\)</span> <strong><span class="math inline">\(\Delta_{attn}\)</span></strong>
+(多头融合)</p></li>
+<li><p><span class="math inline">\(x + \Delta_{attn} \to\)</span>
+<strong>LayerNorm</strong> <span class="math inline">\(\to\)</span>
+<strong><span class="math inline">\(x_{mid}\)</span></strong>
+(第一次残差与归一化)</p></li>
+<li><p><span class="math inline">\(x_{mid} \to FFN \to\)</span>
+<strong><span class="math inline">\(\Delta_{ffn}\)</span></strong>
+(深度逻辑推理)</p></li>
+<li><p><span class="math inline">\(x_{mid} + \Delta_{ffn} \to\)</span>
+<strong>LayerNorm</strong> <span class="math inline">\(\to\)</span>
+<strong><span class="math inline">\(x_{out}\)</span></strong>
+(第二次残差与归一化)</p></li>
+<li><p><strong><span class="math inline">\(x_{out}\)</span>
+作为下一层的输入</strong>，循环往复。</p></li>
+</ul></li>
+</ol>
+<p><strong>最后一层输出</strong> <span class="math inline">\(\to\)</span> <strong>Output Linear</strong> <span class="math inline">\(\to\)</span> <strong>Softmax</strong> <span class="math inline">\(\to\)</span> <strong>预测单词</strong>。</p>
+<h1 id="整数位置编码">整数位置编码</h1>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/03/13/transformer%E7%9A%84cheatsheet/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -213,7 +330,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-11 21:45:27" itemprop="dateModified" datetime="2026-03-11T21:45:27+08:00">2026-03-11</time>
+      <time title="修改时间：2026-03-13 17:35:27" itemprop="dateModified" datetime="2026-03-13T17:35:27+08:00">2026-03-13</time>
     </span>
 
   
@@ -1203,95 +1320,6 @@ n个线程，属于同一个进程的线程共享进程的资源， 比如
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/" class="post-title-link" itemprop="url">uCore进程间通信</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-12-13 09:07:14" itemprop="dateCreated datePublished" datetime="2025-12-13T09:07:14+08:00">2025-12-13</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="进程间通信">进程间通信</h1>
-<h2 id="基于文件的管道">基于文件的管道</h2>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    readable: <span class="type">bool</span>,</span><br><span class="line">    writable: <span class="type">bool</span>,</span><br><span class="line">    buffer: Arc&lt;Mutex&lt;PipeRingBuffer&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>通过 <code>buffer</code>
-字段还可以找到该管道端所在的管道自身。后续我们将为它实现
-<code>File</code> Trait ，之后它便可以通过文件描述符来访问。</p>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> RING_BUFFER_SIZE: <span class="type">usize</span> = <span class="number">32</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, PartialEq)]</span></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">RingBufferStatus</span> &#123;</span><br><span class="line">    FULL,</span><br><span class="line">    EMPTY,</span><br><span class="line">    NORMAL,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">PipeRingBuffer</span> &#123;</span><br><span class="line">    arr: [<span class="type">u8</span>; RING_BUFFER_SIZE],</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">    status: RingBufferStatus,</span><br><span class="line">    write_end: <span class="type">Option</span>&lt;Weak&lt;Pipe&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>

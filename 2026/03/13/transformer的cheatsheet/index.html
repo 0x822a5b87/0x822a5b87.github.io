@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文记录了学习 transformer 架构中的一些疑问。  transformer 的数据流转  Input \(\to\) Embedding + Positional Encoding (得到初始 \(x\)) 进入第 \(L\) 层：  \(x \to W_{Q,K,V} \to Q, K, V\) (特征投影) \(\text{Softmax}(\frac{QK^T}{\sqrt{d_">
+<meta property="og:type" content="article">
+<meta property="og:title" content="transformer的cheatsheet">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/03/13/transformer%E7%9A%84cheatsheet/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="本文记录了学习 transformer 架构中的一些疑问。  transformer 的数据流转  Input \(\to\) Embedding + Positional Encoding (得到初始 \(x\)) 进入第 \(L\) 层：  \(x \to W_{Q,K,V} \to Q, K, V\) (特征投影) \(\text{Softmax}(\frac{QK^T}{\sqrt{d_">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-13T09:34:51.000Z">
+<meta property="article:modified_time" content="2026-03-15T13:32:41.870Z">
+<meta property="article:author" content="2183814023">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/03/13/transformer%E7%9A%84cheatsheet/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/03/13/transformer%E7%9A%84cheatsheet/","path":"2026/03/13/transformer的cheatsheet/","title":"transformer的cheatsheet"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>transformer的cheatsheet | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer-%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81%E8%BD%AC"><span class="nav-number">1.</span> <span class="nav-text">transformer 的数据流转</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B4%E6%95%B0%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">整数位置编码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E5%BC%82%E5%B8%B8"><span class="nav-number">2.1.</span> <span class="nav-text">梯度异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF%E4%B8%8D%E5%8F%AF%E6%8E%A7"><span class="nav-number">2.2.</span> <span class="nav-text">位置信息不可控</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AD%A3%E5%BC%A6%E4%BD%99%E5%BC%A6%E7%BC%96%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">正弦&#x2F;余弦编码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8C%83%E5%9B%B4%E5%8F%AF%E6%8E%A7"><span class="nav-number">3.1.</span> <span class="nav-text">范围可控</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E6%95%8F%E6%84%9F"><span class="nav-number">3.2.</span> <span class="nav-text">位置敏感</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E6%80%A7%E6%80%A7"><span class="nav-number">3.3.</span> <span class="nav-text">相对位置的线性性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88transformer%E9%9C%80%E8%A6%81%E4%BD%8D%E7%BD%AE%E5%90%91%E9%87%8F"><span class="nav-number">4.</span> <span class="nav-text">为什么transformer需要位置向量</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#layer-normalization"><span class="nav-number">5.</span> <span class="nav-text">Layer Normalization</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#layer-normalization-%E7%AE%97%E6%B3%95%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.1.</span> <span class="nav-text">Layer Normalization
+算法的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%87%E5%87%86-layernorm"><span class="nav-number">5.2.</span> <span class="nav-text">标准 LayerNorm</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%81%E6%98%8E%E6%96%B0%E5%9D%87%E5%80%BC%E4%B8%BA-0"><span class="nav-number">5.2.1.</span> <span class="nav-text">证明：新均值为 0</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%81%E6%98%8E%E6%96%B0%E6%96%B9%E5%B7%AE%E4%B8%BA-1"><span class="nav-number">5.2.2.</span> <span class="nav-text">证明：新方差为 1</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFtemperature"><span class="nav-number">6.</span> <span class="nav-text">什么是Temperature</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.1.</span> <span class="nav-text">temperature的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">6.2.</span> <span class="nav-text">temperature的物理意义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#softmax%E5%9C%A8%E5%B7%A5%E7%A8%8B%E4%B8%8A%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">6.3.</span> <span class="nav-text">softmax在工程上的优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF%E5%A6%82%E6%AD%A4%E9%87%8D%E8%A6%81"><span class="nav-number">7.</span> <span class="nav-text">为什么位置信息如此重要</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E7%9F%A9%E9%98%B5%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9F%A9%E9%98%B5%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">8.</span> <span class="nav-text">向量@矩阵和矩阵@矩阵的差别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BD%91%E7%BB%9C%E5%92%8Cdropout"><span class="nav-number">9.</span> <span class="nav-text">残差网络和Dropout</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dropout"><span class="nav-number">9.1.</span> <span class="nav-text">dropout</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%92%8C%E4%BA%A4%E5%8F%89%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">10.</span> <span class="nav-text">自注意力和交叉注意力</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E4%B8%AD%E7%9A%84batch%E5%8F%82%E6%95%B0"><span class="nav-number">11.</span> <span class="nav-text">训练和推理中的batch参数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ffnfeed-forward-network"><span class="nav-number">12.</span> <span class="nav-text">FFN(Feed-Forward Network)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%BF%80%E6%B4%BB"><span class="nav-number">12.1.</span> <span class="nav-text">非线性激活</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#residualconnection"><span class="nav-number">12.2.</span> <span class="nav-text">ResidualConnection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AF%8F%E4%B8%80%E5%B1%82%E7%9A%84%E5%9B%BA%E5%AE%9A%E7%9F%A9%E9%98%B5"><span class="nav-number">12.3.</span> <span class="nav-text">每一层的固定矩阵</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gpt-%E9%80%BB%E8%BE%91%E7%AE%80%E8%BF%B0"><span class="nav-number">13.</span> <span class="nav-text">GPT 逻辑简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E7%9F%A5%E8%AF%86%E5%82%A8%E5%A4%87%E8%AF%8D%E8%A1%A8%E4%B8%8E%E8%AF%8D%E5%B5%8C%E5%85%A5-embedding"><span class="nav-number">13.1.</span> <span class="nav-text">静态知识储备：词表与词嵌入
+(Embedding)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%92%E8%89%B2%E8%BD%AC%E6%8D%A2%E5%99%A8%E4%B8%89%E5%A5%97%E7%BA%BF%E6%80%A7%E5%8F%98%E6%8D%A2%E7%9F%A9%E9%98%B5-w_q-w_k-w_v"><span class="nav-number">13.2.</span> <span class="nav-text">角色转换器：三套线性变换矩阵
+(\(W_Q, W_K, W_V\))</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%B5%81%E6%B0%B4%E7%BA%BFqkv-%E7%9A%84%E5%8D%9A%E5%BC%88-attention-mechanism"><span class="nav-number">13.3.</span> <span class="nav-text">注意力流水线：QKV
+的博弈 (Attention Mechanism)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E6%B5%8B%E4%B8%8E%E9%97%AD%E7%8E%AF%E4%BB%8E%E9%AB%98%E7%BB%B4%E7%89%B9%E5%BE%81%E5%88%B0%E6%9C%80%E7%BB%88-token"><span class="nav-number">13.4.</span> <span class="nav-text">预测与闭环：从高维特征到最终
+Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nx%E5%92%8Cmulti-head"><span class="nav-number">13.5.</span> <span class="nav-text">Nx和multi-head</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">13.5.1.</span> <span class="nav-text">流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E5%A4%84%E7%90%86%E4%B8%8E%E7%89%B9%E5%BE%81%E7%94%9F%E6%88%90-prefill-phase"><span class="nav-number">13.5.2.</span> <span class="nav-text">预处理与特征生成 (Prefill
+Phase)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#qkv-%E7%9A%84%E7%BA%BF%E6%80%A7%E6%8A%95%E5%BD%B1%E4%B8%8E%E7%A9%BA%E9%97%B4%E5%85%B3%E8%81%94"><span class="nav-number">13.5.3.</span> <span class="nav-text">QKV 的线性投影与空间关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E5%80%BC%E5%8D%B1%E6%9C%BA%E7%9A%84%E6%A0%B9%E6%BA%90%E6%96%B9%E5%B7%AE%E7%88%86%E7%82%B8%E4%B8%8E%E6%A2%AF%E5%BA%A6%E9%A5%B1%E5%92%8C"><span class="nav-number">13.5.4.</span> <span class="nav-text">数值危机的根源：方差爆炸与梯度饱和</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%B7%AE%E7%88%86%E7%82%B8-variance-explosion"><span class="nav-number">13.5.4.1.</span> <span class="nav-text">方差爆炸 (Variance Explosion)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E9%A5%B1%E5%92%8C-gradient-saturation"><span class="nav-number">13.5.4.2.</span> <span class="nav-text">梯度饱和 (Gradient
+Saturation)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E7%BC%A9%E6%94%BE-scaling-%E4%B8%8E%E5%BD%92%E4%B8%80%E5%8C%96-normalization"><span class="nav-number">13.5.5.</span> <span class="nav-text">解决方案：缩放
+(Scaling) 与归一化 (Normalization)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%A9%E6%94%BE%E5%9B%A0%E5%AD%90frac1sqrtd_k"><span class="nav-number">13.5.5.1.</span> <span class="nav-text">缩放因子：\(\frac{1}{\sqrt{d_k}}\)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%BF%80%E6%B4%BB%E7%8A%B6%E6%80%81%E7%9A%84%E6%81%A2%E5%A4%8D"><span class="nav-number">13.5.5.2.</span> <span class="nav-text">激活状态的恢复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%81%E7%BB%AD%E7%9A%84%E5%AE%89%E6%A3%80layernorm"><span class="nav-number">13.5.5.3.</span> <span class="nav-text">持续的安检：LayerNorm</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E8%AE%AD%E7%BB%83%E7%9A%84%E9%97%AD%E7%8E%AF"><span class="nav-number">13.5.6.</span> <span class="nav-text">总结：训练的闭环</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9D%83%E9%87%8D%E7%9F%A9%E9%98%B5%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-number">14.</span> <span class="nav-text">权重矩阵的本质</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%A4%9A%E5%A4%B4"><span class="nav-number">15.</span> <span class="nav-text">为什么需要多头</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E7%9A%84%E5%A4%9A%E7%BB%B4%E5%B9%B6%E8%A1%8C-semantic-parallelism"><span class="nav-number">16.</span> <span class="nav-text">语义的“多维并行” (Semantic
+Parallelism)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8A%91%E5%88%B6%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%B9%B3%E5%9D%87%E5%8C%96-ensemble-effect"><span class="nav-number">17.</span> <span class="nav-text">抑制“注意力平均化” (Ensemble
+Effect)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E9%AB%98%E7%A7%A9%E7%9A%84%E8%A1%A8%E8%BE%BE%E8%83%BD%E5%8A%9B-rank-of-attention-matrix"><span class="nav-number">18.</span> <span class="nav-text">提高“秩”的表达能力
+(Rank of Attention Matrix)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%B6%88%E9%99%A4%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E5%99%AA%E5%A3%B0"><span class="nav-number">19.</span> <span class="nav-text">如何消除多头注意力的噪声</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#w_o-%E7%9A%84%E9%9D%99%E9%9F%B3%E5%8A%9F%E8%83%BD-the-gatekeeper"><span class="nav-number">19.1.</span> <span class="nav-text">\(W_o\) 的“静音”功能 (The Gatekeeper)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E8%BF%9E%E6%8E%A5%E7%9A%84%E4%BF%9D%E5%BA%95-residual-connection"><span class="nav-number">19.2.</span> <span class="nav-text">残差连接的“保底” (Residual
+Connection)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%97%E4%BD%99%E5%85%B6%E5%AE%9E%E6%98%AF%E4%B8%80%E7%A7%8D%E7%A8%B3%E5%81%A5%E6%80%A7-redundancy-as-robustness"><span class="nav-number">19.3.</span> <span class="nav-text">“冗余”其实是一种稳健性
+(Redundancy as Robustness)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer%E7%9A%84%E5%85%A8%E8%AE%AD%E7%BB%83%E6%B5%81%E7%A8%8B"><span class="nav-number">20.</span> <span class="nav-text">transformer的全训练流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer%E4%B8%AD%E7%9A%84%E7%9F%A9%E9%98%B5%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">21.</span> <span class="nav-text">transformer中的矩阵的物理意义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%B1%8F%E8%94%BD%E6%9C%AA%E6%9D%A5%E7%9A%84token"><span class="nav-number">22.</span> <span class="nav-text">为什么要屏蔽未来的token？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0loss%E7%9A%84%E7%9E%AC%E9%97%B4%E5%BD%92%E9%9B%B6"><span class="nav-number">22.1.</span> <span class="nav-text">损失函数（Loss）的瞬间归零</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%ADbackpropagation%E4%B8%AD%E7%9A%84%E8%99%9A%E5%81%87%E5%85%B3%E8%81%94"><span class="nav-number">22.2.</span> <span class="nav-text">反向传播（Backpropagation）中的虚假关联</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">23.</span> <span class="nav-text">训练和推理的区别</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">47</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/03/13/transformer%E7%9A%84cheatsheet/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="transformer的cheatsheet | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          transformer的cheatsheet
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-03-13 17:34:51" itemprop="dateCreated datePublished" datetime="2026-03-13T17:34:51+08:00">2026-03-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-15 21:32:41" itemprop="dateModified" datetime="2026-03-15T21:32:41+08:00">2026-03-15</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>本文记录了学习 <code>transformer</code> 架构中的一些疑问。</p>
+</blockquote>
+<h1 id="transformer-的数据流转"><code>transformer</code> 的数据流转</h1>
+<ol type="1">
+<li><p><strong>Input</strong> <span class="math inline">\(\to\)</span>
+<strong>Embedding</strong> + <strong>Positional Encoding</strong>
+(得到初始 <span class="math inline">\(x\)</span>)</p></li>
+<li><p><strong>进入第 <span class="math inline">\(L\)</span>
+层</strong>：</p>
+<ul>
+<li><p><span class="math inline">\(x \to W_{Q,K,V} \to Q, K, V\)</span>
+(特征投影)</p></li>
+<li><p><span
+class="math inline">\(\text{Softmax}(\frac{QK^T}{\sqrt{d_k}}) \cdot V
+\to\)</span> <strong>Context Vector</strong> (全局社交)</p></li>
+<li><p><strong>Context Vector</strong> <span class="math inline">\(\cdot
+W_O \to\)</span> <strong><span
+class="math inline">\(\Delta_{attn}\)</span></strong>
+(多头融合)</p></li>
+<li><p><span class="math inline">\(x + \Delta_{attn} \to\)</span>
+<strong>LayerNorm</strong> <span class="math inline">\(\to\)</span>
+<strong><span class="math inline">\(x_{mid}\)</span></strong>
+(第一次残差与归一化)</p></li>
+<li><p><span class="math inline">\(x_{mid} \to FFN \to\)</span>
+<strong><span class="math inline">\(\Delta_{ffn}\)</span></strong>
+(深度逻辑推理)</p></li>
+<li><p><span class="math inline">\(x_{mid} + \Delta_{ffn} \to\)</span>
+<strong>LayerNorm</strong> <span class="math inline">\(\to\)</span>
+<strong><span class="math inline">\(x_{out}\)</span></strong>
+(第二次残差与归一化)</p></li>
+<li><p><strong><span class="math inline">\(x_{out}\)</span>
+作为下一层的输入</strong>，循环往复。</p></li>
+</ul></li>
+</ol>
+<p><strong>最后一层输出</strong> <span
+class="math inline">\(\to\)</span> <strong>Output Linear</strong> <span
+class="math inline">\(\to\)</span> <strong>Softmax</strong> <span
+class="math inline">\(\to\)</span> <strong>预测单词</strong>。</p>
+<h1 id="整数位置编码">整数位置编码</h1>
+<p>整数位置编码是按照 token
+出现的顺序，为他们分配一个单调递增的索引，这种编码方式的有点是简单，缺点则有很多：</p>
+<h2 id="梯度异常">梯度异常</h2>
+<p>在训练过程中，神经网络通过梯度来更新参数。假设我们有一个最简单的线性层：
+<span class="math display">\[
+y = w \cdot p + b
+\]</span></p>
+<p>其中 <span class="math inline">\(p\)</span> 是位置编码（Position
+Encoding），<span class="math inline">\(w\)</span> 是权重。</p>
+<p>另外，我们的损失函数为： <span class="math display">\[
+L = (y - \hat{y})^2
+\]</span> 当我们计算损失函数 <span class="math inline">\(L\)</span>
+对权重 <span class="math inline">\(w\)</span> 的梯度时，根据链式法则：
+<span class="math display">\[
+\frac{\partial L}{\partial w} = \frac{\partial L}{\partial y} \cdot
+{\color{red} \frac{\partial y}{\partial w}}
+\]</span> 因为 <span class="math inline">\(y = w \cdot p +
+b\)</span>，所以 <span class="math inline">\(\frac{\partial y}{\partial
+w} = p\)</span>。</p>
+<p>最终梯度为： <span class="math display">\[
+\frac{\partial L}{\partial w} = (\text{来自上层的误差}) \cdot \mathbf{p}
+\]</span> 此时，我们面临几个关键性的问题：</p>
+<ol type="1">
+<li>假设我们现在在一个超大上下文中，那么在 <code>1024 * 1024</code>
+这个位置的
+token，它的任何误差都会被放大一个极大地倍数，这使得我们的训练梯度完全不可控；</li>
+<li><strong>参数更新逻辑异常，一样的误差在句首和句尾相差太多；神经网络学习的理想状态是：无论一个模式出现在句首还是句尾，模型都应该以同样的力度去学习它。</strong></li>
+</ol>
+<h2 id="位置信息不可控">位置信息不可控</h2>
+<p>在LLM中，<strong>相对距离</strong>比绝对位置更重要。比如“我”和“吃”相隔
+1 个单位，无论它们出现在句首还是句尾，这种“ 1
+个单位”的关系应该是恒定的，这会引入两个问题：</p>
+<blockquote>
+<p>虽然 <span class="math inline">\(2-1=1\)</span>，<span
+class="math inline">\(100-99=1\)</span>，在算术上它们是相等的。但在神经网络的高维空间里，向量
+<span class="math inline">\([1]\)</span> 和 <span
+class="math inline">\([2]\)</span> 的差异，与 <span
+class="math inline">\([99]\)</span> 和 <span
+class="math inline">\([100]\)</span>
+的差异，经过复杂的非线性变换后，<strong>很难保持一致性</strong>。</p>
+<p>此外，模型很难通过简单的 <span class="math inline">\(n\)</span>
+识别出两个位置信息的距离；</p>
+</blockquote>
+<p>神经网络的核心是 <strong>点积（Dot Product）</strong> 和
+<strong>激活函数（如 ReLU, Sigmoid）</strong>。</p>
+<ul>
+<li><strong>在小数值区（1 和
+2）</strong>：这两个数字通常处于激活函数的<strong>剧烈变化区</strong>。通常少量的差异便可以使得模型能感觉出来数值的差异；</li>
+<li><strong>在大数值区（比如 99 和
+100）</strong>：这两个数字极易让神经元进入<strong>“饱和区”</strong>。例如，对于
+<code>Sigmoid</code> 这种指数级的激活函数，99 和 100
+算出来的输出几乎都是 <span
+class="math inline">\(1.0000...\)</span>。<strong>此时，模型已经无法区分这两个位置的信息了</strong>。</li>
+</ul>
+<h1 id="正弦余弦编码">正弦/余弦编码</h1>
+<h3 id="范围可控">范围可控</h3>
+<p><span class="math display">\[
+PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\]</span></p>
+<p><span class="math display">\[
+PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\]</span></p>
+<p>在 <code>正弦/余弦编码</code> 中，我们所有的位置参数被压缩到
+<code>(-1, 1)</code> 的这个区间中，这个公式巧妙的利用了这些性质：</p>
+<ul>
+<li>通过 <code>sin/cos</code>
+函数的压缩最大值和最小值，避免由于数值膨胀引起的梯度爆炸，训练不平等等问题；</li>
+<li>通过 <span class="math inline">\(10000^{2i/d_{model}}\)</span>
+控制不同维度的步长，同时使用非线性的函数逻辑，避免了数据聚集过于紧密；</li>
+<li>此外，由于是非线性函数，我们不用担心在 <code>pos</code>
+增加相同数值时点会出现重合 --
+他们在多维空间中会很接近但是<strong>唯一</strong>。</li>
+</ul>
+<h3 id="位置敏感">位置敏感</h3>
+<p>通过将位置参数压缩在 <code>(-1, 1)</code>
+避免了在非线性函数调用时引起的位置信息不敏感；</p>
+<h3 id="相对位置的线性性">相对位置的线性性</h3>
+<p>三角函数可以分解为： <span class="math display">\[
+\sin(pos + k) = \sin(pos)\cos(k) + \cos(pos)\sin(k)
+\]</span></p>
+<p><span class="math display">\[
+\cos(pos + k) = \cos(pos)\cos(k) - \sin(pos)\sin(k)
+\]</span> 这意味着，如果模型想要知道在移动 <code>k</code>
+之后的位置在哪里，只需要对当前的编码向量进行一次<strong>线性变换（矩阵乘法）</strong>，在这点上他和普通的位置编码十分相似。</p>
+<h1
+id="为什么transformer需要位置向量">为什么<code>transformer</code>需要位置向量</h1>
+<p>在传统的 <code>RNN</code> 中 是一个一个词读的，天生有先后顺序；但
+Transformer 是一次性把所有词丢进去（并行计算）。如果没有位置编码，在
+Attention 机制眼里，<code>我爱他</code> 和 <code>他爱我</code>
+的数学表达是<strong>完全一样</strong>的。位置编码本质上是给输入注入了<strong>结构化的时间轴</strong>。</p>
+<h1 id="layer-normalization">Layer Normalization</h1>
+<p>在深度学习中，有两种最常用的归一化技术：</p>
+<ul>
+<li><strong>Layer Normalization (LN)</strong>
+在<strong>单个样本</strong>的所有特征维度上进行计算，不依赖其他样本。多用于自然语言处理（NLP），尤其是
+<strong>Transformer</strong> 架构中；</li>
+<li><strong>Batch Normalization (BN)</strong>
+在<strong>整个输入</strong>上进行计算，依赖于其他样本，多用于计算机视觉（CV）中；</li>
+</ul>
+<p>Transformer 舍弃 BN 而选择
+LN，主要源于以下三个物理和数学上的底层逻辑：</p>
+<ol type="1">
+<li><strong>序列长度的限制</strong>：在图像处理中，由于经过了
+<strong>Resize</strong> 和 <strong>Crop</strong>，输入的图片矩阵（如
+<span class="math inline">\(224 \times
+224\)</span>）在空间结构上是<strong>严格对齐</strong>的。并且，无论图片内容是什么，像素值的取值范围（0-255）和分布相对稳定。而在NLP中，每个句子的长度都是不一样的，特征维度在时间轴上是不对齐的**。</li>
+<li><strong>训练和预测的冲突</strong>：BN
+需要使用训练时记录下来的“全局均值/方差”。如果推理时的句子长度分布与训练时不一致，或者输入了一个极其罕见的超长句子，BN
+的效果会迅速崩塌。</li>
+<li><strong>语义维度的“稳定性”</strong>：在 Transformer
+的多头注意力机制中，信息的分布非常复杂。
+<ul>
+<li><strong>BN 带来的噪声</strong>：BN
+会强行让不同样本（不同句子）之间的特征产生联系。这在 NLP
+中会引入不必要的干扰——因为两个完全无关的句子，它们的特征不应该互相影响。</li>
+<li><strong>LN 的保护</strong>：LN 保证了每一个 Token 的 Embedding
+在经过非线性变换后，依然保持良好的数值范围，同时又保留了该词在当前语境下的独特含义。</li>
+</ul></li>
+</ol>
+<h3 id="layer-normalization-算法的实现">Layer Normalization
+算法的实现</h3>
+<blockquote>
+<p>LayerNorm 遵循两个简单的规则：</p>
+<ol type="1">
+<li><strong>均值为零</strong>：所有数字的平均值变成
+<code>0</code>；</li>
+<li><strong>方差为一</strong>：数字的"分散程度"变成
+<code>1</code>；</li>
+</ol>
+<p>从这里其实也可以看到，为什么我们的位置编码要使用复杂的
+<code>sin/cos</code>
+编码而不是位置编码（当然，现在已经有了比正弦/余弦编码更优秀的
+<code>RePO</code> 编码。</p>
+</blockquote>
+<p>在当前的深度学习生态中，最常用的 Layer Normalization
+实际上已经从原始的 <strong>Standard LayerNorm</strong> 进化到了更精简的
+<strong>RMSNorm (Root Mean Square Layer Normalization)</strong>。</p>
+<ul>
+<li><strong>标准 LayerNorm</strong>：
+<ol type="1">
+<li>计算均值 (<span class="math inline">\(\mu\)</span>)</li>
+<li>计算方差 (<span class="math inline">\(\sigma^2\)</span>)</li>
+<li>减去均值，除以标准差 (再进行 Scale 和 Shift)</li>
+</ol></li>
+<li><strong>RMSNorm</strong>：
+<ol type="1">
+<li><strong>直接计算均方根 (RMS)</strong>：<span
+class="math inline">\(\text{RMS}(x) = \sqrt{\frac{1}{d} \sum
+x_i^2}\)</span></li>
+<li><strong>归一化</strong>：<span class="math inline">\(\bar{x}_i =
+\frac{x_i}{\text{RMS}(x)}\)</span></li>
+<li><strong>可学习缩放</strong>：<span class="math inline">\(y_i =
+\gamma \cdot \bar{x}_i\)</span></li>
+</ol></li>
+</ul>
+<h3 id="标准-layernorm">标准 LayerNorm</h3>
+<p>我们先算出它的<strong>均值</strong> <span
+class="math inline">\(\mu\)</span> 和<strong>方差</strong> <span
+class="math inline">\(\sigma^2\)</span>： <span class="math display">\[
+\mu = \frac{1}{d} \sum_{i=1}^{d} x_i
+\]</span></p>
+<p><span class="math display">\[
+\sigma^2 = \frac{1}{d} \sum_{i=1}^{d} (x_i - \mu)^2
+\]</span></p>
+<p>然后根据 LayerNorm 的公式，对每一个 <span
+class="math inline">\(x_i\)</span> 进行变换，得到新的一组数 <span
+class="math inline">\(\hat{x}_i\)</span>： <span class="math display">\[
+\hat{x}_i = \frac{x_i - \mu}{\sigma}
+\]</span></p>
+<h4 id="证明新均值为-0">证明：新均值为 0</h4>
+<p><strong>证明过程：</strong> <span class="math display">\[
+\sum_{i=1}^{d} \hat{x}_i = \sum_{i=1}^{d} \left( \frac{x_i -
+\mu}{\sigma} \right)
+\]</span></p>
+<p>把常数项 <span class="math inline">\(1/\sigma\)</span> 提出来： <span
+class="math display">\[
+= \frac{1}{\sigma} \left( \sum_{i=1}^{d} x_i - \sum_{i=1}^{d} \mu
+\right)
+\]</span></p>
+<p>根据均值的定义，<span class="math inline">\(\sum x_i = d \cdot
+\mu\)</span>，而 <span class="math inline">\(\mu\)</span> 是常数，<span
+class="math inline">\(\sum \mu\)</span> 也是 <span
+class="math inline">\(d \cdot \mu\)</span>： <span
+class="math display">\[
+= \frac{1}{\sigma} (d\mu - d\mu) = 0
+\]</span></p>
+<h4 id="证明新方差为-1">证明：新方差为 1</h4>
+<p>要证明： <span class="math display">\[
+Var[\hat{x}] = \frac{1}{d} \sum (\hat{x}_i - E[\hat{x}])^2
+\]</span> 现在我们对整个求和式进行拆分（注意：<span
+class="math inline">\(E[x]\)</span> 对求和号 <span
+class="math inline">\(\sum\)</span> 来说是一个<strong>常数</strong>）：
+<span class="math display">\[
+\frac{1}{d} \sum (x_i^2 - 2x_i E[x] + E[x]^2) = \frac{1}{d} \sum x_i^2 -
+\frac{2 E[x]}{d} \sum x_i + \frac{1}{d} \sum E[x]^2
+\]</span> 利用 <span class="math inline">\(E[x] = \frac{1}{d} \sum
+x_i\)</span>，我们可以继续简化：</p>
+<ul>
+<li>中间项：<span class="math inline">\(\frac{2 E[x]}{d} \sum x_i = 2
+E[x] \cdot E[x] = 2(E[x])^2\)</span></li>
+<li>最后一项：<span class="math inline">\(\frac{1}{d} \cdot d \cdot
+E[x]^2 = (E[x])^2\)</span></li>
+</ul>
+<p>合并后得到通用公式： <span class="math display">\[
+Var[X] = E[X^2] - (E[X])^2
+\]</span></p>
+<h1 id="什么是temperature">什么是<code>Temperature</code></h1>
+<p><strong>我认为 <code>Temperature</code>
+是一个产品上的概念，从工程的角度来说， <code>Temperature</code>
+并不存在实际意义。</strong>它的作用主要是控制模型的
+<code>随机性</code>。例如：当我们在预测一个人的食物偏好时，LLM可能先推测出
+“我爱吃...” 这句话，随后推测的结果可能有：</p>
+<ul>
+<li><code>苹果</code> 概率为50%；</li>
+<li><code>榴莲</code> 概率为 49%；</li>
+<li><code>粑粑</code> 概率为 1%（嗨嗨嗨，老八来了）；</li>
+</ul>
+<p>而温度对于我们的影响如下：</p>
+<ul>
+<li><strong>Low Temperature (T &lt;
+1)</strong>：模型会变得非常<strong>保守和确定</strong>。它会极度偏向概率最高的词（The
+most likely token），生成结果通常更稳定、更符合逻辑，但也更单调。</li>
+<li><strong>High Temperature (T &gt;
+1)</strong>：模型会变得非常<strong>大胆和随机</strong>。原本概率较低的词也会获得出头的机会，生成结果更有创意、更多样，但也更容易产生幻觉（Hallucination）或胡言乱语。</li>
+<li><strong>T =
+1</strong>：这是模型的“原始状态”，完全按照训练时的概率分布进行采样。</li>
+</ul>
+<p>也就是说：</p>
+<ul>
+<li>对于 <code>T &lt; 1</code> ，LLM 大概率会输出
+<code>苹果</code>；</li>
+<li>对于 <code>T &lt; 1</code>， LLM 则有可能在 <code>苹果</code> 和
+<code>榴莲</code> 中选择性的输出一个词；</li>
+<li>对于 <code>T &gt; 1</code>，LLM 则开始会随意的在 <code>苹果</code>
+和 <code>榴莲</code> 中随机选择，当T极高的情况下，甚至可能直接输出
+<code>粑粑</code> 这个概率极低的词。</li>
+</ul>
+<h3 id="temperature的实现"><code>temperature</code>的实现</h3>
+<p>在我们实现 <code>softmax</code> 时，我们原始的 <code>softmax</code>
+定义如下： <span class="math display">\[
+\sigma(x)_i = \frac{e^{x_i}}{\sum_{j=1}^{n} e^{x_j}}
+\]</span>
+<strong>问题在于，这个函数在数学上的定义是没有问题的，但是在计算机里一个指数级的函数必然会引起数值溢出。为此
+<code>softmax</code> 函数会进行一个优化：在每次执行之前，将任意的 <span
+class="math inline">\(x_i\)</span> 除以数组中的最大值 <span
+class="math inline">\(x_{max}\)</span></strong>，于是一个不做任何优化的
+<code>softmax</code> 函数会包含如下的步骤：</p>
+<ol type="1">
+<li>求解数组中的最大值 <span
+class="math inline">\(x_{max}\)</span>；</li>
+<li>将数组中的每一个值都 <code>减去</code> <span
+class="math inline">\(x_{max}\)</span>（注意，这里是减去，使用除法会修改原始结果）；</li>
+<li>求解 <code>softmax</code> 的分母：<span
+class="math inline">\(\sum_{j=1}^{n} e^{x_j}\)</span>；</li>
+<li>求解 <code>softmax</code> 的每一个元素的值；</li>
+</ol>
+<p><strong>而温度（Temperatur），也就是
+<code>T</code>，我们最直接的方式就是在第二步时，我们计算：</strong>
+<span class="math display">\[
+x_i = \frac{(x_i - x_{max})}{T}
+\]</span>
+此时我们易知：对于指数型函数，越大的输入处的斜率越大，也就是说我们除以一个大于1的数字，越大的数字减少得越多：</p>
+<ul>
+<li><code>T &gt; 1</code> softmax
+后得到的概率越发的紧密：概率之间的差距变小了；</li>
+<li><code>T &lt; 1</code> softmax
+后得到的概率更加的离散；概率之间的差距变大了。</li>
+</ul>
+<h3 id="temperature的物理意义">temperature的物理意义</h3>
+<p>我们前面提到的“斜率”和“差距变小”在数学上对应的是<strong>信息熵（entropy）</strong>：</p>
+<ul>
+<li>当 <span class="math inline">\(T \to \infty\)</span> 时，所有的
+<span class="math inline">\(x_i/T\)</span> 都趋向于 <span
+class="math inline">\(0\)</span>，导致 <span class="math inline">\(e^0 =
+1\)</span>。此时每个词的概率都是 <span
+class="math inline">\(1/N\)</span>，系统达到<strong>最大混乱度（最大熵）</strong>。</li>
+<li>当 <span class="math inline">\(T \to 0\)</span>
+时，最大值和次大值之间的微小差距被无限放大，概率分布坍缩成一个<strong>脉冲函数（Delta
+Function）</strong>。</li>
+</ul>
+<h3 id="softmax在工程上的优化">softmax在工程上的优化</h3>
+<p>前面我们提到，softmax在不做任何优化的情况下有四步，而对于一个
+element-wise
+的典型的访存受限的算子来说，三次的访问显然是不合理的，我们使用优化的
+<strong>Online Softmax</strong>
+算法。简单来说就是，我们可以利用下面的公式： <span
+class="math display">\[
+Sum_{new} = Sum_{old} \cdot e^{(m_{old} - m_{new})} + e^{(x_{new} -
+m_{new})}
+\]</span>
+这个公式的证明和推导也比较简单，就是通过数学归纳法来实现，这里就不赘述了。碰到更大值时使用下面公式更新：
+<span class="math display">\[
+Sum_{new} = Sum \times e^{(m_{max} - m_{new})} + 1
+\]</span></p>
+<h1 id="为什么位置信息如此重要">为什么位置信息如此重要</h1>
+<p>在 <code>transformer</code>
+中，位置信息非常重要，<strong>因为transformer的本质就是
+“高维空间的动态重塑”。</strong>每一个token都有它的初始位置。两个token之间，可能在某个维度上相距非常近，在另外一个维度上又相距非常远。</p>
+<p>例如，苹果和香蕉，它在水果（假设存在这个维度）这个维度上距离非常近，但是当苹果表示科技公司这个维度时，他和香蕉的距离又非常远。而我们在叠加位置向量的目的是为了更精确的表示token在输入中的实际位置。</p>
+<p>所以，当我们在进行语义表达时，<strong>attention分数和位置息息相关</strong>，以下面的句子为例子：</p>
+<blockquote>
+<p><code>苹果</code>公司不卖<code>苹果</code>。</p>
+</blockquote>
+<p>在这个句子里，第一个 <code>苹果</code> 和第二个 <code>苹果</code>
+语义截然不同：</p>
+<ul>
+<li>第一个的 <code>attention</code> 应该更多的放在 <code>公司</code>
+上；</li>
+<li>第二个的 <code>attention</code> 应该更多的放在 <code>卖</code>
+上；</li>
+</ul>
+<p>如果丧失了位置信息，那我们将根本无法区别这个语义。</p>
+<p>而位置信息通过以下几个方式来实现对高位空间的动态重塑：</p>
+<ul>
+<li><strong>破坏attention的对称性</strong>：在计算 <span
+class="math inline">\(Attention(Q, K)\)</span> 时，公式是 <span
+class="math inline">\(Q \cdot
+K^T\)</span>。这意味着，在不包含位置信息的情况下，如果把输入序列里的两个
+Token
+交换位置，由于矩阵乘法的特性，计算出来的相似度分数是一模一样的。在<strong>叠加位置向量后</strong>：我们给每个
+Token
+的高维坐标加了一个<strong>“时间戳”</strong>：前者和后者朝不同的方向移动了，这意味着他们从一样的token变成了不一样的token
+-- 他们在高维空间中的位置改变了；</li>
+<li><strong>修改了语义的权重</strong>：在自然语言中，<strong>距离</strong>本身就代表了<strong>语义权重</strong>，调整位置就相当于调整了语义的权重。<strong>例如，在我们的这个例子中，我们可以认为当
+<code>苹果</code> 在前面时，它会朝主语语义移动。当 <code>苹果</code>
+在后面时，它会超宾语语义移动（当然，这只是个例子，实际的维度并不包含主语和宾语这个维度）</strong>；</li>
+</ul>
+<h1 id="向量矩阵和矩阵矩阵的差别">向量@矩阵和矩阵<span class="citation"
+data-cites="矩阵的差别">@矩阵的差别</span></h1>
+<p>虽然在计算机底层它们都调用同一个
+<code>GEMM</code>（通用矩阵乘法）算子，但在 <strong>Transformer
+的高维几何思维</strong>中，它们确实代表了截然不同的物理行为：</p>
+<ul>
+<li><strong>向量@矩阵</strong>是对向量进行线性变化，将向量由原基向量表示的坐标转换到由新的基向量表示的坐标；</li>
+<li><strong>矩阵@矩阵</strong> 表示矩阵和矩阵之间的重合程度；</li>
+</ul>
+<p>简单来说，假设我们存在 <span class="math inline">\([m, k] @ [k,
+n]\)</span> 的矩阵乘法得到 <span class="math inline">\([m, n]\)</span>
+的矩阵，可以视作 <code>m</code> 次 <span class="math inline">\([1, k] @
+[k, n]\)</span> 的矩阵乘法。</p>
+<p>例如，对于 <span class="math inline">\(h @ W_q\)</span> 来说：</p>
+<ul>
+<li><span class="math inline">\(h\)</span> 是 Token
+在这一层的综合表示。</li>
+<li><span class="math inline">\(W_q\)</span>
+的每一列都是一个新的<strong>基向量</strong>。</li>
+<li>乘法的结果是：这个 Token 在查找这个特定子空间里的新坐标。</li>
+</ul>
+<p>对于<span class="math inline">\(Score = Q @ K^T\)</span>：</p>
+<ul>
+<li><span class="math inline">\(Q\)</span> 是一组 Token
+的搜索信号，<span class="math inline">\([q_1, q_2, \dots,
+q_n]\)</span>。</li>
+<li><span class="math inline">\(K^T\)</span> 是一组 Token
+的被搜索标签。</li>
+<li>结果矩阵中的每一个点 <span
+class="math inline">\(S_{i,j}\)</span>，都是第 <span
+class="math inline">\(i\)</span> 个词和第 <span
+class="math inline">\(j\)</span> 个词的<strong>投影面积</strong>。</li>
+</ul>
+<h1 id="残差网络和dropout">残差网络和Dropout</h1>
+<p>残差网络的定义可以参考 <a
+href="#residualconnection">ResidualConnection</a>
+这一小节，我们需要知道的是，<strong>残差网络（Residual Connection / Skip
+Connection）不是一个像“全连接层”或“卷积层”那样有参数、有运算逻辑的实体组件，它本质上是一种“数据通信协议”。</strong></p>
+<p>在我们的transformer中，一个残差网络可以表示为： <span
+class="math display">\[
+f(x) = x + \Delta
+\]</span> 而我们的整个数据流转路径如下：</p>
+<pre><code class="highlight mermaid">flowchart 
+
+input(&quot;input&quot;)
+
+input --&gt;|x| norm
+input --&gt;|x| add
+
+subgraph residual_connection
+    norm(&quot;LayerNorm&quot;) --&gt;|x_norm| attention(&quot;Multi-Head Attention&quot;)  --&gt;|&quot;Dropout(Attention(x_norm))&quot;| dropout(&quot;Dropout&quot;)
+end
+
+add(&quot;add&quot;) --&gt;|x + delta| output(&quot;output&quot;)
+
+dropout --&gt;|delta| add
+
+class input,output green
+class norm blue
+class attention purple
+class dropout light_green
+class add pink
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>这张图有几个重要的点：</p>
+<ol type="1">
+<li>输入分为两条独立的通道，一条进入残差网络计算 <span
+class="math inline">\(\Delta\)</span>，一条不被 <code>LayerNorm</code>
+的缩放干扰，也不被 <code>Attention</code>
+的非线性扭曲，直接进入输出逻辑；</li>
+<li><strong>这里一定要注意，<code>x</code>
+必须不受到任何干扰。比如，如果我们将 <code>x</code> 输入到
+<code>LayerNorm</code> 层后从 <code>LayerNorm</code> 的结果输出到
+<code>add</code>，那么此时我们已经完全丧失了在 <span
+class="math inline">\(\Delta\)</span> 异常时恢复 <code>x</code>
+的能力</strong>；并且，如果每一层都只拿“被归一化”后的 <span
+class="math inline">\(x\)</span> 去加 <span
+class="math inline">\(\Delta\)</span>，那么每一层都会丢失掉上一层关于特征绝对强度的信息。</li>
+<li>Dropout 必须作用在 Attention 之后，而不是 Layer Norm 之后：如果
+Dropout 放在 Layer Norm 后，我们会在 Attention
+还没开始计算时就丢弃一部分输入。</li>
+<li><strong><code>dropout</code>
+会随机的关闭一些神经元，目的是防止程序过拟合，同时保证在出现数据噪点时依然可以正常工作。</strong>举例来说，就好比我们要在市区间通行，我们通常可以选择火车，高铁，飞机，汽车。每一个交通工具都有自己的优势和劣势，使用
+dropout
+的意义是，随机的关闭任意一个交通工具以增强我们的通勤的健壮性。否则，神经元很有可能始终选择某个最舒服的通勤方式（比如高铁），而在现实中，当高铁异常时我们的程序直接崩溃。</li>
+</ol>
+<h2 id="dropout">dropout</h2>
+<ol type="1">
+<li><code>dropout</code>
+非常像我们日常在实现数据库或者其他的分布式系统时的一个概念：<code>容灾</code>。不引入
+<code>dropout</code>
+的最大风险点在于，如果这个神经元因为噪声波动了，整个模型就误判了。在引入
+<code>dropout</code>
+后，模型被迫把知识分布在所有的神经元中，程序更加的健壮；</li>
+<li><strong>多模型投票</strong>：每一次 Dropout
+掉不同的神经元，其实都在产生一个<strong>稍微不同的小模型</strong>，训练过程中，我们实际上是在训练<strong>成千上万个微型模型</strong>的组合。<strong>推理时</strong>：当我们关掉
+Dropout，就相当于让这成千上万个小模型进行了一次<strong>集体投票</strong>。这种“集成学习”的效果让模型对没见过的数据（泛化）表现极好。</li>
+</ol>
+<h1 id="自注意力和交叉注意力">自注意力和交叉注意力</h1>
+<p>自注意力和交叉注意力<strong>都是 <span class="math inline">\(Q, K,
+V\)</span> 的投影和重合度计算</strong>，<code>数据来源</code>
+决定了它们的本质不同。</p>
+<ul>
+<li><strong>自注意力 (Self-Attention)</strong> 的 <span
+class="math inline">\(Q, K, V\)</span> 全都来自同一个输入序列。在
+transformer
+架构中，我们只使用了自注意力，因为对于LLM来说，<strong>只有一个输入序列</strong>。</li>
+<li><strong>交叉注意力（Cross-Attention）</strong> 中 <span
+class="math inline">\(Q\)</span> 来自一个地方，<span
+class="math inline">\(K\)</span> 和 <span
+class="math inline">\(V\)</span> 来自另一个地方。这是在
+<strong>Encoder-Decoder
+架构</strong>（比如机器翻译）中出现的模式。例如，我们需要将
+<code>Hello world.</code> 翻译为
+<code>你好世界。</code>，在这个例子中，前者是 <code>encoder</code>
+关注的内容，后者是 <code>decoder</code> 关注的内容。</li>
+</ul>
+<p>注意，不论是自注意力还是交叉注意力，无论 <span
+class="math inline">\(Q\)</span> 从哪来，<strong><span
+class="math inline">\(K\)</span> 和 <span
+class="math inline">\(V\)</span>
+永远是成对出现的，且来源相同。</strong></p>
+<h1 id="训练和推理中的batch参数">训练和推理中的batch参数</h1>
+<p>在我们的训练过程中，为了更充分的利用GPU的性能，我们通常会将多个不相关的逻辑并行的执行，而这里的这个所谓的<strong>不相关的逻辑</strong>就是我们的
+batch 参数。</p>
+<ul>
+<li>在训练的场景下，<code>batch</code>
+表示的是若干个<strong>完全独立</strong>的任务（不同的语料）；</li>
+<li>在推理的场景下，<code>batch</code> 表示的是若个完全独立的用户；</li>
+</ul>
+<p>在训练时，<code>batch_size</code>
+决定了模型参数更新的<strong>稳健度</strong>，它同时计算 <span
+class="math inline">\(N\)</span>
+个语料的梯度。模型不会被某一个语料误导，而是使用多个语料训练得到一个综合的值；</p>
+<p>在推理时，<code>batch_size</code>
+决定了系统的<strong>吞吐量</strong>。当 100 个人同时问 AI
+题目时，服务器不会排队一个一个回。它将这些请求“拼”成一个 Batch
+跑一次前向传播。<code>batch_size</code>
+越大，单位时间内处理的请求越多，但每个用户感受到的延迟可能会略微增加。</p>
+<p>这里需要注意的是，在我们训练时，假设存在 《菜谱》 和《科技》
+两个不同的语料库，其中都会有 <code>苹果</code>
+这个词，分别表示水果和科技公司。</p>
+<p>那么在训练时，在batch不同的两个任务中，首先都会从词库中去获取
+embedding
+向量（此时他们拿到的向量是一样的），<strong>随后在训练中，他们不断的迭代更新自己内部持有的向量，在训练结束时都会更新embedding向量
+--
+而这个更新是两个语料库训练结果的共同作用，苹果从此同时包含了水果和科技公司的语义</strong>。</p>
+<h1 id="ffnfeed-forward-network">FFN(Feed-Forward Network)</h1>
+<blockquote>
+<p>如果说 <strong>Attention（注意力机制）</strong> 的作用是让 Token
+之间进行“信息交换”和“找关系”，那么 <strong>FFN</strong> 的作用就是对每个
+Token 进行<strong>“深度加工”和“知识提取”</strong>。</p>
+<p>它的核心逻辑可以总结为：<strong>“先升维空间进行非线性转换，再降维整合。”</strong></p>
+</blockquote>
+<p>我们可以再次回顾我们的整个的 <code>attention</code> 计算过程： <span
+class="math display">\[
+\text{Attention}(Q, K, V) =
+\text{Softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\]</span> 整个的过程转换是：</p>
+<ol type="1">
+<li><span class="math inline">\(E_{token}\)</span>
+将token转换为向量；</li>
+<li><span class="math inline">\(E_{position}\)</span>
+为向量增加位置向量信息；</li>
+<li>和每一层的 <span class="math inline">\(W_{Q} W_{K} W_{V}\)</span>
+相乘，得到 <span class="math inline">\(Q, K,
+V\)</span>，<strong>注意，在这里我们的 <span class="math inline">\(Q, K,
+V\)</span>
+中的每一个向量，都已经包含根据权重矩阵分配后的每一个元素的向量的全部维度的值；换句话说，这些维度已经融合了
+-- 我们中有我，我中有我们。</strong></li>
+<li><span class="math inline">\(Attention\)</span> 中
+<ol type="1">
+<li>我们先在括号中通过计算得到了一个矩阵 <span
+class="math inline">\(\text{Softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)\)</span>，
+这个矩阵中的每一个元素 <span class="math inline">\(E_{ij}\)</span>
+都包含了 <span class="math inline">\(Q_i\)</span> 和 <span
+class="math inline">\(K_j\)</span>
+的结合计算的分数；也就是此时，我们开始出现单个token和单个token的融合，这是一个
+<span class="math inline">\(N * N\)</span> 的矩阵；</li>
+<li>此时，我们已经得到了分数，我们需要将这个分数再次还原为语义：<span
+class="math inline">\(Output = \text{Score}_{n \times n} \times V_{n
+\times 512}\)</span>，V的每一行代表一个 token
+的维度内容（Value），每一列（共 512 列）代表特征的不同维度。</li>
+<li>此时，我们的分数矩阵的 <span class="math inline">\(E_{ij}\)</span>
+是 <span class="math inline">\(Q_i\)</span> 和 <span
+class="math inline">\(K_j\)</span> 的结合后计算的分数；我们的V矩阵的元素
+<span class="math inline">\(E_{ij}\)</span> 是 <code>token[i]</code>
+的第 <code>j</code>
+个维度的value；那么我们就将<strong>token的两两结合，转换成了全部的token集合</strong>。</li>
+</ol></li>
+</ol>
+<p><strong>在经历了上面的全部步骤之后，我们现在得到了一个 <span
+class="math inline">\(N * d_{model}\)</span> 的矩阵，其中 <span
+class="math inline">\(E_{ij}\)</span> 表示了 <code>token[i]</code> 和
+<code>所有token的第j个维度的value的结合</code></strong></p>
+<p>在这个过程中：</p>
+<ol type="1">
+<li><code>&lt;3&gt;</code>
+这一步的物理意义是<strong>特征转换（Projection）</strong>；</li>
+<li><code>&lt;4.3&gt;</code> 这一步的物理意义是** <strong>Global Context
+Injection（全局语境注入）</strong>。**</li>
+</ol>
+<p><strong>随后，我们进入到我们真正的逻辑推理（FFN）：我们之前的
+<code>Attention</code> 阶段，都是对我们已经存在的信息的提取。而
+<code>FFN</code>
+在实际上执行了两个事：非线性决策和模式存储</strong>。</p>
+<h2 id="非线性激活">非线性激活</h2>
+<p>在数学上，Attention
+无论怎么算，本质上都是在做<strong>加权平均</strong>（线性组合）：例如，在我们前面提到的最终矩阵中，<span
+class="math inline">\(E_{ij}\)</span> 表示了 <code>token[i]</code> 和
+<code>所有token的第j个维度的value的结合</code>。<strong>而这个矩阵是基于线性组合得到的，这意味着我们无法产生任何的复杂推理：例如，在线性组合下，水烧到200°时仍然是水，然而水在100°时便变成了水蒸气，这个过程并不是线性的。</strong></p>
+<p><strong>此时，我们就需要引入我们的各种激活函数：<code>ReLU</code>，<code>GeLU</code></strong>：在引入这些函数之后，我们可以将我们的线性组合改变为非线性组合。简单来说，假设某个值不满足一定的条件，我们就认为它已经失效（这里失效是一个代称，例如我认为
+<code>token[i]</code> 和 <code>token[j]</code>
+之间没有任何关联，那么他们不应该有任何的语义关联）。</p>
+<p>当我们把成千上万个这种“折断的线”组合在一起时，神奇的事情发生了：</p>
+<ol type="1">
+<li><strong>分段拟合</strong>：我们可以用无数段折线，去模拟任何复杂的曲线（这在数学上叫<strong>通用近似定理</strong>）。</li>
+<li><strong>逻辑门控</strong>：
+<ul>
+<li>某个神经元的输入是 <span class="math inline">\(x\)</span>。如果
+<span class="math inline">\(x\)</span>
+代表“文本中出现了‘不’这个字”，且其强度为负。</li>
+<li>经过 ReLU 后，这个负值变成了 0。</li>
+<li><strong>物理含义</strong>：这个特征被“过滤”掉了，或者说这个逻辑分支被“关闭”了。</li>
+<li>只有当特征强度跨过某个阈值时，神经元才会“亮起来”（激活）。这种“亮”与“不亮”，本质上就是计算机底层的
+<strong>0 和 1</strong>，也就是 <strong>“如果...那么...”</strong>。</li>
+</ul></li>
+</ol>
+<p><strong>总结来说，线性系统负责“联想”（比如
+Attention：这个词和那个词有关系），而非线性系统负责“判断”（比如
+FFN：既然有这个关系，那么结论是 A 而不是 B）。</strong></p>
+<p>而在这个过程中，<code>FFN</code>
+会包含两个线性层和一个非线性开关：</p>
+<ol type="1">
+<li><strong>第一步：升维投影</strong>
+<ul>
+<li>*输入<strong>：<span class="math inline">\([N,
+512]\)</span></strong></li>
+<li>算子<strong>：<span class="math inline">\(W_{up}\)</span>，形状为
+</strong><span class="math inline">\([512, 2048]\)</span></li>
+<li>计算**：<span class="math inline">\(N \times 512\)</span> 乘以 <span
+class="math inline">\(512 \times 2048 = [N, 2048]\)</span></li>
+</ul></li>
+<li><strong>第二步：非线性“开关”</strong>
+<ul>
+<li>对这个 <span class="math inline">\(N \times 2048\)</span>
+的结果进行激活函数处理（如 ReLU）。</li>
+</ul></li>
+<li><strong>第三步：降维整合</strong>
+<ul>
+<li><strong>输入</strong>：<span class="math inline">\([N,
+2048]\)</span></li>
+<li><strong>算子</strong>：<span
+class="math inline">\(W_{down}\)</span>，形状为 <strong><span
+class="math inline">\([2048, 512]\)</span></strong></li>
+<li>*计算**：<span class="math inline">\(N \times 2048\)</span> 乘以
+<span class="math inline">\(2048 \times 512 = [N, 512]\)</span></li>
+</ul></li>
+</ol>
+<p>这个矩阵不是人工定义的，也不是数学公式生成的，它和 <span
+class="math inline">\(W_Q, W_K, W_V\)</span>
+一样，是<strong>模型在预训练阶段（Pre-training）从海量数据中“卷”出来的。</strong></p>
+<ul>
+<li><strong>初始化</strong>：在模型刚开始训练时，这个 <span
+class="math inline">\(512 \times 2048\)</span>
+的矩阵里全是随机生成的乱码数字（比如服从正态分布的随机数）。</li>
+<li><strong>进化过程</strong>：
+<ol type="1">
+<li>模型尝试用这些随机数去做推理，结果肯定是一塌糊涂。</li>
+<li>通过<strong>反向传播（Backpropagation）</strong>，模型计算出：如果我想准确预测下一个词，这个
+<span class="math inline">\(512 \times 2048\)</span>
+矩阵里的每一个数字应该往哪个方向微调一点点。</li>
+<li>经过数万亿个 Token 的“喂养”，这些数字逐渐形成了逻辑。</li>
+</ol></li>
+</ul>
+<h2 id="residualconnection">ResidualConnection</h2>
+<p>在我们的流程中，每一层 Attention 和 FFN 后面其实都跟着一个公式：</p>
+<p><span class="math display">\[Output = x +
+\text{Sublayer}(x)\]</span></p>
+<p><strong>在现代 Transformer
+架构（特别是带有残差连接的结构）中，Attention 和 FFN
+的作用就是计算出一个“增量”（Delta），也就是我们公式中的<span
+class="math inline">\(Sublayer(x)\)</span></strong>。</p>
+<p>如果说 Attention 和 FFN
+是在对信息做“减法”和“提纯”（只保留重要信息），那么残差连接就是把原始输入直接“复制”一份带到下一层。这保证了：</p>
+<ul>
+<li><strong>防止信息丢失</strong>：即便某一层逻辑跑偏了，原始信息依然存在，模型有纠错的机会。</li>
+<li><strong>解决梯度消失</strong>：在反向传播（训练）时，梯度通过这条“加法通道”直接回传，不会在深层矩阵中磨损殆尽。</li>
+</ul>
+<p><strong>我们在这个
+<code>查询embedding向量 -&gt; 训练得到增量 -&gt; 得到最新新的向量 -&gt; 和实际输入不匹配 -&gt; 反向传播 -&gt; 修改权重矩阵和FFN矩阵，embedding向量</code></strong>
+的过程中逐渐逼近我们的最优解。</p>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 28%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>描述</strong></th>
+<th><strong>深度学习专业术语</strong></th>
+<th><strong>物理本质</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>查询 Embedding 向量</strong></td>
+<td><strong>Forward Pass（前向传播）</strong></td>
+<td>将原始符号映射到高维空间。</td>
+</tr>
+<tr class="even">
+<td><strong>训练得到增量 (<span
+class="math inline">\(\Delta\)</span>)</strong></td>
+<td><strong>Residual Function (<span
+class="math inline">\(Sublayer\)</span>)</strong></td>
+<td>Attention 搬运语境，FFN 处理逻辑，产生修正量。</td>
+</tr>
+<tr class="odd">
+<td><strong>得到最新的向量</strong></td>
+<td><strong>Hidden State Update</strong></td>
+<td><span class="math inline">\(x_{new} = x_{old} +
+\Delta\)</span>。向量在空间中完成位移。</td>
+</tr>
+<tr class="even">
+<td><strong>和实际输入不匹配</strong></td>
+<td><strong>Loss Function（损失函数）</strong></td>
+<td>计算预测的概率分布与真实标签（Next
+Token）的<strong>交叉熵</strong>。</td>
+</tr>
+<tr class="odd">
+<td><strong>反向传播</strong></td>
+<td><strong>Backpropagation</strong></td>
+<td>链式法则求导，将“误差信号”从顶层原路传回底层。</td>
+</tr>
+<tr class="even">
+<td><strong>修改权重矩阵/embedding</strong></td>
+<td><strong>Optimizer Update（优化器更新）</strong></td>
+<td>使用 AdamW 等算法，按梯度方向微调 <span class="math inline">\(W_Q,
+W_K, W_V\)</span> 和 FFN。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="每一层的固定矩阵">每一层的固定矩阵</h2>
+<ul>
+<li><strong><span class="math inline">\(W_Q, W_K, W_V\)</span>
+(512x512)</strong>：训练出来的，负责<strong>提取社交特征</strong>。</li>
+<li><strong>FFN <span class="math inline">\(W_{up}\)</span>
+(512x2048)</strong>：训练出来的，负责<strong>扩充逻辑空间</strong>。</li>
+<li><strong>FFN <span class="math inline">\(W_{down}\)</span>
+(2048x512)</strong>：训练出来的，负责<strong>收敛推理结果</strong>。</li>
+</ul>
+<h1 id="gpt-逻辑简述">GPT 逻辑简述</h1>
+<blockquote>
+<p>Transformer 的本质是利用线性变换（<span class="math inline">\(W_q,
+W_k, W_v\)</span>）将带有位置偏移的高维语义向量（<span
+class="math inline">\(E\)</span>），投影到不同的特征子空间，通过计算匹配度（<span
+class="math inline">\(Q \cdot
+K^T\)</span>）实现动态的信息筛选，并利用数值缩放（Scale）与归一化（LayerNorm）确保训练时梯度流的活性，防止模型陷入“盲目自信”的饱和区。假设我们存在一个
+512 维的模型：</p>
+<ul>
+<li><strong>空间位移</strong>：位置编码（Positional
+Encoding）是通过向量加法在 512 维空间中实现的几何位移。</li>
+<li><strong>基变换</strong>：<span class="math inline">\(W_q\)</span>
+矩阵是一个巨大的<strong>语义过滤器</strong>，它通过坐标轴转换（基变换），从原始词义中提取出特定的关注维度（如词性、情感等）。</li>
+<li><strong>降温保护</strong>：除以 <span
+class="math inline">\(\sqrt{d_k}\)</span> 是为了压制方差，让 Softmax
+留在高导数区间，保持模型的“知错改错”能力（解决梯度饱和）。</li>
+<li><strong>数据闭环</strong>：LayerNorm
+负责准入控制，保证输入数据始终满足“均值 0、方差 1”的计算前提。</li>
+</ul>
+<p>当我们在将 <span class="math inline">\(E_{position} \times W_q =
+Q\)</span> 的这个转换时，我们需要注意几点：</p>
+<ul>
+<li>根据线性代数的定义，此时我们就是将 <span
+class="math inline">\(E_{position}\)</span> 使用了 <span
+class="math inline">\(W_q\)</span> 的基向量表示的坐标轴转换，而 <span
+class="math inline">\(W_q\)</span> 是我们 transformer
+的某一层的权重矩阵；</li>
+<li>对于一个 <code>512</code>
+维度的向量，每一层关注的东西是不一样的。例如假设我们的维度1和维度2表示的是：token是名词还是动词，token是褒义还是贬义。那么在语义解析层，transformer
+就需要调高维度1和维度2的权重。这个就相当于是，我们将这个
+<code>512</code>
+维的坐标轴的维度1和维度2的基向量调大，而其他的调小；</li>
+</ul>
+</blockquote>
+<h2 id="静态知识储备词表与词嵌入-embedding">静态知识储备：词表与词嵌入
+(Embedding)</h2>
+<p>在模型“睁开眼”看到任何句子之前，它已经通过海量文本训练出了两样东西：</p>
+<ul>
+<li><strong>Token
+词表</strong>：一个固定的映射表。例如：<code>“吃” -&gt; ID 102</code>，<code>“苹果” -&gt; ID 505</code>。</li>
+<li><strong>词嵌入矩阵 (Embedding Matrix, <span
+class="math inline">\(X_{base}\)</span>)</strong>：这是词的“静态档案”。</li>
+<li><strong>含义</strong>：当没有任何上下文时，每个词都有一个预定义的
+512
+维向量。它标注了词的固有属性（如：“猫”是名词、哺乳动物、宠物）。</li>
+<li><strong>状态</strong>：<strong>训练阶段</strong>根据梯度下降不断修正这些属性数值；<strong>推理阶段</strong>作为只读的
+Lookup Table。</li>
+</ul>
+<h2
+id="角色转换器三套线性变换矩阵-w_q-w_k-w_v">角色转换器：三套线性变换矩阵
+(<span class="math inline">\(W_Q, W_K, W_V\)</span>)</h2>
+<p>这是 Transformer
+的“大脑逻辑”，它定义了词与词之间如何“社交”。这三个矩阵在推理阶段是<strong>完全固定</strong>的。</p>
+<ul>
+<li><p><strong><span class="math inline">\(W_Q\)</span> (Query
+Generator)</strong>：将词向量转换为<strong>“需求信息”</strong>。</p></li>
+<li><p><em>例</em>：“吃” <span class="math inline">\(\times W_Q
+\rightarrow\)</span> “我是一个动作，我急需一个食物作为宾语。”</p></li>
+<li><p><strong><span class="math inline">\(W_K\)</span> (Key
+Generator)</strong>：将词向量转换为<strong>“简历信息”</strong>。</p></li>
+<li><p><em>例</em>：“苹果” <span class="math inline">\(\times W_K
+\rightarrow\)</span> “我是一个名词，我的属性是食物。”</p></li>
+<li><p><strong><span class="math inline">\(W_V\)</span> (Value
+Generator)</strong>：将词向量转换为<strong>“内容信息”</strong>。</p></li>
+<li><p><em>例</em>：“苹果” <span class="math inline">\(\times W_V
+\rightarrow\)</span> “我是红色的、甜的、脆的语义片段。”</p></li>
+</ul>
+<h2 id="注意力流水线qkv-的博弈-attention-mechanism">注意力流水线：QKV
+的博弈 (Attention Mechanism)</h2>
+<p>当我们输入一个序列（如“我爱吃...”）时，物理运行流程如下：</p>
+<ol type="1">
+<li><strong>特征投影</strong>： 每个词的 <span
+class="math inline">\(X\)</span> 同时乘以 <span
+class="math inline">\(W_Q, W_K,
+W_V\)</span>，在三个不同的特征空间里产生自己的 Q、K、V。</li>
+<li><strong>点积打分 (<span class="math inline">\(Q \times
+K^T\)</span>)</strong>： “吃”的 Query 去和全句所有词（我、爱、吃）的 Key
+做点积。</li>
+</ol>
+<ul>
+<li>“吃” (Q: 找食物) <span class="math inline">\(\times\)</span> “我”
+(K: 人类) <span class="math inline">\(\rightarrow\)</span>
+<strong>低分</strong>。</li>
+<li>“吃” (Q: 找食物) <span class="math inline">\(\times\)</span> “苹果”
+(K: 食物) <span class="math inline">\(\rightarrow\)</span>
+<strong>高分</strong>。</li>
+</ul>
+<ol start="3" type="1">
+<li><strong>掩码与归一化 (Mask &amp; Softmax)</strong>：</li>
+</ol>
+<ul>
+<li><strong>训练时</strong>：使用 Mask
+屏蔽掉还没出现的词，防止“吃”提前看到“苹果”。</li>
+<li><strong>Softmax</strong>：将分数变成权重（如 0.05, 0.05,
+0.9）。这代表了模型对不同词的“偏心程度”。</li>
+</ul>
+<ol start="4" type="1">
+<li><strong>语义融合 (Weighted Sum)</strong>： 用权重乘以各词的
+<strong>Value (V)</strong>。</li>
+</ol>
+<ul>
+<li><em>结果</em>：在“吃”这个位置，输出一个新向量。由于权重集中在“苹果”，这个新向量里装满了“苹果”的语义（甜、脆、红色）。</li>
+</ul>
+<h2 id="预测与闭环从高维特征到最终-token">预测与闭环：从高维特征到最终
+Token</h2>
+<ol type="1">
+<li><strong>隐藏层加工</strong>：融合后的向量经过残差连接和全连接层（FFN），进一步强化这种“吃+苹果”的逻辑组合。</li>
+<li><strong>线性投影</strong>：将这个处理好的向量再次乘以一个巨大的输出矩阵，映射回词表大小（如
+30,000 维）。</li>
+<li><strong>最终预测</strong>：</li>
+</ol>
+<ul>
+<li><strong>训练阶段</strong>：如果模型在“吃”后面算出的“苹果”概率不是最高，就通过反向传播调整
+<span class="math inline">\(W_{QKV}\)</span> 和 <span
+class="math inline">\(X\)</span> 的数值。</li>
+<li><strong>推理阶段</strong>：直接取概率最大的词。模型此时会吐出“苹果”。</li>
+</ul>
+<p>训练与推理</p>
+<ul>
+<li><strong>训练
+(Training)</strong>：是一个<strong>“纠错”</strong>过程。我们手握正确答案，通过计算
+QKV 的匹配度，不断微调 <span
+class="math inline">\(X\)</span>（词的底色）和 <span
+class="math inline">\(W_{QKV}\)</span>（社交规则），直到它们能完美契合。</li>
+<li><strong>推理
+(Inference)</strong>：是一个<strong>“查表计算”</strong>过程。利用训练好的
+<span class="math inline">\(X\)</span> 和 <span
+class="math inline">\(W_{QKV}\)</span>，将当前的输入丢进矩阵算子中跑一遍，根据计算出的最高概率点燃下一个
+Token</li>
+</ul>
+<p>所以，我们最重要的逻辑就是：</p>
+<ol type="1">
+<li>在训练阶段，根据海量的数据提取：
+<ol type="1">
+<li>每个token的静态特征（描述token是什么），</li>
+<li><code>transformer</code> 有 N 层，每一层都有一个共享的 <span
+class="math inline">\(W_Q, W_K,
+W_V\)</span>，这是一个三个线性变换矩阵，描述了在当前层（<span
+class="math inline">\(W_Q, W_K,
+W_V\)</span>，描述了token它需要匹配什么（Q)，它被什么匹配（K）以及详细信息（V））。</li>
+</ol></li>
+<li>在推理阶段，我们根据已经输入的token：
+<ol type="1">
+<li>先查找token查找token嵌入向量；</li>
+<li>每一层和嵌入向量和 <span class="math inline">\(W_Q, W_K,
+W_V\)</span> 结合，并且输出一个新的结果到下一层。</li>
+</ol></li>
+</ol>
+<p>在训练时，模型就像在编写一本多层的<strong>“社交百科全书”</strong>：</p>
+<ul>
+<li><strong>静态特征（词向量 <span
+class="math inline">\(X\)</span>）</strong>：这是<strong>“词义百科”</strong>。模型学习到的是：在没有任何干预时，“猫”和“狗”是相似的。</li>
+<li><strong>线性变换（<span class="math inline">\(W_Q, W_K,
+W_V\)</span>）</strong>：这是<strong>“层级规则”</strong>。
+<ul>
+<li><strong><span class="math inline">\(W_Q\)</span>
+(需求规则)</strong>：描述了在第 <span class="math inline">\(n\)</span>
+层，什么样的特征应该去主动寻找什么样的信息。</li>
+<li><strong><span class="math inline">\(W_K\)</span>
+(身份规则)</strong>：描述了在第 <span class="math inline">\(n\)</span>
+层，什么样的特征应该被什么样的需求“勾搭”上。</li>
+<li><strong><span class="math inline">\(W_V\)</span>
+(传承规则)</strong>：描述了在第 <span class="math inline">\(n\)</span>
+层，一旦匹配成功，应该带走什么样的深层语义。</li>
+</ul></li>
+<li><strong>Nx
+层级</strong>：每一层规则都在不断精细化。底层可能在对齐语法，高层可能在对齐逻辑和情感。</li>
+</ul>
+<p>在推理时，模型变成了一台<strong>“流水线工厂”</strong>，权重不再改变，数据开始流动：</p>
+<ol type="1">
+<li><strong>原材料入场</strong>：根据 Token 索引查出
+Embedding，叠加上位置编码，形成初始向量 <span
+class="math inline">\(X\)</span>。</li>
+<li><strong>逐层加工（Nx 循环）</strong>：
+<ul>
+<li><strong>第 1 层</strong>：向量 <span
+class="math inline">\(X\)</span> 经过该层的 <span
+class="math inline">\(W_{QKV}\)</span>
+变换，通过注意力机制发现词与词的初级关系，输出 <span
+class="math inline">\(X_{layer1}\)</span>。</li>
+<li><strong>第 2 层</strong>：<span
+class="math inline">\(X_{layer1}\)</span> 再次进入该层独有的 <span
+class="math inline">\(W_{QKV}\)</span>，挖掘更深的关系，输出 <span
+class="math inline">\(X_{layer2}\)</span>。</li>
+<li><strong>... 直到第 N
+层</strong>：最终得到的向量已经是一个充满了上下文智慧的“超级向量”。</li>
+</ul></li>
+<li><strong>成品出厂</strong>：最后的输出向量经过顶部 Linear
+层投影到词表概率上，Softmax 决定吐出哪一个词。</li>
+</ol>
+<h2 id="nx和multi-head">Nx和multi-head</h2>
+<ul>
+<li><strong>横向（Multi-head）</strong>：在每一层内部，我们将 512 维的
+<span class="math inline">\(X\)</span>
+切分成多份，让多个头并行去观察不同的维度。</li>
+<li><strong>纵向（Nx）</strong>：每一层的输出作为下一层的输入。<strong>第一层的所有头算完了，合成一个完整的
+512 维向量，才能交给第二层。</strong></li>
+</ul>
+<h3 id="流程图">流程图</h3>
+<pre><code class="highlight mermaid">flowchart TB
+
+input(&quot;input&quot;) --&gt;|文本| tokenizer(&quot;tokenizer&quot;) --&gt;|token| Embedding(&quot;Embedding&quot;) --&gt; Position(&quot;Positional Encoding&quot;)
+
+subgraph multi_head
+    direction TB
+    MH(&quot;Multi-head Attention&quot;) --&gt; layer1(&quot;Layer Norm&quot;) --&gt; FF(&quot;Feed Forward&quot;) --&gt; layer2(&quot;Layer Norm&quot;)
+end
+
+Position --&gt; multi_head --&gt; linear(&quot;linear - 映射到词表&quot;) --&gt; softmax(&quot;softmax估算概率&quot;) --&gt; pred(&quot;predict下一个词&quot;)</code></pre>
+<h3 id="预处理与特征生成-prefill-phase">预处理与特征生成 (Prefill
+Phase)</h3>
+<p>当输入 Prompt（如“我们喜欢吃什么水果？”）时，模型首先将 Token
+转换为附带<strong>位置编码（Positional Encoding）</strong>的特征向量
+<span class="math inline">\(E_0 \sim
+E_5\)</span>。这些向量满足初始的分布要求（均值 0，方差 1）。</p>
+<h3 id="qkv-的线性投影与空间关联">QKV 的线性投影与空间关联</h3>
+<p>在每一层中，特征向量通过三个权重矩阵 <span class="math inline">\(W_Q,
+W_K, W_V\)</span> 投影到不同的子空间，得到：</p>
+<ul>
+<li><strong>Queries (<span class="math inline">\(Q_0 \sim
+Q_5\)</span>)</strong>: 当前 Token 想要“寻找”的信息。</li>
+<li><strong>Keys (<span class="math inline">\(K_0 \sim
+K_5\)</span>)</strong>: 当前 Token 能够“提供”的索引。</li>
+<li><strong>Values (<span class="math inline">\(V_0 \sim
+V_5\)</span>)</strong>: 当前 Token 包含的实际语义内容。</li>
+</ul>
+<p>通过计算 <span class="math inline">\(Q \times
+K^T\)</span>，我们得到了一个 <span class="math inline">\(6 \times
+6\)</span> 的<strong>注意力分数矩阵 (Attention Score
+Matrix)</strong>。矩阵中 <span class="math inline">\((x, y)\)</span>
+位置的值表示 Token <span class="math inline">\(x\)</span> 与 Token <span
+class="math inline">\(y\)</span> 之间的语义关联强度。</p>
+<h3
+id="数值危机的根源方差爆炸与梯度饱和">数值危机的根源：方差爆炸与梯度饱和</h3>
+<p>虽然我们建立了关联，但 <span class="math inline">\(Q \times
+K^T\)</span> 的原始结果无法直接用于训练或推理。</p>
+<h4 id="方差爆炸-variance-explosion">方差爆炸 (Variance Explosion)</h4>
+<p>我们设定输入数据满足均值 0、方差 1。设点积结果为 <span
+class="math inline">\(S = \sum_{i=1}^{d_k} q_i k_i\)</span>：</p>
+<ul>
+<li>根据独立变量的方差加法性质：<span class="math inline">\(Var(S) =
+\sum_{i=1}^{d_k} Var(q_i k_i) = d_k \cdot 1 = d_k\)</span>。</li>
+<li><strong>问题</strong>：随着模型维度 <span
+class="math inline">\(d_k\)</span>（如 512 或 4096）的增大，<span
+class="math inline">\(S\)</span>
+的波动范围会极其剧烈。数据变得极度“离散”。</li>
+</ul>
+<h4 id="梯度饱和-gradient-saturation">梯度饱和 (Gradient
+Saturation)</h4>
+<p>Softmax 是一个指数级函数。如果输入值 <span
+class="math inline">\(S\)</span> 过于离散（如出现极大的正数）：</p>
+<ul>
+<li><strong>现象</strong>：Softmax
+输出的概率分布会迅速坍缩，导致某个词的概率趋近于
+<strong>1</strong>，其余趋近于 <strong>0</strong>。</li>
+<li><strong>后果</strong>：在反向传播时，Softmax 的导数为 <span
+class="math inline">\(a_i(1-a_i)\)</span>。当 <span
+class="math inline">\(a_i \approx 1\)</span> 时，导数几乎为
+<strong>0</strong>。</li>
+<li><strong>逻辑锁死</strong>：误差信号被截断，权重 <span
+class="math inline">\(W_Q, W_K\)</span>
+接收不到更新指令。算法错误地认为已经找到最优解（哪怕预测是错的），从而停止进化。</li>
+</ul>
+<h3 id="解决方案缩放-scaling-与归一化-normalization">解决方案：缩放
+(Scaling) 与归一化 (Normalization)</h3>
+<h4 id="缩放因子frac1sqrtd_k">缩放因子：<span
+class="math inline">\(\frac{1}{\sqrt{d_k}}\)</span></h4>
+<p>为了将方差重新拉回 1，我们需要对点积结果进行 <strong>Scale</strong>
+操作。 根据方差性质：<span class="math inline">\(Var(k \cdot S) = k^2
+\cdot Var(S)\)</span>。 我们希望 <span class="math inline">\(k^2 \cdot
+d_k = 1\)</span>，故令系数 <span class="math inline">\(k =
+\frac{1}{\sqrt{d_k}}\)</span>。</p>
+<ul>
+<li><strong>关键点</strong>：Scale
+是<strong>线性保序</strong>的，它只改变数值的大小（降温），不改变 Token
+之间的相对关系，确保了关联度的准确性。</li>
+</ul>
+<h4 id="激活状态的恢复">激活状态的恢复</h4>
+<p>通过 Scale，我们将数据拉回了 Softmax
+的<strong>敏感区（高导数区）</strong>。此时模型处于“谦逊”状态，概率分布更加平滑，确保了训练期间梯度的顺畅流转。</p>
+<h4 id="持续的安检layernorm">持续的安检：LayerNorm</h4>
+<p>为了确保上述推导的前提（输入方差为 1）在每一层都成立，Transformer
+引入了 <strong>LayerNorm</strong>：</p>
+<ul>
+<li><strong>职责</strong>：在每一层进行 QKV
+计算前，对向量进行实时“清洗”。</li>
+<li><strong>操作</strong>：计算当前向量的均值 <span
+class="math inline">\(\mu\)</span> 和方差 <span
+class="math inline">\(\sigma^2\)</span>，通过 <span
+class="math inline">\(X_{new} = \frac{X - \mu}{\sigma}\)</span>
+强制归一化。</li>
+<li><strong>结果</strong>：消除了深层网络中的数值偏移，确保每一层都运行在最稳定的数学区间。</li>
+</ul>
+<h3 id="总结训练的闭环">总结：训练的闭环</h3>
+<ol type="1">
+<li><strong>LayerNorm</strong> 保证输入分布稳定（均值 0，方差 1）。</li>
+<li><strong><span class="math inline">\(Q \times K^T /
+\sqrt{d_k}\)</span></strong> 保证注意力分数分布稳定（方差 1）。</li>
+<li><strong>Softmax</strong> 在敏感区工作，输出合理的概率。</li>
+<li><strong>Loss 与反向传播</strong> 利用健康的梯度更新 <span
+class="math inline">\(W_{QKV}\)</span>，最终使模型学会在特定上下文中将正确答案的概率推向
+1。</li>
+</ol>
+<h1 id="权重矩阵的本质">权重矩阵的本质</h1>
+<p>在我们的 <code>transformer</code> 中，有 N 层，每一层关注的重点都不同
+--
+例如有的关注输入的结构，有的关注输入的语义，有的关注输入是褒义还是贬义。</p>
+<p>那么，在每一层中，我们不可能同时去关注我们的输入向量的全部维度，那么就引入了我们的三个重要的权重矩阵：</p>
+<ul>
+<li><span class="math inline">\(W_q\)</span></li>
+<li><span class="math inline">\(W_k\)</span></li>
+<li><span class="math inline">\(W_v\)</span></li>
+</ul>
+<p><strong>这三个权重矩阵，告诉我们输入 <code>token</code>
+在当前层最被关注的指标有哪些。</strong></p>
+<p>假设，我们输入的向量的维度是
+<code>512</code>，那么我们的权重矩阵就必须为
+<code>512 * 512</code>，否则在进行乘法之后会出现维度坍缩。在线性代数中，维度坍缩会使得我们的信息丢失并且无法恢复。而如果我们只是将某个维度的权重调整到非常小，那么只要我们知道这个权重，那么我们可以很轻松的恢复维度的数据。</p>
+<p>这里，权重矩阵是 <code>512 * 512</code>
+的还体现了一个事实：<strong>维度之间是相对独立的，而不是绝对独立的。</strong></p>
+<p>我们知道，矩阵的乘法定义是 <span class="math inline">\(R_{ij} =
+\sum_{k=0}^{n}{A_{ik} \times
+B_{kj}}\)</span>，那么此时我们的矩阵乘法的列就结合了输入向量的行，并综合得出来一个值表示维度：<strong>此时，向量的不同维度融合得出来了一个新的维度。</strong></p>
+<h1 id="为什么需要多头">为什么需要多头</h1>
+<blockquote>
+<p>我们在计算的过程中，实际已经通过 <span class="math inline">\(W_q,
+W_k, W_v\)</span> 调整了权重，那为什么我们还需要多头呢？</p>
+</blockquote>
+<p>本质原因在于：<strong>单一的权重矩阵无法在同一个坐标空间内，同时捕捉多个相互冲突的语义关系。</strong></p>
+<h1 id="语义的多维并行-semantic-parallelism">语义的“多维并行” (Semantic
+Parallelism)</h1>
+<p>在一个复杂的句子中，同一个词与其他词之间往往存在<strong>多种同时发生</strong>的关系。</p>
+<p><strong>例子：</strong> “苹果发布了新款手机，味道却不像真苹果。”</p>
+<ul>
+<li><strong>关系 A（逻辑/主谓）</strong>：苹果 -&gt;
+发布（关注它是“公司”属性）。</li>
+<li><strong>关系 B（修饰/属性）</strong>：苹果 -&gt;
+新款（关注它的“产品”属性）。</li>
+<li><strong>关系 C（对比/实体）</strong>：苹果 -&gt;
+真苹果（关注它的“水果”属性）。</li>
+</ul>
+<p>如果只有一个头，这个头必须在 512
+维里找出一个“公约数”来同时表达这三种意图。这会导致特征被<strong>稀释</strong>。如果我们不使用多头，那么我们在不断训练的过程中，我们会逐渐的只关注这三个语义中最核心的哪个而忽略其他的语义。</p>
+<h1 id="抑制注意力平均化-ensemble-effect">抑制“注意力平均化” (Ensemble
+Effect)</h1>
+<p>在数学上，Softmax
+有一个特性：它倾向于给最显著的关联分配极高的权重。</p>
+<ul>
+<li>如果只有单头，模型一旦发现“发布”和“苹果”关联极强，它的能量就会几乎全部被这个关联吸走。</li>
+<li>其他微弱但重要的信号（比如“新款”）就会被掩盖。</li>
+</ul>
+<p><strong>多头相当于“强制分工”</strong>：每个头被强制限制在不同的子空间里寻找关联。这就像是派了
+8
+个不同的侦查员，每个人只负责找一种线索，从而防止了单一视角导致的“信息灯下黑”。</p>
+<h1 id="提高秩的表达能力-rank-of-attention-matrix">提高“秩”的表达能力
+(Rank of Attention Matrix)</h1>
+<p>从我们关注的 <strong>AI Infra 和线性代数</strong>
+视角来看，多头有一个极大的工程优势：</p>
+<ul>
+<li><strong>单头 (Single-Head)</strong>：我们得到一个 <span
+class="math inline">\(L \times L\)</span>
+的注意力矩阵。这个矩阵的秩（Rank）通常受到 <span
+class="math inline">\(d_{head}\)</span> 的限制。</li>
+<li><strong>多头 (Multi-Head)</strong>：我们将 512 维拆成 8 个 64
+维。虽然每个小矩阵的秩更低，但通过最后的 <code>Concat</code>（拼接）和
+<strong><span class="math inline">\(W_o\)</span> (输出矩阵)</strong>
+的再次融合，最终合成的特征向量比单头投影出来的向量具有更丰富的线性组合可能性。</li>
+</ul>
+<h1 id="如何消除多头注意力的噪声">如何消除多头注意力的噪声</h1>
+<blockquote>
+<p><strong>并不是所有语义空间都有矿可挖。</strong></p>
+</blockquote>
+<p>如果某个 Head
+对应的子空间里确实没啥有意义的关系（比如全是随机噪声），Softmax
+的“强迫症”属性确实会强行在这个空间里“矬子里拔将军”，给某些 Token
+分配很高的概率。</p>
+<p>在 AI Infra 和模型架构中，主要通过以下三种机制来处理这种“无效
+Head”产生的干扰。</p>
+<h3 id="w_o-的静音功能-the-gatekeeper"><span
+class="math inline">\(W_o\)</span> 的“静音”功能 (The Gatekeeper)</h3>
+<p>这是最直接的手段。在多头注意力计算完之后，会有一个全局的输出投影矩阵
+<span class="math inline">\(W_o\)</span>。</p>
+<ul>
+<li><strong>逻辑实现</strong>：<span class="math inline">\(W_o\)</span>
+是一个 <span class="math inline">\(512 \times 512\)</span>
+的矩阵，它会接收来自 8 个头拼接后的信息。</li>
+<li><strong>处理方式</strong>：如果第 4 个头（Head
+4）一直在输出毫无意义的干扰信息，<span
+class="math inline">\(W_o\)</span> 中对应 Head 4
+那部分的列权重会在训练过程中被自动调小。</li>
+<li><strong>本质</strong>：<span class="math inline">\(W_o\)</span>
+扮演了“裁判”的角色，它学会了<strong>过滤掉那些信噪比太低的头的输出</strong>。</li>
+</ul>
+<h3 id="残差连接的保底-residual-connection">残差连接的“保底” (Residual
+Connection)</h3>
+<p>Transformer 每一层都有 <span class="math inline">\(x +
+\text{Attention}(x)\)</span> 的结构。</p>
+<ul>
+<li>如果某一层的所有 Head 都“发疯”了，或者某个 Head 在胡说八道。</li>
+<li>只要 Attention 部分输出的数值量级被缩放得较小，原始信息 <span
+class="math inline">\(x\)</span>
+依然可以顺着残差边“保命”流向下一层。</li>
+<li>这给了模型一种容错率：即便这 8
+个头里有几个是划水的，也不会把整个句子的语义带偏。</li>
+</ul>
+<h3
+id="冗余其实是一种稳健性-redundancy-as-robustness">“冗余”其实是一种稳健性
+(Redundancy as Robustness)</h3>
+<p>从 AI Infra
+的实验观察来看，大模型确实存在<strong>“头冗余”</strong>现象。</p>
+<ul>
+<li><strong>剪枝研究</strong>：很多研究发现，即使我们在推理时随机砍掉
+10%-20% 的头，模型的性能几乎不会下降。</li>
+<li><strong>意义</strong>：这些“没含义”的头在训练初期可能确实在乱跑，但在训练后期，它们往往会演化成两种状态：
+<ol type="1">
+<li><strong>恒等映射</strong>：只是机械地搬运数据，不添加新语义。</li>
+<li><strong>局部关注</strong>：只关注自己本身（Self-pos），不产生跨
+Token 的干扰。</li>
+</ol></li>
+</ul>
+<h1 id="transformer的全训练流程">transformer的全训练流程</h1>
+<p>在transformer中，我们的数据变换流程如下（假设每个batch是4，输入的token是8，维度是512并分为16个不同的head，那么每个head中包含了32个维度）：</p>
+<ol type="1">
+<li>在最开始输入，此时我们的输入是 [4, 8, 512]，表明了 batch = 4, tokens
+= 8, dim = 512；</li>
+<li>将位置信息融入到我们的全部 tokens，此时我们的形状保持原样：[4, 8,
+512]；</li>
+<li>输入根据每一层的 <span class="math inline">\(W_q, W_k, W_v\)</span>
+结合得到包含每一层的关键权重信息的向量，这三个权重矩阵都是 512 *
+512，所以 [1 * 512] * [512 * 512] 得到的仍然是 [1 * 512]
+的矩阵，我们得到的结果是：
+<ul>
+<li><span class="math inline">\(Q_{position}\)</span></li>
+<li><span class="math inline">\(K_{position}\)</span></li>
+<li><span class="math inline">\(V_{position}\)</span></li>
+</ul></li>
+<li>需要注意的是，在 <code>&lt;3&gt;</code> 这里，我们得到的 <span
+class="math inline">\(Q, K, V\)</span>
+已经融合其他的维度的信息（在矩阵乘法中实现的）。此时我们进入
+<code>transformer</code>
+的第一个关键机制：分头。如我们前面所说的，分头主要是因为在同一个input中，同一个token再与其他的不同token结合计算
+<span class="math inline">\(Q \times K^T\)</span> 时侧重点不一样，然而
+softmax
+算法会使得部分语义会被忽略，所以我们需要分头，在不同的头里训练出这个头里最值得注意的维度，同时把所有的维度结合起来才是真正的数据。</li>
+<li>为此，我们的输入的形状被改变：[4, 16, 8, 32]；</li>
+<li>随后，我们开始真正的计算我们的注意力分数，第一步我们计算的是 <span
+class="math inline">\(Q \times K^T\)</span>。此时 <span
+class="math inline">\(K^T\)</span> 是一个 [512 * 1] 的矩阵。此时，<span
+class="math inline">\(Q\)</span> 和 <span
+class="math inline">\(K\)</span>
+被从一个包含了多个维度的向量被压缩为一个 scarlar，这个 scarlar
+按照线性代数的定义，就是 <span class="math inline">\(Q\)</span> 和 <span
+class="math inline">\(K\)</span> 的匹配程度。此时，我们的 [4, 16, 8, 32]
+的矩阵被转置成了 [4, 16, 8,
+8]。可以看到，如果没有多头的机制，我们的矩阵将被转置为 [4, 8, 8]
+的矩阵，此时我们在训练中便只能训练得到一个语义，而通过多头的机制我们可以得到16个语义：
+<ul>
+<li><span class="math inline">\(Q\)</span> 在一个头里的形状是 [8, 32]（8
+个 Token，每个 32 维）。</li>
+<li><span class="math inline">\(K\)</span> 在一个头里的形状也是 [8,
+32]。</li>
+<li>因此，<span class="math inline">\(K^T\)</span> 的形状是 [32,
+8]。</li>
+</ul></li>
+<li>在计算完成之后，我们得到的这个向量 <span class="math inline">\(Q
+\times K^T\)</span>：
+<ul>
+<li>它已经包含了token在每个维度上的信息 -- 在 <code>&lt;3&gt;</code>
+和权重矩阵相乘时得到；</li>
+<li>还包含了输入的其他tokens的信息 -- 在 <code>&lt;6&gt;</code>
+和其他的向量的转置矩阵相乘时得到；</li>
+<li>也就是说，我们的向量现在已经包含了需要理解这个输入的全部上下文信息；</li>
+</ul></li>
+<li>我们需要开始用得到的上下文信息来计算概率了，但是此时我们面临的问题是，现在得到的数据太过于离散，会导致
+softmax 过早的进入饱和状态从而无法通过梯度查找推进算法，所以我们通过除以
+<span class="math inline">\(\sqrt{d_x}\)</span>
+保证我们的平方差和输入的矩阵的平方差一样（这里其实是1，但是至于为什么是1，我们可以看
+Layer Norm 层）；</li>
+<li>在降低了数据的离散性后我们通过 softmax
+求出了一个概率，此时，我们已经知道了这个句子的结构：这个结构包含了tokens的结构以及每个token自身的维度结构。而这里的结构可以认为是假设我有
+a, b 两个 token：
+<ul>
+<li>a 知道了它需要分多少注意力到 b；</li>
+<li>a 知道了它需要分多少注意力到它自身的维度；</li>
+<li>b 对 a 同理；</li>
+</ul></li>
+<li>现在的问题是，token
+只知道它和谁结合得更紧密，但是它不知道实际的语义：因为这个实际的语义包含在
+<span class="math inline">\(V\)</span> 中：我们将 [4, 16, 8, 8]
+的每个batch的每个head，和我们的 [16, 8, 32] V 矩阵结合，就得到了
+attention 的某一层的最终输出： [4, 16, 8, 32]</li>
+<li>这个输出，又会作为下一层的输入继续进行。但是，我们每一层的输入并不希望是一个已经进行多头拆分过的输入--最简单的考虑是，我这一层可能不需要拆分那么多的头，也可能我需要把头拆得更细。为此神经网络的下一层（或
+FFN 层）通常期望看到的还是那个原始的、统一的维度（512）：
+<ul>
+<li>合并 (Concat)：我们将 16 个头重新拼接：[4, 16, 8, 32] <span
+class="math inline">\(\rightarrow\)</span> [4, 8, 512]。</li>
+<li>最后的一步投影 (<span
+class="math inline">\(W_o\)</span>)：此时会乘以一个 <span
+class="math inline">\(W_o\)</span> (Output Weight) 矩阵（512 *
+512）。虽然 16 个头分别学到了 16 种语义，但它们现在还是分散的。<span
+class="math inline">\(W_o\)</span> 的作用就是把这 16
+个“专家”的意见进行一次加权汇总，重新融合成一个完整的、具备上下文深度的
+512 维向量。</li>
+</ul></li>
+</ol>
+<p>此外，在学习的过程中还有很多的细节需要注意：</p>
+<ol type="1">
+<li>不是每个头都有意义，所以我们可能需要在 <span
+class="math inline">\(W_o\)</span> 输出时去屏蔽一些噪声；另外，和 <span
+class="math inline">\(W_q\)</span> 一样，<span
+class="math inline">\(W_o\)</span> 是每一层固定的，我们还可以通过
+ReLU-Gated 这种带门的激活函数来限制头的噪声；</li>
+</ol>
+<h1
+id="transformer中的矩阵的物理意义">transformer中的矩阵的物理意义</h1>
+<blockquote>
+<ul>
+<li>矩阵的 <code>a[i][j]</code>
+表示了第<code>i</code>个token对第<code>j</code>个token的关注度；</li>
+<li>矩阵的 <code>a[i]</code>
+行表示了第<code>i</code>个token对于整个上下文的所有token的关注度；这也是我们在训练阶段和推理阶段都会通过因果掩码屏蔽未来的token。</li>
+</ul>
+</blockquote>
+<p>在transformer的Q乘以K的阶段，我们得到了一个token数量的平方的矩阵，每一行是
+<span class="math inline">\(Q_i\)</span> 和所有其他token的 <span
+class="math inline">\(K\)</span> 的结合，每一列是 <span
+class="math inline">\(Ki\)</span> 和其他 <span
+class="math inline">\(Q\)</span> 的结合。</p>
+<p>那么，每一行就可以看做是全部的token按照顺序排列，当我们去看矩阵的第i行：</p>
+<p><span class="math display">\[[Q_i K_0, Q_i K_1, \dots, Q_i
+K_n]\]</span></p>
+<p>我们可以知道：</p>
+<ul>
+<li>物理意义：这是第 <span class="math inline">\(i\)</span> 个 Token
+的视角，这一行的向量的每一个值，都表示了 <code>我</code> 应该对
+<code>另一个token</code> 的关注值；</li>
+<li>后续动作：我们在行方向做 Softmax。这确保了第 <span
+class="math inline">\(i\)</span> 个词对全句的注意力总和为 100%。</li>
+<li>结果：当我们用这一行去乘以 <span class="math inline">\(V\)</span>
+的列时，本质上是在做加权平均。第 <span class="math inline">\(i\)</span>
+个词最后吸收到的新特征，就是由这一行概率决定的。</li>
+</ul>
+<p>当我们观察矩阵的第 <span class="math inline">\(j\)</span> 列：</p>
+<p><span class="math display">\[[Q_0 K_j, Q_1 K_j, \dots, Q_n
+K_j]\]</span></p>
+<ul>
+<li>物理意义：这代表了第 <span class="math inline">\(j\)</span> 个 Token
+对全句所有词的吸引力总和。它反映了：“全句中有多少词觉得我（第 <span
+class="math inline">\(j\)</span> 个词）很重要？”</li>
+<li>但是“列方向没有实际意义”，在单向计算（Forward
+Pass）中，程序并不需要知道一个词“被关注”的总和来计算当前的输出。</li>
+</ul>
+<p>那么，现在的问题是，每一行他应该只能看到到自己的token，未来的token必须屏蔽（矩阵的
+<code>a[i][j]</code>
+表示了第i个token对于对j个token的关注度，但是我不能去看未来的token），否则在softmax阶段和乘以V的阶段他都会影响我们最终的注意力的计算结果。所以我们需要屏蔽右上角的数据。</p>
+<h1 id="为什么要屏蔽未来的token">为什么要屏蔽未来的token？</h1>
+<blockquote>
+<p>网上很多人都在说，不屏蔽未来的token相当于偷看答案，但是实际上，偷看答案其实只是一个比喻，真正的问题在于：对于第i个token，<code>a[i][j] (j &gt; i)</code>
+中包含了未来token <code>a[j]</code> 的 <span
+class="math inline">\(K_j\)</span> 信息，如果不屏蔽未来的 token
+将发生什么呢？</p>
+</blockquote>
+<h2 id="损失函数loss的瞬间归零">损失函数（Loss）的瞬间归零</h2>
+<p>大模型训练的本质是 <strong>Next Token
+Prediction（预测下一个词）</strong>。</p>
+<ul>
+<li><strong>正常情况</strong>：给定 <code>“我”</code>，模型要费劲地从
+512 维特征里推测下一个词是 <code>“爱”</code>。这很难，所以会有很大的
+<strong>Loss</strong>，从而产生强大的<strong>梯度</strong>来更新权重。</li>
+<li><strong>不屏蔽右上角时</strong>：在计算第 1
+个词（我）的输出时，注意力机制直接定位到了第 2 个词（爱）的 <span
+class="math inline">\(K\)</span> 和 <span
+class="math inline">\(V\)</span>。</li>
+<li><strong>结果</strong>：此时我们的 <strong>Loss
+会迅速降到极低</strong>，整个学习过程直接停止；</li>
+</ul>
+<h2
+id="反向传播backpropagation中的虚假关联">反向传播（Backpropagation）中的虚假关联</h2>
+<p>当模型在计算 <span class="math inline">\(Q_i \times K_j\)</span>
+时，如果没有掩码，梯度流会建立起一条物理通道：</p>
+<ol type="1">
+<li><strong>梯度回传</strong>：在更新 <span
+class="math inline">\(W_q\)</span> 和 <span
+class="math inline">\(W_k\)</span>
+时，我们会计算根据Loss降低的速率来决定反向传播梯度，前者收到信息后会更新自己的梯度；</li>
+<li><strong>推理崩塌</strong>：当我们在训练完模型之后部署模型，此时我们进入推理。因为此时的
+<span class="math inline">\(W_q\)</span> 和 <span
+class="math inline">\(W_k\)</span>
+都是在已知下文的情况训练出来的，并不是一个合理的权重，我们会发现模型的预测完全是错误的。</li>
+</ol>
+<h1 id="训练和推理的区别">训练和推理的区别</h1>
+<p>推理阶段和训练阶段我们的矩阵含义是完全不同的：</p>
+<ul>
+<li>在训练阶段，我们是一个 <code>N * N</code> 的矩阵，矩阵的
+<code>a[i]</code> 行表示了第<code>i</code>个token对于
+<code>a[0] ~ a[i]</code> 的所有token的关注度；</li>
+<li>在推理阶段，我们是一个 <code>1 * N</code>
+的矩阵，<strong>我们只需要根据这个矩阵去预测第N+1个token</strong>。这一行向量已经包含了推理全部的信息；</li>
+</ul>
+<p>当我们想要预测第 <span class="math inline">\(N+1\)</span>
+个词时，真正起作用的是<strong>当前序列中最末尾的那个
+Token</strong>。</p>
+<ul>
+<li><strong>输入</strong>：我们把第 <span
+class="math inline">\(N\)</span> 个 Token 的 Embedding 输入模型。</li>
+<li><strong>Query (<span
+class="math inline">\(Q\)</span>)</strong>：我们只需要第 <span
+class="math inline">\(N\)</span> 个 Token 产生的 <span
+class="math inline">\(Q_N\)</span>；</li>
+<li><strong>Key (<span class="math inline">\(K\)</span>) &amp; Value
+(<span class="math inline">\(V\)</span>)</strong>：我们需要第 <span
+class="math inline">\(1\)</span> 到第 <span
+class="math inline">\(N\)</span> 个 Token 产生的所有 <span
+class="math inline">\(K\)</span> 和 <span
+class="math inline">\(V\)</span>。</li>
+<li><strong>计算</strong>：
+<ol type="1">
+<li>用 <span class="math inline">\(Q_N\)</span> 去点乘所有的 <span
+class="math inline">\([K_0, K_1, \dots, K_N]\)</span>。</li>
+<li>得到一个 <span class="math inline">\(1 \times (N)\)</span>
+的向量（这就是注意力矩阵的<strong>最后一行</strong>）。</li>
+<li>经过 Softmax 后，用这行概率去加权求和 <span
+class="math inline">\([V_0, V_1, \dots, V_N]\)</span>。</li>
+<li>得到的结果经过 FFN 和线性层，最终输出第 <span
+class="math inline">\(N+1\)</span> 个词的概率分布。</li>
+</ol></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/02/09/CUDA%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8%EF%BC%9A%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%AE%97%E5%AD%90%E7%9A%84%E5%AE%9E%E7%8E%B0/" rel="prev" title="CUDA编程入门：一些常用算子的实现">
+                  <i class="fa fa-angle-left"></i> CUDA编程入门：一些常用算子的实现
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

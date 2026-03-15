@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">46</span>
+          <span class="site-state-item-count">47</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -168,6 +168,95 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/" class="post-title-link" itemprop="url">uCore进程间通信</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-12-13 09:07:14" itemprop="dateCreated datePublished" datetime="2025-12-13T09:07:14+08:00">2025-12-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="进程间通信">进程间通信</h1>
+<h2 id="基于文件的管道">基于文件的管道</h2>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pipe</span> &#123;</span><br><span class="line">    readable: <span class="type">bool</span>,</span><br><span class="line">    writable: <span class="type">bool</span>,</span><br><span class="line">    buffer: Arc&lt;Mutex&lt;PipeRingBuffer&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过 <code>buffer</code>
+字段还可以找到该管道端所在的管道自身。后续我们将为它实现
+<code>File</code> Trait ，之后它便可以通过文件描述符来访问。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// os/src/fs/pipe.rs</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> RING_BUFFER_SIZE: <span class="type">usize</span> = <span class="number">32</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Copy, Clone, PartialEq)]</span></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">RingBufferStatus</span> &#123;</span><br><span class="line">    FULL,</span><br><span class="line">    EMPTY,</span><br><span class="line">    NORMAL,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">PipeRingBuffer</span> &#123;</span><br><span class="line">    arr: [<span class="type">u8</span>; RING_BUFFER_SIZE],</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">    status: RingBufferStatus,</span><br><span class="line">    write_end: <span class="type">Option</span>&lt;Weak&lt;Pipe&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/12/13/uCore%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -1349,135 +1438,6 @@ classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/08/07/%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E5%8C%85%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/" class="post-title-link" itemprop="url">dify插件简述</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-07-23 12:43:02" itemprop="dateCreated datePublished" datetime="2025-07-23T12:43:02+08:00">2025-07-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="插件逻辑">插件逻辑</h1>
-<p>在 <code>dify</code>
-的插件管理中，整个体系逻辑比较混乱，这里使用该文本记录一下
-<code>dify</code> 的插件管理逻辑。</p>
-<h2 id="插件概述">插件概述</h2>
-<p>一个插件以及插件对应的工具的组成部分如下图所示：</p>
-<pre><code class="highlight mermaid">---
-title: 插件
----
-flowchart LR
-
-plugin_id(&quot;plugin_id&quot;):::green
-organization1(&quot;organization&quot;):::animate
-plugin_name1(&quot;plugin_name&quot;):::animate
-slash1(&quot;/&quot;):::error
-
-plugin_id --&gt; organization1 --&gt; slash1 --&gt; plugin_name1
-
-
-plugin_unique_identifier(&quot;plugin_unique_identifier&quot;):::green
-
-organization2(&quot;organization&quot;):::animate
-slash2(&quot;/&quot;):::error
-symbol2(&quot;:&quot;):::error
-at2(&quot;@&quot;):::error
-plugin_name2(&quot;plugin_name&quot;):::animate
-version1(&quot;version&quot;):::animate
-checksum1(&quot;checksum&quot;):::animate
-
-plugin_unique_identifier --&gt; organization2 --&gt; slash2 --&gt; plugin_name2 --&gt; symbol2 --&gt; version1 --&gt; at2 --&gt; checksum1
-
-provider(&quot;full_provider&quot;):::green
-
-organization3(&quot;organization&quot;):::animate
-slash3_1(&quot;/&quot;):::error
-plugin_name3(&quot;plugin_name&quot;):::animate
-slash3_2(&quot;/&quot;):::error
-provider_name3(&quot;provider&quot;):::animate
-
-provider --&gt; organization3 --&gt; slash3_1 --&gt; plugin_name3 --&gt; slash3_2 --&gt; provider_name3
-
-classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
-classDef green fill: #696,color: #fff,font-weight: bold;
-classDef purple fill:#969,stroke:#333, font-weight: bold;
-classDef error fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
-classDef coral fill:#f9f,stroke:#333,stroke-width:4px;
-classDef animate stroke-dasharray: 9,5,stroke-dashoffset: 900,animation: dash 25s linear infinite;</code></pre>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/07/23/dify%E6%8F%92%E4%BB%B6%E7%AE%80%E8%BF%B0/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
