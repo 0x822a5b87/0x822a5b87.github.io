@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="cluster&#x2F;context&#x2F;namespace graph TD     subgraph &quot;宿主机 &#x2F; 本地环境 (kubectl)&quot;         C[Context A: 生产环境]         D[Context B: 测试环境]     end      subgraph &quot;集群 1 (Cluster A)&quot;         N1[Nam">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cheatsheet for doris">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/04/08/cheatsheet-for-doris/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="cluster&#x2F;context&#x2F;namespace graph TD     subgraph &quot;宿主机 &#x2F; 本地环境 (kubectl)&quot;         C[Context A: 生产环境]         D[Context B: 测试环境]     end      subgraph &quot;集群 1 (Cluster A)&quot;         N1[Nam">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://0x822a5b87.github.io/images/doris/short_key_index.png">
+<meta property="article:published_time" content="2026-04-08T06:19:17.000Z">
+<meta property="article:modified_time" content="2026-04-13T09:44:39.280Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="cpp">
+<meta property="article:tag" content="go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://0x822a5b87.github.io/images/doris/short_key_index.png">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/04/08/cheatsheet-for-doris/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/04/08/cheatsheet-for-doris/","path":"2026/04/08/cheatsheet-for-doris/","title":"cheatsheet for doris"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>cheatsheet for doris | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#clustercontextnamespace"><span class="nav-number">1.</span> <span class="nav-text">cluster&#x2F;context&#x2F;namespace</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E4%BA%A4%E6%8D%A2%E5%88%86%E5%8C%BA"><span class="nav-number">2.</span> <span class="nav-text">数据库和交换分区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%81%9A%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">常见的做法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87kind%E6%A8%A1%E6%8B%9Fkubernetes%E9%9B%86%E7%BE%A4"><span class="nav-number">3.</span> <span class="nav-text">通过kind模拟kubernetes集群</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes-example.yaml"><span class="nav-number">3.1.</span> <span class="nav-text">kubernetes-example.yaml</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes%E5%92%8Csr"><span class="nav-number">3.2.</span> <span class="nav-text">kubernetes和sr</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#operator"><span class="nav-number">3.2.1.</span> <span class="nav-text">Operator</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sr-cluster"><span class="nav-number">3.2.2.</span> <span class="nav-text">Sr Cluster</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#crictl"><span class="nav-number">3.2.3.</span> <span class="nav-text">crictl</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#svc"><span class="nav-number">3.2.4.</span> <span class="nav-text">svc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#export"><span class="nav-number">3.2.5.</span> <span class="nav-text">export</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes%E5%92%8Cdoris"><span class="nav-number">3.3.</span> <span class="nav-text">kubernetes和doris</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris-cluster"><span class="nav-number">3.4.</span> <span class="nav-text">Doris Cluster</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFcrd"><span class="nav-number">4.</span> <span class="nav-text">什么是CRD</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#checkpoint%E7%9A%84%E6%84%8F%E4%B9%89%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">5.</span> <span class="nav-text">Checkpoint的意义是什么</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#fe%E7%9A%84%E5%8F%AF%E9%9D%A0%E6%80%A7%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="nav-number">6.</span> <span class="nav-text">FE的可靠性的演进</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B"><span class="nav-number">7.</span> <span class="nav-text">数据模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-aggregate-key"><span class="nav-number">7.1.</span> <span class="nav-text">使用 aggregate key</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%98%8E%E7%BB%86%E8%A1%A8"><span class="nav-number">7.1.1.</span> <span class="nav-text">创建明细表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="nav-number">7.1.2.</span> <span class="nav-text">写入数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%89%A9%E5%8C%96%E8%A7%86%E5%9B%BE"><span class="nav-number">7.2.</span> <span class="nav-text">使用物化视图</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%98%8E%E7%BB%86%E8%A1%A8-1"><span class="nav-number">7.2.1.</span> <span class="nav-text">创建明细表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%BC%82%E6%AD%A5%E7%89%A9%E5%8C%96%E8%A7%86%E5%9B%BE"><span class="nav-number">7.2.2.</span> <span class="nav-text">创建异步物化视图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%95%B0%E6%8D%AE-1"><span class="nav-number">7.2.3.</span> <span class="nav-text">写入数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94"><span class="nav-number">7.3.</span> <span class="nav-text">对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#flinksr%E7%9A%84%E7%B2%BE%E5%87%86%E4%B8%80%E6%AC%A1"><span class="nav-number">8.</span> <span class="nav-text">flink&#x2F;sr的精准一次</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">9.</span> <span class="nav-text">倒排索引</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">9.1.</span> <span class="nav-text">倒排索引的优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%81%9C%E7%94%A8%E8%AF%8D%E8%BF%87%E6%BB%A4-stopwords-filtering"><span class="nav-number">9.1.1.</span> <span class="nav-text">停用词过滤 (Stopwords
+Filtering)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#posting-list-%E7%9A%84%E9%AB%98%E6%95%88%E5%8E%8B%E7%BC%A9-bitmap-pfor"><span class="nav-number">9.1.2.</span> <span class="nav-text">Posting List 的高效压缩
+(Bitmap &amp; PFOR)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E8%AF%8D%E5%99%A8%E7%9A%84%E6%A0%87%E5%87%86%E5%8C%96-normalization"><span class="nav-number">9.1.3.</span> <span class="nav-text">分词器的“标准化”
+(Normalization)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E4%B8%8E%E6%80%A7%E8%83%BD%E7%9A%84%E7%BB%88%E6%9E%81%E6%9D%83%E8%A1%A1"><span class="nav-number">9.1.4.</span> <span class="nav-text">空间与性能的终极权衡</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%8D%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-number">9.2.</span> <span class="nav-text">倒排索引的不可靠性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%8F%90%E9%AB%98%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E7%9A%84%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-number">9.3.</span> <span class="nav-text">如何提高倒排索引的可靠性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%AE%9E%E4%BE%8B"><span class="nav-number">9.4.</span> <span class="nav-text">倒排索引的一个实例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#agg_state"><span class="nav-number">10.</span> <span class="nav-text">agg_state</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%BA%E8%A1%A8"><span class="nav-number">10.1.</span> <span class="nav-text">建表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%95%B0%E6%8D%AE-2"><span class="nav-number">10.2.</span> <span class="nav-text">写入数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%95%B0%E6%8D%AE"><span class="nav-number">10.3.</span> <span class="nav-text">查询数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E5%92%8Csr%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">10.4.</span> <span class="nav-text">doris和sr的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sum"><span class="nav-number">10.4.1.</span> <span class="nav-text">SUM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#maxmin"><span class="nav-number">10.4.2.</span> <span class="nav-text">MAX&#x2F;MIN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#replace"><span class="nav-number">10.4.3.</span> <span class="nav-text">REPLACE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bitmap_union"><span class="nav-number">10.4.4.</span> <span class="nav-text">BITMAP_UNION</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hll_union"><span class="nav-number">10.4.5.</span> <span class="nav-text">HLL_UNION</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mormow"><span class="nav-number">11.</span> <span class="nav-text">MoR&#x2F;MoW</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#mow"><span class="nav-number">11.1.</span> <span class="nav-text">MoW</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mor"><span class="nav-number">11.2.</span> <span class="nav-text">MoR</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%88%86%E5%B8%83"><span class="nav-number">12.</span> <span class="nav-text">数据分布</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#range%E5%88%86%E5%8C%BA%E5%92%8Clist%E5%88%86%E5%8C%BA"><span class="nav-number">13.</span> <span class="nav-text">range分区和list分区</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#autobucket"><span class="nav-number">14.</span> <span class="nav-text">AutoBucket</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%A9%E5%8C%96%E8%A7%86%E5%9B%BE%E7%9A%84%E6%99%BA%E8%83%BD%E8%B7%AF%E7%94%B1"><span class="nav-number">15.</span> <span class="nav-text">物化视图的智能路由</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#advertiser_view_record"><span class="nav-number">15.1.</span> <span class="nav-text">advertiser_view_record</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#advertiser_uv"><span class="nav-number">15.2.</span> <span class="nav-text">advertiser_uv</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#insert%E6%95%B0%E6%8D%AE"><span class="nav-number">15.3.</span> <span class="nav-text">insert数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#explain"><span class="nav-number">15.4.</span> <span class="nav-text">explain</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">16.</span> <span class="nav-text">索引的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E7%BC%80%E7%B4%A2%E5%BC%95short-key-index"><span class="nav-number">16.1.</span> <span class="nav-text">前缀索引（Short Key Index）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-zonemap-%E8%BF%87%E6%BB%A4-segment"><span class="nav-number">16.2.</span> <span class="nav-text">通过 ZoneMap 过滤
+Segment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E7%BB%88-segment-%E7%9A%84%E7%B4%A2%E5%BC%95"><span class="nav-number">16.3.</span> <span class="nav-text">最终 segment 的索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bitmap"><span class="nav-number">16.4.</span> <span class="nav-text">Bitmap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bloom-filter"><span class="nav-number">16.5.</span> <span class="nav-text">Bloom Filter</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#insert-into-table-...-select"><span class="nav-number">17.</span> <span class="nav-text">INSERT INTO Table ... SELECT</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%B1%82%E9%9D%A2%E7%9A%84%E5%86%85%E9%83%A8%E6%B5%81%E8%BD%AC"><span class="nav-number">17.1.</span> <span class="nav-text">物理层面的“内部流转”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E6%9C%BA%E5%88%B6%E4%BE%9D%E7%84%B6%E6%98%AF-label-%E9%80%BB%E8%BE%91"><span class="nav-number">17.2.</span> <span class="nav-text">事务机制：依然是 Label 逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%B9%B6%E8%A1%8C%E4%B8%8E%E8%83%8C%E5%8E%8B"><span class="nav-number">17.3.</span> <span class="nav-text">性能优化：并行与背压</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%AE%83%E6%AF%94%E5%A4%96%E7%BD%AE-stream-load-%E5%BF%AB"><span class="nav-number">17.4.</span> <span class="nav-text">为什么它比外置 Stream Load
+快</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sequence"><span class="nav-number">18.</span> <span class="nav-text">Sequence</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#adbc"><span class="nav-number">19.</span> <span class="nav-text">ADBC</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#fragment"><span class="nav-number">20.</span> <span class="nav-text">Fragment</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#fragment-%E9%87%8C%E9%9D%A2%E5%8C%85%E5%90%AB%E4%BB%80%E4%B9%88"><span class="nav-number">20.1.</span> <span class="nav-text">Fragment 里面包含什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fragment-%E5%A6%82%E4%BD%95%E5%9C%A8-be-%E4%B9%8B%E9%97%B4%E6%B5%81%E5%8A%A8"><span class="nav-number">20.2.</span> <span class="nav-text">Fragment 如何在 BE 之间流动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84fragment%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">20.3.</span> <span class="nav-text">一个简单的Fragment的例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#jobscheduler"><span class="nav-number">21.</span> <span class="nav-text">JobScheduler</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#hashedwheeltimer"><span class="nav-number">21.1.</span> <span class="nav-text">HashedWheelTimer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E4%BC%98%E5%8C%96"><span class="nav-number">21.1.1.</span> <span class="nav-text">锁优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#disruptor"><span class="nav-number">21.2.</span> <span class="nav-text">Disruptor</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E7%89%A9%E5%8C%96%E8%A7%86%E5%9B%BE%E7%9A%84%E8%B0%83%E5%BA%A6"><span class="nav-number">22.</span> <span class="nav-text">异步物化视图的调度</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pipeline%E6%89%A7%E8%A1%8C%E5%BC%95%E6%93%8E"><span class="nav-number">23.</span> <span class="nav-text">pipeline执行引擎</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">24.</span> <span class="nav-text">查询的优化</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/04/08/cheatsheet-for-doris/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="cheatsheet for doris | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cheatsheet for doris
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-04-08 14:19:17" itemprop="dateCreated datePublished" datetime="2026-04-08T14:19:17+08:00">2026-04-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-04-13 17:44:39" itemprop="dateModified" datetime="2026-04-13T17:44:39+08:00">2026-04-13</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="clustercontextnamespace">cluster/context/namespace</h1>
+<pre><code class="highlight mermaid">graph TD
+    subgraph &quot;宿主机 / 本地环境 (kubectl)&quot;
+        C[Context A: 生产环境]
+        D[Context B: 测试环境]
+    end
+
+    subgraph &quot;集群 1 (Cluster A)&quot;
+        N1[Namespace: default]
+        N2[Namespace: doris-prod]
+    end
+
+    subgraph &quot;集群 2 (Cluster B)&quot;
+        N3[Namespace: default]
+        N4[Namespace: doris-test]
+    end
+
+    C --&gt;|关联到| ClusterA(集群 1)
+    D --&gt;|关联到| ClusterB(集群 2)
+    
+    ClusterA -.-&gt; N1
+    ClusterA -.-&gt; N2
+    ClusterB -.-&gt; N3
+    ClusterB -.-&gt; N4
+
+    style ClusterA fill:#f9f,stroke:#333
+    style ClusterB fill:#bbf,stroke:#333
+    style C fill:#dfd
+    style D fill:#dfd</code></pre>
+<ul>
+<li><code>context</code> 和 <code>namespace</code>
+的关系其实比较绕，他们不是单纯的多对一或者一对一的关系：
+<ul>
+<li>一个 Cluster 实体可以被多个不同的 Context 对象所引用</li>
+<li>一个 Cluster 实体不能引用多个 Context</li>
+<li><strong>Cluster
+是“被引用方”</strong>：它像是一个<strong>静态的地理坐标</strong>，它不知道（也不在乎）有多少个
+Context 在指向它。</li>
+<li>一个 Context 实体，包含了它引用的 Cluster 对象和访问该 Cluster
+对象的 User。</li>
+</ul></li>
+</ul>
+<p>此外，在 <code>~/.kube/config</code> 的定义中，<code>namespace</code>
+<strong>确实是被写在 <code>context</code>
+结构体内部的</strong>，但它的地位和
+<code>cluster</code>、<code>user</code> 完全不同。</p>
+<p>在 <code>context</code> 的定义里，它们的关系是这样的：</p>
+<ul>
+<li><strong><code>cluster</code> 和 <code>user</code>
+是“强引用”</strong>：如果一个 Context 不指向 Cluster 或
+User，它就无法工作。</li>
+<li><strong><code>namespace</code> 是“弱偏好”</strong>：如果 Context
+里没写 <code>namespace</code>，Kubernetes 默认会把我们带到
+<code>default</code> 命名空间。</li>
+</ul>
+<p>所以，一次 <code>kubectl</code> 指令通常如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 配置文件 ~/.kube/config</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 指向配置文件的 current-context 的 default ns</span></span><br><span class="line">kubectl get pods</span><br><span class="line"></span><br><span class="line"><span class="comment"># 指向配置文件的 kind-my-cluster 的 default ns</span></span><br><span class="line">kubectl get pods --context kind-my-cluster</span><br><span class="line"></span><br><span class="line"><span class="comment"># 指向配置文件的 kind-my-cluster 的所有 namespace</span></span><br><span class="line">kubectl get pods --all-namespaces --context kind-my-cluster</span><br></pre></td></tr></table></figure>
+<h1 id="数据库和交换分区">数据库和交换分区</h1>
+<blockquote>
+<p>在我们常规的线上数据库里，我们通常都会需要关闭交换分区：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> swapoff -a</span><br></pre></td></tr></table></figure>
+<p>对这个逻辑的思考是：如果我的内存够用，那么关闭swap就不重要 --
+因为我们的内存是充足的。</p>
+<p>所以，为什么我们还是需要这个逻辑呢？难道崩溃的情况，比响应慢的情况更严重吗？</p>
+</blockquote>
+<p>即使我们的物理内存还剩下 <strong>20%</strong>，Linux
+内核的虚拟内存管理机制（VMM）有时也会根据 <code>vm.swappiness</code>
+参数，提前将一些它认为“不常用”的匿名内存页（Anonymous
+Pages）交换到磁盘，腾出物理内存给 <strong>文件系统缓存（File
+Cache）</strong>。</p>
+<ul>
+<li>对于 StarRocks
+这种需要频繁访问内存元数据、哈希表的数据库来说，这些被换出的“不常用”数据可能在下一秒就是一个核心查询的关键索引。</li>
+<li>数据库引擎并不知道数据被换走了，当它去访问时，系统会产生<strong>严重缺页中断（Hard
+Page Fault）</strong>。这种延迟是毫秒级的，对于 MPP
+引擎来说，这会导致整个查询集群的“短板效应”。</li>
+</ul>
+<blockquote>
+<p><strong>关闭 Swap
+不仅仅是性能优化，更是为了“拿回缓存管理的控制权”</strong>：数据库的缓存淘汰策略通常是自己定制的，关闭系统的swap机制可以有效的提高我们的缓存的利用率。因为对于大部分DB来讲，都会通过预先定义的内存大小去定制自己的缓存淘汰策略。</p>
+</blockquote>
+<p>操作系统（Linux Kernel）的缓存淘汰通常基于 <strong>LRU (Least
+Recently Used)
+的变体</strong>，它对内存的管理是“扁平的”、“通用的”。内核不知道哪些数据是：</p>
+<ul>
+<li><strong>热点索引（Hot
+Index）</strong>：即使刚访问过，也必须常驻内存，否则查询会变成 IO
+密集型。</li>
+<li><strong>临时计算块（Temp Join Data）</strong>：只为了当前这一个
+<code>SQL</code> 查询存在，用完即弃。</li>
+<li><strong>数据缓存（Data Cache/Buffer
+Pool）</strong>：这是数据库的核心灵魂。</li>
+</ul>
+<p>当开启 Swap
+时，内核会根据自己的逻辑（比如：这一块内存页很久没被直接修改过）将其强制踢出到磁盘。然而，<strong>内核无法判断这块数据是否是数据库逻辑上的“核心热点”</strong>。结果就是：内核把数据库刚刚精心优化的“缓存”换出去了，导致数据库的淘汰策略完全失效。</p>
+<p>实际上来说，这个位置的冲突就好像手动管理内存和自动管理内存依赖于GC的逻辑是一样的：前者更加的可靠，而后者则引入了STW的风险，对于数据库来说，STW意味着不可控和因为一个故障而雪崩的风险，不如提前crash。</p>
+<h2 id="常见的做法">常见的做法</h2>
+<ul>
+<li>限制 Buffer Pool 大小，给 OS 留内存
+<ul>
+<li>MySQL/InnoDB：<code>innodb_buffer_pool_size</code>
+一般设为物理内存的 50%~75%</li>
+<li>PostgreSQL：<code>shared_buffers</code> 类似，避免占满内存导致 OS
+换页</li>
+</ul></li>
+<li>使用大页 / 锁定内存
+<ul>
+<li><strong>大页（HugePages）</strong>：减少页表开销，也更难被置换</li>
+<li><strong>内存锁定（mlock ()
+/memlock）</strong>：把关键内存页钉在物理内存，禁止换出
+<ul>
+<li>MySQL：<code>innodb_buffer_pool_populate</code>、<code>lock_buffer_pool_in_memory</code></li>
+<li>PostgreSQL：<code>huge_pages</code> +
+<code>shared_memory_type</code></li>
+</ul></li>
+</ul></li>
+</ul>
+<h1 id="通过kind模拟kubernetes集群">通过kind模拟kubernetes集群</h1>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Linux</span></span><br><span class="line">go install sigs.k8s.io/kind@latest</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 1 主 2 从的三节点集群</span></span><br><span class="line">kind create cluster --name my-cluster --config kubernetes-example.yaml</span><br></pre></td></tr></table></figure>
+<h2 id="kubernetes-example.yaml">kubernetes-example.yaml</h2>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Cluster</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kind.x-k8s.io/v1alpha4</span></span><br><span class="line"><span class="attr">nodes:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">control-plane</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br></pre></td></tr></table></figure>
+<h2 id="kubernetes和sr">kubernetes和sr</h2>
+<h3 id="operator">Operator</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 下载并安装 Doris CRD (自定义资源定义)</span></span><br><span class="line">kubectl apply -f https://raw.githubusercontent.com/apache/doris-operator/master/config/crd/bases/doris.apache.com_dorisclusters.yaml</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 安装 Operator 服务本身</span></span><br><span class="line">kubectl apply -f https://raw.githubusercontent.com/apache/doris-operator/master/config/operator/operator.yaml</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 创建 crd</span></span><br><span class="line">kubectl create -f https://raw.githubusercontent.com/apache/doris-operator/master/config/crd/bases/doris.apache.com_dorisclusters.yaml</span><br></pre></td></tr></table></figure>
+<p>确认 <code>operator</code> 服务状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">kubectl get pods -n doris</span><br><span class="line"></span><br><span class="line"><span class="comment"># NAME                              READY   STATUS    RESTARTS      AGE</span></span><br><span class="line"><span class="comment"># doris-operator-697494f789-vrfws   1/1     Running   1 (27s ago)   2m35s</span></span><br><span class="line"></span><br><span class="line">kubectl get crd</span><br><span class="line"><span class="comment"># NAME                               CREATED AT</span></span><br><span class="line"><span class="comment"># dorisclusters.doris.selectdb.com   2026-04-08T07:04:43Z</span></span><br></pre></td></tr></table></figure>
+<h3 id="sr-cluster">Sr Cluster</h3>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">starrocks.com/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">StarRocksCluster</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">starrocks-sample</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">starrocks</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">starRocksFeSpec:</span></span><br><span class="line">    <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">starrocks/fe-ubuntu:3.3.0</span></span><br><span class="line">    <span class="attr">requests:</span></span><br><span class="line">      <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">    <span class="attr">limits:</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">4Gi</span></span><br><span class="line">  <span class="attr">starRocksBeSpec:</span></span><br><span class="line">    <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">starrocks/be-ubuntu:3.3.0</span></span><br><span class="line">    <span class="attr">requests:</span></span><br><span class="line">      <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">4Gi</span></span><br><span class="line">    <span class="attr">limits:</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">8Gi</span></span><br></pre></td></tr></table></figure>
+<p>在启动完成之后，状态如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">kubectl get pod -n starrocks</span><br><span class="line"></span><br><span class="line"><span class="comment"># NAME                                       READY   STATUS    RESTARTS      AGE</span></span><br><span class="line"><span class="comment"># kube-starrocks-operator-66bb86f645-r5c7j   1/1     Running   4 (23m ago)   45m</span></span><br><span class="line"><span class="comment"># starrocks-sample-be-0                      1/1     Running   0             9m7s</span></span><br><span class="line"><span class="comment"># starrocks-sample-fe-0                      1/1     Running   0             9m52s</span></span><br></pre></td></tr></table></figure>
+<p>这里，我们可以在宿主机上查看我们的所有的 <code>docker</code>
+镜像：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker ps</span><br></pre></td></tr></table></figure>
+<p>得到</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">CONTAINER</span> ID   IMAGE                  COMMAND                  CREATED       STATUS          PORTS                       NAMES</span><br><span class="line"><span class="attribute">f2264e28ba64</span>   kindest/node:v1.<span class="number">35</span>.<span class="number">0</span>   <span class="string">&quot;/usr/local/bin/entr…&quot;</span>   <span class="number">3</span> hours ago   Up <span class="number">24</span> minutes   <span class="number">127.0.0.1:35593</span>-&gt;<span class="number">6443</span>/tcp   my-cluster-control-plane</span><br><span class="line"><span class="attribute">1f132542c4b7</span>   kindest/node:v1.<span class="number">35</span>.<span class="number">0</span>   <span class="string">&quot;/usr/local/bin/entr…&quot;</span>   <span class="number">3</span> hours ago   Up <span class="number">24</span> minutes                               my-cluster-worker2</span><br><span class="line"><span class="attribute">2f91f1f13878</span>   kindest/node:v1.<span class="number">35</span>.<span class="number">0</span>   <span class="string">&quot;/usr/local/bin/entr…&quot;</span>   <span class="number">3</span> hours ago   Up <span class="number">24</span> minutes                               my-cluster-worker</span><br></pre></td></tr></table></figure>
+<p><strong>可以看到，实际的那些镜像没有在我们的宿主机，我们可以通过
+<code>crictl</code> 来查询我们的应用。</strong></p>
+<h3 id="crictl">crictl</h3>
+<p>K8s 节点内部不直接使用 <code>docker</code> 命令，而是使用
+<code>crictl</code>（容器运行时接口工具）：</p>
+<ul>
+<li><code>cri</code> 表示 Container Runtime Interface，常见的代表是
+<code>runc</code>，<code>containerd</code></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it my-cluster-worker crictl ps</span><br></pre></td></tr></table></figure>
+<p>输出为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CONTAINER           IMAGE               CREATED             STATE               NAME                ATTEMPT             POD ID              POD                     NAMESPACE</span><br><span class="line marked">b7bd2173cf408       8bbae0d754365       12 minutes ago      Running             fe                  0                   4fc6ac082b800       starrocks-sample-fe-0   starrocks</span><br><span class="line">84454f8fd5dce       4921d7a6dffa9       26 minutes ago      Running             kindnet-cni         6                   fc505df8bd9ca       kindnet-5c8xf           kube-system</span><br><span class="line">e1082c73062ea       32652ff1bbe6b       26 minutes ago      Running             kube-proxy          6                   74d10110766c5       kube-proxy-kmq4h        kube-system</span><br></pre></td></tr></table></figure>
+<h3 id="svc">svc</h3>
+<p>可以看到，<code>operator</code> 默认的为我们创建了对应的服务：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get svc -n starrocks --show-kind=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>我们得到</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">NAME</span>                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE</span><br><span class="line"><span class="attribute">service</span>/starrocks-sample-be-search    ClusterIP   None            &lt;none&gt;        <span class="number">9050</span>/TCP                              <span class="number">45</span>m</span><br><span class="line"><span class="attribute">service</span>/starrocks-sample-be-service   ClusterIP   <span class="number">10.96.21.227</span>    &lt;none&gt;        <span class="number">9060</span>/TCP,<span class="number">8040</span>/TCP,<span class="number">9050</span>/TCP,<span class="number">8060</span>/TCP   <span class="number">45</span>m</span><br><span class="line"><span class="attribute">service</span>/starrocks-sample-fe-search    ClusterIP   None            &lt;none&gt;        <span class="number">9030</span>/TCP                              <span class="number">82</span>m</span><br><span class="line"><span class="attribute">service</span>/starrocks-sample-fe-service   ClusterIP   <span class="number">10.96.113.101</span>   &lt;none&gt;        <span class="number">8030</span>/TCP,<span class="number">9020</span>/TCP,<span class="number">9030</span>/TCP,<span class="number">9010</span>/TCP   <span class="number">82</span>m</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>*-service</code> 把 FE
+的多个端口集成在一起，供外部用户或程序访问。</li>
+<li><code>*-search</code> 是一个 <strong>Headless
+Service</strong>，它不提供负载均衡，而是用来给 BE 提供 FE 的<strong>具体
+Pod 地址</strong>。</li>
+</ul>
+<p>简单来说就是：前者是<strong>对外服务的 Service
+(ClusterIP)</strong>，后者是<strong>内部依赖的 Headless Service
+(ClusterIP: None)，StatefulSet 的实现依赖于它。</strong></p>
+<h3 id="export">export</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 通过临时隧道转发</span></span><br><span class="line">kubectl port-forward -n starrocks svc/starrocks-sample-fe-service 9030:9030</span><br></pre></td></tr></table></figure>
+<h2 id="kubernetes和doris">kubernetes和doris</h2>
+<p>注意，下面这三个命令在 <code>zsh</code> 下会报错，切换到
+<code>bash</code> 执行即可。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">kubectl create -f https://raw.githubusercontent.com/apache/doris-operator/$(curl -s https://api.github.com/repos/apache/doris-operator/releases/latest | grep tag_name | <span class="built_in">cut</span> -d <span class="string">&#x27;&quot;&#x27;</span> -f4)/config/crd/bases/doris.apache.com_dorisclusters.yaml</span><br><span class="line"></span><br><span class="line">kubectl apply -f https://raw.githubusercontent.com/apache/doris-operator/$(curl -s  https://api.github.com/repos/apache/doris-operator/releases/latest | grep tag_name | <span class="built_in">cut</span> -d <span class="string">&#x27;&quot;&#x27;</span> -f4)/config/operator/operator.yaml</span><br><span class="line"></span><br><span class="line">kubectl apply -f https://raw.githubusercontent.com/apache/doris-operator/$(curl -s https://api.github.com/repos/apache/doris-operator/releases/latest | grep tag_name | <span class="built_in">cut</span> -d <span class="string">&#x27;&quot;&#x27;</span> -f4)/doc/examples/doriscluster-sample.yaml </span><br></pre></td></tr></table></figure>
+<h2 id="doris-cluster">Doris Cluster</h2>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">doris.selectdb.com/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">DorisCluster</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">doris-sample</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">doris</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">feSpec:</span></span><br><span class="line">    <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">apache/doris:fe-4.0.5</span></span><br><span class="line">    <span class="attr">requests:</span></span><br><span class="line">      <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">    <span class="attr">limits:</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">4Gi</span></span><br><span class="line">  <span class="attr">beSpec:</span></span><br><span class="line">    <span class="attr">replicas:</span> <span class="number">3</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">apache/doris:be-4.0.5</span></span><br><span class="line">    <span class="attr">requests:</span></span><br><span class="line">      <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">4Gi</span></span><br><span class="line">    <span class="attr">limits:</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">8Gi</span></span><br></pre></td></tr></table></figure>
+<h1 id="什么是crd">什么是CRD</h1>
+<p>如果我们把 Kubernetes（K8s）想象成一个<strong>操作系统</strong>，那么
+<strong>CRD（Custom Resource Definition，自定义资源定义）</strong>
+就是这个系统的<strong>“插件安装包”</strong>。</p>
+<p>在解释它之前，我们先看一个背景：K8s 原生只认识
+<code>Pod</code>、<code>Service</code>、<code>Deployment</code>
+这些内置的概念。但如果我们想在 K8s 里运行一个复杂的数据库（比如
+StarRocks 或
+Doris），原生的概念就不够用了，因为数据库有自己的逻辑（比如：先启动
+FE，再启动 BE，BE 还要向 FE 注册）。</p>
+<p><strong>CRD</strong> 的字面意思是“自定义资源定义”。它允许我们向
+Kubernetes 注入一套全新的“词汇”。</p>
+<ul>
+<li><strong>资源 (Resource)</strong>：K8s
+里的一个对象。比如我们刚才看到的 <code>StarRocksCluster</code>。</li>
+<li><strong>定义 (Definition)</strong>：告诉 K8s
+这个新对象长什么样（有哪些参数，比如
+<code>feSpec</code>、<code>beSpec</code>）。</li>
+</ul>
+<p>CRD
+仅仅是<strong>一张表格的定义</strong>。有了表格，谁来干活呢？这就需要
+<strong>Operator（控制器）</strong>。</p>
+<p>这就是为什么我们在 <code>kubectl get pod</code> 时，看到了一个叫
+<code>kube-starrocks-operator</code> 的 Pod。它们的配合逻辑如下：</p>
+<ol type="1">
+<li><strong>CRD</strong>：定义了“什么是 StarRocks
+集群”（静态配置）。</li>
+<li><strong>Operator</strong>：是一个不停运行的程序，它一直盯着 API
+Server。当我们提交了一个 <code>StarRocksCluster</code> 的配置，Operator
+就会发现：“我们想要一个 1FE+1BE 的集群”，然后它会去调用 K8s 底层的
+API，自动帮我们把 Pod 启动、镜像拉取、磁盘挂载、端口转发全部搞定。</li>
+</ol>
+<p>如果没有 CRD，我们要部署一个 StarRocks 集群，可能需要手动写几十个
+YAML 文件（Deployment, StatefulSet, ConfigMap,
+Service...），而且顺序错了还不行。</p>
+<p>有了 CRD 和 Operator：</p>
+<ul>
+<li><strong>声明式 API</strong>：我们只需要在 YAML 里写
+<code>replicas: 3</code>，剩下的扩容、缩容、故障自愈，全部由 Operator
+完成。</li>
+<li><strong>领域知识封装</strong>：StarRocks
+怎么初始化、怎么扩容、怎么升级版本，这些<strong>专家的经验</strong>都被写成了
+Operator 的代码。我们不需要懂 Doris/StarRocks
+的底层细节，也能运维它。</li>
+</ul>
+<h1 id="checkpoint的意义是什么">Checkpoint的意义是什么</h1>
+<blockquote>
+<p><strong>状态机在某个时刻的状态 = 初始状态 + <span
+class="math inline">\(\sum\)</span>
+所有历史操作。</strong>在分布式环境下，只要我们能保证<strong>操作序列（Log）</strong>的一致，那么所有节点最终算出来的<strong>状态（State）</strong>也必然是一致的。</p>
+</blockquote>
+<p>简单来说就是：<strong>历史状态 + 增量数据 = 最后结果</strong>。</p>
+<p>而 Checkpoint 的存在保证了两个重要的特性：</p>
+<ol type="1">
+<li>日志不是无限膨胀的：只需要存储完整的 Checkpoint
+和部分增量日志即可，所以我们需要基于两个重要逻辑：
+<ol type="1">
+<li><strong>Log Compaction（日志压缩）</strong>：Checkpoint
+的本质就是一次“大扫除”。它把之前成千上万条“过程描述”（比如：加1，加1，减2）压缩成一个“结果描述”（结果为0）。</li>
+<li><strong>安全截断</strong>：有了这个“结果”，我们就可以在磁盘上把那些“过程”物理删除了。这是系统能够长期稳定运行的基础。</li>
+</ol></li>
+<li>在恢复时，我们通过 image +
+增量日志的恢复速度比从全量的日志恢复更快，这个在运维中有一个专业术语叫
+<strong>MTTR (Mean Time To Recovery，平均恢复时间)</strong>。
+<ol type="1">
+<li><strong>全量回放</strong>：是 <span
+class="math inline">\(O(N)\)</span> 的复杂度，其中 <span
+class="math inline">\(N\)</span>
+是从系统诞生起的总操作数。运行越久，恢复越慢。</li>
+<li><strong>Checkpoint 恢复</strong>：是 <span
+class="math inline">\(O(C)\)</span> 的复杂度，其中 <span
+class="math inline">\(C\)</span> 是两次 Checkpoint
+之间的增量。无论系统运行多久，恢复速度都保持在可控的范围内。</li>
+</ol></li>
+</ol>
+<h1 id="fe的可靠性的演进">FE的可靠性的演进</h1>
+<blockquote>
+<p>FE 的底层实现其实就是通过 WAL 来实现的，而这个 WAL
+只是一种策略，在早期的实现是通过自定义实现的，后期则使用了 BDB
+JE，在未来的发展中，它还有可能被迁移到
+<code>TiKV</code>/<code>FoundationDB</code>/<code>etcd</code>
+等，从而将整个的元数据存储独立为一个单独的服务，数据库 FE
+节点将退化为“无状态的计算引擎”，只负责解析
+SQL。而所有的表结构、分区、权限、数据位置信息，都存放在一个<strong>具有分布式事务能力的全局
+KV 数据库</strong>中。</p>
+</blockquote>
+<p>在目前的架构中，FE 的“有状态”是运维的最大痛点：</p>
+<ul>
+<li><strong>扩缩容限制</strong>：扩容 FE 需要处理元数据的同步、BDB JE
+的对齐，极其缓慢。</li>
+<li><strong>冷启动延迟</strong>：如果有 1000 万个 Tablet，FE 加载 Image
+和重放 Log 的时间是分钟级的。</li>
+<li><strong>数据孤岛</strong>：如果 FE 是有状态的，那么“FE
+节点”本身就变成了集群的高可用瓶颈。</li>
+</ul>
+<p><strong>一旦元数据下沉到全局 KV 数据库（如
+FoundationDB）</strong>：</p>
+<ul>
+<li><strong>计算节点（FE）即插即用</strong>：我们可以像启动 Web
+服务器一样，随时启动 10 个 FE 节点。当一个 FE 处理请求时，它只需要从全局
+KV 中以毫秒级读取对应的表结构，处理完请求即可销毁。</li>
+<li><strong>消除“选主”开销</strong>：因为状态不在 FE，所以不需要 Paxos
+选主，所有的 FE 都是平等的，这极大地简化了系统的复杂度。</li>
+</ul>
+<p><strong>实际引入的问题是：</strong></p>
+<ul>
+<li><strong>缓存一致性 (Caching Consistency)</strong>：如果 FE
+频繁向全局 KV 发起 RPC 查询，性能会崩。因此，FE
+必须在内存中保留一份<strong>元数据缓存</strong>。这就引出了一个最难的问题：<strong>如何保证所有
+FE 的缓存能及时感知到全局 KV 的变更（Invalidation）？</strong>
+这通常需要引入 Watch 机制或广播协议。</li>
+<li><strong>分布式事务的隔离级别</strong>：Doris/StarRocks
+的元数据更新通常涉及多个表的关联操作。如果底层 KV 存储（如
+etcd）不支持多行跨表事务，那么 FE
+就必须在应用层实现复杂的事务回滚逻辑，这会极大地增加系统的代码复杂度。</li>
+<li><strong>复杂度并不会消失，它只会转移：</strong>原本 FE 内部的 Paxos
+选主和日志同步，现在变成了 FoundationDB 内部的 Multi-Paxos 或 Raft
+同步。<strong>一致性并没有变简单，只是被“标准化”了。</strong></li>
+</ul>
+<p><strong>实际解决的问题是：</strong></p>
+<ul>
+<li>我们将FE和元数据存储独立为两个标准化的组件，这意味着我们可以根据他们的职责去进行定制：
+<ul>
+<li>对于FE，它可以完全不挂载高性能磁盘，甚至可以使用<strong>只读的文件系统</strong>，因为它不需要存储任何元数据实体。这直接降低了基础设施的采购成本。</li>
+<li>对于元数据存储，可以专门部署在拥有<strong>低延迟 RDMA
+网络</strong>的环境中，以保障分布式事务（Paxos/Raft）的同步速度。</li>
+</ul></li>
+<li><strong>资源利用率的极大化</strong>：
+<ul>
+<li>如果我们的查询压力大（例如年底报表季），我们可以瞬间拉起 20 个 FE
+节点来分担 SQL 解析的 CPU
+压力，而<strong>完全不需要迁移任何元数据文件</strong>。</li>
+<li>如果我们的表元数据非常庞大，我们可以对底层的 KV 存储（如
+FoundationDB）进行针对性扩容，增加副本数或调整存储集群的存储介质，而<strong>不需要动
+FE 的配置</strong>。</li>
+</ul></li>
+</ul>
+<h1 id="数据模型">数据模型</h1>
+<p>Doris针对不同场景，提供了不同的数据模型，具体如下。</p>
+<ul>
+<li>明细模型（DUPLICATE
+Key）：主要用来存储明细数据，例如服务器日志，数据写入一条就存储一条，即使有完全重复的数据也会存储。</li>
+<li>主键模型（UNIQUE
+Key）：指相同的主键会进行覆盖，实现UPSERT功能，比如根据订单ID对订单状态进行更新</li>
+<li>统计模型（AGGREGATE
+Key）：<strong>主要用于预聚合场景，数据插入后即完成聚合。</strong>统计模型会将相同主键的值列进行统计合并计算。比较典型的应用场景有报表统计和指标计算。比如根据门店ID和时间，对销售额进行统计计算。对于统计模型来说，数据会边入库边统计。对于用户查询来说，直接查询统计后的数据，这样可保证报表场景下高效查询。</li>
+</ul>
+<p>对于 <code>AGGREGATE KEY</code>，在分布式数据库中，Schema
+Change（改表结构）通常有两种情况：</p>
+<ul>
+<li><strong>新增指标列 (Value)</strong>：如果我们只是想加一个
+<code>MIN(age)</code>，这是可以的。但问题是，<strong>历史数据里没有这个值</strong>。对于已经聚合过的历史行，新字段只能填
+<code>NULL</code>
+或默认值。我们无法通过现有的“结果”反推回历史上的最小值。</li>
+<li><strong>新增维度列
+(Key)</strong>：这是最致命的。假设我们之前的聚合粒度是 <strong>[日期 +
+城市]</strong>，现在我们想增加一个维度 <strong>[区县]</strong>。
+因为原始的“区县”信息在之前的导入过程中已经被<strong>丢弃（聚合）</strong>了，系统无法将已有的“北京市”结果拆分给“朝阳区”和“海淀区”。</li>
+</ul>
+<p>我们通常使用以下策略：</p>
+<ul>
+<li><strong>双路并行</strong>：
+<ul>
+<li><strong>明细表</strong>：存放在 <code>HDFS</code>/<code>S3</code>
+或者 <code>StarRocks</code> 的 <code>Duplicate Key</code> 表里（存 3
+个月，用于溯源和应对需求变更）。</li>
+<li><strong>聚合表</strong>：存放在 <code>Aggregate Key</code> 表里（存
+3 年，用于秒级报表）。</li>
+</ul></li>
+<li><strong>物化视图 (Materialized
+View)</strong>：这是现在更推荐的做法。我们在 <code>StarRocks</code>
+里存一张巨大的 <strong>Duplicate Key
+明细表</strong>，然后基于它建一个<strong>异步物化视图</strong>（本质上就是自动管理的聚合表）。
+<ul>
+<li><strong>优势</strong>：当我们需要加字段时，我们只需要修改明细表，然后重建（Refresh）物化视图即可。<strong>明细数据还在，我们的容错率就还在。</strong></li>
+</ul></li>
+</ul>
+<h2 id="使用-aggregate-key">使用 aggregate key</h2>
+<h3 id="创建明细表">创建明细表</h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> order_agg_stat (</span><br><span class="line">    <span class="comment">-- ID 和按分钟处理后的日期作为维度 (Key)</span></span><br><span class="line">    user_id     <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,</span><br><span class="line">    event_time  DATETIME <span class="keyword">NOT NULL</span>, </span><br><span class="line">    </span><br><span class="line">    <span class="comment">-- 指标列 (Value)，定义不同的聚合方式</span></span><br><span class="line">    total_amount <span class="type">DECIMAL</span>(<span class="number">18</span>, <span class="number">2</span>) SUM <span class="keyword">DEFAULT</span> &quot;0&quot;,</span><br><span class="line">    max_price    <span class="type">DECIMAL</span>(<span class="number">18</span>, <span class="number">2</span>) MAX <span class="keyword">DEFAULT</span> &quot;0&quot;</span><br><span class="line">)</span><br><span class="line">ENGINE<span class="operator">=</span>OLAP</span><br><span class="line">AGGREGATE KEY(user_id, event_time) <span class="comment">-- 这两列决定了数据合并的粒度</span></span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(user_id) BUCKETS <span class="number">8</span></span><br><span class="line">PROPERTIES (</span><br><span class="line">    &quot;replication_num&quot; <span class="operator">=</span> &quot;1&quot;  <span class="comment">-- 手动指定为 1，匹配我们目前的 1 个 BE 节点</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h3 id="写入数据">写入数据</h3>
+<p>注意，这里写入数据通常是已经在 <code>flink</code>
+中预先计算过了。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> order_agg_stat (user_id, event_time, total_amount, max_price) <span class="keyword">VALUES</span></span><br><span class="line">(<span class="number">1001</span>, date_trunc(<span class="string">&#x27;minute&#x27;</span>, <span class="string">&#x27;2026-04-09 15:10:05&#x27;</span>), <span class="number">50.00</span>, <span class="number">50.00</span>),</span><br><span class="line">(<span class="number">1001</span>, date_trunc(<span class="string">&#x27;minute&#x27;</span>, <span class="string">&#x27;2026-04-09 15:10:30&#x27;</span>), <span class="number">120.00</span>, <span class="number">120.00</span>),</span><br><span class="line">(<span class="number">1001</span>, date_trunc(<span class="string">&#x27;minute&#x27;</span>, <span class="string">&#x27;2026-04-09 15:10:55&#x27;</span>), <span class="number">30.00</span>, <span class="number">30.00</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="使用物化视图">使用物化视图</h2>
+<h3 id="创建明细表-1">创建明细表</h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> order_detail (</span><br><span class="line">    user_id      <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,</span><br><span class="line">    event_time   DATETIME <span class="keyword">NOT NULL</span>, </span><br><span class="line">    amount       <span class="type">DECIMAL</span>(<span class="number">18</span>, <span class="number">2</span>) <span class="keyword">NOT NULL</span></span><br><span class="line">)</span><br><span class="line">ENGINE<span class="operator">=</span>OLAP</span><br><span class="line">DUPLICATE KEY(user_id, event_time) <span class="comment">-- 只排序，不聚合</span></span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(user_id) BUCKETS <span class="number">8</span></span><br><span class="line">PROPERTIES (&quot;replication_num&quot; <span class="operator">=</span> &quot;1&quot;);</span><br></pre></td></tr></table></figure>
+<h3 id="创建异步物化视图">创建异步物化视图</h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> MATERIALIZED <span class="keyword">VIEW</span> mv_order_agg_minute</span><br><span class="line">REFRESH ASYNC <span class="comment">-- 异步刷新</span></span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(user_id) BUCKETS <span class="number">8</span></span><br><span class="line"><span class="keyword">AS</span> </span><br><span class="line"><span class="keyword">SELECT</span> </span><br><span class="line">    user_id, </span><br><span class="line">    date_trunc(<span class="string">&#x27;minute&#x27;</span>, event_time) <span class="keyword">as</span> minute_time,</span><br><span class="line">    <span class="built_in">SUM</span>(amount) <span class="keyword">as</span> total_amount,</span><br><span class="line">    <span class="built_in">MAX</span>(amount) <span class="keyword">as</span> max_price</span><br><span class="line"><span class="keyword">FROM</span> order_detail</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id, minute_time;</span><br></pre></td></tr></table></figure>
+<h3 id="写入数据-1">写入数据</h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> order_detail (user_id, event_time, amount) <span class="keyword">VALUES</span></span><br><span class="line">(<span class="number">1001</span>, date_trunc(<span class="string">&#x27;minute&#x27;</span>, <span class="string">&#x27;2026-04-09 15:10:05&#x27;</span>), <span class="number">50.00</span>),</span><br><span class="line">(<span class="number">1001</span>, date_trunc(<span class="string">&#x27;minute&#x27;</span>, <span class="string">&#x27;2026-04-09 15:10:30&#x27;</span>), <span class="number">120.00</span>),</span><br><span class="line">(<span class="number">1001</span>, date_trunc(<span class="string">&#x27;minute&#x27;</span>, <span class="string">&#x27;2026-04-09 15:10:55&#x27;</span>), <span class="number">30.00</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="对比">对比</h2>
+<p><code>Aggregate Key</code>
+与“物化视图”的本质差别在于<strong>数据保留</strong>与<strong>处理时机</strong>：</p>
+<ul>
+<li><strong>Aggregate Key（写时聚合）</strong>：
+<ul>
+<li><strong>本质</strong>：结果集存储。数据在写入磁盘时即完成合并，<strong>明细永久丢失</strong>。</li>
+<li><strong>优势</strong>：存储空间极省，写入吞吐极高。</li>
+<li><strong>局限</strong>：缺乏灵活性。若需新增维度或回溯明细，必须依赖
+Flink
+等上游重跑历史数据。<strong>并且，日志实际上是进行了两次聚合：一次在
+<code>flink</code> 中，一次在 <code>sr</code> 中</strong></li>
+</ul></li>
+<li><strong>物化视图（读写分离）</strong>：
+<ul>
+<li><strong>本质</strong>：明细 + 缓存。底层存一张
+<code>Duplicate</code> 明细表，上层挂一张聚合好的视图。</li>
+<li><strong>优势</strong>：<strong>保留后悔药</strong>。既能秒级查聚合，又能溯源明细；需求变更时，可基于明细表重刷视图。</li>
+<li><strong>局限</strong>：存储成本翻倍（存两份数据），写入开销略大。</li>
+</ul></li>
+</ul>
+<p><strong>结论</strong>：追求<strong>极限性能与省钱</strong>选前者；追求<strong>业务灵活性与容错</strong>选后者。</p>
+<h1 id="flinksr的精准一次"><code>flink</code>/sr的精准一次</h1>
+<ul>
+<li><strong>核心机制：状态对齐</strong>：将 SR
+的<strong>可见数据版本</strong>视为“已完成的
+Checkpoint”，将<strong>Label 关联的不可见数据</strong>视为“增量
+Buffer”。</li>
+<li><strong>写入流程：两阶段提交 (<code>2PC</code>)</strong>
+<ul>
+<li><strong>预提交</strong>：<code>flink</code> 在两个 Barrier 之间通过
+HTTP 追加数据，共享同一个 <strong>Label</strong>（由
+<code>Job名+TaskID+CheckpointID</code> 构成）。SR
+接收数据但保持“不可见”。<strong>这里需要注意的是，<code>flink</code>
+在给 SR 提交数据时，在一个 checkpoint 下，特定的 subtask 提交的数据的
+label 是完全一致的，他们会在 SR 的不可见数据中进行追加，直到
+<code>commit</code> 或者 <code>abort</code></strong></li>
+<li><strong>正式提交</strong>：当 <code>flink</code> Checkpoint
+成功后，由 Sink 发起 Commit 指令，SR 将对应 Label
+的数据瞬间转为“可见”。</li>
+</ul></li>
+<li><strong>故障恢复：Label 幂等</strong>
+<ul>
+<li><strong>Label 持久化</strong>：<code>flink</code> 将正在使用的 Label
+存入 State。</li>
+<li><strong>防重逻辑</strong>：若重启后 <code>flink</code> 重发相同
+Label，SR 发现该 Label 已提交，则直接返回成功但不重复计算。这在
+<code>Aggregate</code> 模型下等同于“自动撤回重做”。</li>
+</ul></li>
+<li><strong>顺序与模型选型</strong>
+<ul>
+<li><strong>结合律计算</strong>（SUM/MAX）：直接使用
+<code>Aggregate Key</code>，乱序不影响最终一致性。</li>
+<li><strong>状态敏感计算</strong>（REPLACE）：必须使用
+<code>Unique Key</code> +
+<code>Sequence Column</code>，靠版本号而非到达顺序来决定最终状态。</li>
+</ul></li>
+</ul>
+<h1 id="倒排索引">倒排索引</h1>
+<ul>
+<li><strong>核心原理（查字典）</strong>：将“从行找内容”转变为“从词找行”。通过<strong>分词（Tokenization）</strong>将长文本拆解为单词，建立<strong>单词
+-&gt; 行号列表（Posting List）</strong>的映射。</li>
+<li><strong>一致性保证</strong>：采用统一的分词器和标准化处理（如大小写转换、词干提取），确保相同语义的词在不同句子中被切分为完全一致的
+<strong>Token</strong>。</li>
+<li><strong>空间挑战与压缩</strong>：
+<ul>
+<li><strong>停用词过滤</strong>：直接丢弃“我”、“的”、“is”等高频无意义词，防止索引冗余。</li>
+<li><strong>高效压缩</strong>：利用差分编码、位图（Bitmap）等算法极度压缩行号列表。</li>
+</ul></li>
+<li><strong>核心价值</strong>：将低效的全文模糊扫描（<code>LIKE %xxx%</code>）转化为毫秒级的索引查找，是实现海量日志秒级检索的关键。</li>
+</ul>
+<h2 id="倒排索引的优化">倒排索引的优化</h2>
+<h3 id="停用词过滤-stopwords-filtering">停用词过滤 (Stopwords
+Filtering)</h3>
+<p>对于像“我”、“是”、“的”、“the”、“is”这种在语境中几乎不携带有效信息、但出现频率极高的词，我们称之为<strong>停用词</strong>。</p>
+<ul>
+<li><strong>策略</strong>：在构建倒排索引时，系统通常会配置一个“停用词表”。分词器在切分出这些词后，会<strong>直接丢弃</strong>，不为它们创建索引。</li>
+<li><strong>结果</strong>：我们依然可以搜索“Doris”，但如果我们搜“我”，系统会告诉我们没结果。这虽然牺牲了极少数无意义查询的精度，但节省了
+50% 以上的索引体积。</li>
+</ul>
+<h3 id="posting-list-的高效压缩-bitmap-pfor">Posting List 的高效压缩
+(Bitmap &amp; PFOR)</h3>
+<p>即便不是停用词，某些高频业务词（如日志里的“INFO”）依然会有巨大的行号列表。数据库不会直接存
+<code>[1, 2, 3, 4, 5...]</code> 这种原始整数。</p>
+<ul>
+<li><strong>差分编码 (Delta Encoding)</strong>：不存
+<code>[100, 101, 102]</code>，而是存首项 <code>100</code> 和增量
+<code>[1, 1]</code>。这能让数字变得极小。</li>
+<li><strong>Roaring Bitmaps /
+PFOR</strong>：使用特殊的位图压缩算法。对于连续的行号，压缩率可以达到恐怖的几百倍甚至上千倍。</li>
+</ul>
+<h3 id="分词器的标准化-normalization"><strong>分词器的“标准化”
+(Normalization)</strong></h3>
+<p>“同一个词拆分不同”问题，由标准化流程解决：</p>
+<ul>
+<li><strong>大小写转换</strong>：将 <code>Doris</code> 和
+<code>doris</code> 全部统一转为 <code>doris</code> 存储。</li>
+<li><strong>词干提取 (Stemming)</strong>：英文中将 <code>running</code>
+和 <code>runs</code> 统一提取为 <code>run</code>。</li>
+<li><strong>分词算法一致性</strong>：中文使用固定的分词库（如 IK,
+Jieba），确保“我是”在任何句子中切分出的结果都是一致的原子。</li>
+</ul>
+<h3 id="空间与性能的终极权衡">空间与性能的终极权衡</h3>
+<p>即便有压缩，倒排索引依然是<strong>“空间换时间”</strong>的典型：</p>
+<ul>
+<li><strong>成本</strong>：开启倒排索引通常会额外增加 <strong>30% -
+80%</strong> 的磁盘空间占用（取决于分词粒度和字段长度）。</li>
+<li><strong>收益</strong>：将 <code>LIKE '%keyword%'</code>
+的全表扫描（分钟级）缩短为索引检索（毫秒级）。</li>
+</ul>
+<h2 id="倒排索引的不可靠性">倒排索引的不可靠性</h2>
+<p>倒排索引在物理上是可靠的（存储和压缩技术很成熟），但在<strong>语义逻辑上确实不是“完全可靠”的</strong>。这种不可靠性主要源于以下两个深层次的矛盾：</p>
+<ol type="1">
+<li>分词器的“不可靠”：分词器（<code>Tokenizer</code>）并不是万能的数学公式，它更像是一个基于概率或词库的<strong>推断引擎</strong>。
+<ul>
+<li><strong>切分歧义</strong>：
+<ul>
+<li>句子 A：“北京<strong>大学生</strong>前来应聘” -&gt;
+分词：<code>[北京, 大学生, 前来, 应聘]</code></li>
+<li>句子 B：“北京<strong>大学</strong>生机勃勃” -&gt;
+分词：<code>[北京, 大学, 生机勃勃]</code></li>
+</ul></li>
+<li><strong>版本与词库偏差</strong>：
+<ul>
+<li>如果我们今天更新了分词器的词库，或者更换了分词算法，同一个词在旧数据和新数据里的切分结果可能完全不同，导致历史数据“离奇失踪”</li>
+</ul></li>
+</ul></li>
+<li><strong>停用词的“不可靠”</strong>：为了性能丢弃“停用词”，有时会引发严重的查询误判。
+<ul>
+<li><strong>经典案例</strong>：搜索英文短语 <strong>"To be or not to
+be"</strong>。</li>
+<li><strong>悲剧</strong>：在默认配置下，<code>to</code>,
+<code>be</code>, <code>or</code>, <code>not</code>
+全部是停用词。结果是：我们搜这个名言，索引告诉我们“查无此内容”。</li>
+</ul></li>
+</ol>
+<h2 id="如何提高倒排索引的可靠性">如何提高倒排索引的可靠性</h2>
+<p>Doris/StarRocks 等系统通常会提供几种“补救”手段：</p>
+<ul>
+<li><p><strong>N-Gram 分词（暴力但可靠）</strong>：</p>
+<ul>
+<li><p>不按语义分词，而是按固定长度滑动切分。</p></li>
+<li><p>比如 <code>"Doris"</code> 按 2-gram 切分为
+<code>[Do, or, ri, is]</code>。</p></li>
+<li><p><strong>优点</strong>：完全不依赖语义，解决了“切分不一致”的问题，只要包含这些字符就一定能搜到。</p>
+<p><strong>缺点</strong>：索引体积会爆炸式增长。</p></li>
+</ul></li>
+<li><p><strong>增加“不分词”索引（Standard 模式）</strong>：</p>
+<ul>
+<li>针对 ID、状态码、路径等字段，强制不分词，将整行看作一个
+Token。这保证了 100% 的精确匹配（类似 <code>Unique Key</code>
+的效果）。</li>
+</ul></li>
+<li><p><strong>词库持久化与版本管理</strong>：</p>
+<ul>
+<li>确保整个集群使用同一套静态词库，且在数据存续期间不随意更换分词逻辑。</li>
+</ul></li>
+</ul>
+<h2 id="倒排索引的一个实例">倒排索引的一个实例</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> <span class="built_in">log</span></span><br><span class="line">(</span><br><span class="line">    `id` <span class="type">BIGINT</span>,</span><br><span class="line">    `user_id` <span class="type">BIGINT</span>,</span><br><span class="line">    `type` String,</span><br><span class="line">    `<span class="type">timestamp</span>` DATETIME,</span><br><span class="line">    `details` String,</span><br><span class="line">    <span class="comment">-- 将 INVERTED 改为 BITMAP，并去掉 parser 属性</span></span><br><span class="line">    INDEX idx_details (`details`) <span class="keyword">USING</span> BITMAP</span><br><span class="line">)</span><br><span class="line">DUPLICATE KEY(`id`)</span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(`id`) BUCKETS <span class="number">1</span></span><br><span class="line">PROPERTIES (</span><br><span class="line">    &quot;replication_num&quot; <span class="operator">=</span> &quot;1&quot;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> log <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="number">1</span>, <span class="string">&#x27;INFO&#x27;</span>, <span class="string">&#x27;2024-03-24 10:10:00&#x27;</span>, <span class="string">&#x27;Login Success&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> log <span class="keyword">VALUES</span> (<span class="number">2</span>, <span class="number">1</span>, <span class="string">&#x27;ERROR&#x27;</span>, <span class="string">&#x27;2024-03-24 10:10:01&#x27;</span>, <span class="string">&#x27;Login Fail&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> log <span class="keyword">VALUES</span> (<span class="number">3</span>, <span class="number">1</span>, <span class="string">&#x27;INFO&#x27;</span>, <span class="string">&#x27;2024-03-24 10:10:02&#x27;</span>, <span class="string">&#x27;Login Success&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<h1 id="agg_state"><code>agg_state</code></h1>
+<p><code>agg_state</code> 是一个特殊的数据结构，它在声明时需要配合
+<code>state</code>，<code>merge</code>，<code>union</code>
+等函数组合器使用，它是 <code>doris</code> 的一个方言，而我们在
+<code>sr</code> 中，会以物化视图为主。</p>
+<h2 id="建表">建表</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> enable_agg_state <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> user_activity_state (</span><br><span class="line">    page_id     <span class="type">INT</span>,</span><br><span class="line">    event_date  <span class="type">DATE</span>,</span><br><span class="line">    <span class="comment">-- 1. SUM: 记录总停留时长</span></span><br><span class="line marked">    duration_state   agg_state<span class="operator">&lt;</span><span class="built_in">sum</span>(<span class="type">BIGINT</span>)<span class="operator">&gt;</span>,</span><br><span class="line">    <span class="comment">-- 2. MAX: 记录该页面的单次最高得分</span></span><br><span class="line marked">    max_score_state  agg_state<span class="operator">&lt;</span><span class="built_in">max</span>(<span class="type">INT</span>)<span class="operator">&gt;</span>,</span><br><span class="line">    <span class="comment">-- 3. COUNT DISTINCT: 精确去重用户数 (使用 Bitmap)</span></span><br><span class="line marked">    uv_state         agg_state<span class="operator">&lt;</span>count_distinct(<span class="type">BIGINT</span>)<span class="operator">&gt;</span>,</span><br><span class="line">    <span class="comment">-- 4. APPROX_COUNT: 模糊去重，适合超大数据量 (使用 HLL)</span></span><br><span class="line marked">    hll_uv_state     agg_state<span class="operator">&lt;</span>approx_count_distinct(<span class="type">BIGINT</span>)<span class="operator">&gt;</span></span><br><span class="line">)</span><br><span class="line">AGGREGATE KEY(page_id, event_date)</span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(page_id) BUCKETS <span class="number">1</span></span><br><span class="line">PROPERTIES (&quot;replication_num&quot; <span class="operator">=</span> &quot;1&quot;);</span><br></pre></td></tr></table></figure>
+<h2 id="写入数据-2">写入数据</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> user_activity_state <span class="keyword">VALUES</span> (</span><br><span class="line">    <span class="number">101</span>, </span><br><span class="line">    <span class="string">&#x27;2024-03-24&#x27;</span>, </span><br><span class="line">    sum_state(<span class="number">300</span>),           <span class="comment">-- 停留 300 秒</span></span><br><span class="line">    max_state(<span class="number">85</span>),            <span class="comment">-- 得分 85</span></span><br><span class="line">    count_distinct_state(<span class="number">1</span>),  <span class="comment">-- 用户 ID 1</span></span><br><span class="line">    approx_count_distinct_state(<span class="number">1</span>)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT INTO</span> user_activity_state <span class="keyword">VALUES</span> (</span><br><span class="line">    <span class="number">101</span>, </span><br><span class="line">    <span class="string">&#x27;2024-03-24&#x27;</span>, </span><br><span class="line">    sum_state(<span class="number">200</span>),           <span class="comment">-- 同页面同天，又停留 200 秒</span></span><br><span class="line">    max_state(<span class="number">95</span>),            <span class="comment">-- 又得了个高分 95</span></span><br><span class="line">    count_distinct_state(<span class="number">2</span>),  <span class="comment">-- 用户 ID 2</span></span><br><span class="line">    approx_count_distinct_state(<span class="number">2</span>)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h2 id="查询数据">查询数据</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> </span><br><span class="line">    page_id,</span><br><span class="line">    sum_merge(duration_state) <span class="keyword">AS</span> total_duration,      <span class="comment">-- 结果: 500</span></span><br><span class="line">    max_merge(max_score_state) <span class="keyword">AS</span> top_score,          <span class="comment">-- 结果: 95</span></span><br><span class="line">    count_distinct_merge(uv_state) <span class="keyword">AS</span> exact_uv,       <span class="comment">-- 结果: 2 (精确去重)</span></span><br><span class="line">    approx_count_distinct_merge(hll_uv_state) <span class="keyword">AS</span> pv   <span class="comment">-- 结果: 2 (模糊去重)</span></span><br><span class="line"><span class="keyword">FROM</span> user_activity_state</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> page_id;</span><br></pre></td></tr></table></figure>
+<h2 id="doris和sr的区别">doris和sr的区别</h2>
+<p>尽管 Doris 叫它 <code>agg_state</code>，StarRocks
+叫它“异步物化视图”或“聚合模型”，但在底层物理实现上，它们都遵循同一种<strong>“数学设计模式”</strong>：</p>
+<ol type="1">
+<li>物理形态的一致性：无论是 Doris 还是
+StarRocks，当我们处理去重（Distinct）或分位数时，磁盘上存储的都不是最终的数字，而是一个<strong>二进制大对象（Blob）</strong>。</li>
+<li>计算逻辑的一致性：代数聚合 (Algebraic
+Aggregation)，在数据库理论中，这类操作被称为“代数聚合”。它们的特点是：<strong><span
+class="math inline">\(F(A \cup B) = G(F(A),
+F(B))\)</span></strong>。</li>
+</ol>
+<p>对 SR 来说，它的底层实现其实就是 <code>agg_state</code>：</p>
+<h3 id="sum">SUM</h3>
+<ul>
+<li><strong>Key 映射</strong>：确定唯一的坐标（如：商品ID +
+日期）。</li>
+<li><strong>底层动作</strong>：
+<ul>
+<li>当新值 <span class="math inline">\(V_{new}\)</span>
+进入时，定位到该坐标。</li>
+<li>取出当前容器里的旧值 <span
+class="math inline">\(V_{old}\)</span>。</li>
+<li><strong>执行操作</strong>：<span class="math inline">\(V_{result} =
+V_{old} + V_{new}\)</span>。</li>
+</ul></li>
+<li><strong>效果</strong>：存储的是该维度下的实时总和，适合算销售额、流量统计。</li>
+</ul>
+<h3 id="maxmin">MAX/MIN</h3>
+<ul>
+<li><strong>Key 映射</strong>：确定唯一的坐标。</li>
+<li><strong>底层动作</strong>：
+<ul>
+<li>当新值 <span class="math inline">\(V_{new}\)</span> 进入时。</li>
+<li><strong>执行操作</strong>：如果是 MAX，则执行 <span
+class="math inline">\(if (V_{new} &gt; V_{old}) \{ V_{old} = V_{new}
+\}\)</span>。</li>
+</ul></li>
+<li><strong>效果</strong>：存储的是该维度下的天花板，适合监控系统（如：今日最高
+CPU 使用率）。</li>
+</ul>
+<h3 id="replace">REPLACE</h3>
+<ul>
+<li><strong>Key 映射</strong>：通常对应主键（Unique Key）。</li>
+<li><strong>底层动作</strong>：
+<ul>
+<li>不管旧值是什么，新值进入后直接把旧值踢走。</li>
+<li><strong>执行操作</strong>：<span class="math inline">\(V_{old} =
+V_{new}\)</span>。</li>
+</ul></li>
+<li><strong>效果</strong>：这是 <strong>Unique 模型</strong>
+的本质。它确保我们拿到的永远是针对这个 Key
+的“最新状态”，适合做订单状态追踪、用户信息同步。</li>
+</ul>
+<h3 id="bitmap_union">BITMAP_UNION</h3>
+<ul>
+<li><strong>Key 映射</strong>：确定维度坐标（如：广告ID）。</li>
+<li><strong>底层动作</strong>：
+<ul>
+<li>容器里存的不是数字，而是一个<strong>压缩位图包</strong>。</li>
+<li>新值（通常是一个 ID）进入时，先转成一个小位图。</li>
+<li><strong>执行操作</strong>：将新旧两个位图进行
+<strong>OR（或运算）</strong> 合并。</li>
+</ul></li>
+<li><strong>效果</strong>：存储的是去重后的集合状态。查询时只需数一数位图里有多少个
+<code>1</code>，就能瞬间得到 <strong>精确去重数（UV）</strong>。</li>
+</ul>
+<h3 id="hll_union">HLL_UNION</h3>
+<ul>
+<li><strong>Key 映射</strong>：确定维度坐标。</li>
+<li><strong>底层动作</strong>：
+<ul>
+<li>容器里存的是一个固定大小（如 16KB）的哈希寄存器数组。</li>
+<li><strong>执行操作</strong>：新值进入，经过哈希运算后，更新寄存器中的最大前导零值（取
+Max）。</li>
+</ul></li>
+<li><strong>效果</strong>：用极小的空间存下海量数据的去重状态，虽有 1%
+左右误差，但性能是顶级的。</li>
+</ul>
+<h1 id="mormow">MoR/MoW</h1>
+<p>Doris 和 StarRocks 的底层存储引擎确实是基于 LSM-Tree（Log-Structured
+Merge-Tree）架构实现的。</p>
+<p>传统的 B+ 树索引（如 MySQL）在处理大规模写入时，需要进行随机 IO
+去更新磁盘上的数据页，这会成为系统瓶颈。 而 <strong>LSM-Tree</strong>
+的核心思想是：<strong>放弃原地更新，全部改为追加写入。</strong></p>
+<ul>
+<li><strong>写入阶段</strong>：数据先写到内存的
+MemTable（通常是一个有序的跳表）。当内存满了，就直接顺序刷到磁盘变成一个不可变的
+<strong>Segment (SSTable)</strong> 文件。这对应了我们说的“MVCC
+多版本写入”。</li>
+<li><strong>读取阶段</strong>：由于同一个 Key
+的最新值（或聚合值）可能分散在不同的 Segment 文件中，所以读取时必须执行
+<strong>多路归并（Multi-way Merge）</strong>。</li>
+</ul>
+<h2 id="mow">MoW</h2>
+<p>StarRocks 的 Primary Key
+模型（MoW）是如何在不修改历史文件的前提下，实现“更新旧数据位置”的呢？它引入了一个精妙的中间层：<strong>Primary
+Index（主键索引）</strong> 和 <strong>Delete
+Bitmap（删除位图）</strong>。</p>
+<p>在 StarRocks 的 MoW 实现中，BE
+节点的<strong>内存</strong>里维护了一个由
+<code>Key -&gt; 物理位置(RowID)</code> 组成的哈希表。</p>
+<ul>
+<li><strong>物理位置 (RowID)</strong>
+包含：哪个文件（Segment）以及该文件中的第几行。</li>
+<li><strong>动作</strong>：当新数据 <code>(Key=A, Value=99)</code>
+进来时，系统先去这个内存索引里查：“Key A 以前在哪？”</li>
+<li><strong>结果</strong>：索引回馈：“Key A 以前在
+<code>Segment_1</code> 的第 <code>10</code> 行”。</li>
+</ul>
+<p>既然不能修改 <code>Segment_1</code>，StarRocks
+采取了“<strong>标记失效</strong>”的策略：</p>
+<ol type="1">
+<li><strong>标记删除</strong>：系统在内存中的 <strong>Delete
+Bitmap</strong>（删除位图）里，将 <code>Segment_1</code> 的第
+<code>10</code> 行标记为 <code>1</code>（代表已删除）。</li>
+<li><strong>新数据追加</strong>：将新数据 <code>(Key=A, Value=99)</code>
+正常地追加写入到最新的 <code>Segment_2</code> 中。</li>
+<li><strong>更新索引</strong>：把内存索引里的记录更新为：“Key A 现在在
+<code>Segment_2</code> 的第 <code>1</code> 行”。</li>
+</ol>
+<h2 id="mor">MoR</h2>
+<p><strong>Merge On Read (MoR)</strong>
+的实现是分布式存储系统中处理“写入吞吐量”与“数据一致性”平衡的经典方案。</p>
+<ol type="1">
+<li>数据的“分层”写入（The Writing Phase）在 MoR
+模式下，当新数据进入时，它不会去寻找旧数据。
+<ul>
+<li><strong>Log-Structured 写入</strong>：数据被划分为不同的
+<strong>Rowsets</strong>。</li>
+<li><strong>版本号（Version）</strong>：每一批写入的数据都会被分配一个严格递增的
+<strong>Version ID</strong>。</li>
+<li><strong>多版本共存</strong>：如果同一主键（Key）在下午 1
+点写入了一次（Ver 10），在 2 点又写入了一次（Ver
+20），它们会分别存储在两个不同的磁盘文件（Segment）中。</li>
+</ul></li>
+<li>核心组件：多路归并读取器（The Reading Phase）：当用户执行
+<code>SELECT</code> 查询时，查询引擎会启动一个<strong>多路归并迭代器
+(Merging Iterator)</strong>：
+<ul>
+<li><strong>分片定位</strong>：系统首先根据查询范围，找出所有可能包含该
+Key 的数据段（Segments）。</li>
+<li><strong>多路流输入</strong>：将这些 Segment
+同时打开，作为多条数据流输入到合并器中。</li>
+<li><strong>Key 排序对比</strong>：由于 <code>LSM-Tree</code> 内部的
+Segment 都是按 Key 有序排列的，合并器只需要对比各个流中最顶端的那行
+Key。</li>
+<li><strong>执行聚合算子</strong>：
+<ul>
+<li>如果发现多个流中出现了<strong>相同的 Key</strong>。</li>
+<li>合并器会根据表定义的<strong>聚合模型</strong>执行操作：如果是
+<code>MAX</code>，就取 Version 最大的那个值；如果是
+<code>SUM</code>，就将所有版本的 Value 相加。</li>
+</ul></li>
+</ul></li>
+<li>实现高效合并的关键技术：为了不让“读时合并”拖垮性能，MoR
+引入了几个优化手段：
+<ul>
+<li><strong>大根堆/小根堆（Heap）</strong>：在内存中使用堆数据结构来管理多个
+Segment 的当前行，确保能以 <span class="math inline">\(O(\log
+N)\)</span> 的复杂度快速找到下一个待合并的 Key。</li>
+<li><strong>谓词下推（Predicate
+Pushdown）</strong>：在合并之前，尽量先在各个 Segment
+内部进行过滤。如果某个 Segment
+的统计信息（Min/Max）显示该块内根本没有符合条件的数据，则直接跳过，不参与合并。</li>
+<li><strong>列式读取</strong>：只读取 <code>WHERE</code> 条件和
+<code>SELECT</code> 涉及到的列，减少无效 IO。</li>
+</ul></li>
+<li>异步 Compaction：如果任由 MoR
+积累版本，读取速度会越来越慢。因此，后台会持续进行
+<strong>Compaction（合并压缩）</strong>：
+<ul>
+<li><strong>逻辑</strong>：它在后台悄悄执行“读时合并”的动作，将多个旧的、有重复
+Key 的小 Segment 合并成一个已经聚合好的大 Segment。</li>
+<li><strong>结果</strong>：Compaction
+完成后，数据从多版本变成了<strong>单版本</strong>。此时的 MoR
+在读取这些已合并的块时，性能就和 MoW 一样快了。</li>
+</ul></li>
+</ol>
+<h1 id="数据分布">数据分布</h1>
+<p>假设我们存在如下 <code>SQL</code>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> table_range_partition</span><br><span class="line">(</span><br><span class="line">    `user_id` LARGEINT <span class="keyword">NOT NULL</span> COMMENT &quot;用户 id&quot;,</span><br><span class="line">    `<span class="type">date</span>` <span class="type">DATE</span> <span class="keyword">NOT NULL</span> COMMENT &quot;数据写入日期&quot;,</span><br><span class="line">    `message` <span class="type">VARCHAR</span>(<span class="number">20</span>) COMMENT &quot;访问的数据&quot;</span><br><span class="line">)</span><br><span class="line">DUPLICATE KEY(`user_id`, `<span class="type">date</span>`)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> <span class="keyword">RANGE</span>(`<span class="type">date</span>`)</span><br><span class="line">(</span><br><span class="line">    <span class="keyword">PARTITION</span> `p20240201` <span class="keyword">VALUES</span> LESS THAN (&quot;2024-02-02&quot;),</span><br><span class="line">    <span class="keyword">PARTITION</span> `p20240202` <span class="keyword">VALUES</span> LESS THAN (&quot;2024-02-03&quot;),</span><br><span class="line">    <span class="keyword">PARTITION</span> `p20240203` <span class="keyword">VALUES</span> LESS THAN (&quot;2024-02-04&quot;),</span><br><span class="line">    <span class="keyword">PARTITION</span> `p20240204` <span class="keyword">VALUES</span> [(&quot;2024-02-04&quot;), (&quot;2024-02-05&quot;)),</span><br><span class="line">    <span class="keyword">FROM</span> (&quot;2024-02-05&quot;) <span class="keyword">TO</span> (&quot;2024-02-08&quot;) <span class="type">INTERVAL</span> <span class="number">1</span> <span class="keyword">DAY</span></span><br><span class="line">)</span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(`user_id`) BUCKETS <span class="number">16</span></span><br><span class="line">PROPERTIES</span><br><span class="line">(</span><br><span class="line">    &quot;replication_num&quot; <span class="operator">=</span> &quot;1&quot;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>那么实际上，我们的表结构实际如下所示：</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+table_range_partition(&quot;table_range_partition&quot;)
+
+p20240201(&quot;p20240201&quot;)
+p20240202(&quot;p20240202&quot;)
+p20240203(&quot;p20240203&quot;)
+p20240204(&quot;p20240204&quot;)
+
+bucket0(&quot;bucket 0&quot;)
+bucket1(&quot;bucket 1&quot;)
+bucket2(&quot;...&quot;)
+bucket15(&quot;bucket 15&quot;)
+
+tablet0(&quot;tablet0&quot;)
+tablet1(&quot;tablet1&quot;)
+tablet2(&quot;...&quot;)
+tablet15(&quot;tablet15&quot;)
+
+table_range_partition --&gt; p20240201
+table_range_partition --&gt; p20240202
+table_range_partition --&gt; p20240203
+table_range_partition --&gt; p20240204
+
+p20240201 --&gt; bucket0 --&gt; tablet0
+p20240201 --&gt; bucket1 --&gt; tablet1
+p20240201 --&gt; bucket2 --&gt; tablet2
+p20240201 --&gt; bucket15 --&gt; tablet15
+
+class table_range_partition gray
+
+class p20240201,p20240202,p20240203,p20240204 green
+
+class bucket0,bucket1,bucket2,bucket15 orange
+
+class tablet0,tablet1,tablet2,tablet15 blue
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<blockquote>
+<p><code>tablet</code>
+是我们的最小单位，然而实际上，我们的实际存储中，<code>tablet</code>
+还会被拆分为更细的 <code>segment</code></p>
+</blockquote>
+<pre><code class="highlight mermaid">flowchart LR
+
+tablet(&quot;tablet&quot;) --&gt; segment0(&quot;segment 0&quot;)
+tablet --&gt; segment1(&quot;segment 1&quot;)
+tablet --&gt; segment2(&quot;segment 2&quot;)
+tablet --&gt; segment3(&quot;segment 3&quot;)
+tablet --&gt; segment4(&quot;...&quot;)
+
+class tablet blue
+class segment0,segment1,segment2,segment3,segment4 yellow
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h1 id="range分区和list分区">range分区和list分区</h1>
+<ol type="1">
+<li>Range
+分区是基于<strong>连续的刻度</strong>进行划分的。最常见的字段是<strong>时间</strong>或<strong>连续递增的
+ID</strong>：
+<ul>
+<li><strong>核心逻辑</strong>：数据落在 <span
+class="math inline">\([start, end)\)</span> 的区间内。</li>
+<li><strong>使用场景</strong>：
+<ul>
+<li><strong>时序数据（最常用）</strong>：按天、按月、按年分区。比如
+<code>2024-01-01</code> 之后的数据进入分区 A。</li>
+<li><strong>冷热数据管理</strong>：我们需要定期清理 3
+个月前的历史数据，或者把 1 年前的数据迁移到廉价存储（HDD）。</li>
+<li><strong>查询裁剪</strong>：用户查询通常带有时间范围（如：<code>WHERE date &gt;= '2024-02-01'</code>）。</li>
+</ul></li>
+</ul></li>
+<li>List 分区是基于<strong>离散的、确定的枚举值</strong>进行划分的：
+<ul>
+<li><strong>核心逻辑</strong>：数据落在指定的
+<code>Values In (a, b, c)</code> 集合中。</li>
+<li><strong>使用场景</strong>：
+<ul>
+<li><strong>多租户/大客户隔离</strong>：按 <code>tenant_id</code>
+分区。比如大客户 <code>A</code>
+单独占一个分区，确保它的查询性能不受其他小客户干扰。</li>
+<li><strong>地域/组织架构</strong>：按 <code>province_id</code> 或
+<code>city_code</code> 分区。比如北京、上海、广州各一个分区。</li>
+<li><strong>业务逻辑分类</strong>：按 <code>channel_id</code>（渠道）或
+<code>business_unit</code> 分区。</li>
+</ul></li>
+<li><strong>前提条件</strong>：分区的取值范围必须是<strong>有限且已知</strong>的。我们不能对
+<code>user_id</code> 这种无限增长且离散的值做 List 分区。</li>
+</ul></li>
+</ol>
+<h1 id="autobucket"><code>AutoBucket</code></h1>
+<p>在大多数生产级 OLAP 数据库中，<strong>一个已经存在的
+Partition（分区）的桶数量是不能修改的。</strong></p>
+<ul>
+<li><strong>现状</strong>：如果我们建表时 <code>p20240201</code>
+这个分区是 10 个桶，它这辈子就是 10 个桶了。</li>
+<li><strong>AutoBucket
+的真实表现</strong>：它是在<strong>创建新分区</strong>时才起作用。
+<ul>
+<li><strong>例子</strong>：<code>p20240201</code> 只有
+100MB，系统自动给它分配了 1 个桶。</li>
+<li><strong>变化</strong>：到了 <code>p20240202</code>，数据量暴增到
+100GB，系统检测到趋势，自动为<strong>这个新分区</strong>分配了 20
+个桶。</li>
+</ul></li>
+<li><strong>结果</strong>：旧分区不动，新分区变大。由于不同分区的数据物理上是隔离的，所以<strong>完全不需要移动旧数据</strong>。</li>
+</ul>
+<p>如果我们指的是同一个分区内部，数据实在太多了，必须把 10 个桶变成 20
+个桶，系统会采用 <strong>“倍数分裂”</strong> 而不是 “+1式增加”。</p>
+<ul>
+<li><strong>为什么不加 1？</strong> 正如我们所说，如果桶数从 <span
+class="math inline">\(N \to N+1\)</span>，几乎所有数据的
+<code>hash(key) % (N+1)</code> 结果都会变，导致全量重排。</li>
+<li><strong>倍数分裂的艺术</strong>：
+<ol type="1">
+<li>系统会将 1 个老的 Tablet 直接拆成 2 个新的。</li>
+<li><strong>逻辑保留</strong>：原本属于这个桶的 Hash 范围是
+<code>[0, 1024)</code>，分裂后，新桶 A 负责 <code>[0, 512)</code>，新桶
+B 负责 <code>[512, 1024)</code>。</li>
+<li><strong>零搬运</strong>：利用我之前提到的“硬链接”技术，新桶 A 和 B
+初始时共享物理文件，只需在读的时候按新范围过滤即可。</li>
+</ol></li>
+</ul>
+<p>总体来说，<code>AutoBucket</code>
+根据历史数据的规律推算未来数据量，如果数据本身波动巨大，没有规律，则Auto
+Bucket并不适合该场景。在数据平稳增长或者平稳下降过程中，<code>AutoBucket</code>
+均能起到很好的效果。</p>
+<h1 id="物化视图的智能路由">物化视图的智能路由</h1>
+<h2 id="advertiser_view_record">advertiser_view_record</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 确保指定为 DUPLICATE KEY</span></span><br><span class="line"><span class="keyword">CREATE TABLE</span> advertiser_view_record (</span><br><span class="line">    <span class="type">time</span> <span class="type">DATE</span>,</span><br><span class="line">    advertiser <span class="type">VARCHAR</span>(<span class="number">20</span>),</span><br><span class="line">    channel <span class="type">VARCHAR</span>(<span class="number">20</span>),</span><br><span class="line">    user_id <span class="type">INT</span></span><br><span class="line">) </span><br><span class="line">DUPLICATE KEY(<span class="type">time</span>, advertiser) <span class="comment">-- 必须是明细模型</span></span><br><span class="line">DISTRIBUTED <span class="keyword">BY</span> HASH(<span class="type">time</span>) BUCKETS <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="advertiser_uv">advertiser_uv</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> MATERIALIZED <span class="keyword">VIEW</span> advertiser_uv <span class="keyword">AS</span> </span><br><span class="line"><span class="keyword">SELECT</span> </span><br><span class="line">    advertiser <span class="keyword">as</span> advertiser_uv, </span><br><span class="line">    channel <span class="keyword">as</span> channel_uv, </span><br><span class="line">    <span class="built_in">count</span>(<span class="keyword">distinct</span> user_id) <span class="keyword">AS</span> uv_count <span class="comment">-- 关键：起个新名字</span></span><br><span class="line"><span class="keyword">FROM</span> advertiser_view_record </span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> advertiser, channel;</span><br></pre></td></tr></table></figure>
+<h2 id="insert数据">insert数据</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 插入多条测试数据</span></span><br><span class="line"><span class="comment">-- 注意：user_id 1 在广告主 A 的渠道 1 中出现了两次，物化视图会自动去重</span></span><br><span class="line"><span class="keyword">INSERT INTO</span> advertiser_view_record(<span class="type">time</span>, advertiser, channel, user_id) <span class="keyword">VALUES</span></span><br><span class="line">(<span class="string">&#x27;2024-02-01&#x27;</span>, <span class="string">&#x27;AdvertiserA&#x27;</span>, <span class="string">&#x27;Channel_1&#x27;</span>, <span class="number">1</span>),</span><br><span class="line">(<span class="string">&#x27;2024-02-01&#x27;</span>, <span class="string">&#x27;AdvertiserA&#x27;</span>, <span class="string">&#x27;Channel_1&#x27;</span>, <span class="number">2</span>),</span><br><span class="line">(<span class="string">&#x27;2024-02-01&#x27;</span>, <span class="string">&#x27;AdvertiserA&#x27;</span>, <span class="string">&#x27;Channel_1&#x27;</span>, <span class="number">1</span>), <span class="comment">-- 重复 ID，测试 BITMAP 去重</span></span><br><span class="line">(<span class="string">&#x27;2024-02-01&#x27;</span>, <span class="string">&#x27;AdvertiserB&#x27;</span>, <span class="string">&#x27;Channel_2&#x27;</span>, <span class="number">100</span>),</span><br><span class="line">(<span class="string">&#x27;2024-02-02&#x27;</span>, <span class="string">&#x27;AdvertiserA&#x27;</span>, <span class="string">&#x27;Channel_1&#x27;</span>, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="explain">explain</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> </span><br><span class="line">    advertiser, </span><br><span class="line">    channel, </span><br><span class="line">    <span class="built_in">COUNT</span>(<span class="keyword">DISTINCT</span> user_id) <span class="comment">-- 尽管查这个，Doris 会自动去换算 uv_count</span></span><br><span class="line"><span class="keyword">FROM</span> advertiser_view_record </span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> advertiser, channel;</span><br></pre></td></tr></table></figure>
+<h1 id="索引的实现">索引的实现</h1>
+<pre><code class="highlight mermaid">flowchart LR
+
+index(&quot;Doris Index&quot;)
+inner_index(&quot;内建的智能索引&quot;)
+second_index(&quot;二级索引&quot;)
+
+zone_map_index(&quot;ZoneMap索引&quot;)
+prefix_index(&quot;前缀索引&quot;)
+
+inverted_index(&quot;倒排索引&quot;)
+bloom_filter_index(&quot;Bloom Filter 索引&quot;)
+ngram_bloom_filter_index(&quot;Ngram Bloom Filter 索引&quot;)
+bitmap_index(&quot;Bitmap 索引&quot;)
+
+index --&gt; inner_index &amp; second_index
+inner_index --&gt; zone_map_index &amp; prefix_index
+second_index --&gt; inverted_index &amp; bloom_filter_index &amp; ngram_bloom_filter_index &amp; bitmap_index
+
+class index gray
+
+class inner_index,second_index green
+
+class zone_map_index,prefix_index orange
+
+class inverted_index,bloom_filter_index,ngram_bloom_filter_index,bitmap_index blue
+
+
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<ul>
+<li><code>ZoneMap</code> 索引：<code>ZoneMap</code>
+索引是Doris在存储文件上自动维护的索引信息，涵盖了诸如Min/Max值、NULL值个数等内容；
+<ul>
+<li>简单来说，<strong><code>ZoneMap</code>
+是一种“排除法”索引</strong>：它在 <strong>Segment（文件）</strong>和
+<strong>Page（数据块）</strong> 级别记录数据的
+<strong>Max/Min/Null</strong>
+等统计信息。当我们执行查询时，它会先通过这些标签判断目标数据“是否绝对不在”某个块中。如果不在，就直接跳过该块，从而大幅减少磁盘
+I/O。只有当 <code>ZoneMap</code> 判定“可能存在”时，Doris
+才会真正搬运并解压该数据块，进入内存进行精确的行级过滤。
+<ul>
+<li><strong>ZoneMap
+是“减法”</strong>：它的价值在于跳过（Skip）不满足条件的 Segment 和
+Page。</li>
+<li><strong>ZoneMap 是“预置条件”</strong>：在进入块（Page）进行昂贵的
+CPU 计算和解压之前，先做一次廉价的元数据检查。</li>
+<li><strong>ZoneMap 具有“颗粒度”</strong>：
+<ul>
+<li><strong>Segment 级</strong>：决定是否打开文件。</li>
+<li><strong>Page 级</strong>：决定是否读取文件内的某一块。</li>
+</ul></li>
+</ul></li>
+<li><code>ZoneMap</code> 可以加速
+<code>min</code>/<code>max</code>/<code>null</code>/<code>hasNotNu</code>/<code>=</code>/<code>&gt;</code>/<code>&lt;</code>
+等；</li>
+<li><code>Segment</code> 和 <code>Page</code>
+中，其实包含了多列的信息；</li>
+</ul></li>
+<li>前缀索引：前缀索引基于用户建表时指定的Key来构建，Doris在存储文件上会按照Key对数据进行排序，查询的时候基于排序后的数据通过跳数的方式快速访问数据；</li>
+<li>倒排索引：在数据写入时在对应的列上进行分词，构建排查索引。查询的时候通过倒排索引进行模糊匹配。</li>
+<li>Bloom Filter索引：基于布隆过滤器机制构建的索引。</li>
+<li><code>Ngram Bloom Filter</code>
+索引：采用<code>Ngram</code>和布隆过滤器技术联合沟通的索引结构，主要用于加速关键词模糊匹配场景。</li>
+<li>Bitmap索引：基于位图数据结构构建的索引，主要用于在基数较低的列上进行等值查询或范围查询的场景。</li>
+</ul>
+<h2 id="前缀索引short-key-index">前缀索引（Short Key Index）</h2>
+<figure>
+<img src="\images\doris\short_key_index.png" alt="short key index" />
+<figcaption aria-hidden="true">short key index</figcaption>
+</figure>
+<p>上图是我们的前缀索引的结构，<strong>我们需要注意的是，前缀索引是
+<code>segment</code> 级别的</strong>，而定位到具体的
+<code>segment</code> 的过程，我们必须先完成 <code>tablet</code>
+级别的路由：</p>
+<ol type="1">
+<li><strong>第一级：逻辑定位（哪个物理节点存了数据？）</strong>，当我们发送一个查询
+<code>WHERE id = 123</code> 时，Doris 的 <strong>FE (Frontend)</strong>
+首先通过元数据计算：
+<ul>
+<li><strong>Partition
+(分区)</strong>：根据分区键（如日期）缩小范围。</li>
+<li><strong>Tablet (分桶)</strong>：根据 <code>DISTRIBUTED BY</code>
+字段的 Hash 值或 Range 值，确定数据在哪个 Tablet 里，并找到对应的
+<strong>BE (Backend)</strong> 节点。</li>
+</ul></li>
+<li><strong>第二级：Segment
+筛选（在这个节点上读哪个文件？）</strong>现在请求到了 BE 节点，BE
+发现一个 Tablet 目录下有 10 个 Segment 文件（<code>0.dat</code>,
+<code>1.dat</code> ...）。<strong>如何定位到具体的 Segment？</strong>
+<ul>
+<li>这里不需要前缀索引，而是利用我们之前聊过的 <strong>ZoneMap
+(Min/Max)</strong>：
+<ul>
+<li>每个 Segment 在加载到 BE 时，其 <strong>Footer（文件尾部）</strong>
+里的统计信息会被缓存在内存中。</li>
+<li>Doris 会检查每个 Segment 的列范围。例如：
+<ul>
+<li>Segment 1: <code>[0, 100]</code></li>
+<li>Segment 2: <code>[101, 200]</code></li>
+<li>Segment 3: <code>[201, 300]</code></li>
+</ul></li>
+<li>只有满足条件的 Segment（比如包含 <code>123</code> 的 Segment
+2）才会被列入“待读取清单”。</li>
+</ul></li>
+</ul></li>
+<li><strong>第三级：Segment
+内部定位（前缀索引出场）</strong>一旦确定了要读
+<code>Segment 2</code>，Doris 才会真正用到我们提到的那套流程：
+<ul>
+<li><strong>找到入口</strong>：读取 <code>Segment 2</code> 文件末尾的
+<code>ShortKeyIndexPagePointer</code>。</li>
+<li><strong>加载索引</strong>：根据 Pointer 找到内存中的
+<code>ShortKeyIndexPage</code>（如果不在内存中，就从磁盘拉取）。</li>
+<li><strong>精准跳跃</strong>：在 <code>ShortKeyIndexPage</code>
+里做二分查找，锁定 <code>123</code> 在哪个
+<strong><code>DataPage</code></strong>。</li>
+</ul></li>
+</ol>
+<h2 id="通过-zonemap-过滤-segment">通过 <code>ZoneMap</code> 过滤
+<code>Segment</code></h2>
+<p>这里有一个非常重要的逻辑是：<strong>在我们真实的 <code>OLAP</code>
+数据库使用中，我们基本的最佳实践是会将 <code>datetime</code> 或者
+<code>timestamp</code>
+之类的时间作为分区键和key列的第一列</strong>，这意味着在我们的
+<code>ZoneMap</code> 中，我们保存了时间的
+<code>max</code>/<code>min</code> 值，而我们在查询时，大部分的查询也在
+<code>where</code> 条件上增加该过滤条件。</p>
+<p><strong>而我们的 <code>segment</code>
+中的数据是按照key列严格排序的，这意味着我们可以在这个阶段便过滤大部分不相关的
+<code>segment</code></strong>。</p>
+<p>假设我们把 <code>user_id</code>（高基数、随机分布）放在 Key
+列第一位，把 <code>datetime</code> 放在第二位：</p>
+<ol type="1">
+<li><strong>ZoneMap 塌陷</strong>：虽然数据按 <code>user_id</code>
+排得很整齐，但同一个时间点的数据会散落在成千上万个 Segment 里。</li>
+<li><strong>查询困境</strong>：当我们查“昨天的订单”时，Doris 检查每个
+Segment 的时间范围，发现每个 Segment 里的 <code>min_time</code>
+都是去年，<code>max_time</code> 都是今天。</li>
+<li><strong>后果</strong>：<code>ZoneMap</code>
+判定“每个文件都得看”，前缀索引也因为第一列不匹配而失效。</li>
+</ol>
+<blockquote>
+<p>此外，还有一个额外的问题是：<strong>对于那些乱序的数据如何处理？</strong></p>
+</blockquote>
+<p>对于那些乱序的数据，我们没有办法将它<strong>插入</strong>到我们之前的
+<code>segment</code> 中，而是只能写入到一个新的
+<code>segment</code>，这意味着我们可能会出现某个 <code>segment</code>
+出现大范围的时间跳跃；这会严重拖累我们的性能。所以在实践中，对于乱序数据我们也可能会尽量的将那些时间相近的日志放进
+<code>segment</code> 中。</p>
+<p>在随后的 <code>compaction</code>
+阶段，我们会将这些乱序的数据进行压缩并合并到一起。</p>
+<blockquote>
+<p>如果我既想按时间查得快，又想按 <code>user_id</code> 查得快，怎么选
+Key 列</p>
+</blockquote>
+<p>这其实是 OLAP 设计中的经典权衡。除了我们提到的 <code>datetime</code>
+作为第一列外，Doris 还提供了几件“防身武器”来补足 ZoneMap
+失效时的性能：</p>
+<ol type="1">
+<li><strong>Bloom Filter 指数</strong>：如果 <code>user_id</code>
+没法排在第一位，可以在该列建立 Bloom
+Filter。它不依赖排序，能快速判断“这个 Segment 里到底有没有这个
+<code>user_id</code>”。</li>
+<li><strong>倒排索引 (Inverted
+Index)</strong>：这是针对“非排序键”过滤的最强方案。它直接记录了某个值出现在哪个行号，完全跳过了对
+Segment 的盲目扫描。</li>
+<li><strong>物化视图 (Materialized
+View)</strong>：如果两个维度都极其重要，可以建一个物化视图，物理上按另一种顺序再存一份数据。</li>
+</ol>
+<h2 id="最终-segment-的索引">最终 <code>segment</code> 的索引</h2>
+<p>最终，我们找到了我们的 <code>segment</code>，此时：</p>
+<ol type="1">
+<li>我们通过条件去查询我们的
+<code>KeyBytes</code>，它是一个稀疏索引，每个索引值包含了真实的
+<code>DataPage</code> 的一个索引；这里的问题在于，我们通过
+<code>KeyBytes</code>
+搜索到的只是一个序号，我们需要的是实际的物理地址；</li>
+<li>当找到我们合适的 <code>KeyBytes</code> 的序号后，我们通过
+<code>OffsetBytes</code> 取出实际的物理地址（由于数据是压缩存储的，每个
+Page 的物理长度不同。这时候，Doris 会查阅 Segment Footer 里的
+<strong>Page Index（页面索引）</strong>：），并通过该物理地址读取一个
+<code>DataPage</code>；</li>
+<li>现在数据已经解压到内存中了，在一个 DataPage 内部（通常包含 1024
+行），Doris 会根据该列的<strong>编码方式</strong>进行最后的搜索：
+<ul>
+<li><strong>如果该列是字典编码</strong>：Doris 会在 Page 的字典部分匹配
+<code>datetime</code> 的整数 ID，速度极快。</li>
+<li><strong>如果该列是平铺的数值</strong>：Doris 会利用 CPU 的
+<strong>SIMD（单指令多数据）</strong>
+指令集，一次性比对多行数据，直到找到精确的行号（<code>RowID</code>）。</li>
+</ul></li>
+</ol>
+<h2 id="bitmap">Bitmap</h2>
+<p><code>Bitmap</code> 的实现原理很简单，就是使用一个 <code>int</code>
+或者其他类型的数字，使用数字中的一个 <code>bit</code> 的
+<code>0</code>/<code>1</code> 去标志状态。而我们将这个技术应用到
+<code>doris</code>，那么它的使用逻辑就是如下实现的：</p>
+<ol type="1">
+<li>首先我们需要知道，<code>Bitmap</code> 是 <code>segment</code>
+这个层级的，而不是整个 <code>tablet</code> 层级的；</li>
+<li>在 <strong>Segment 文件内部</strong>，每一行都有一个从
+<code>0</code> 开始的<strong>序号（Ordinal）</strong>，而我们的
+<code>Bitmap</code> 则需要为每一行生成 <code>M</code> 个
+<code>Bitmap</code>，每个 <code>Bitmap</code> 包含 <code>N</code> 个
+<code>bit</code>：
+<ul>
+<li><code>M</code> 是我们 <code>Bitmap</code>
+表示的列的不同值的数量；例如，假设对于地名
+<code>beijing</code>，<code>shanghai</code>，<code>shenzhen</code>
+我们需要三个不同的 <code>Bitmap</code>；</li>
+<li><code>N</code> 是我们的 <code>segment</code> 内部的行的数量；</li>
+</ul></li>
+<li>那么，我们在经历了 <code>partition</code> -&gt; <code>bucket</code>
+-&gt; <code>segment</code> 的过滤定位到某个特定的 <code>segment</code>
+后，此时我们可以使用 <code>Bitmap</code> 来对我们的 <code>where</code>
+条件进行过滤：
+<ul>
+<li>假设我们的条件是
+<code>where area = 'beijing'</code>，那么首先我们要找到表示
+<code>'beijing'</code> 的那个 <code>Bitmap</code>；</li>
+<li>随后，我们在这个 <code>Bitmap</code> 中找到所有满足条件的行号；</li>
+<li>我们通过 <code>segment</code> 的 <code>ShortKeyIndexPage</code>
+中的索引和行号，取读取对应的 <code>DataPage</code>；</li>
+</ul></li>
+</ol>
+<p>有几个可以额外补充的细节是：</p>
+<ol type="1">
+<li>字典辅助：如何找到那个“表示 <code>beijing</code> 的 Bitmap”：在
+Segment 内部，Bitmap 索引其实由两部分组成：
+<ul>
+<li><strong>Dict (字典)</strong>：存储 <code>beijing</code>,
+<code>shanghai</code> 等实际的值，并给每个值一个 <code>ID</code>。</li>
+<li><strong>Bitmaps (位图池)</strong>：存储每个 <code>ID</code> 对应的
+<code>N</code> 位长的位图。</li>
+</ul></li>
+<li>从行号到 DataPage：通过“行号”去读取
+<code>DataPage</code>。这里有一个微观的<strong>“计算跳跃”</strong>：
+<ul>
+<li><strong>位图过滤</strong>：假设 <code>beijing</code> 的位图是
+<code>10110...</code>，它告诉 Doris 第 0, 2, 3 行符合条件。</li>
+<li><strong>Ordinal Index (行号索引)</strong>：Doris 查看 Segment 里的
+<code>Ordinal Index</code>。这个索引记录了每个 DataPage 的起始行号。
+<ul>
+<li>例如：Page 0 存了 0~1023 行，Page 1 存了 1024~2047 行。</li>
+</ul></li>
+<li><strong>命中判定</strong>：既然第 0, 2, 3 行都在 Page 0
+的范围内，Doris 就知道：<strong>“我只需要把 Page 0 读出来就行了，后面的
+Page 通通不用碰。”</strong></li>
+</ul></li>
+</ol>
+<h2 id="bloom-filter">Bloom Filter</h2>
+<p>Bloom Filter 和 <code>Bitmap</code> 都是 <code>segment</code>
+级别的过滤逻辑，区别在于他们的实现逻辑，此外：</p>
+<ul>
+<li><code>Bitmap</code> 适合 <code>=</code>, <code>IN</code>,
+<strong><code>OR</code> / <code>AND</code> 多条件组合</strong></li>
+<li><code>Bloom Filter</code> 适合 <code>=</code>, <code>IN</code></li>
+</ul>
+<h1 id="insert-into-table-...-select">INSERT INTO Table ... SELECT</h1>
+<p><code>doris</code> 中可以通过如下的 <code>SQL</code> 来导入数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> <span class="keyword">Table</span> ... <span class="keyword">SELECT</span> ...</span><br></pre></td></tr></table></figure>
+<p>虽然用户看到的是一条 <code>SQL</code>
+语句，但后台的操作逻辑确实可以拆解为
+<strong>“拉取数据（Select/Export）”</strong> 与
+<strong>“灌入数据（Load）”</strong>。不过，Doris 对这个过程做了深度的
+<strong>“管道化（Pipelining）”</strong> 优化。</p>
+<h2 id="物理层面的内部流转">物理层面的“内部流转”</h2>
+<p>它最大的特点是：<strong>数据不落地</strong>，且 <strong>数据不经过
+FE（Frontend）</strong>。</p>
+<ul>
+<li><strong>Export 阶段</strong>：FE 生成执行计划，指定一群 BE
+节点（Source BEs）负责扫描源表数据。</li>
+<li><strong>传输阶段</strong>：源 BE
+节点在内存中将数据格式化，并直接通过网络（基于 RPC 或 DataStream
+协议）发送给目标 BE 节点（Target BEs）。</li>
+<li><strong>Load 阶段</strong>：目标 BE 接收到数据后，直接调用底层的
+<code>TabletWriter</code>，就像处理普通的 Stream Load 请求一样。</li>
+<li><strong>关键点：数据是直接从 BE 流向 BE 的。FE
+只负责下发“作战指令”，不负责搬运具体的字节。</strong></li>
+</ul>
+<h2 id="事务机制依然是-label-逻辑">事务机制：依然是 Label 逻辑</h2>
+<p>正如我们之前讨论的一致性问题，<code>INSERT INTO ... SELECT</code>
+依然严丝合缝地遵循 <strong>Label 机制</strong>。</p>
+<ol type="1">
+<li><strong>分配 Label</strong>：当我们提交 SQL 时，FE
+会自动为这个任务生成一个 Label（或者我们可以手动指定）。</li>
+<li><strong>两阶段提交</strong>：
+<ul>
+<li>在数据搬运过程中，目标 BE 写入的都是 <code>PREPARED</code>
+状态的数据。</li>
+<li>只有当所有的 Select 线程都读完，且所有的 Load 线程都写完后，FE
+才会发起一次全局 <code>COMMIT</code>。</li>
+</ul></li>
+<li><strong>结果</strong>：要么 SELECT
+的数据全部成功写入目标表，要么全部回滚。</li>
+</ol>
+<h2 id="性能优化并行与背压">性能优化：并行与背压</h2>
+<p>如果单纯是
+<code>Export -&gt; Stream Load</code>，中间会存在等待。Doris
+实际执行的是 <strong>流式并行（Parallel Pipelining）</strong>：</p>
+<ul>
+<li><strong>并行度</strong>：Doris 会根据 Partition/Tablet
+的分布，同时启动多个读取线程和多个写入线程。</li>
+<li><strong>内存背压</strong>：如果目标表写入太慢（比如正在做
+Compaction），目标 BE 会通知源 BE
+减慢读取速度。这避免了因为“读得太快、写得太慢”而导致 BE
+内存溢出（<code>OOM</code>）。</li>
+</ul>
+<h2 id="为什么它比外置-stream-load-快">为什么它比外置 Stream Load
+快</h2>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 33%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>特点</strong></th>
+<th><strong>外置程序搬运</strong></th>
+<th><strong>Doris 原生 INSERT SELECT</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>网络开销</strong></td>
+<td>BE -&gt; Client -&gt; BE (两倍带宽)</td>
+<td>BE -&gt; BE (单倍内网带宽)</td>
+</tr>
+<tr class="even">
+<td><strong>序列化</strong></td>
+<td>必须转为 CSV/JSON 等文本格式</td>
+<td>使用二进制格式（如 Protobuf/RowBatch），极低损耗</td>
+</tr>
+<tr class="odd">
+<td><strong>资源调度</strong></td>
+<td>外部程序容易崩溃，需要手动容错</td>
+<td>FE 自动监控，失败自动重试</td>
+</tr>
+</tbody>
+</table>
+<h1 id="sequence">Sequence</h1>
+<p>在分布式系统中，由于网络抖动、Flink 并行度调整、或者 Kafka Partition
+的重平衡，数据到达存储端的顺序往往是乱序的。通过引入一个<strong>全局单调递增的
+Sequence</strong>，我们实际上是将“物理上的到达顺序”转变为“逻辑上的业务顺序”。</p>
+<p>如果没有这个 Sequence，Doris 在处理主键冲突时，只能依赖
+<strong><code>_timestamp</code>（入库时间）</strong>。但在极端并发下，两个请求可能在同一个毫秒到达，或者后发的请求先到了。</p>
+<ul>
+<li><strong>没有
+Sequence</strong>：系统只能盲目相信“后到的就是最新的”。</li>
+<li><strong>有了
+Sequence</strong>：系统拥有了<strong>“上帝视角”</strong>。无论数据何时到达，Doris
+在合并（Compaction）或查询时，只看那个最大的 Sequence 值。</li>
+</ul>
+<p>在实际生产中，这个 Sequence 通常有三种来源：</p>
+<ol type="1">
+<li><strong>业务时间戳 (Event Time)</strong>：例如
+<code>updated_at</code>。这是最常用的，保证了数据的最终一致性指向最后一次业务操作。</li>
+<li><strong>版本号 (Version)</strong>：由上游业务系统生成的版本号。</li>
+<li><strong>日志位点 (Log Offset)</strong>：如果是从 MySQL Binlog
+同步，通常会使用 <code>Log_File_Offset</code> 拼接 <code>Log_Pos</code>
+作为一个单调递增的数值。</li>
+</ol>
+<h1 id="adbc">ADBC</h1>
+<p><strong>Arrow Flight SQL 是一种“传输协议（Protocol）”，而 ADBC
+是一个“编程接口（API）”。</strong> 它们的关系非常像 <strong>MySQL
+协议</strong> 与 <strong>JDBC 驱动</strong> 之间的关系。</p>
+<p><code>JDBC</code>/<code>ODBC</code>
+的这两个协议都存在一个很大的问题：</p>
+<ul>
+<li>他们是基于行的，而存储则是基于列的，所以整个传输过程最少会存在一个
+<code>列 -&gt; 行</code>
+的过程；如果下游是一些基于列的消费者，那么实际上会包含两次格式转换；</li>
+<li>列的压缩比远高于行的压缩比，这个很好理解，因为列通常来说都是一个格式一个类型的；</li>
+<li>他们都需要通过 <code>FE</code> 节点；</li>
+</ul>
+<h1 id="fragment">Fragment</h1>
+<p>在分布式数据库中，<strong>Fragment（执行片段）</strong>
+是执行计划被切分后的<strong>最小独立并行单元</strong>。</p>
+<p>在分布式架构下，数据存储在不同的 BE
+节点上。我们不可能把所有数据拉到一个地方计算。FE 会根据
+<strong>“数据亲和性”</strong>（Data Locality），将逻辑执行计划（Logical
+Plan）切分为多个物理片段（Physical Fragments）：</p>
+<ul>
+<li><strong>分布式执行</strong>：通过切分，可以让多个 BE
+节点同时处理数据的不同部分。</li>
+<li><strong>流水线化（Pipelining）</strong>：不同的 Fragment
+之间可以像流水线一样协作。上游 Fragment 边读数边传给下游 Fragment。</li>
+</ul>
+<h2 id="fragment-里面包含什么">Fragment 里面包含什么</h2>
+<p>一个 Fragment 实际上是一组 <strong>Operator（算子）</strong>
+的集合。这些算子在同一个线程内以流水线方式执行，不需要跨线程/跨节点的数据交换（Shuffle）。</p>
+<p>通常一个 Fragment 包含以下结构：</p>
+<ol type="1">
+<li><strong>数据源（Data Source）</strong>：
+<ul>
+<li>可以是 <strong>Scan Node</strong>（从磁盘读 Tablet）。</li>
+<li>也可以是 <strong>Exchange Node</strong>（从其他 Fragment
+接收数据）。</li>
+</ul></li>
+<li><strong>处理算子（Operators）</strong>：
+<ul>
+<li>例如：<code>Filter</code>（过滤）、<code>Project</code>（投影）、<code>Local Aggregation</code>（预聚合）、<code>Hash Join</code>（内连接）。</li>
+</ul></li>
+<li><strong>数据输出（Data Sink）</strong>：
+<ul>
+<li>将结果发送给 <strong>Result Sink</strong>（返回给 FE）。</li>
+<li>或者发给 <strong>Data Stream Sink</strong>（通过网络发送给下一个
+Fragment）。</li>
+</ul></li>
+</ol>
+<h2 id="fragment-如何在-be-之间流动">Fragment 如何在 BE 之间流动</h2>
+<p>这里涉及到一个核心概念：<strong>Exchange
+Node（数据交换节点）</strong>。它是划分 Fragment 的边界。</p>
+<ul>
+<li><strong>Fragment 内部</strong>：数据在内存中以 RowBatch（或 Arrow
+Block）的形式在算子间传递，速度极快。</li>
+<li><strong>Fragment 之间</strong>：当需要做 <code>JOIN</code> 或全局
+<code>GROUP BY</code> 时，数据必须重新分布（Shuffle）。FE
+就会在这里“切一刀”，通过 <code>Exchange Node</code> 将数据从 Fragment A
+发送到 Fragment B。</li>
+</ul>
+<h2 id="一个简单的fragment的例子">一个简单的Fragment的例子</h2>
+<p>假设我们执行如下的 <code>SQL</code></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="built_in">count</span>(<span class="operator">*</span>) <span class="keyword">FROM</span> <span class="keyword">table</span> <span class="keyword">GROUP</span> <span class="keyword">BY</span> city</span><br></pre></td></tr></table></figure>
+<p>那么他们的 <code>Fragment</code> 可能是如下的：</p>
+<p><strong>Fragment 1 (Scan &amp; Local Agg)</strong>：</p>
+<ul>
+<li>运行在存储了该表数据的<strong>所有 BE</strong> 上。</li>
+<li>负责从磁盘读数据，并在本地计算每个 BE 内部的 <code>city</code>
+预统计。</li>
+<li>输出：<code>{city: "Beijing", count: 10}</code>。</li>
+</ul>
+<p><strong>Fragment 2 (Global Agg)</strong>：</p>
+<ul>
+<li>通常运行在 <strong>某几个 BE</strong> 上。</li>
+<li>通过 <code>Exchange Node</code> 收集 Fragment 1
+发来的所有结果。</li>
+</ul>
+<p>所以，fragment 实际上是一个SQL被拆分后的最小执行逻辑。</p>
+<p>例如，select count(1) from login group by cities;</p>
+<p>对于这个 SQL，会生成两个不同的 fragment：</p>
+<ol type="1">
+<li>fragment 1 负责在每个 BE 上的 tablet 中进行数据统计，最后输出一个单
+tablet 上的统计结果；</li>
+<li>fragment 2 则以 fragment 1 的输出作为输入，通过 Exchange Node
+读取数据将每个 BE 上的数据汇总输出最终的结果。</li>
+</ol>
+<p>所以，fragment 和我们 flink 中的 operator 非常的相似：</p>
+<p>我们在 operator 中进行初步的计算，但是当我们需要对数据进行 shuffle
+时，就必须使用到新的 operator。</p>
+<p>例如在我们上面的例子中，当我们计算完单个节点的 count 之后，必须
+<code>keyBy</code>(cities) 来做后续的计算，所以这里必须是两个不同的
+operator。</p>
+<h1 id="jobscheduler">JobScheduler</h1>
+<p>在 <code>doris</code> 的 <code>Job Scheduler</code>
+中，我们有两个重要的依赖：</p>
+<ul>
+<li><code>Netty</code> 的 <code>HashedWheelTimer</code></li>
+<li><code>Disruptor</code></li>
+</ul>
+<h2 id="hashedwheeltimer"><code>HashedWheelTimer</code></h2>
+<p>在内存中，一个 <code>HashedWheelTimer</code>
+主要由以下四个部分组成：</p>
+<ul>
+<li><strong>Wheel (轮盘)</strong>：本质上是一个
+<strong>固定长度的数组</strong>。数组中的每一个元素（Slot/Bucket）都是一个双向链表的头节点。</li>
+<li><strong>Tick (刻度)</strong>：时钟拨动一次的时间间隔。比如
+100ms。</li>
+<li><strong>Worker
+(时针线程)</strong>：一个独立的线程，负责像秒针一样转动。它会计算当前的时间戳，并拨动到对应的数组下标。</li>
+<li><strong>HashedWheelTimeout
+(任务对象)</strong>：每个任务被包装成一个对象，记录了它应该在第几圈（remainingRounds）执行。</li>
+</ul>
+<p><code>HashedWheelTimer</code> 简单来说就是：</p>
+<ol type="1">
+<li>计算某个任务下一次执行的时间距离当前时间的 ms 数；</li>
+<li>在计算时，使用 Tick * NumOfWheels = MsPerRound 作为一轮的时间，用
+TotalMs / MsPerRound 得到 rounds，用 TotalMs % MsPerRound / Tick
+得到索引；</li>
+<li>Worker 遍历整个数组，然后每一轮对于 rounds &gt; 0 的进行减一，对
+rounds == 0 的进行调度。</li>
+</ol>
+<p>需要注意的是，我们在 <code>Wheel</code>
+中存的是一个双向链表，它的作用是为了方便的删除任务。</p>
+<h3 id="锁优化">锁优化</h3>
+<p>如果有成千上万个线程同时往时间轮里提交任务（比如 Doris
+处理大量并发连接超时），Worker
+线程在遍历链表的同时还要往里加任务，会产生严重的锁竞争。</p>
+<p>Doris/Netty 内部有一个
+<code>MPSC Queue</code>（多生产者单消费者队列）。外部提交的任务先丢进这个队列，Worker
+线程每跳一次，先从队列里取一批任务塞进对应的槽位，再开始收割。这样整个轮盘的修改完全由
+<strong>单线程</strong> 完成，没有任何锁。</p>
+<h2 id="disruptor"><code>Disruptor</code></h2>
+<h1 id="异步物化视图的调度">异步物化视图的调度</h1>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">那我还有一个问题是，对于异步物化视图的调度逻辑是怎么样的？它是类似于定时任务在某个固定的时间点去调度，还是有个后台进程在后台监控当前写入数据是否满足需求，当满足需求的时候进入到计算</span><br></pre></td></tr></table></figure>
+<p>在 Doris 或 StarRocks 中，异步物化视图的调度主要由一个名为
+<strong><code>MV Job Manager</code></strong>
+的后台进程负责。它的逻辑可以分为以下三个维度：</p>
+<ol type="1">
+<li>定时触发 (Scheduled Refresh)，可以指定
+<code>EVERY (INTERVAL 10 MINUTE)</code> 或通过 Cron
+表达式指定固定时间点。</li>
+<li>手动/立即触发 (Manual/Immediate Refresh)：通过
+<code>REFRESH MATERIALIZED VIEW xxx</code> 命令手动触发。</li>
+<li>自动触发 (Automatic/On-demand Refresh)
+：在某些高级配置中，系统可以监控基表（Base Table）的
+<strong>Version</strong> 变化。每当基表发生 <code>INSERT</code> 或
+<code>LOAD</code>
+操作，基表的元数据版本号会增加。调度进程会扫描这些版本号。为了防止计算资源崩溃，它通常不是“每写一条就触发”，而是有一个<strong>静默期
+(Grace Period)</strong> 或
+<strong>最小间隔</strong>。只有当基表版本发生了变化，且距离上次刷新超过了预设阈值时，才会启动任务。</li>
+</ol>
+<h1 id="pipeline执行引擎">pipeline执行引擎</h1>
+<h1 id="查询的优化">查询的优化</h1>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> </span><br><span class="line">    advertiser, </span><br><span class="line">    channel, </span><br><span class="line">    <span class="built_in">COUNT</span>(<span class="keyword">DISTINCT</span> user_id) <span class="comment">-- 尽管查这个，Doris 会自动去换算 uv_count</span></span><br><span class="line"><span class="keyword">FROM</span> advertiser_view_record </span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> advertiser, channel;</span><br></pre></td></tr></table></figure>
+<p>得到的：</p>
+<figure class="highlight n1ql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line">&quot;<span class="keyword">Explain</span> <span class="keyword">String</span>(Nereids Planner)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>PLAN FRAGMENT <span class="number">0</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  OUTPUT EXPRS:<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    advertiser[#<span class="number">16</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    channel[#<span class="number">17</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    <span class="built_in">COUNT</span>(<span class="keyword">DISTINCT</span> user_id)[#<span class="number">18</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="keyword">PARTITION</span>: HASH_PARTITIONED: advertiser[#<span class="number">13</span>], channel[#<span class="number">14</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  HAS_COLO_PLAN_NODE: <span class="literal">true</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  VRESULT SINK<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     MYSQL_PROTOCOL<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">6</span>:VAGGREGATE (<span class="keyword">merge</span> finalize)(<span class="number">169</span>)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  output: <span class="built_in">count</span>(partial_count(user_id)[#<span class="number">15</span>])[#<span class="number">18</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="keyword">group</span> <span class="keyword">by</span>: advertiser[#<span class="number">13</span>], channel[#<span class="number">14</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  sortByGroupKey:<span class="literal">false</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  cardinality=<span class="number">2</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  distribute expr lists: advertiser[#<span class="number">13</span>], channel[#<span class="number">14</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">5</span>:VEXCHANGE<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     <span class="keyword">offset</span>: <span class="number">0</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     distribute expr lists: advertiser[#<span class="number">13</span>], channel[#<span class="number">14</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>PLAN FRAGMENT <span class="number">1</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="keyword">PARTITION</span>: HASH_PARTITIONED: advertiser[#<span class="number">7</span>], channel[#<span class="number">8</span>], user_id[#<span class="number">9</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  HAS_COLO_PLAN_NODE: <span class="literal">true</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  STREAM DATA SINK<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    EXCHANGE ID: <span class="number">05</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    HASH_PARTITIONED: advertiser[#<span class="number">13</span>], channel[#<span class="number">14</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">4</span>:VAGGREGATE (<span class="keyword">update</span> serialize)(<span class="number">161</span>)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  STREAMING<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  output: partial_count(user_id[#<span class="number">12</span>])[#<span class="number">15</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="keyword">group</span> <span class="keyword">by</span>: advertiser[#<span class="number">10</span>], channel[#<span class="number">11</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  sortByGroupKey:<span class="literal">false</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  cardinality=<span class="number">2</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  distribute expr lists: advertiser[#<span class="number">10</span>], channel[#<span class="number">11</span>], user_id[#<span class="number">12</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">3</span>:VAGGREGATE (<span class="keyword">merge</span> finalize)(<span class="number">157</span>)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="keyword">group</span> <span class="keyword">by</span>: advertiser[#<span class="number">7</span>], channel[#<span class="number">8</span>], user_id[#<span class="number">9</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  sortByGroupKey:<span class="literal">false</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  cardinality=<span class="number">4</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  distribute expr lists: advertiser[#<span class="number">7</span>], channel[#<span class="number">8</span>], user_id[#<span class="number">9</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">2</span>:VEXCHANGE<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     <span class="keyword">offset</span>: <span class="number">0</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     distribute expr lists: <span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>PLAN FRAGMENT <span class="number">2</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="keyword">PARTITION</span>: HASH_PARTITIONED: time[#<span class="number">0</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  HAS_COLO_PLAN_NODE: <span class="literal">false</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  STREAM DATA SINK<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    EXCHANGE ID: <span class="number">02</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>    HASH_PARTITIONED: advertiser[#<span class="number">7</span>], channel[#<span class="number">8</span>], user_id[#<span class="number">9</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">1</span>:VAGGREGATE (<span class="keyword">update</span> serialize)(<span class="number">149</span>)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  STREAMING<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="keyword">group</span> <span class="keyword">by</span>: advertiser[#<span class="number">4</span>], channel[#<span class="number">5</span>], user_id[#<span class="number">6</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  sortByGroupKey:<span class="literal">false</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  cardinality=<span class="number">4</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  distribute expr lists: <span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  |  <span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  <span class="number">0</span>:VOlapScanNode(<span class="number">141</span>)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     TABLE: doris_example.advertiser_view_record(advertiser_view_record), PREAGGREGATION: <span class="keyword">ON</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     partitions=<span class="number">1</span>/<span class="number">1</span> (advertiser_view_record)<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     tablets=<span class="number">10</span>/<span class="number">10</span>, tabletList=<span class="number">1775798239042</span>,<span class="number">1775798239046</span>,<span class="number">1775798239050</span> ...<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     cardinality=<span class="number">5</span>, avgRowSize=<span class="number">2210.0</span>, numNodes=<span class="number">3</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     pushAggOp=NONE<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     final projections: advertiser[#<span class="number">1</span>], channel[#<span class="number">2</span>], user_id[#<span class="number">3</span>]<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>     final project output tuple id: <span class="number">1</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>========== MATERIALIZATIONS ==========<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>MaterializedView<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>MaterializedViewRewriteSuccessAndChose:<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>MaterializedViewRewriteSuccessButNotChose:<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>MaterializedViewRewriteFail:<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span> CBO.internal.doris_example.advertiser_view_record.advertiser_uv fail<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>  FailInfo: <span class="keyword">View</span> struct info <span class="keyword">is</span> invalid<span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">&quot;</span>========== <span class="keyword">STATISTICS</span> ==========<span class="string">&quot;</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/cpp/" rel="tag"># cpp</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/13/transformer%E7%9A%84cheatsheet/" rel="prev" title="transformer的cheatsheet">
+                  <i class="fa fa-angle-left"></i> transformer的cheatsheet
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/05/20/cheatsheet-for-pg-and-mysql/" rel="next" title="cheatsheet for pg and mysql">
+                  cheatsheet for pg and mysql <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="pg和mysql在AI时代下的对比 从AI时代的视角再来看看pg相对于mysql的优势，在 Web2 时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了 AI 时代，这个原则却不一定适用了。 因为核心矛盾变了：AI 时代的数据">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cheatsheet for pg and mysql">
+<meta property="og:url" content="https://0x822a5b87.github.io/2026/05/20/cheatsheet-for-pg-and-mysql/index.html">
+<meta property="og:site_name" content="0x822a5b87的博客">
+<meta property="og:description" content="pg和mysql在AI时代下的对比 从AI时代的视角再来看看pg相对于mysql的优势，在 Web2 时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了 AI 时代，这个原则却不一定适用了。 因为核心矛盾变了：AI 时代的数据">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-05-20T11:53:47.000Z">
+<meta property="article:modified_time" content="2026-05-20T11:58:23.429Z">
+<meta property="article:author" content="2183814023">
+<meta property="article:tag" content="database">
+<meta property="article:tag" content="mysql">
+<meta property="article:tag" content="postgresql">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://0x822a5b87.github.io/2026/05/20/cheatsheet-for-pg-and-mysql/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://0x822a5b87.github.io/2026/05/20/cheatsheet-for-pg-and-mysql/","path":"2026/05/20/cheatsheet-for-pg-and-mysql/","title":"cheatsheet for pg and mysql"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>cheatsheet for pg and mysql | 0x822a5b87的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">0x822a5b87的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">到码头整点薯条吃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E5%9C%A8ai%E6%97%B6%E4%BB%A3%E4%B8%8B%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">1.</span> <span class="nav-text">pg和mysql在AI时代下的对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">2.</span> <span class="nav-text">小数的存储逻辑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">2183814023</p>
+  <div class="site-description" itemprop="description">到码头整点薯条吃</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/05/20/cheatsheet-for-pg-and-mysql/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="cheatsheet for pg and mysql | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cheatsheet for pg and mysql
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-05-20 19:53:47 / 修改时间：19:58:23" itemprop="dateCreated datePublished" datetime="2026-05-20T19:53:47+08:00">2026-05-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="pg和mysql在ai时代下的对比">pg和mysql在AI时代下的对比</h1>
+<p>从AI时代的视角再来看看pg相对于mysql的优势，在 Web2
+时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了
+AI 时代，这个原则却不一定适用了。 因为核心矛盾变了：AI
+时代的数据和传统的电商/EPR等系统完全不一样。
+在传统业务（如电商、社交）中，数据库里流转的往往是 int、varchar(50)
+这种极小的数据。但在 AI/RAG 场景下，数据长这样： - 一个 content
+字段（知识块文本）：2000 字，约 4KB - 8KB。 - 一个 embedding
+字段（高维向量）：1536 个 float32，固定 6KB。
+&gt;这里很值得注意的是，在目前主流的LLM架构下，通常向量的维度是非常之多的，即使在进行
+quantation 之后依然是一个非常大的开销。
+&gt;如果我们按照之前的方式，先让数据库把数据捞出来，再在应用层做过滤、树形组装和相似度计算。我们来算一下把
+1 万条 潜在候选数据从数据库传输到应用层的物理开销： &gt;网络传输数据量 =
+10000 * (6KB + 4KB) = 100MB
+&gt;在这个场景下，系统的性能瓶颈根本不是数据库的
+CPU，而是内网网卡的网速和序列化/反序列化的 CPU 损耗。 ---
+基于以上的这个场景，其实更大的增加了 pg 和 mysql 的差距，现在在 AI INFRA
+相关的架构设计中，基本 pg 已经完全取代了 mysql 的生态位。 在现代大数据和
+AI 场景下，“让计算向数据移动（Move Code to Data）” 的性能，远远超过
+“让数据向计算移动（Move Data to Code）”。 因为 AI
+时代应用的特征通常是：QPS
+并不极端高（因为大模型吐字速度本来就慢，接口并发天然受限），但单次请求的数据量极大、逻辑极复杂（需要权限+全文本+向量+状态机）。</p>
+<h1 id="小数的存储逻辑">小数的存储逻辑</h1>
+<blockquote>
+<p>double/float
+之所以存在误差，根本原因在于我们需要使用二进制（计算机的进制）去存储十进制（常用的数学进制）的有限小数。
+问题在于，在十进制下的有限小数被转换为二进制之后很有可能不是一个有限小数，而此时由于计算机的存储限制我们将会丢失精度。
+在思考pg是如何存储 decimal/numeric
+之前，我们其实需要了解分数和小数的关系。
+对于一个最简分数，有两个重要的因素： 1. 进制 2. 分母
+注意，这里我们发现它和分子完全没有任何关系，它是否可以被转换为一个有限小数取决于：最简分母拆开后的“所有质因数”，必须全部包含在“进制基数的质因数”里面。
+以我们的10进制为例，我们的 10 可以被拆分为 2 *
+5，也就是它的进制基数的质因数是 2 和
+5，那么对于任意分母是这些质因数的乘积的小数，不论它的分子是什么，都可以转换为一个二进制的小数。
+这其实是一个比较反直觉的结论，因为通常来说很多时候我们会认为是否可以表示为有限小数和分子有关，看看下面的例子：
+1. 3 / 25 = 0.12 2. 9 / 25 = 0.36 3. 11 / 125 = 0.088
+都是有限小数，而一旦分子包含了进制基数的质因数外的小数，那么这个小数都不能转换为一个有限小数，我们用
+6 来作为例子： 1. 1 / 6 = 0.1666666667... 2. 5 / 6 = 0.8333333333...
+由于这个十进制小数到二进制的小数转换的问题，所以实际上我们所谓的
+float/double 表示小数，它的整体思路是将整个数字分为三个部分。我们以
+double 类型为例子，通常来说，他们都严格占据固定的 64 个比特位： 1.
+符号位 (Sign)占用1个bit。 2. 指数位 (Exponent)占用 11 个 bit。 3. 尾数位
+(Mantissa / Significand)占用 52 个 bit。
+<strong>这里非常重要的一点是，不论一个数字的大小，它都会被转换为科学计数法，那么这三个数字的含义如下：</strong>
+1. 最高位为符号位。 2. <code>[62:52]</code>
+表示科学计数法中的E，也就是我们这里表示是 2 的 E 次幂。 3.
+<code>[51:0]</code> 表示我们的科学计数法中的数字。
+我们的尾数其实是按照如下的逻辑： 1. 最高位表示 2^-1 对应的数； 2.
+次高位表示 2^-2 对应的数； 3. 依次类推直到最最低位。
+最后，将这些所有的数字加起来得到我们实际表达的数，再乘以我们的指数位表示的值即可。我们可以使用
+<code>0.1</code> 这个看似简单的例子来说明，这个数字等于 1 /
+10，而这里非常容易出现误解的点是，他可以在二进制下表示为一个有限小数。
+而实际上来说：它的分母等于 2 *
+5，而这不满足我们前面提到的<strong>分母是进制基数的质因数的乘积</strong>，也就是它其实不能被转换为一个二进制的有限小数。
+那么，实际上他的double形式是如下表示的： 1. 首先，我们需要知道 2^-3 ==
+0.125，2^-4 == 0.0625。而 0.125 大于 0.1，所以我们第一位只能是表示 2^-4
+的位，此时我们剩下 0.0375； 2. 按照上面的逻辑，我们找到下一个数字 2^-5
+== 0.03125，此时我们剩下 0.00625； 3. 下一个数字是 2^-8 ==
+0.00390625，此时我们剩下 0.00625 - 0.00390625 == 0.00234375； 4.
+依次类推，直到达到我们的浮点数的精度耗尽。
+此时，我们得到了一个这样的数字： 1bit 11bits 52bits
++---+-------------+----------------------------------------------------------------------+
+| 0 | 01111111011 | 1001100110011001100110011001100110011001100110011010
+|
++---+-------------+----------------------------------------------------------------------+
+符号 指数 尾数 我们再按照反向的逻辑把他组装起来，就得到了一个近似于
+<code>0.1</code> 的数字，此时出现精度丢失。 ## pg是如何精确表示小数的
+现在，我们可以开始去学习pg是如何去精确的表示我们的小数的了。
+它的思想也很简单，既然我用2进制表示10进制的数字会出现精度丢失，那么我直接用一个10000进制的数字来表示10进制不就行了吗？
+这里结合我们之前的结论我们会知道，10作为分母的质因数是 2 和
+5，而它是10000的质因数的子集，也就是说：任意10进制下的有限小数，在10000进制下一定也是一个有限小数。
+而它的问题在于，硬件层面是二进制的，我们只能在软件层面模拟这个计算逻辑。
+补充说明：选择10000进制的原因是在内存利用率和uint16的最大存储容量中间的一个权衡。
+使用1000进制内存利用率低，使用100000进制则超过了uint16的上限。 ## 例子
+我们以 <code>12345678.0009</code> 这个数字作为例子： 1. <code>pg</code>
+在底层，将一个十进制表示的数字，按照四位数字拆分，并将拆分后的数字存储到一个uint16的数字中。这里它被拆分为
+<code>1234</code>，<code>5678</code>，<code>0009</code>
+四个不同的数字。这里指的注意的是，我们在写SQL的时候，其实这个数字是以字符串形式传递到PG中，否则我们在传输过程中已经丢失了精度了。
+2. 随后，我们将这三个数字存储在一个数组中，那么此时它的结构应该是如下的
+<code>[1234, 5678, 0009]</code>； 3. 那么很明显，我们现在需要做的就是：
+1. 记录我们的小数点在哪个位置。 2. 记录我们的符号。
+而实际上pg也是这么做的，它在内部声明了一个如下的结构体： <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">NumericData</span></span><br><span class="line">&#123;</span><br><span class="line">    int16       weight;             <span class="comment">/* 权重：小数点相对于数组第一个元素的位置 */</span></span><br><span class="line">    uint16      sign_dscale;        <span class="comment">/* 符号位 (正/负/NaN) + 声明的小数位数 */</span></span><br><span class="line">    NumericDigit *digits;           <span class="comment">/* 指向一个由 uint16 组成的数字数组 */</span></span><br><span class="line">&#125; NumericData;</span><br></pre></td></tr></table></figure>
+那么，我们这个数字此时在内存中应该是这样的： <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data.weight = <span class="number">1</span>;</span><br><span class="line">data.sign_dscal = <span class="number">0x0004</span>;</span><br><span class="line">data.digits = [<span class="number">1234</span>, <span class="number">5678</span>, <span class="number">000</span>9];</span><br></pre></td></tr></table></figure>
+这里我们的结构是： 1.
+<code>data.weight == 1</code>，表示了我们在数组中的权重，它往左走时
+weight++，往右走时 weight--。也就是说，<code>data.digits[0]</code>
+的权重是1，表示数字表示的是 <code>1234</code> * 10000^1，而右边的
+<code>data.digits[2]</code> 的权重是 -1，表示的是 <code>0009</code> *
+10000^-1； 2. <code>data.digits</code> 同时表示了符号和生命的小数位数：
+- 高位部分表示正数（NUMERIC_POS = 0x0000） - 低位部分 dscale =
+4，表示人类明确声明了4位十进制小数（即 .0009）</p>
+</blockquote>
+<h1
+id="pg和mysql中对于变长字段的处理">pg和mysql中对于变长字段的处理</h1>
+<p>关于变长列在mysql和pg中的性能分析，我们首先需要知道他们在内部更新数据的机制。</p>
+<p>通常来讲，定长列比变长列的性能更高的原因主要是：</p>
+<p>在数据库中，出于磁盘IO的使用率和性能等因素，我们同表的不同行通常在磁盘上紧密的排列在一起。
+此时，对于定长的列我们已经预先知道了它的长度，那么我们在磁盘的结构上是可预测的：超长的会被截断或拒绝写入，过短的会被填充到预定义的长度。这保证了在更新时我们整个表的结构不会发生任何的变动，这是我们最大的性能杀手。</p>
+<p>然而，对于变长的数据，我们的解决方案并不多：</p>
+<ol type="1">
+<li>列不存实际数据，只存一个指向实际磁盘数据的指针，由于指针的长度是可以预测的，所以它可以保证更新时表结构不发生变化。问题是，这引入了一个巨大的性能开销，在读取数据时，我们需要通过指针进行一次磁盘的随机跳转，这种磁盘随机IO使得性能可能直接被拖垮。</li>
+<li>预留一个足够长的空间，但是这不仅仅引入了大量的磁盘浪费，同时没有真正的实现所谓的变长存储。</li>
+</ol>
+<p>而这一切的源头其实都在于 mysql 的 InnoDB
+引擎的一个特性，数据原地更新（In-place Update）。 InnoDB
+在更新数据时，它的 MVCC 机制是通过 Undo Log
+和和主表数据里实现的。它维护了一个数据结构，在 Undo Log
+中记录了那些历史数据，在主表的Page页中记录了最新版本的数据。</p>
+<p>而 pg 则使用了完全不同的方式，pg
+中将新行的数据存储到了一个全新的位置（新的Tuple），而老的数据则直接停留在原来的磁盘位置，这意味着
+pg 根本不需要考虑在数据变长时会引起磁盘结构的变化。</p>
+<p>当然，这也引入了很多其他的问题，pg 额外引入了HOT (Heap-Only
+Tuple)，VACUUM 异步垃圾回收等方式来解决。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/database/" rel="tag"># database</a>
+              <a href="/tags/postgresql/" rel="tag"># postgresql</a>
+              <a href="/tags/mysql/" rel="tag"># mysql</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/04/08/cheatsheet-for-doris/" rel="prev" title="cheatsheet for doris">
+                  <i class="fa fa-angle-left"></i> cheatsheet for doris
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">2183814023</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"0x822a5b87/blog-comments","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

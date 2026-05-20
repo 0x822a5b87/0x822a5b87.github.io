@@ -146,12 +146,12 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">47</span>
+          <span class="site-state-item-count">49</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-count">43</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -168,6 +168,304 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/05/20/cheatsheet-for-pg-and-mysql/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/05/20/cheatsheet-for-pg-and-mysql/" class="post-title-link" itemprop="url">cheatsheet for pg and mysql</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-05-20 19:53:47 / 修改时间：19:58:23" itemprop="dateCreated datePublished" datetime="2026-05-20T19:53:47+08:00">2026-05-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="pg和mysql在ai时代下的对比">pg和mysql在AI时代下的对比</h1>
+<p>从AI时代的视角再来看看pg相对于mysql的优势，在 Web2
+时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了
+AI 时代，这个原则却不一定适用了。 因为核心矛盾变了：AI
+时代的数据和传统的电商/EPR等系统完全不一样。
+在传统业务（如电商、社交）中，数据库里流转的往往是 int、varchar(50)
+这种极小的数据。但在 AI/RAG 场景下，数据长这样： - 一个 content
+字段（知识块文本）：2000 字，约 4KB - 8KB。 - 一个 embedding
+字段（高维向量）：1536 个 float32，固定 6KB。
+&gt;这里很值得注意的是，在目前主流的LLM架构下，通常向量的维度是非常之多的，即使在进行
+quantation 之后依然是一个非常大的开销。
+&gt;如果我们按照之前的方式，先让数据库把数据捞出来，再在应用层做过滤、树形组装和相似度计算。我们来算一下把
+1 万条 潜在候选数据从数据库传输到应用层的物理开销： &gt;网络传输数据量 =
+10000 * (6KB + 4KB) = 100MB
+&gt;在这个场景下，系统的性能瓶颈根本不是数据库的
+CPU，而是内网网卡的网速和序列化/反序列化的 CPU 损耗。 ---
+基于以上的这个场景，其实更大的增加了 pg 和 mysql 的差距，现在在 AI INFRA
+相关的架构设计中，基本 pg 已经完全取代了 mysql 的生态位。 在现代大数据和
+AI 场景下，“让计算向数据移动（Move Code to Data）” 的性能，远远超过
+“让数据向计算移动（Move Data to Code）”。 因为 AI
+时代应用的特征通常是：QPS
+并不极端高（因为大模型吐字速度本来就慢，接口并发天然受限），但单次请求的数据量极大、逻辑极复杂（需要权限+全文本+向量+状态机）。</p>
+<h1 id="小数的存储逻辑">小数的存储逻辑</h1>
+<blockquote>
+<p>double/float
+之所以存在误差，根本原因在于我们需要使用二进制（计算机的进制）去存储十进制（常用的数学进制）的有限小数。
+问题在于，在十进制下的有限小数被转换为二进制之后很有可能不是一个有限小数，而此时由于计算机的存储限制我们将会丢失精度。
+在思考pg是如何存储 decimal/numeric
+之前，我们其实需要了解分数和小数的关系。
+对于一个最简分数，有两个重要的因素： 1. 进制 2. 分母
+注意，这里我们发现它和分子完全没有任何关系，它是否可以被转换为一个有限小数取决于：最简分母拆开后的“所有质因数”，必须全部包含在“进制基数的质因数”里面。
+以我们的10进制为例，我们的 10 可以被拆分为 2 *
+5，也就是它的进制基数的质因数是 2 和
+5，那么对于任意分母是这些质因数的乘积的小数，不论它的分子是什么，都可以转换为一个二进制的小数。
+这其实是一个比较反直觉的结论，因为通常来说很多时候我们会认为是否可以表示为有限小数和分子有关，看看下面的例子：
+1. 3 / 25 = 0.12 2. 9 / 25 = 0.36 3. 11 / 125 = 0.088
+都是有限小数，而一旦分子包含了进制基数的质因数外的小数，那么这个小数都不能转换为一个有限小数，我们用
+6 来作为例子： 1. 1 / 6 = 0.1666666667... 2. 5 / 6 = 0.8333333333...
+由于这个十进制小数到二进制的小数转换的问题，所以实际上我们所谓的
+float/double 表示小数，它的整体思路是将整个数字分为三个部分。我们以
+double 类型为例子，通常来说，他们都严格占据固定的 64 个比特位： 1.
+符号位 (Sign)占用1个bit。 2. 指数位 (Exponent)占用 11 个 bit。 3. 尾数位
+(Mantissa / Significand)占用 52 个 bit。
+<strong>这里非常重要的一点是，不论一个数字的大小，它都会被转换为科学计数法，那么这三个数字的含义如下：</strong>
+1. 最高位为符号位。 2. <code>[62:52]</code>
+表示科学计数法中的E，也就是我们这里表示是 2 的 E 次幂。 3.
+<code>[51:0]</code> 表示我们的科学计数法中的数字。
+我们的尾数其实是按照如下的逻辑： 1. 最高位表示 2^-1 对应的数； 2.
+次高位表示 2^-2 对应的数； 3. 依次类推直到最最低位。
+最后，将这些所有的数字加起来得到我们实际表达的数，再乘以我们的指数位表示的值即可。我们可以使用
+<code>0.1</code> 这个看似简单的例子来说明，这个数字等于 1 /
+10，而这里非常容易出现误解的点是，他可以在二进制下表示为一个有限小数。
+而实际上来说：它的分母等于 2 *
+5，而这不满足我们前面提到的<strong>分母是进制基数的质因数的乘积</strong>，也就是它其实不能被转换为一个二进制的有限小数。
+那么，实际上他的double形式是如下表示的： 1. 首先，我们需要知道 2^-3 ==
+0.125，2^-4 == 0.0625。而 0.125 大于 0.1，所以我们第一位只能是表示 2^-4
+的位，此时我们剩下 0.0375； 2. 按照上面的逻辑，我们找到下一个数字 2^-5
+== 0.03125，此时我们剩下 0.00625； 3. 下一个数字是 2^-8 ==
+0.00390625，此时我们剩下 0.00625 - 0.00390625 == 0.00234375； 4.
+依次类推，直到达到我们的浮点数的精度耗尽。
+此时，我们得到了一个这样的数字： 1bit 11bits 52bits
++---+-------------+----------------------------------------------------------------------+
+| 0 | 01111111011 | 1001100110011001100110011001100110011001100110011010
+|
++---+-------------+----------------------------------------------------------------------+
+符号 指数 尾数 我们再按照反向的逻辑把他组装起来，就得到了一个近似于
+<code>0.1</code> 的数字，此时出现精度丢失。 ## pg是如何精确表示小数的
+现在，我们可以开始去学习pg是如何去精确的表示我们的小数的了。
+它的思想也很简单，既然我用2进制表示10进制的数字会出现精度丢失，那么我直接用一个10000进制的数字来表示10进制不就行了吗？
+这里结合我们之前的结论我们会知道，10作为分母的质因数是 2 和
+5，而它是10000的质因数的子集，也就是说：任意10进制下的有限小数，在10000进制下一定也是一个有限小数。
+而它的问题在于，硬件层面是二进制的，我们只能在软件层面模拟这个计算逻辑。
+补充说明：选择10000进制的原因是在内存利用率和uint16的最大存储容量中间的一个权衡。
+使用1000进制内存利用率低，使用100000进制则超过了uint16的上限。 ## 例子
+我们以 <code>12345678.0009</code> 这个数字作为例子： 1. <code>pg</code>
+在底层，将一个十进制表示的数字，按照四位数字拆分，并将拆分后的数字存储到一个uint16的数字中。这里它被拆分为
+<code>1234</code>，<code>5678</code>，<code>0009</code>
+四个不同的数字。这里指的注意的是，我们在写SQL的时候，其实这个数字是以字符串形式传递到PG中，否则我们在传输过程中已经丢失了精度了。
+2. 随后，我们将这三个数字存储在一个数组中，那么此时它的结构应该是如下的
+<code>[1234, 5678, 0009]</code>； 3. 那么很明显，我们现在需要做的就是：
+1. 记录我们的小数点在哪个位置。 2. 记录我们的符号。
+而实际上pg也是这么做的，它在内部声明了一个如下的结构体： </p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">NumericData</span></span><br><span class="line">&#123;</span><br><span class="line">    int16       weight;             <span class="comment">/* 权重：小数点相对于数组第一个元素的位置 */</span></span><br><span class="line">    uint16      sign_dscale;        <span class="comment">/* 符号位 (正/负/NaN) + 声明的小数位数 */</span></span><br><span class="line">    NumericDigit *digits;           <span class="comment">/* 指向一个由 uint16 组成的数字数组 */</span></span><br><span class="line">&#125; NumericData;</span><br></pre></td></tr></table></figure>
+那么，我们这个数字此时在内存中应该是这样的： <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data.weight = <span class="number">1</span>;</span><br><span class="line">data.sign_dscal = <span class="number">0x0004</span>;</span><br><span class="line">data.digits = [<span class="number">1234</span>, <span class="number">5678</span>, <span class="number">000</span>9];</span><br></pre></td></tr></table></figure>
+这里我们的结构是： 1.
+<code>data.weight == 1</code>，表示了我们在数组中的权重，它往左走时
+weight++，往右走时 weight--。也就是说，<code>data.digits[0]</code>
+的权重是1，表示数字表示的是 <code>1234</code> * 10000^1，而右边的
+<code>data.digits[2]</code> 的权重是 -1，表示的是 <code>0009</code> *
+10000^-1； 2. <code>data.digits</code> 同时表示了符号和生命的小数位数：
+- 高位部分表示正数（NUMERIC_POS = 0x0000） - 低位部分 dscale =
+4，表示人类明确声明了4位十进制小数（即 .0009）<p></p>
+</blockquote>
+<h1 id="pg和mysql中对于变长字段的处理">pg和mysql中对于变长字段的处理</h1>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/05/20/cheatsheet-for-pg-and-mysql/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2026/04/08/cheatsheet-for-doris/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="2183814023">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="0x822a5b87的博客">
+      <meta itemprop="description" content="到码头整点薯条吃">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 0x822a5b87的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/04/08/cheatsheet-for-doris/" class="post-title-link" itemprop="url">cheatsheet for doris</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-04-08 14:19:17" itemprop="dateCreated datePublished" datetime="2026-04-08T14:19:17+08:00">2026-04-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-04-13 17:44:39" itemprop="dateModified" datetime="2026-04-13T17:44:39+08:00">2026-04-13</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="clustercontextnamespace">cluster/context/namespace</h1>
+<pre><code class="highlight mermaid">graph TD
+    subgraph &quot;宿主机 / 本地环境 (kubectl)&quot;
+        C[Context A: 生产环境]
+        D[Context B: 测试环境]
+    end
+
+    subgraph &quot;集群 1 (Cluster A)&quot;
+        N1[Namespace: default]
+        N2[Namespace: doris-prod]
+    end
+
+    subgraph &quot;集群 2 (Cluster B)&quot;
+        N3[Namespace: default]
+        N4[Namespace: doris-test]
+    end
+
+    C --&gt;|关联到| ClusterA(集群 1)
+    D --&gt;|关联到| ClusterB(集群 2)
+    
+    ClusterA -.-&gt; N1
+    ClusterA -.-&gt; N2
+    ClusterB -.-&gt; N3
+    ClusterB -.-&gt; N4
+
+    style ClusterA fill:#f9f,stroke:#333
+    style ClusterB fill:#bbf,stroke:#333
+    style C fill:#dfd
+    style D fill:#dfd</code></pre>
+<ul>
+<li><code>context</code> 和 <code>namespace</code>
+的关系其实比较绕，他们不是单纯的多对一或者一对一的关系：
+<ul>
+<li>一个 Cluster 实体可以被多个不同的 Context 对象所引用</li>
+<li>一个 Cluster 实体不能引用多个 Context</li>
+<li><strong>Cluster
+是“被引用方”</strong>：它像是一个<strong>静态的地理坐标</strong>，它不知道（也不在乎）有多少个
+Context 在指向它。</li>
+<li>一个 Context 实体，包含了它引用的 Cluster 对象和访问该 Cluster
+对象的 User。</li>
+</ul></li>
+</ul>
+<p>此外，在 <code>~/.kube/config</code> 的定义中，<code>namespace</code>
+<strong>确实是被写在 <code>context</code>
+结构体内部的</strong>，但它的地位和
+<code>cluster</code>、<code>user</code> 完全不同。</p>
+<p>在 <code>context</code> 的定义里，它们的关系是这样的：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/04/08/cheatsheet-for-doris/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -213,7 +511,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-15 21:32:41" itemprop="dateModified" datetime="2026-03-15T21:32:41+08:00">2026-03-15</time>
+      <time title="修改时间：2026-03-17 19:50:05" itemprop="dateModified" datetime="2026-03-17T19:50:05+08:00">2026-03-17</time>
     </span>
 
   
@@ -1094,232 +1392,6 @@ my own docker from scratch</a> 中，我们实现了：</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/12/23/Go-Rust-CPP%E7%9A%84Covariance-Contravariance-Invariance/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/18/build-my-own-docker-from-scratch/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/18/build-my-own-docker-from-scratch/" class="post-title-link" itemprop="url">build my own docker from scratch</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-12-18 23:24:46" itemprop="dateCreated datePublished" datetime="2025-12-18T23:24:46+08:00">2025-12-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="build-my-own-docker-from-scratch">build my own docker from
-scratch</h1>
-<blockquote>
-<p>Docker is an OS‑level virtualization (or containerization) platform,
-which allows applications to share the host OS kernel instead of running
-a separate guest OS like in traditional virtualization.</p>
-</blockquote>
-<h1 id="前言">前言</h1>
-<blockquote>
-<p>本文基于 <code>OpenCloudOS</code> 操作系统以及 <code>x86_64</code>
-平台，<code>go1.24.11</code> 语言开发测试，全部代码位于 <a target="_blank" rel="noopener" href="https://github.com/0x822a5b87/tiny-docker">tiny-docker</a>。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line marked"><span class="built_in">uname</span> -a</span><br><span class="line"><span class="comment"># Linux VM-0-10-opencloudos 6.6.117-45.1.oc9.x86_64 #1 SMP Tue Dec 16 11:49:47 CST 2025 x86_64 x86_64 x86_64 GNU/Linux</span></span><br><span class="line"></span><br><span class="line marked">go version</span><br><span class="line"><span class="comment"># go version go1.24.11 linux/amd64</span></span><br><span class="line"></span><br><span class="line marked">docker --version</span><br><span class="line"><span class="comment"># Docker version 29.1.3, build f52814d</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><a target="_blank" rel="noopener" href="https://www.docker.com/">Docker</a> 是基于 Linux Namespace
-和 Cgroup 实现的轻量级虚拟化平台。相较于传统虚拟机（如 <a target="_blank" rel="noopener" href="https://www.virtualbox.org/">Oracle VirtualBox</a>），Docker
-无需模拟硬件和运行独立内核，仅通过内核级的资源隔离与限制实现
-“虚拟环境”，因此更轻量级（毫秒级启动）、资源占用更低 ——
-同一台宿主机上的所有容器<strong>共享宿主机内核</strong>，这是容器与虚拟机的核心区别。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/12/18/build-my-own-docker-from-scratch/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://0x822a5b87.github.io/2025/12/13/uCore%E5%B9%B6%E5%8F%91/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="2183814023">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="0x822a5b87的博客">
-      <meta itemprop="description" content="到码头整点薯条吃">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | 0x822a5b87的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/" class="post-title-link" itemprop="url">uCore并发</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-12-13 16:00:35" itemprop="dateCreated datePublished" datetime="2025-12-13T16:00:35+08:00">2025-12-13</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-22 11:59:57" itemprop="dateModified" datetime="2026-01-22T11:59:57+08:00">2026-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="ucore并发">uCore并发</h1>
-<pre><code class="highlight mermaid">sequenceDiagram
-    title 银行家算法 - 安全场景（sequenceDiagram）
-    银行家算法 -&gt;&gt; 数据结构存储: 初始化请求（读取Available/Allocation/Need）
-    数据结构存储--&gt;&gt;银行家算法: 返回初始数据（Available=&#123;&#125;, Work=&#123;&#125;, Finish=[F,F]）
-    
-    %% 第一次循环:找满足条件的线程
-    银行家算法 -&gt;&gt; 银行家算法: 遍历线程，检查条件（Need[i][j] ≤ Work[j] 且 Finish[i]=F）
-    银行家算法 -&gt;&gt; 数据结构存储: 查询线程1的Need/Finish
-    数据结构存储--&gt;&gt;银行家算法: 线程1:Need=&#123;200:1&#125;，Finish=F
-    银行家算法 -&gt;&gt; 银行家算法: 线程1:Need &gt; Work → 不满足
-    银行家算法 -&gt;&gt; 数据结构存储: 查询线程2的Need/Finish
-    数据结构存储--&gt;&gt;银行家算法: 线程2:Need=&#123;&#125;，Finish=F
-    银行家算法 -&gt;&gt; 银行家算法: 线程2:Need ≤ Work → 满足
-    
-    %% 模拟线程2释放资源
-    银行家算法 -&gt;&gt; 数据结构存储: 模拟线程2执行完毕，请求更新Work（Work += 线程2的Allocation&#123;200:1&#125;）
-    数据结构存储--&gt;&gt;银行家算法: Work更新成功（Work=&#123;200:1&#125;）
-    银行家算法 -&gt;&gt; 数据结构存储: 请求标记线程2的Finish=true
-    数据结构存储--&gt;&gt;银行家算法: Finish更新成功（Finish=[F,T]）
-    
-    %% 第二次循环:找满足条件的线程
-    银行家算法 -&gt;&gt; 银行家算法: 重新遍历线程（仅线程1未完成）
-    银行家算法 -&gt;&gt; 数据结构存储: 查询线程1的Need/Work
-    数据结构存储--&gt;&gt;银行家算法: 线程1:Need=&#123;200:1&#125;，Work=&#123;200:1&#125;
-    银行家算法 -&gt;&gt; 银行家算法: 线程1:Need ≤ Work → 满足
-    
-    %% 模拟线程1释放资源
-    银行家算法 -&gt;&gt; 数据结构存储: 模拟线程1执行完毕，请求更新Work（Work += 线程1的Allocation&#123;100:1&#125;）
-    数据结构存储--&gt;&gt;银行家算法: Work更新成功（Work=&#123;100:1,200:1&#125;）
-    银行家算法 -&gt;&gt; 数据结构存储: 请求标记线程1的Finish=true
-    数据结构存储--&gt;&gt;银行家算法: Finish更新成功（Finish=[T,T]）
-    
-    %% 判定结果
-    银行家算法 -&gt;&gt; 银行家算法: 检查所有Finish是否为true
-    银行家算法--&gt;&gt;外部: 输出判定结果 → 系统安全（无死锁风险）</code></pre>
-<h2 id="引言">引言</h2>
-<h3 id="线程定义">线程定义</h3>
-<p>简单地说，线程是进程的组成部分，进程可包含1 –
-n个线程，属于同一个进程的线程共享进程的资源， 比如
-<code>地址空间</code>、打开的文件等。基本的线程由线程ID、执行状态、当前指令指针
-(PC)、寄存器集合和栈组成。
-线程是可以被操作系统或用户态调度器独立调度（Scheduling）和分派（Dispatch）的基本单位。<strong>进程是线程的资源容器，
-线程成为了程序的基本执行实体。</strong></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2025/12/13/uCore%E5%B9%B6%E5%8F%91/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>

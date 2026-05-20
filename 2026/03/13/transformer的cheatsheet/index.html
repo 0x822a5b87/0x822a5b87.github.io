@@ -27,7 +27,7 @@
 <meta property="og:description" content="本文记录了学习 transformer 架构中的一些疑问。  transformer 的数据流转  Input \(\to\) Embedding + Positional Encoding (得到初始 \(x\)) 进入第 \(L\) 层：  \(x \to W_{Q,K,V} \to Q, K, V\) (特征投影) \(\text{Softmax}(\frac{QK^T}{\sqrt{d_">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-13T09:34:51.000Z">
-<meta property="article:modified_time" content="2026-03-15T13:32:41.870Z">
+<meta property="article:modified_time" content="2026-03-17T11:50:05.381Z">
 <meta property="article:author" content="2183814023">
 <meta name="twitter:card" content="summary">
 
@@ -137,19 +137,19 @@
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
             <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer-%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81%E8%BD%AC"><span class="nav-number">1.</span> <span class="nav-text">transformer 的数据流转</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B4%E6%95%B0%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">整数位置编码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E5%BC%82%E5%B8%B8"><span class="nav-number">2.1.</span> <span class="nav-text">梯度异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF%E4%B8%8D%E5%8F%AF%E6%8E%A7"><span class="nav-number">2.2.</span> <span class="nav-text">位置信息不可控</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AD%A3%E5%BC%A6%E4%BD%99%E5%BC%A6%E7%BC%96%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">正弦&#x2F;余弦编码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8C%83%E5%9B%B4%E5%8F%AF%E6%8E%A7"><span class="nav-number">3.1.</span> <span class="nav-text">范围可控</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E6%95%8F%E6%84%9F"><span class="nav-number">3.2.</span> <span class="nav-text">位置敏感</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E6%80%A7%E6%80%A7"><span class="nav-number">3.3.</span> <span class="nav-text">相对位置的线性性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88transformer%E9%9C%80%E8%A6%81%E4%BD%8D%E7%BD%AE%E5%90%91%E9%87%8F"><span class="nav-number">4.</span> <span class="nav-text">为什么transformer需要位置向量</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#layer-normalization"><span class="nav-number">5.</span> <span class="nav-text">Layer Normalization</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#layer-normalization-%E7%AE%97%E6%B3%95%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.1.</span> <span class="nav-text">Layer Normalization
-算法的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%87%E5%87%86-layernorm"><span class="nav-number">5.2.</span> <span class="nav-text">标准 LayerNorm</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%81%E6%98%8E%E6%96%B0%E5%9D%87%E5%80%BC%E4%B8%BA-0"><span class="nav-number">5.2.1.</span> <span class="nav-text">证明：新均值为 0</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%81%E6%98%8E%E6%96%B0%E6%96%B9%E5%B7%AE%E4%B8%BA-1"><span class="nav-number">5.2.2.</span> <span class="nav-text">证明：新方差为 1</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFtemperature"><span class="nav-number">6.</span> <span class="nav-text">什么是Temperature</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.1.</span> <span class="nav-text">temperature的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">6.2.</span> <span class="nav-text">temperature的物理意义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#softmax%E5%9C%A8%E5%B7%A5%E7%A8%8B%E4%B8%8A%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">6.3.</span> <span class="nav-text">softmax在工程上的优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF%E5%A6%82%E6%AD%A4%E9%87%8D%E8%A6%81"><span class="nav-number">7.</span> <span class="nav-text">为什么位置信息如此重要</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E7%9F%A9%E9%98%B5%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9F%A9%E9%98%B5%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">8.</span> <span class="nav-text">向量@矩阵和矩阵@矩阵的差别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BD%91%E7%BB%9C%E5%92%8Cdropout"><span class="nav-number">9.</span> <span class="nav-text">残差网络和Dropout</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dropout"><span class="nav-number">9.1.</span> <span class="nav-text">dropout</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%92%8C%E4%BA%A4%E5%8F%89%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">10.</span> <span class="nav-text">自注意力和交叉注意力</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E4%B8%AD%E7%9A%84batch%E5%8F%82%E6%95%B0"><span class="nav-number">11.</span> <span class="nav-text">训练和推理中的batch参数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ffnfeed-forward-network"><span class="nav-number">12.</span> <span class="nav-text">FFN(Feed-Forward Network)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%BF%80%E6%B4%BB"><span class="nav-number">12.1.</span> <span class="nav-text">非线性激活</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#residualconnection"><span class="nav-number">12.2.</span> <span class="nav-text">ResidualConnection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AF%8F%E4%B8%80%E5%B1%82%E7%9A%84%E5%9B%BA%E5%AE%9A%E7%9F%A9%E9%98%B5"><span class="nav-number">12.3.</span> <span class="nav-text">每一层的固定矩阵</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gpt-%E9%80%BB%E8%BE%91%E7%AE%80%E8%BF%B0"><span class="nav-number">13.</span> <span class="nav-text">GPT 逻辑简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E7%9F%A5%E8%AF%86%E5%82%A8%E5%A4%87%E8%AF%8D%E8%A1%A8%E4%B8%8E%E8%AF%8D%E5%B5%8C%E5%85%A5-embedding"><span class="nav-number">13.1.</span> <span class="nav-text">静态知识储备：词表与词嵌入
-(Embedding)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%92%E8%89%B2%E8%BD%AC%E6%8D%A2%E5%99%A8%E4%B8%89%E5%A5%97%E7%BA%BF%E6%80%A7%E5%8F%98%E6%8D%A2%E7%9F%A9%E9%98%B5-w_q-w_k-w_v"><span class="nav-number">13.2.</span> <span class="nav-text">角色转换器：三套线性变换矩阵
-(\(W_Q, W_K, W_V\))</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%B5%81%E6%B0%B4%E7%BA%BFqkv-%E7%9A%84%E5%8D%9A%E5%BC%88-attention-mechanism"><span class="nav-number">13.3.</span> <span class="nav-text">注意力流水线：QKV
-的博弈 (Attention Mechanism)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E6%B5%8B%E4%B8%8E%E9%97%AD%E7%8E%AF%E4%BB%8E%E9%AB%98%E7%BB%B4%E7%89%B9%E5%BE%81%E5%88%B0%E6%9C%80%E7%BB%88-token"><span class="nav-number">13.4.</span> <span class="nav-text">预测与闭环：从高维特征到最终
-Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nx%E5%92%8Cmulti-head"><span class="nav-number">13.5.</span> <span class="nav-text">Nx和multi-head</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">13.5.1.</span> <span class="nav-text">流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E5%A4%84%E7%90%86%E4%B8%8E%E7%89%B9%E5%BE%81%E7%94%9F%E6%88%90-prefill-phase"><span class="nav-number">13.5.2.</span> <span class="nav-text">预处理与特征生成 (Prefill
-Phase)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#qkv-%E7%9A%84%E7%BA%BF%E6%80%A7%E6%8A%95%E5%BD%B1%E4%B8%8E%E7%A9%BA%E9%97%B4%E5%85%B3%E8%81%94"><span class="nav-number">13.5.3.</span> <span class="nav-text">QKV 的线性投影与空间关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E5%80%BC%E5%8D%B1%E6%9C%BA%E7%9A%84%E6%A0%B9%E6%BA%90%E6%96%B9%E5%B7%AE%E7%88%86%E7%82%B8%E4%B8%8E%E6%A2%AF%E5%BA%A6%E9%A5%B1%E5%92%8C"><span class="nav-number">13.5.4.</span> <span class="nav-text">数值危机的根源：方差爆炸与梯度饱和</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%B7%AE%E7%88%86%E7%82%B8-variance-explosion"><span class="nav-number">13.5.4.1.</span> <span class="nav-text">方差爆炸 (Variance Explosion)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E9%A5%B1%E5%92%8C-gradient-saturation"><span class="nav-number">13.5.4.2.</span> <span class="nav-text">梯度饱和 (Gradient
-Saturation)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E7%BC%A9%E6%94%BE-scaling-%E4%B8%8E%E5%BD%92%E4%B8%80%E5%8C%96-normalization"><span class="nav-number">13.5.5.</span> <span class="nav-text">解决方案：缩放
-(Scaling) 与归一化 (Normalization)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%A9%E6%94%BE%E5%9B%A0%E5%AD%90frac1sqrtd_k"><span class="nav-number">13.5.5.1.</span> <span class="nav-text">缩放因子：\(\frac{1}{\sqrt{d_k}}\)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%BF%80%E6%B4%BB%E7%8A%B6%E6%80%81%E7%9A%84%E6%81%A2%E5%A4%8D"><span class="nav-number">13.5.5.2.</span> <span class="nav-text">激活状态的恢复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%81%E7%BB%AD%E7%9A%84%E5%AE%89%E6%A3%80layernorm"><span class="nav-number">13.5.5.3.</span> <span class="nav-text">持续的安检：LayerNorm</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E8%AE%AD%E7%BB%83%E7%9A%84%E9%97%AD%E7%8E%AF"><span class="nav-number">13.5.6.</span> <span class="nav-text">总结：训练的闭环</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9D%83%E9%87%8D%E7%9F%A9%E9%98%B5%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-number">14.</span> <span class="nav-text">权重矩阵的本质</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%A4%9A%E5%A4%B4"><span class="nav-number">15.</span> <span class="nav-text">为什么需要多头</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E7%9A%84%E5%A4%9A%E7%BB%B4%E5%B9%B6%E8%A1%8C-semantic-parallelism"><span class="nav-number">16.</span> <span class="nav-text">语义的“多维并行” (Semantic
-Parallelism)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8A%91%E5%88%B6%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%B9%B3%E5%9D%87%E5%8C%96-ensemble-effect"><span class="nav-number">17.</span> <span class="nav-text">抑制“注意力平均化” (Ensemble
-Effect)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E9%AB%98%E7%A7%A9%E7%9A%84%E8%A1%A8%E8%BE%BE%E8%83%BD%E5%8A%9B-rank-of-attention-matrix"><span class="nav-number">18.</span> <span class="nav-text">提高“秩”的表达能力
-(Rank of Attention Matrix)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%B6%88%E9%99%A4%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E5%99%AA%E5%A3%B0"><span class="nav-number">19.</span> <span class="nav-text">如何消除多头注意力的噪声</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#w_o-%E7%9A%84%E9%9D%99%E9%9F%B3%E5%8A%9F%E8%83%BD-the-gatekeeper"><span class="nav-number">19.1.</span> <span class="nav-text">\(W_o\) 的“静音”功能 (The Gatekeeper)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E8%BF%9E%E6%8E%A5%E7%9A%84%E4%BF%9D%E5%BA%95-residual-connection"><span class="nav-number">19.2.</span> <span class="nav-text">残差连接的“保底” (Residual
-Connection)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%97%E4%BD%99%E5%85%B6%E5%AE%9E%E6%98%AF%E4%B8%80%E7%A7%8D%E7%A8%B3%E5%81%A5%E6%80%A7-redundancy-as-robustness"><span class="nav-number">19.3.</span> <span class="nav-text">“冗余”其实是一种稳健性
-(Redundancy as Robustness)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer%E7%9A%84%E5%85%A8%E8%AE%AD%E7%BB%83%E6%B5%81%E7%A8%8B"><span class="nav-number">20.</span> <span class="nav-text">transformer的全训练流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer%E4%B8%AD%E7%9A%84%E7%9F%A9%E9%98%B5%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">21.</span> <span class="nav-text">transformer中的矩阵的物理意义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%B1%8F%E8%94%BD%E6%9C%AA%E6%9D%A5%E7%9A%84token"><span class="nav-number">22.</span> <span class="nav-text">为什么要屏蔽未来的token？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0loss%E7%9A%84%E7%9E%AC%E9%97%B4%E5%BD%92%E9%9B%B6"><span class="nav-number">22.1.</span> <span class="nav-text">损失函数（Loss）的瞬间归零</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%ADbackpropagation%E4%B8%AD%E7%9A%84%E8%99%9A%E5%81%87%E5%85%B3%E8%81%94"><span class="nav-number">22.2.</span> <span class="nav-text">反向传播（Backpropagation）中的虚假关联</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">23.</span> <span class="nav-text">训练和推理的区别</span></a></li></ol></div>
+算法的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%87%E5%87%86-layernorm"><span class="nav-number">5.2.</span> <span class="nav-text">标准 LayerNorm</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%81%E6%98%8E%E6%96%B0%E5%9D%87%E5%80%BC%E4%B8%BA-0"><span class="nav-number">5.2.1.</span> <span class="nav-text">证明：新均值为 0</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%81%E6%98%8E%E6%96%B0%E6%96%B9%E5%B7%AE%E4%B8%BA-1"><span class="nav-number">5.2.2.</span> <span class="nav-text">证明：新方差为 1</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFtemperature"><span class="nav-number">6.</span> <span class="nav-text">什么是Temperature</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.1.</span> <span class="nav-text">temperature的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">6.2.</span> <span class="nav-text">temperature的物理意义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#softmax%E5%9C%A8%E5%B7%A5%E7%A8%8B%E4%B8%8A%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">6.3.</span> <span class="nav-text">softmax在工程上的优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF%E5%A6%82%E6%AD%A4%E9%87%8D%E8%A6%81"><span class="nav-number">7.</span> <span class="nav-text">为什么位置信息如此重要</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E7%9F%A9%E9%98%B5%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9F%A9%E9%98%B5%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">8.</span> <span class="nav-text">向量@矩阵和矩阵@矩阵的差别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BD%91%E7%BB%9C%E5%92%8Cdropout"><span class="nav-number">9.</span> <span class="nav-text">残差网络和Dropout</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dropout"><span class="nav-number">9.1.</span> <span class="nav-text">dropout</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dropout%E7%9A%84%E8%BE%93%E5%87%BA"><span class="nav-number">9.2.</span> <span class="nav-text">dropout的输出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dropout%E7%9A%84%E6%9C%9F%E6%9C%9B%E5%AE%88%E6%81%92"><span class="nav-number">9.3.</span> <span class="nav-text">dropout的期望守恒</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%92%8C%E4%BA%A4%E5%8F%89%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">10.</span> <span class="nav-text">自注意力和交叉注意力</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E4%B8%AD%E7%9A%84batch%E5%8F%82%E6%95%B0"><span class="nav-number">11.</span> <span class="nav-text">训练和推理中的batch参数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">12.</span> <span class="nav-text">多头注意力</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E5%85%B3%E9%94%AE%E5%9C%A8%E4%BA%8E%E8%AE%AD%E7%BB%83"><span class="nav-number">12.1.</span> <span class="nav-text">注意力的关键在于训练</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#softmax%E7%9A%84%E5%88%86%E5%9D%97"><span class="nav-number">12.2.</span> <span class="nav-text">Softmax的分块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%9E%8D%E5%90%88"><span class="nav-number">12.3.</span> <span class="nav-text">融合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">12.4.</span> <span class="nav-text">多头注意力的一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E5%BA%95%E5%B1%82%E9%80%BB%E8%BE%91"><span class="nav-number">12.5.</span> <span class="nav-text">多头注意力的底层逻辑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#llm%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86"><span class="nav-number">13.</span> <span class="nav-text">LLM的上下文管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#rag"><span class="nav-number">13.1.</span> <span class="nav-text">RAG</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rag%E7%9A%84%E5%AE%9E%E9%99%85%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">13.2.</span> <span class="nav-text">RAG的实际工作流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#embedding%E5%92%8Cllm%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">13.3.</span> <span class="nav-text">embedding和LLM的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E9%9C%80%E8%A6%81embedding"><span class="nav-number">13.4.</span> <span class="nav-text">为什么我们需要embedding</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#embedding%E5%90%91%E9%87%8F%E5%92%8C%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">14.</span> <span class="nav-text">embedding向量和位置编码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%93%AA%E4%BA%9B%E4%BD%8D%E7%BD%AE%E9%80%82%E5%90%88%E6%B7%BB%E5%8A%A0dropout"><span class="nav-number">15.</span> <span class="nav-text">哪些位置适合添加dropout</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ffnfeed-forward-network"><span class="nav-number">16.</span> <span class="nav-text">FFN(Feed-Forward Network)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%BF%80%E6%B4%BB"><span class="nav-number">16.1.</span> <span class="nav-text">非线性激活</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#residualconnection"><span class="nav-number">16.2.</span> <span class="nav-text">ResidualConnection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AF%8F%E4%B8%80%E5%B1%82%E7%9A%84%E5%9B%BA%E5%AE%9A%E7%9F%A9%E9%98%B5"><span class="nav-number">16.3.</span> <span class="nav-text">每一层的固定矩阵</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gpt-%E9%80%BB%E8%BE%91%E7%AE%80%E8%BF%B0"><span class="nav-number">17.</span> <span class="nav-text">GPT 逻辑简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E7%9F%A5%E8%AF%86%E5%82%A8%E5%A4%87%E8%AF%8D%E8%A1%A8%E4%B8%8E%E8%AF%8D%E5%B5%8C%E5%85%A5-embedding"><span class="nav-number">17.1.</span> <span class="nav-text">静态知识储备：词表与词嵌入
+(Embedding)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%92%E8%89%B2%E8%BD%AC%E6%8D%A2%E5%99%A8%E4%B8%89%E5%A5%97%E7%BA%BF%E6%80%A7%E5%8F%98%E6%8D%A2%E7%9F%A9%E9%98%B5-w_q-w_k-w_v"><span class="nav-number">17.2.</span> <span class="nav-text">角色转换器：三套线性变换矩阵
+(\(W_Q, W_K, W_V\))</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%B5%81%E6%B0%B4%E7%BA%BFqkv-%E7%9A%84%E5%8D%9A%E5%BC%88-attention-mechanism"><span class="nav-number">17.3.</span> <span class="nav-text">注意力流水线：QKV
+的博弈 (Attention Mechanism)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E6%B5%8B%E4%B8%8E%E9%97%AD%E7%8E%AF%E4%BB%8E%E9%AB%98%E7%BB%B4%E7%89%B9%E5%BE%81%E5%88%B0%E6%9C%80%E7%BB%88-token"><span class="nav-number">17.4.</span> <span class="nav-text">预测与闭环：从高维特征到最终
+Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nx%E5%92%8Cmulti-head"><span class="nav-number">17.5.</span> <span class="nav-text">Nx和multi-head</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">17.5.1.</span> <span class="nav-text">流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E5%A4%84%E7%90%86%E4%B8%8E%E7%89%B9%E5%BE%81%E7%94%9F%E6%88%90-prefill-phase"><span class="nav-number">17.5.2.</span> <span class="nav-text">预处理与特征生成 (Prefill
+Phase)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#qkv-%E7%9A%84%E7%BA%BF%E6%80%A7%E6%8A%95%E5%BD%B1%E4%B8%8E%E7%A9%BA%E9%97%B4%E5%85%B3%E8%81%94"><span class="nav-number">17.5.3.</span> <span class="nav-text">QKV 的线性投影与空间关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E5%80%BC%E5%8D%B1%E6%9C%BA%E7%9A%84%E6%A0%B9%E6%BA%90%E6%96%B9%E5%B7%AE%E7%88%86%E7%82%B8%E4%B8%8E%E6%A2%AF%E5%BA%A6%E9%A5%B1%E5%92%8C"><span class="nav-number">17.5.4.</span> <span class="nav-text">数值危机的根源：方差爆炸与梯度饱和</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%B7%AE%E7%88%86%E7%82%B8-variance-explosion"><span class="nav-number">17.5.4.1.</span> <span class="nav-text">方差爆炸 (Variance Explosion)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E9%A5%B1%E5%92%8C-gradient-saturation"><span class="nav-number">17.5.4.2.</span> <span class="nav-text">梯度饱和 (Gradient
+Saturation)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E7%BC%A9%E6%94%BE-scaling-%E4%B8%8E%E5%BD%92%E4%B8%80%E5%8C%96-normalization"><span class="nav-number">17.5.5.</span> <span class="nav-text">解决方案：缩放
+(Scaling) 与归一化 (Normalization)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%A9%E6%94%BE%E5%9B%A0%E5%AD%90frac1sqrtd_k"><span class="nav-number">17.5.5.1.</span> <span class="nav-text">缩放因子：\(\frac{1}{\sqrt{d_k}}\)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%BF%80%E6%B4%BB%E7%8A%B6%E6%80%81%E7%9A%84%E6%81%A2%E5%A4%8D"><span class="nav-number">17.5.5.2.</span> <span class="nav-text">激活状态的恢复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%81%E7%BB%AD%E7%9A%84%E5%AE%89%E6%A3%80layernorm"><span class="nav-number">17.5.5.3.</span> <span class="nav-text">持续的安检：LayerNorm</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E8%AE%AD%E7%BB%83%E7%9A%84%E9%97%AD%E7%8E%AF"><span class="nav-number">17.5.6.</span> <span class="nav-text">总结：训练的闭环</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9D%83%E9%87%8D%E7%9F%A9%E9%98%B5%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-number">18.</span> <span class="nav-text">权重矩阵的本质</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%A4%9A%E5%A4%B4"><span class="nav-number">19.</span> <span class="nav-text">为什么需要多头</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E7%9A%84%E5%A4%9A%E7%BB%B4%E5%B9%B6%E8%A1%8C-semantic-parallelism"><span class="nav-number">20.</span> <span class="nav-text">语义的“多维并行” (Semantic
+Parallelism)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8A%91%E5%88%B6%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%B9%B3%E5%9D%87%E5%8C%96-ensemble-effect"><span class="nav-number">21.</span> <span class="nav-text">抑制“注意力平均化” (Ensemble
+Effect)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E9%AB%98%E7%A7%A9%E7%9A%84%E8%A1%A8%E8%BE%BE%E8%83%BD%E5%8A%9B-rank-of-attention-matrix"><span class="nav-number">22.</span> <span class="nav-text">提高“秩”的表达能力
+(Rank of Attention Matrix)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%B6%88%E9%99%A4%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9A%84%E5%99%AA%E5%A3%B0"><span class="nav-number">23.</span> <span class="nav-text">如何消除多头注意力的噪声</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#w_o-%E7%9A%84%E9%9D%99%E9%9F%B3%E5%8A%9F%E8%83%BD-the-gatekeeper"><span class="nav-number">23.1.</span> <span class="nav-text">\(W_o\) 的“静音”功能 (The Gatekeeper)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E8%BF%9E%E6%8E%A5%E7%9A%84%E4%BF%9D%E5%BA%95-residual-connection"><span class="nav-number">23.2.</span> <span class="nav-text">残差连接的“保底” (Residual
+Connection)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%97%E4%BD%99%E5%85%B6%E5%AE%9E%E6%98%AF%E4%B8%80%E7%A7%8D%E7%A8%B3%E5%81%A5%E6%80%A7-redundancy-as-robustness"><span class="nav-number">23.3.</span> <span class="nav-text">“冗余”其实是一种稳健性
+(Redundancy as Robustness)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer%E7%9A%84%E5%85%A8%E8%AE%AD%E7%BB%83%E6%B5%81%E7%A8%8B"><span class="nav-number">24.</span> <span class="nav-text">transformer的全训练流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transformer%E4%B8%AD%E7%9A%84%E7%9F%A9%E9%98%B5%E7%9A%84%E7%89%A9%E7%90%86%E6%84%8F%E4%B9%89"><span class="nav-number">25.</span> <span class="nav-text">transformer中的矩阵的物理意义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%B1%8F%E8%94%BD%E6%9C%AA%E6%9D%A5%E7%9A%84token"><span class="nav-number">26.</span> <span class="nav-text">为什么要屏蔽未来的token？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0loss%E7%9A%84%E7%9E%AC%E9%97%B4%E5%BD%92%E9%9B%B6"><span class="nav-number">26.1.</span> <span class="nav-text">损失函数（Loss）的瞬间归零</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%ADbackpropagation%E4%B8%AD%E7%9A%84%E8%99%9A%E5%81%87%E5%85%B3%E8%81%94"><span class="nav-number">26.2.</span> <span class="nav-text">反向传播（Backpropagation）中的虚假关联</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%92%8C%E6%8E%A8%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">27.</span> <span class="nav-text">训练和推理的区别</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -162,12 +162,12 @@ Connection)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" 
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">47</span>
+          <span class="site-state-item-count">49</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-count">43</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -230,7 +230,7 @@ Connection)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" 
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-15 21:32:41" itemprop="dateModified" datetime="2026-03-15T21:32:41+08:00">2026-03-15</time>
+      <time title="修改时间：2026-03-17 19:50:05" itemprop="dateModified" datetime="2026-03-17T19:50:05+08:00">2026-03-17</time>
     </span>
 
   
@@ -719,6 +719,40 @@ dropout
 掉不同的神经元，其实都在产生一个<strong>稍微不同的小模型</strong>，训练过程中，我们实际上是在训练<strong>成千上万个微型模型</strong>的组合。<strong>推理时</strong>：当我们关掉
 Dropout，就相当于让这成千上万个小模型进行了一次<strong>集体投票</strong>。这种“集成学习”的效果让模型对没见过的数据（泛化）表现极好。</li>
 </ol>
+<h2 id="dropout的输出">dropout的输出</h2>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mask = random([<span class="number">0</span>, <span class="number">1</span>], p=dropout_rate)  <span class="comment"># 随机生成 0/1 掩码</span></span><br><span class="line">output = <span class="built_in">input</span> * mask / (<span class="number">1</span> - dropout_rate)  <span class="comment"># 缩放</span></span><br></pre></td></tr></table></figure>
+<p><code>dropout</code>
+有一个需要注意的点是，如果我们的神经元被关闭了一部分，那么它的承载的信号总量也就是原来的一半了。而通常来说，这会导致我们的<strong>推理阶段和训练阶段</strong>的参数是完全不同的。</p>
+<p>业内通常有两个不同的解决方案，假设我们的 <code>drop_out</code>
+的系数为 <code>p</code>：</p>
+<ul>
+<li>推理时缩放 (Scaling at Test
+Time)，我们将每个神经元的输出权重<strong>乘以 <span
+class="math inline">\((1-p)\)</span></strong>；</li>
+<li>反向 Dropout (Inverted
+Dropout)，在训练阶段丢弃神经元的同时，将剩余神经元的输出<strong>除以
+<span class="math inline">\((1-p)\)</span></strong>（即放大信号）。</li>
+</ul>
+<p>现在主流的方案使用后者，因为推理阶段的资源更加的宝贵。</p>
+<h2 id="dropout的期望守恒">dropout的期望守恒</h2>
+<p>Dropout
+的设计目标是：<strong>保证层输出的期望值（Expectation）在训练和推理时保持一致。</strong></p>
+<p>假设某一层的输出向量为 <span
+class="math inline">\(h\)</span>，在推理时（全员工作），该层的总输出贡献是：
+<span class="math display">\[
+E[h_{inference}] = \sum_{i=1}^{H} h_i
+\]</span> 在训练时，每个神经元有 <span class="math inline">\(p\)</span>
+的概率被丢弃（变为 0），有 <span class="math inline">\(1-p\)</span>
+的概率保留。如果不做缩放，训练时的输出期望为： <span
+class="math display">\[
+E[h_{train}] = \sum_{i=1}^{H} (h_i \cdot (1-p) + 0 \cdot p) = (1-p) \sum
+h_i
+\]</span> 为了让 <span class="math inline">\(E[h_{train}] =
+E[h_{inference}]\)</span>，我们必须在训练时将保留的 <span
+class="math inline">\(h_i\)</span> 除以 <span
+class="math inline">\((1-p)\)</span>： <span class="math display">\[
+E[h_{train\_scaled}] = \sum \frac{h_i}{1-p} \cdot (1-p) = \sum h_i
+\]</span></p>
 <h1 id="自注意力和交叉注意力">自注意力和交叉注意力</h1>
 <p>自注意力和交叉注意力<strong>都是 <span class="math inline">\(Q, K,
 V\)</span> 的投影和重合度计算</strong>，<code>数据来源</code>
@@ -735,7 +769,7 @@ class="math inline">\(V\)</span> 来自另一个地方。这是在
 <strong>Encoder-Decoder
 架构</strong>（比如机器翻译）中出现的模式。例如，我们需要将
 <code>Hello world.</code> 翻译为
-<code>你好世界。</code>，在这个例子中，前者是 <code>encoder</code>
+<code>我们好世界。</code>，在这个例子中，前者是 <code>encoder</code>
 关注的内容，后者是 <code>decoder</code> 关注的内容。</li>
 </ul>
 <p>注意，不论是自注意力还是交叉注意力，无论 <span
@@ -768,6 +802,279 @@ embedding
 向量（此时他们拿到的向量是一样的），<strong>随后在训练中，他们不断的迭代更新自己内部持有的向量，在训练结束时都会更新embedding向量
 --
 而这个更新是两个语料库训练结果的共同作用，苹果从此同时包含了水果和科技公司的语义</strong>。</p>
+<h1 id="多头注意力">多头注意力</h1>
+<p>我们在进行多头拆分处理时需要遵循两个原则：</p>
+<ol type="1">
+<li>每个向量都必须包含输入向量全部的维度信息；</li>
+<li>每个计算得到的分数结果都必须包含全的token信息，<strong>这个是最容易误解的，多头不是将输入拆分为多份，这违反了transformer关注全局语义的原则！</strong></li>
+</ol>
+<p>所以，多头的实现是通过权重矩阵来实现的，假设我们存在一个512维的模型，那么拆分为8个头，意味着我们的
+<span class="math inline">\(W_Q, W_K, W_V\)</span> 需要有 8 * (512 * 64)
+的权重矩阵。</p>
+<p>当然，在我们的工程实现上，我们会将他们合并为一个 512 * 512
+的矩阵，并且在进行矩阵乘法时进行调优；</p>
+<p>我们再回顾一次我们目前涉及到的矩阵乘法的含义：</p>
+<ul>
+<li>带位置编码的embedding向量乘以权重矩阵：这个矩阵乘法会进行
+<code>特征融合</code>，得到的向量中的每个维度都包含了其他维度的信息；</li>
+<li>特征融合向量Q乘以特征融合向量K：这个阶段，不同的token之间开始计算
+attention 分数；</li>
+</ul>
+<p>这里的问题在于：为什么变成了 512 * 64
+的权重矩阵就可以看某一部分内容了呢？</p>
+<h2 id="注意力的关键在于训练">注意力的关键在于训练</h2>
+<blockquote>
+<p><strong>为什么 512 * 64 能看到 <code>特定</code>
+内容，关键在于被训练去关注什么</strong>。</p>
+</blockquote>
+<p>虽然每一个头的 <span class="math inline">\(W_Q\)</span> 都是 512 *
+64，且都输入了全部的 512 维，但 <strong>8 个头的 <span
+class="math inline">\(W_Q\)</span>
+初始参数是随机且独立更新的</strong>。矩阵乘法 <span
+class="math inline">\(X \cdot W_Q\)</span>
+的本质是<strong>投影</strong>。想象 512
+维是一个巨大的充满信息的空间：</p>
+<ul>
+<li><strong>头 1</strong> 的 64 个列向量，可能经过训练后，对
+<code>代词</code> 和 <code>名词</code>
+的维度特别敏感。当它看到这些特征时，投影出的向量模长就大。</li>
+<li><strong>头 2</strong> 的 64 个列向量，可能被训练得对
+<code>动词时态</code> 特别敏感。</li>
+</ul>
+<h2 id="softmax的分块">Softmax的分块</h2>
+<p>多头的本质是<strong>分块计算分数</strong>：</p>
+<ol type="1">
+<li>头 1 拿自己的 <span class="math inline">\(Q_1, K_1\)</span>（都是 64
+维）去算点积。它算出来的是全句 Token 之间的
+<code>头1关联度</code>；</li>
+<li>头 1 算出的 <span class="math inline">\(N \times N\)</span>
+分数矩阵，会独立进行
+<code>Softmax</code>，那么在每个头中，它关注的逻辑是有本质区别的，<strong>单头的模型，最终会计算得到一个概率最大的全局最优解，而多头模型下，最终会计算得到多个概率相对较大的局部最优解。</strong>这是单头和多头的最本质区别。</li>
+</ol>
+<h2 id="融合">融合</h2>
+<p><code>softmax</code>
+的分块计算使得我们可以得到多个概率相对较大的局部最优解，但是对于每一个头来说，它是一个完全独立的模块：</p>
+<ul>
+<li>它具有独立的权重矩阵；</li>
+<li>它执行独立的softmax；</li>
+</ul>
+<p><strong>而我们在得到局部优解之后（attention），数据会被连接到一起，并乘以一个输出权重矩阵
+<span class="math inline">\(W_O\)</span>
+相乘后输出，这相当于是将我们的多头注意力再次融合为一个整体。</strong></p>
+<p>那么，在我们训练的过程中，那些反向传播回来的loss，每个模块都会去修改这些独立的数据。最终会使得每个块都会被训练到某个特定的关注点。</p>
+<h2 id="多头注意力的一个例子">多头注意力的一个例子</h2>
+<p>假设我们现在存在这样一句话：<strong><code>猫是一种哺乳动物，非常的爱吃鱼，而且每天要睡很久。</code></strong>，这句话中，
+<code>猫</code> 应该是和
+<code>哺乳动物</code>，<code>爱吃鱼</code>，<code>每天要睡很久</code>
+这三个语义都有关联。</p>
+<p>在单头的场景下，我们可能会出现和其中某一个语义管理更密切，从而丢失另外一个语义，最后算法理解的结果是下面三者之一：</p>
+<ul>
+<li>猫是哺乳动物；</li>
+<li>猫爱吃鱼；</li>
+<li>猫每天要睡很久；</li>
+</ul>
+<p>这是完全不能接受的，此外，从这个例子中我们也可以看到一个重要的问题：<strong>头的数量（<span
+class="math inline">\(H\)</span>）决定了模型并行处理复杂语义关系的
+<code>带宽</code></strong>。</p>
+<p>对于上面的例子，假设我们只有两个头，那么我们就必须在这三个语义中进行取舍，从而导致某种程度的语义坍缩。<strong>从这个角度来讲，单头也就是在多头注意力的一个
+H == 1 的特殊例子。</strong></p>
+<h2 id="多头注意力的底层逻辑">多头注意力的底层逻辑</h2>
+<p>比如我们的2头计算:</p>
+<p>我们的是输入向量是</p>
+<figure class="highlight basic"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">1 </span><span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br></pre></td></tr></table></figure>
+<p>我们的权重矩阵都是</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">0</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span></span><br><span class="line"><span class="attribute">4</span> <span class="number">5</span> <span class="number">6</span> <span class="number">7</span></span><br><span class="line"><span class="attribute">8</span> <span class="number">9</span> a b</span><br><span class="line"><span class="attribute">c</span> d e f</span><br></pre></td></tr></table></figure>
+<p>那么我们在计算 Q 和 K 时得到的是</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">32</span>+<span class="number">4</span>c	<span class="number">38</span>+<span class="number">4</span>d	<span class="number">14</span>+<span class="number">3</span>a+<span class="number">4</span>e	<span class="number">17</span>+<span class="number">3</span>b+<span class="number">4</span>f</span><br></pre></td></tr></table></figure>
+<p>此时，我们计算的时候是直接当普通的矩阵乘法去算的。</p>
+<p>此时，我们需要计算 Q * K ^ T
+的时候，我们必须分头算，这样我们计算得到的是一个</p>
+<p><code>1 * 2</code> 或者 2 * 1
+的矩阵，这里其实有一个非常有意思的点在于，头是完全独立的，所以我们可以用
+1 * 2 或者 2 * 1 的矩阵来表示它。</p>
+<p>此外：</p>
+<p>在拆分为多头后：</p>
+<ol type="1">
+<li>输入向量乘以权重矩阵，得到了一个包含了全部维度信息的向量；</li>
+<li>Q * K ^ T 得到的是Q的第N个头乘以K的第N个头，只包含了 token
+中的一部分Q和一部分V的乘法之和；</li>
+</ol>
+<p><strong>记住我们之前提到的原则，<span
+class="math inline">\(d_{model}\)</span>
+不能分割，tokens也不能分割，在我们的计算中：</strong></p>
+<ol type="1">
+<li>向量的每一个维度在乘以矩阵时被计算加入元素中，它已经包含了全部的维度；</li>
+<li>在 <span class="math inline">\(Q * K^T\)</span>
+的时候，我们Q的每一行是某一个token在<code>&lt;1&gt;</code>中计算的值，K的列也同理，也就是说每个值包含了向量数据的全部维度，但是又因为权重的原因，每一行关注的点不一样，而这就是我们需要训练的东西：通过权重矩阵去调整关注的终点。</li>
+</ol>
+<h1 id="llm的上下文管理">LLM的上下文管理</h1>
+<p>就好像我们的计算机的存储会分层一样，LLM的存储也会分层：</p>
+<ol type="1">
+<li>在推理中会用到的数据对应于我们的内存，这些数据存在GPU中在推理时是我们的上下文，它的性能最快但是代价高昂；</li>
+<li><code>&lt;1&gt;</code>
+中的数据像内存中的数据一样，重启后会消失，而这里我们的消失有可能是我们多长时间没有和服务器连接，或者一些其他的因素导致数据被从GPU中淘汰了，而此时我们就需要重新加载我们的数据，这个数据一般来说就存储于LLM服务的提供方。区别在于，这个服务一般是独立于LLM服务的单独服务，它将我们的上下文存放在DB中，在合适的时机（如显存数据失效）时将上下文信息再次同步到LLM。这对应于我们的硬盘。</li>
+<li>客户端的展示：可能会有一些类似于cookies的缓存，但是只是用于显示。</li>
+</ol>
+<p>这种<strong>显存（L1/L2 缓存）- 数据库（硬盘）-
+客户端（缓存）</strong>的分层模型，正是目前工业界 LLM 架构（如 ChatGPT,
+Claude）的标准设计模式。</p>
+<ol type="1">
+<li><strong>显存层（GPU VRAM）</strong>：显存在工程上通常体现为
+<strong>KV
+Cache</strong>。它是模型在处理我们之前的对话时，产生的中间状态（Key 和
+Value 矩阵）。如果会话闲置（Timeout），系统会执行
+<strong>Eviction（驱逐）</strong> 操作，释放显存给其他活跃用户。</li>
+<li><strong>存储层（DB/Backend）</strong>：它是<strong>有状态服务</strong>的核心，当我们第二天打开网页，还能看到昨天的聊天记录，就是因为后端程序从数据库（如
+PostgreSQL 或 Redis）中读取了历史：
+<ul>
+<li>当我们发送新消息，而显存中的 KV Cache
+已被淘汰时，后端会将数据库中的历史记录<strong>重新拼接</strong>成一个新的
+Context（上下文）。</li>
+<li>这会导致首字延迟（Prefill
+Time）变长。因为模型必须重新计算一遍这些历史
+Token，才能建立起新的显存缓存。</li>
+</ul></li>
+<li><strong>展示层</strong>：这一层基本就和浏览器的传统应用没有太大的区别了，主要的作用是用于展示。</li>
+</ol>
+<h2 id="rag">RAG</h2>
+<p>说到这里，我想起来了RAG技术，这里也一并稍微说一下：<strong>RAG（Retrieval-Augmented
+Generation，检索增强生成） 是基于这种 <code>分层存储</code>
+逻辑演化出来的一种 <code>外部知识库扩容</code>
+技术。</strong>之所以我们需要这种技术，就是我们前面提到的：<strong>显存的代价过于高昂</strong>，我们不可能把所有的数据全部塞入到显存中。</p>
+<p>那么我们要做的就是，将我们自己额外的数据引入（知识库），然后再每次推理的时候去根据我们的知识库去进行修改；</p>
+<blockquote>
+<p><strong>这里的一切都基于我们前面的一个重要结论：token向量，权重矩阵等在训练阶段确定，在推理阶段不变；这意味着，我们在推理阶段能做的只是通过提示词去修改所谓的
+<code>隐藏状态</code>（Hidden States），也就是 Token
+经过矩阵乘法后，在神经网络层与层之间流动的
+<code>动态向量</code>。</strong></p>
+<p>而这里的所谓的变化，其实是在提示词改变之后，我们的输入 <code>X</code>
+跟着改变。此时，虽然权重矩阵保持原样，但是 Q, K, V
+都已经发生了改变。</p>
+</blockquote>
+<h2 id="rag的实际工作流程">RAG的实际工作流程</h2>
+<p>我们的RAG实际上会分为四步，<code>R</code> -&gt; <code>A</code> -&gt;
+<code>G</code> 只是其中最核心的逻辑，实际的行为应该是：</p>
+<p>将输入文件拆分为多个文件 -&gt; 使用embedding模型拆分并提取标签 -&gt;
+R阶段：我们的问题被embedding模型转换为一个向量坐标并在向量数据库中查找数据
+-&gt; A：使用查找到的数据作为提示词 -&gt;
+G：开始根据我们最新的提示词生成数据。</p>
+<h2 id="embedding和llm的区别">embedding和LLM的区别</h2>
+<ul>
+<li><p>embedding是专门为 <code>提取特征</code>
+而设计的，所以在处理文本特征的时候更快：</p>
+<ul>
+<li><p><strong>LLM（Decoder）是串行的</strong>：LLM
+为了生成答案，必须经过 <span class="math inline">\(N\)</span> 层复杂的
+Transformer Block，每一层都要进行全量的 Attention 计算。</p></li>
+<li><p><strong>Embedding 是并行的</strong>：Embedding
+模型通常只有几层到十几层（比如 BERT 只有 12 层），且它是
+<strong>一次性（Non-autoregressive）</strong> 处理所有输入。</p></li>
+</ul></li>
+<li><p>embedding的本质上是一个<strong>特征压缩器</strong>：</p>
+<ul>
+<li>模型内部有一个巨大的<strong>查找表（Lookup
+Table）</strong>，这个查找表和LLM的词表是一样的；</li>
+<li><strong>特征聚合</strong>：在这一层中，embedding 的实现和 LLM
+实现不一样，它只需要进行<strong>特征提取</strong>，不需要理解语义。</li>
+<li>将token转换为点：这里我们通过池化来实现，<strong>Mean
+Pooling</strong>（取所有向量的平均值）。最终，我们的这段话被压缩为一个坐标点。</li>
+</ul></li>
+</ul>
+<p>这里其他的位置理解比较简单，我们只需要关注这一个重要的区别：<strong>LLM是自回归的（autoregressive）的，而
+Embedding 是 （Non-autoregressive）的</strong>。</p>
+<ul>
+<li>自回归：模型输出的结果，会变成它下一次运行的输入；</li>
+<li>非自回归：输入的所有 Token 一次性进入模型，同时得出所有 Token
+的向量表示。</li>
+</ul>
+<blockquote>
+<p><strong>而 <code>LLM</code>
+使用自回归的原因是，它的设计目标是预测下一个输出；而
+<code>embedding</code> 的目标是特征提取。</strong></p>
+<p>这个设计上的区别决定了，对LLM来说它是没有足够的上下文的，<strong>它没有办法去并行，因为它根本就看不到未来的数据。</strong>而
+<code>embedding</code>
+它不需要生成新的输出，所以它可以假定输入是有限的。</p>
+</blockquote>
+<h2 id="为什么我们需要embedding">为什么我们需要embedding</h2>
+<p>在我们前面提到的模型中，我们需要一个额外的 <code>embedding</code>
+对我们的原始数据进行预处理并提取标签，那么为什么我们需要这样一个额外的组件，而不是直接让LLM来做这个事呢？</p>
+<p>主要是因为两个因素：</p>
+<ol type="1">
+<li><strong>LLM推理是逐个 Token
+生成的，非常慢且极其昂贵。</strong>我们这里其实需要做的只是输入一段文本，并输出一个向量。<strong>Embedding</strong>是<strong>一次性并行处理</strong>的。它不需要生成文字，只需要吐出一个向量。速度快几个数量级，价格极低。</li>
+<li>Embedding
+的性能更高，因为它专注于特征提取，所以进需要十几层，而LLM通常是上百层。</li>
+</ol>
+<h1 id="embedding向量和位置编码">embedding向量和位置编码</h1>
+<p>我们在训练时，需要把 embedding 向量附加上位置编码（Positional
+Encoding），这里位置编码可能是正弦/余弦编码，也有可能是其他的编码方式。而我们在实际的工程中，整个数据流转过程可能是这样的：</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+    ID(&quot;Token ID (如 &#x27;苹果&#x27;)&quot;) --&gt;|索引查询| Emb(&quot;Embedding Matrix (可学习的参数)&quot;)
+    Emb --&gt;|相加| PE(&quot;Positional Encoding (常量)&quot;)
+    PE --&gt;|前向传播| Hidden(&quot;各层 Block (Attention/FFN)&quot;)
+    Hidden --&gt;|计算损失| Loss(&quot;Loss Function&quot;)
+    
+    Loss -.-&gt;|反向传播梯度| Hidden
+    Hidden -.-&gt;|&quot;1.梯度(无损)传播&lt;br/&gt;2.使用学习率和梯度更新&quot;| Emb
+
+class ID gray
+class Emb green
+class PE gray
+class Hidden yellow
+class Loss error
+
+
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;</code></pre>
+<p>我们需要注意的几点是：</p>
+<ol type="1">
+<li><code>PE</code> 是常量，而 <code>embedding</code>
+是在训练阶段可变的；这很容易理解，因为位置是由输入决定的；</li>
+<li>在训练 <code>embedding</code> 时，我们需要将梯度乘上学习率。</li>
+<li><strong>每次的输入，都是由embedding加上PE得到，而在训练的过程中，embedding每次都在变，所以我们必须每次都加上PE。这也就是说：<code>embedding向量的值是未知无关的</code></strong>。</li>
+</ol>
+<p>我们整个过程应该是这样的，假设我们存在如下变量：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">old_embedding_value = <span class="number">0.9</span>   <span class="comment"># 某个词的 embedding 中的一个值</span></span><br><span class="line">positional_encoding = <span class="number">0.1</span>   <span class="comment"># 对应位置的位置编码值</span></span><br></pre></td></tr></table></figure>
+<p>在前向传播阶段，他们会被作为block的输入参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">combined = embedding + positional_encoding</span><br><span class="line">         = <span class="number">0.9</span> + <span class="number">0.1</span></span><br><span class="line">         = <span class="number">1.0</span></span><br></pre></td></tr></table></figure>
+<p>在计算完之后，通过 <code>Loss Function</code>
+计算梯度并反向传播，此时，我们通过学习率去更新我们的 embedding
+向量：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">new_embedding_value = old_embedding_value - lr * error_gradient</span><br><span class="line">                    = <span class="number">0.9</span> - <span class="number">0.1</span> * (-<span class="number">0.4</span>)</span><br><span class="line">                    = <span class="number">0.9</span> + <span class="number">0.04</span></span><br><span class="line">                    = <span class="number">0.94</span></span><br></pre></td></tr></table></figure>
+<p>因为我们的梯度还没有达到我们的要求，所以我们还需要继续训练，此时我们使用
+<code>new_embedding_value</code> 作为新的 embedding 输入：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">new_combined_value = new_embedding_value + positional_encoding</span><br><span class="line">                   = <span class="number">0.94</span> + <span class="number">0.1</span></span><br><span class="line">                   = <span class="number">1.04</span></span><br></pre></td></tr></table></figure>
+<h1 id="哪些位置适合添加dropout">哪些位置适合添加dropout</h1>
+<p>我们在整个计算的过程中，其实会有非常多的地方需要用到
+<code>dropout</code>，哪一部分输入之前我们加上 <code>dropout</code>
+会更好呢？</p>
+<p>我们的结论非常简单：</p>
+<ul>
+<li>对于那些可以冗余的，丢失一部分数据对结果没有影响的，我们可以使用dropout，并且在这种算子上执行
+<code>dropout</code>
+反而可以锻炼在失去一部分特征后的识别能力，使得程序更加健壮。<strong>在transformer中，<code>embedding</code>
+和 <code>FFN</code>
+都是特征提取，而特征提取本身是可以冗余的</strong>；</li>
+<li>信息是唯一的、不可替代的的算子适合加：<strong>在transformer中，softmax和residual
+connection 中不适合加</strong>：
+<ul>
+<li><code>softmax</code> 本身是为了归一化，如果使用 <code>dropout</code>
+屏蔽了一部分值，那么整体的概率将不等于一，从另外一个角度来讲，这里是为了分配
+<code>attention</code>，如果我们屏蔽一部分值会直接导致我们transformer中强调的<strong>关注全局语义</strong>的原则冲突；</li>
+<li><code>ResNet</code> 就更简单了，对输入数据进行 <code>dropout</code>
+会导致在多层的网络结构中消失；</li>
+</ul></li>
+</ul>
+<p>那么，为什么可以对 <code>embedding</code> 进行
+<code>dropout</code>，而不能对 <code>softmax</code> 进行
+<code>dropout</code> 呢？本质上来说， <code>embedding</code>
+向量中的每个元素对应的是一个特征，如我们前面所说，特征是冗余的，是可以被消除的。而
+<code>softmax</code>中的每一个元素，是 <code>attention</code>
+的分数，它是全局的，不能被消除的。</p>
 <h1 id="ffnfeed-forward-network">FFN(Feed-Forward Network)</h1>
 <blockquote>
 <p>如果说 <strong>Attention（注意力机制）</strong> 的作用是让 Token
@@ -1618,6 +1925,9 @@ class="math inline">\(N+1\)</span> 个词的概率分布。</li>
                 </a>
             </div>
             <div class="post-nav-item">
+                <a href="/2026/04/08/cheatsheet-for-doris/" rel="next" title="cheatsheet for doris">
+                  cheatsheet for doris <i class="fa fa-angle-right"></i>
+                </a>
             </div>
           </div>
     </footer>
