@@ -19,15 +19,15 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"0x822a5b87.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"stackoverflow-light","dark":"stackoverflow-light"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"flat"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":false,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="pg和mysql在AI时代下的对比 从AI时代的视角再来看看pg相对于mysql的优势，在 Web2 时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了 AI 时代，这个原则却不一定适用了。 因为核心矛盾变了：AI 时代的数据">
+    <meta name="description" content="mysql&#x2F;pg中的复制逻辑 在了解 mysql 和 pg 在进行主从复制逻辑之前，我们必须要知道他们在架构上的重大区别。 宏观上来讲，mysql 的架构（和主从复制逻辑相关的）会分为两个层级，分别是 server 和 存储引擎，它的实际架构如下图所示： flowchart TD  subgraph server[&quot;MySQL Server (Server层)&quot;]     di">
 <meta property="og:type" content="article">
 <meta property="og:title" content="cheatsheet for pg and mysql">
 <meta property="og:url" content="https://0x822a5b87.github.io/2026/05/20/cheatsheet-for-pg-and-mysql/index.html">
 <meta property="og:site_name" content="0x822a5b87的博客">
-<meta property="og:description" content="pg和mysql在AI时代下的对比 从AI时代的视角再来看看pg相对于mysql的优势，在 Web2 时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了 AI 时代，这个原则却不一定适用了。 因为核心矛盾变了：AI 时代的数据">
+<meta property="og:description" content="mysql&#x2F;pg中的复制逻辑 在了解 mysql 和 pg 在进行主从复制逻辑之前，我们必须要知道他们在架构上的重大区别。 宏观上来讲，mysql 的架构（和主从复制逻辑相关的）会分为两个层级，分别是 server 和 存储引擎，它的实际架构如下图所示： flowchart TD  subgraph server[&quot;MySQL Server (Server层)&quot;]     di">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-05-20T11:53:47.000Z">
-<meta property="article:modified_time" content="2026-05-20T14:45:59.250Z">
+<meta property="article:modified_time" content="2026-05-21T12:50:04.336Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="database">
 <meta property="article:tag" content="mysql">
@@ -139,8 +139,9 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E5%9C%A8ai%E6%97%B6%E4%BB%A3%E4%B8%8B%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">1.</span> <span class="nav-text">pg和mysql在AI时代下的对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8Bjsonb%E4%BB%A5%E5%8F%8Adoris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">2.</span> <span class="nav-text">复合类型，jsonb以及doris中的variant</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.1.</span> <span class="nav-text">复合类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">2.1.1.</span> <span class="nav-text">复合类型的存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E7%B4%A2%E5%BC%95"><span class="nav-number">2.1.2.</span> <span class="nav-text">复合类型的索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%B4%A2%E5%BC%95expression-index"><span class="nav-number">2.1.2.1.</span> <span class="nav-text">表达式索引（Expression Index）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%8C%E7%BA%A7-b-tree-%E7%B4%A2%E5%BC%95row-level-b-tree"><span class="nav-number">2.1.2.2.</span> <span class="nav-text">行级 B-Tree 索引（Row-level
-B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jsonb%E7%9A%84%E5%AD%98%E5%82%A8%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">2.2.</span> <span class="nav-text">jsonb的存储和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">2.2.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">2.2.2.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b-tree-%E7%B4%A2%E5%BC%95"><span class="nav-number">2.2.2.1.</span> <span class="nav-text">B-Tree 索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gin-%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">2.2.2.2.</span> <span class="nav-text">GIN 倒排索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">2.3.</span> <span class="nav-text">doris中的variant</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">3.</span> <span class="nav-text">小数的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E6%98%AF%E5%A6%82%E4%BD%95%E7%B2%BE%E7%A1%AE%E8%A1%A8%E7%A4%BA%E5%B0%8F%E6%95%B0%E7%9A%84"><span class="nav-number">3.1.</span> <span class="nav-text">pg是如何精确表示小数的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">3.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#json%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%9D%91"><span class="nav-number">5.</span> <span class="nav-text">json索引的一个坑</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#mysqlpg%E4%B8%AD%E7%9A%84%E5%A4%8D%E5%88%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.</span> <span class="nav-text">mysql&#x2F;pg中的复制逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#innodb%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">1.1.</span> <span class="nav-text">InnoDB的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#redo-log"><span class="nav-number">1.1.1.</span> <span class="nav-text">Redo Log</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#undo-log"><span class="nav-number">1.1.2.</span> <span class="nav-text">Undo Log</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E7%9A%84binlog"><span class="nav-number">1.2.</span> <span class="nav-text">mysql的binlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E5%92%8Cpg%E7%9A%84%E5%A4%8D%E5%88%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.3.</span> <span class="nav-text">mysql和pg的复制逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E4%B8%8D%E4%BD%BF%E7%94%A8wal%E5%81%9A%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.4.</span> <span class="nav-text">mysql不使用WAL做主从复制的原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8wal%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.5.</span> <span class="nav-text">mysql无法使用WAL的原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%88%90%E6%9C%AC"><span class="nav-number">1.5.1.</span> <span class="nav-text">存储成本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#in-place-update-%E5%BC%95%E5%85%A5%E7%9A%84%E5%B9%B6%E5%8F%91%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98"><span class="nav-number">1.5.2.</span> <span class="nav-text">in-place update
+引入的并发时序问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E4%B8%8E%E5%AD%98%E5%82%A8%E6%A0%BC%E5%BC%8F%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.5.3.</span> <span class="nav-text">版本升级与存储格式的问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E5%9C%A8ai%E6%97%B6%E4%BB%A3%E4%B8%8B%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">2.</span> <span class="nav-text">pg和mysql在AI时代下的对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8Bjsonb%E4%BB%A5%E5%8F%8Adoris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.</span> <span class="nav-text">复合类型，jsonb以及doris中的variant</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.</span> <span class="nav-text">复合类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">3.1.1.</span> <span class="nav-text">复合类型的存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E7%B4%A2%E5%BC%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">复合类型的索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%B4%A2%E5%BC%95expression-index"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">表达式索引（Expression Index）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%8C%E7%BA%A7-b-tree-%E7%B4%A2%E5%BC%95row-level-b-tree"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">行级 B-Tree 索引（Row-level
+B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jsonb%E7%9A%84%E5%AD%98%E5%82%A8%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.</span> <span class="nav-text">jsonb的存储和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.2.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b-tree-%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">B-Tree 索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gin-%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GIN 倒排索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.3.</span> <span class="nav-text">doris中的variant</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">4.</span> <span class="nav-text">小数的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E6%98%AF%E5%A6%82%E4%BD%95%E7%B2%BE%E7%A1%AE%E8%A1%A8%E7%A4%BA%E5%B0%8F%E6%95%B0%E7%9A%84"><span class="nav-number">4.1.</span> <span class="nav-text">pg是如何精确表示小数的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">4.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#json%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%9D%91"><span class="nav-number">6.</span> <span class="nav-text">json索引的一个坑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gist"><span class="nav-number">7.</span> <span class="nav-text">GiST</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">7.1.</span> <span class="nav-text">GiST的原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AAgist%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">7.1.1.</span> <span class="nav-text">一个GiST的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E9%9D%A2%E4%B8%B4%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">7.2.</span> <span class="nav-text">GiST面临的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E5%BC%95%E5%8F%B7%E5%92%8C%E5%8F%8C%E5%BC%95%E5%8F%B7"><span class="nav-number">8.</span> <span class="nav-text">单引号和双引号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg_lsn"><span class="nav-number">9.</span> <span class="nav-text">pg_lsn</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E4%B8%AD%E7%9A%84wal"><span class="nav-number">9.1.</span> <span class="nav-text">pg中的WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFwal"><span class="nav-number">9.2.</span> <span class="nav-text">什么是WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg_lsn%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">9.3.</span> <span class="nav-text">pg_lsn的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cdc"><span class="nav-number">9.3.1.</span> <span class="nav-text">CDC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%BB%B4%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9B%91%E6%8E%A7"><span class="nav-number">9.3.2.</span> <span class="nav-text">运维与高可用监控</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -213,9 +214,15 @@ B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-05-20 19:53:47 / 修改时间：22:45:59" itemprop="dateCreated datePublished" datetime="2026-05-20T19:53:47+08:00">2026-05-20</time>
+      <time title="创建时间：2026-05-20 19:53:47" itemprop="dateCreated datePublished" datetime="2026-05-20T19:53:47+08:00">2026-05-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-05-21 20:50:04" itemprop="dateModified" datetime="2026-05-21T20:50:04+08:00">2026-05-21</time>
     </span>
 
   
@@ -227,7 +234,322 @@ B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="pg和mysql在ai时代下的对比">pg和mysql在AI时代下的对比</h1>
+    <div class="post-body" itemprop="articleBody"><h1 id="mysqlpg中的复制逻辑">mysql/pg中的复制逻辑</h1>
+<p>在了解 mysql 和 pg
+在进行主从复制逻辑之前，我们必须要知道他们在架构上的重大区别。</p>
+<p>宏观上来讲，mysql
+的架构（和主从复制逻辑相关的）会分为两个层级，分别是 <code>server</code>
+和 <code>存储引擎</code>，它的实际架构如下图所示：</p>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph server[&quot;MySQL Server (Server层)&quot;]
+    direction TB
+    Connectors(&quot;连接器 (Connectors)&quot;)
+    Parser(&quot;解析器 (Parser)&quot;)
+    Optimizer(&quot;优化器 (Optimizer)&quot;)
+    Executor(&quot;执行器 (Executor)&quot;)
+end
+
+subgraph storage_engine[&quot;存储引擎层 (特指 InnoDB)&quot;]
+    direction TB
+    BufferPool(&quot;缓冲池 (Buffer Pool)&quot;)
+    UndoLog(&quot;回滚日志 (Undo Log)&quot;)
+    RedoLog(&quot;重做日志 (Redo Log - 真正的单机WAL)&quot;)
+    
+    BufferPool --&gt; UndoLog
+    BufferPool --&gt; RedoLog
+end
+
+subgraph logs[&quot;物理日志文件 (磁盘/操作系统)&quot;]
+    binlog_file[(&quot;binlog 文件&lt;br&gt;(逻辑归档/主从复制)&quot;)]
+    redolog_file[(&quot;ib_logfile 文件&lt;br&gt;(物理WAL/单机崩溃恢复)&quot;)]
+end
+
+%% 1. 业务交互线
+server --&gt;|Handler API| storage_engine
+
+%% 2. 两阶段提交的物理交互
+Executor --&gt;|写 Server 层日志| binlog_file
+RedoLog --&gt;|写 2PC 状态: Prepare/Commit| redolog_file
+
+
+class InnoDB,BufferPool,UndoLog,RedoLog green;
+class binlog_file,redolog_file purple;
+class InnoDB green
+class MyISAM,BLACKHOLE error
+class logs light_green
+
+class Connectors,QueryCache,Parser,Optimizer,Executor blue
+
+class server,storage_engine blockContainer
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而 <code>pg</code> 则简单很多：它只有一个存储引擎：</p>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph pg_kernel[&quot;PostgreSQL 一体化内核 (Kernel)&quot;]
+    direction TB
+    SQL_Engine(&quot;SQL 解析 / 优化 / 执行器&quot;)
+    Storage_Engine(&quot;存储管理 (Data &amp; Page)&quot;)
+    
+    SQL_Engine --&gt; Storage_Engine
+end
+
+subgraph logs[&quot;磁盘物理文件&quot;]
+    data_files[(&quot;Data Files&lt;br&gt;(主表数据 / 基础Page)&quot;)]
+    wal_segments[(&quot;WAL Segments&lt;br&gt;(唯一的物理 WAL 日志流)&quot;)]
+end
+
+%% 业务交互与日志产生路径
+pg_kernel --&gt;|1. 慢速随机 I/O 刷脏页| data_files
+pg_kernel --&gt;|2. 快速顺序 I/O 实时预写| wal_segments
+
+class SQL_Engine,Storage_Engine blue;
+class data_files,wal_segments purple;
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p><strong>从某种角度来说，<code>mysql</code>
+的这个看起来很奇怪的架构其实是一个时代的遗产。早期大家追求面向对象，可拔插等逻辑，但是随着时代的发展，我们当我们需要不同的底层存储逻辑时，我们往往也需要提供完全不同的语法。这也是为什么像
+<code>MyIASM</code> 等存储引擎已经在事实上接近于被淘汰了。</strong></p>
+<h2 id="innodb的存储逻辑">InnoDB的存储逻辑</h2>
+<h3 id="redo-log">Redo Log</h3>
+<p>Redo Log 是 InnoDB 引擎特有的<strong>物理单机 WAL
+日志</strong>。它记录的是“对某个数据页做了什么物理修改”（例如：在 10
+号表空间的第 5 号页，偏移量 100 处写入了字节 <code>0xFF</code>）。</p>
+<p>我们知道，为了追求极致的性能，MySQL 修改数据时是先在内存的
+<strong>Buffer Pool（缓冲池）</strong>
+中直接修改。此时，内存中的页变成了“脏页”。
+如果此时机器突然断电，内存中的脏页还没来得及刷入磁盘，数据就彻底丢失了。</p>
+<p>为了防止断电数据丢失，又不想每次修改都进行缓慢的磁盘随机 I/O（直接刷
+16KB 的数据页），InnoDB 采用了 WAL 机制：</p>
+<ul>
+<li>在返回客户端成功之前，先将这次修改以 <strong>物理日志（Redo
+Log）</strong> 的形式<strong>顺序追加写入</strong>磁盘。</li>
+<li><strong>崩溃恢复</strong>：如果数据库意外崩溃，重启时，InnoDB
+会读取磁盘上的 Redo
+Log，把那些已经在内存改了、但还没来得及刷盘的数据页重新计算并写回磁盘，把状态“硬顶回去”。</li>
+</ul>
+<h3 id="undo-log">Undo Log</h3>
+<p>Undo Log 是 InnoDB
+内部的<strong>逻辑日志</strong>。它记录的是与我们执行的 SQL
+相反的逆向操作。</p>
+<ul>
+<li>当我们执行 <code>INSERT</code> 时，Undo Log 会记录一笔对应的
+<code>DELETE</code>。</li>
+<li>当我们执行 <code>UPDATE</code> 把 age 从 18 改为 19 时，Undo Log
+会记录一笔“把 age 改回 18”的旧值镜像。</li>
+</ul>
+<p>它的核心职责有两个：</p>
+<ol type="1">
+<li><strong>实现事务回滚（原子性）</strong>：如果一个事务执行到一半，我们突然执行了
+<code>ROLLBACK</code>，或者系统发生报错、触发死锁判定导致事务失败，InnoDB
+就会顺着这条执行链条，去读对应的 Undo
+Log，把刚才改到一半的数据“全部吐出来”，恢复原状。</li>
+<li><strong>实现多版本并发控制（MVCC - 隔离性）</strong>： 由于 MySQL
+采用 <strong>In-place
+Update（原地更新）</strong>，当一个事务在内存里把某一行的数据覆盖修改后，其他正在并发读取这行数据的事务该怎么办？
+此时，读事务<strong>不会去读被修改后的新数据</strong>，而是顺着行记录里隐藏的<strong>回滚指针（<code>DB_ROLL_PTR</code>）</strong>，去
+Undo Log
+里捞出该行修改前的历史老版本数据（快照读）。这实现了“读写不冲突”的并发体验。</li>
+</ol>
+<h2 id="mysql的binlog">mysql的binlog</h2>
+<blockquote>
+<p><code>binlog</code> 是 mysql
+中的一个特殊日志。从事实上来讲，<code>InnoDB</code>
+已经是目前唯一在广泛流通的存储引擎。然而，<code>binlog</code> 却归属于
+<code>server</code> 层而不是存储引擎层。</p>
+</blockquote>
+<p>它主要记录的是<strong>逻辑变更</strong>。在现代生产环境默认的
+<strong>ROW 模式</strong>
+下，它记录的是“<strong>行数据的最终变化镜像</strong>”。举个例子：当我们执行一条更新语句时：</p>
+<ul>
+<li><strong>物理 Redo Log 的视角</strong>：在 3 号表空间 5 号页的偏移量
+100 处写下二进制 <code>0x4A</code>。</li>
+<li><strong>逻辑 Binlog 的视角</strong>：在 <code>users</code> 表里，把
+<code>id=1</code> 这一行的 <code>name</code> 字段改成了 'Tom'。</li>
+</ul>
+<p>前者和 <code>InnoDB</code>
+存储引擎强相关，因为不同的存储引擎的结构完全不同。而或者则是一个所有的存储引擎通用的描述。</p>
+<h2 id="mysql和pg的复制逻辑">mysql和pg的复制逻辑</h2>
+<pre><code class="highlight mermaid">flowchart TD
+
+mysql_master(&quot;mysql_master&quot;)
+mysql_slaver(&quot;mysql_slaver&quot;)
+
+pg_master(&quot;pg_master&quot;)
+pg_slaver(&quot;pg_slaver&quot;)
+
+mysql_master --&gt;|binlog| mysql_slaver
+
+pg_master --&gt;|WAL| pg_slaver
+
+class mysql_master,pg_master green
+class mysql_slaver,pg_slaver gray
+
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<h2
+id="mysql不使用wal做主从复制的原因">mysql不使用WAL做主从复制的原因</h2>
+<ol type="1">
+<li>mysql 的 WAL 是存储引擎层的日志，也就是我们的 Redo
+Log，而这个日志本身并不长期存储，如果长期存储的话相当于是我们需要存放实际数据，binlog，WAL日志三个部分，成本过于高昂。</li>
+<li><strong>WAL日志中记录的不是逻辑日志，而是物理日志。</strong>也就是说，它并不是<strong>将ID=0x10000的那一行更新的name列更新为
+<code>mysql</code></strong>，而是<strong>将3号表空间的第5个Page中偏移量为
+<code>[0x100, 0x104]</code> 的五个字节修改为
+<code>mysql</code></strong>。这意味着，我们在复制前后的物理结构必须完全一致。但是在
+MySQL 架构下，这几乎不可能，具体的原因比较复杂，我们后续单独解释。</li>
+<li>mysql
+为了对存储引擎实现可插拔，在设计层面隔离了WAL日志和binlog日志，这意味着如果我们使用WAL，我们直接丧失了存储引擎的替换能力。</li>
+</ol>
+<h2 id="mysql无法使用wal的原因">mysql无法使用WAL的原因</h2>
+<p>现在的问题在于，<code>InnoDB</code>
+存储引擎已经成为了唯一可用的存储引擎，那为什么在最新版本的 mysql
+中仍然没有使用WAL日志去做主从复制呢？而从它这里延伸出来的一些其他的数据库：<code>AWS Aurora</code>/<code>PolarDB</code>
+都已经彻底废除 Binlog，直接在从库重放 InnoDB 的物理 Redo Log。</p>
+<p>根本原因在于：<strong>物理流复制要求主库与从库的底层磁盘物理页面（Page
+Layout）必须保持 100% 绝对一致。然而在 MySQL
+的原生架构下，这在工程上几乎是一件不可能完成的任务。</strong></p>
+<h3 id="存储成本">存储成本</h3>
+<p>Redo Log
+记录的是极细粒度的字节覆写，里面包含大量重复的、中间状态的物理修改。如果为了满足主从复制和历史归档而将
+Redo Log
+改造成追加流，其体积会随着高并发写入发生恐怖的物理暴胀。同时存放实际数据文件、全量
+Binlog、以及无限增长的物理 Redo Log，其磁盘和 I/O
+成本在工业生产中是不可接受的。</p>
+<h3 id="in-place-update-引入的并发时序问题">in-place update
+引入的并发时序问题</h3>
+<blockquote>
+<p>InnoDB 的灵魂是 <strong>In-place
+Update（原地更新）</strong>，且数据本身就是 B+Tree（聚簇索引）。</p>
+</blockquote>
+<p>在一个高并发写入的系统里，一个 16KB
+的物理页（Page）什么时候发生<strong>页分裂（Page
+Split）</strong>、或者什么时候发生<strong>页合并（Page
+Merge）</strong>，是由极其微观的 <strong>CPU
+线程调度和并发锁时序</strong> 决定的。</p>
+<p>假设主从库的初始状态完全一致，主库并发进来了 100 个
+<code>INSERT</code> 事务。由于主库多线程并发的微观锁竞争，A
+页满了，触发了页分裂，B+Tree 结构发生物理改变。</p>
+<p>如果从库去重放物理日志，由于网络延迟、硬件抖动、或者从库上正在执行业务的只读慢查询，导致从库的微观并发时序与主库出现了百万分之一秒的偏差，从库可能就不会在同一时间点触发页分裂。</p>
+<p>一旦分裂时机错位，我们整体的 Layout
+发生变化，整个同步将直接异常。</p>
+<p><strong>pg通过引入 <code>Lehman &amp; Yao</code> 和
+<code>Hot Standby</code>
+等机制解决了这个问题。然而，我们关注的是，为什么 mysql
+不能引入这些机制来解决这个问题呢？</strong></p>
+<p><strong>MySQL 无法使用物理复制的根本原因，在于 InnoDB 16KB
+物理页采用了“乱序物理存储 +
+有序链表/页目录指针”的强耦合微观设计。这种设计导致页面内部的控制块（Slot）与真实数据之间存在极其脆弱的微观时序依赖。在从库重放时，一旦控制块先于数据页落盘、或读线程在重放间隙切入，就会直接引发物理内存解析错位而导致进程崩溃。</strong></p>
+<p><strong>而 PostgreSQL 采用的“顶端线型指针数组 +
+末端倒序追加”的纯物理页拓扑，使得页面内部天然具备单向原子可见性。配合
+B-link
+树的右指针，它在纯物理字节层面就完成了并发安全的自闭环，从而使得单线程无脑物理覆写在工程上变得完全可行。</strong></p>
+<h3 id="版本升级与存储格式的问题">版本升级与存储格式的问题</h3>
+<p>如果使用物理 Redo Log，只要 MySQL 官方在跨大版本时，对底层的 16KB
+页结构、索引控制位或者 B+Tree
+节点格式进行了一丁点像素级的微调（例如某个控制字段从 2 字节扩容到 4
+字节），那么整个同步将直接异常。</p>
+<p><strong>需要注意的是，由于 pg 使用了 WAL 日志实现，所以 pg
+也遵循这个原则 --
+不允许滚动更新</strong>。然而，滚动更新是一个不可或缺的特性，所以 pg
+使用了一个非常特殊的方式来处理这个问题：它在内核里提供了一个类似于mysql的binlog的
+<code>逻辑复制（Logical Replication）</code>。</p>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph old_node[&quot;老版本 PG 主库 (如 PG 15)&quot;]
+    direction TB
+    Old_Kernel[&quot;老版本内核&lt;br&gt;(执行业务写入)&quot;]
+    Old_WAL[(&quot;老版本 WAL 文件&lt;br&gt;(物理字节流)&quot;)]
+    Logical_Decoding[&quot;逻辑解码组件&lt;br&gt;(Logical Decoding)&quot;]
+    
+    Old_Kernel --&gt;|1. 写入物理变更| Old_WAL
+    Old_WAL --&gt;|2. 实时读取物理字节| Logical_Decoding
+end
+
+subgraph network[&quot;网络传输&quot;]
+    Row_Changes[&quot;标准逻辑行变更数据&lt;br&gt;(例如: 行主键=1, name修改为&#x27;mysql&#x27;)&quot;]
+end
+
+subgraph new_node[&quot;新版本 PG 从库 (如 PG 16)&quot;]
+    direction TB
+    Logical_Replication_Worker[&quot;逻辑复制接收进程&lt;br&gt;(Logical Rep Worker)&quot;]
+    New_Kernel[&quot;新版本内核&lt;br&gt;(重新执行行SQL)&quot;]
+    New_WAL[(&quot;新版本 WAL 文件&lt;br&gt;(新版物理字节流)&quot;)]
+    
+    Logical_Replication_Worker --&gt;|4. 转化为本地行写入| New_Kernel
+    New_Kernel --&gt;|5. 产生新版物理变更| New_WAL
+end
+
+%% 核心连线
+Logical_Decoding --&gt;|3. 跨网络发送逻辑行| Row_Changes
+Row_Changes --&gt; Logical_Replication_Worker
+
+class Old_Kernel,Old_WAL,Logical_Decoding gray;
+class Logical_Replication_Worker,New_Kernel,New_WAL green;
+class Row_Changes yellow;
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而基于这个逻辑，我们可以从运维的层面去解决这个问题：</p>
+<ol type="1">
+<li>部署新版本的PG集群。</li>
+<li>通过逻辑复制工具，将老版本的PG数据同步的复制到新版本PG。</li>
+<li>在一个合适的时间节点，老版本PG停止对外服务。</li>
+<li>等待剩余数据全部复制完毕，使用新版本PG对外提供服务。</li>
+</ol>
+<p>虽然，我们仍然存在短暂的服务不可用，但是已经比完全无法升级要好很多了。</p>
+<h1 id="pg和mysql在ai时代下的对比">pg和mysql在AI时代下的对比</h1>
 <p>从AI时代的视角再来看看pg相对于mysql的优势，在 Web2
 时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了
 AI 时代，这个原则却不一定适用了。</p>
@@ -348,21 +670,24 @@ O(1) 寻找 Key 的能力，它的内部数据分为三个部分：Container
 Header（容器头）、JEntry（元素索引区） 和 Value Area（原始数据区）。</p>
 <p>以 JSON { "name": "Alex", "age": 28 }
 为例，它在物理磁盘上的存储结构长这样：</p>
-<pre><code class="highlight mermaid">flowchart LR
+<pre><code class="highlight mermaid">flowchart TB
 
 subgraph container[&quot;Container Header&quot;]
+	direction TB
     type[&quot;Type: Object (2 bits)&quot;]
     count[&quot;Size: 2对键值 (30 bits)&quot;]
 end
 
 subgraph jentries[&quot;JEntry Array&quot;]
-    je1[&quot;Key 1 (name)&lt;br/&gt;[Offset + Type]&quot;]
+	direction TB
+	je1[&quot;Key 1 (name)&lt;br/&gt;[Offset + Type]&quot;]
     je2[&quot;Key 2 (age)&lt;br/&gt;[Offset + Type]&quot;]
     je3[&quot;Val 1 (&#x27;Alex&#x27;)&lt;br/&gt;[Offset + Type]&quot;]
     je4[&quot;Val 2 (28)&lt;br/&gt;[Offset + Type]&quot;]
 end
 
 subgraph data[&quot;Value Area&quot;]
+	direction TB
     d1(&quot;name&quot;)
     d2(&quot;age&quot;)
     d3(&quot;Alex&quot;)
@@ -621,6 +946,294 @@ Index）而言，优化器是一个极其死板的“文本匹配复读机”。
 <p>我们得到了：</p>
 <figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">+-------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| QUERY PLAN                                                                                                                          |</span><br><span class="line">|-------------------------------------------------------------------------------------------------------------------------------------|</span><br><span class="line">| Bitmap Heap Scan on public.jsonb_test_01  (<span class="attribute">cost</span>=12.17..1143.00 <span class="attribute">rows</span>=500 <span class="attribute">width</span>=47) (actual <span class="attribute">time</span>=0.026..0.027 <span class="attribute">rows</span>=1.00 <span class="attribute">loops</span>=1)      |</span><br><span class="line">|   Output: id, data                                                                                                                  |</span><br><span class="line">|   Recheck Cond: ((jsonb_test_01.data -&gt;&gt; <span class="string">&#x27;name&#x27;</span>::text) = <span class="string">&#x27;hello jsonb&#x27;</span>::text)                                                       |</span><br><span class="line">|   Heap Blocks: <span class="attribute">exact</span>=1                                                                                                              |</span><br><span class="line">|   Buffers: shared <span class="attribute">hit</span>=1 <span class="attribute">read</span>=2                                                                                                      |</span><br><span class="line">|   -&gt;  Bitmap Index Scan on jsonb_test_01_expr_idx  (<span class="attribute">cost</span>=0.00..12.04 <span class="attribute">rows</span>=500 <span class="attribute">width</span>=0) (actual <span class="attribute">time</span>=0.021..0.021 <span class="attribute">rows</span>=1.00 <span class="attribute">loops</span>=1) |</span><br><span class="line">|         Index Cond: ((jsonb_test_01.data -&gt;&gt; <span class="string">&#x27;name&#x27;</span>::text) = <span class="string">&#x27;hello jsonb&#x27;</span>::text)                                                   |</span><br><span class="line">|         Index Searches: 1                                                                                                           |</span><br><span class="line">|         Buffers: shared <span class="attribute">read</span>=2                                                                                                      |</span><br><span class="line">| Planning:                                                                                                                           |</span><br><span class="line">|   Buffers: shared <span class="attribute">hit</span>=17 <span class="attribute">read</span>=1                                                                                                     |</span><br><span class="line">| Planning Time: 0.231 ms                                                                                                             |</span><br><span class="line">| Execution Time: 0.039 ms                                                                                                            |</span><br><span class="line">+-------------------------------------------------------------------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure>
 <p>值得注意的是，我们这个索引是走的 <code>Bitmap Heap Scan</code>。</p>
+<h1 id="gist">GiST</h1>
+<p><code>pg</code> 的 <code>range</code> 类型（区间类型，比如
+<code>int4range</code>,
+<code>tsrange</code>）能够实现超高性能的“区间重叠（<code>&amp;&amp;</code>）”、“包含（<code>@&gt;</code>）”查询，底层完全得益于一个非常精妙的索引框架
+—— <strong>GiST（Generalized Search Tree，广义搜索树）</strong>。</p>
+<p>传统的 B-Tree
+索引是强有序的，它在处理点对点（<code>=</code>）或者单向范围（<code>&gt;</code>
+和
+<code>&lt;</code>）时效率很高，但是在处理那些可以重叠的区间时往往效率很低。为此，<code>pg</code>
+使用了 <code>GiST</code> 来存储这种 <code>range</code> 类型的数据。</p>
+<h2 id="gist的原理">GiST的原理</h2>
+<p><code>GiST</code> 的结构其实和 <code>B+树</code>
+最大的共同点在于，他们的根节点和中间节点都只提供索引功能，而不提供真实的数据。但是他们的区别在于，<code>GiST</code>
+的节点由于本身提供的 <code>range</code>
+查询，所以他们的叶子节点是可以重叠的。</p>
+<h3 id="一个gist的例子">一个GiST的例子</h3>
+<p>假设我们存在四个节点的 <code>GiST</code>：</p>
+<ul>
+<li><code>[10, 20]</code></li>
+<li><code>[15, 30]</code></li>
+<li><code>[45, 60]</code></li>
+<li><code>[55, 70]</code></li>
+</ul>
+<p>在 <code>GiST</code> 索引树里，它们会被组织成下面这样的层级结构：</p>
+<pre><code class="highlight mermaid">flowchart TD
+    root[&quot;【根节点】&lt;br&gt;Root Range: [10, 70]&quot;]
+    
+    node1[&quot;【中间节点 A】&lt;br&gt;Bounding Range: [10, 30]&quot;]
+    node2[&quot;【中间节点 B】&lt;br&gt;Bounding Range: [45, 70]&quot;]
+    
+    r1[&quot;【叶子 R1】&lt;br&gt;[10, 20]&quot;]
+    r2[&quot;【叶子 R2】&lt;br&gt;[15, 30]&quot;]
+    r3[&quot;【叶子 R3】&lt;br&gt;[45, 60]&quot;]
+    r4[&quot;【叶子 R4】&lt;br&gt;[55, 70]&quot;]
+
+    root --&gt; node1
+    root --&gt; node2
+    
+    node1 --&gt; r1
+    node1 --&gt; r2
+    node2 --&gt; r3
+    node2 --&gt; r4
+
+class root blue
+class node1,node2 orange
+class r1,r2,r3,r4 green
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<ol type="1">
+<li><strong>中间节点是聚合区间</strong>：中间节点 A 的范围是
+<code>[10, 30]</code>，它刚好包含了 <span
+class="math inline">\(R_1\)</span> 和 <span
+class="math inline">\(R_2\)</span>；中间节点 B 的范围是
+<code>[45, 70]</code>，包含了 <span class="math inline">\(R_3\)</span>
+和 <span class="math inline">\(R_4\)</span>。</li>
+<li><strong>允许重叠（Overlap）</strong>：看中间节点 A 内部，<span
+class="math inline">\(R_1 [10, 20]\)</span> 和 <span
+class="math inline">\(R_2 [15, 30]\)</span>
+在物理上是有重叠部分的。<code>GiST</code>
+树<strong>完美允许这种重叠</strong>。</li>
+</ol>
+<p>假设我们现在执行了一个如下的查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> bookings</span><br><span class="line"><span class="keyword">WHERE</span> room_schedule <span class="operator">&amp;&amp;</span> <span class="string">&#x27;`[25, 50]`&#x27;</span>::tsrange;</span><br></pre></td></tr></table></figure>
+<p>PG 的执行器拿着 <code>[25, 50]</code> 开始从 GiST
+树的根节点向下寻址：</p>
+<ol type="1">
+<li><strong>扫描根节点</strong>：查询目标 <code>[25, 50]</code>
+与根节点的 <code>[10, 70]</code> 有交集，继续向下。</li>
+<li><strong>评估中间节点 A (<code>[10, 30]</code>)</strong>：
+<ul>
+<li><code>[25, 50]</code> 与 <code>[10, 30]</code> 有交集（交集是
+<code>[25, 30]</code>），说明这里<strong>有可能</strong>藏着我们要的答案。</li>
+<li>顺着指针进入 A 的子节点。检查 <span
+class="math inline">\(R_1[10,20]\)</span>（不重叠，排除），检查 <span
+class="math inline">\(R_2[15,30]\)</span>（重叠！命中，捞出）。</li>
+</ul></li>
+<li><strong>评估中间节点 B (<code>[45, 70]</code>)</strong>：
+<ul>
+<li><code>[25, 50]</code> 与 <code>[45, 70]</code> 也有交集（交集是
+<code>[45, 50]</code>），说明这里<strong>也有可能</strong>有答案。</li>
+<li>顺着指针进入 B 的子节点。检查 <span
+class="math inline">\(R_3[45,60]\)</span>（重叠！命中，捞出），检查
+<span class="math inline">\(R_4[55,70]\)</span>（不重叠，排除）。</li>
+</ul></li>
+</ol>
+<h2 id="gist面临的问题">GiST面临的问题</h2>
+<p><code>GiST</code>
+由于允许数据重叠，那么我们在插入新的节点时会导致指向它的中间节点膨胀，在极端情况下，甚至由于这些
+<code>range</code> 重叠的部分过多，整个搜索直接退化为全表扫描。</p>
+<p>举个例子，假设在我们上面的这个图中，我们插入一个 <code>[5, 65]</code>
+的超大 <code>range</code>，这个大区间不论塞给中间节点 A 还是 B，都会导致
+A 或
+B急剧膨胀。在这个场景下：假设我们塞入A，那么此时基本上所有落到B的都会需要同时查询A，因为此时我们新的中间节点A基本覆盖了B。</p>
+<p>例如，我们在查询 <code>[45, 65]</code> 这个区间时，A 和 B
+都需要搜索。</p>
+<pre><code class="highlight mermaid">flowchart TD
+    root[&quot;【根节点】&lt;br&gt;Root Range: [10, 70]&quot;]
+    
+    node1[&quot;【中间节点 A】&lt;br&gt;Bounding Range: [5, 65]&quot;]
+    node2[&quot;【中间节点 B】&lt;br&gt;Bounding Range: [45, 70]&quot;]
+    
+    r1[&quot;【叶子 R1】&lt;br&gt;[10, 20]&quot;]
+    r2[&quot;【叶子 R2】&lt;br&gt;[15, 30]&quot;]
+    r3[&quot;【叶子 R3】&lt;br&gt;[45, 60]&quot;]
+    r4[&quot;【叶子 R4】&lt;br&gt;[55, 70]&quot;]
+    r5[&quot;【叶子 R5】&lt;br&gt;[5, 65]&quot;]
+
+    root --&gt; node1
+    root --&gt; node2
+    
+    node1 --&gt; r1
+    node1 --&gt; r2
+    node1 --&gt; r5
+    node2 --&gt; r3
+    node2 --&gt; r4
+    
+    root -.-&gt;|&quot;&#x27;`[50, 60]`&#x27;&quot;| node1
+    root -.-&gt;|&quot;&#x27;`[50, 60]`&#x27;&quot;| node2
+
+class root blue
+class node1,node2 orange
+class r1,r2,r3,r4,r5 green
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>为了对抗这种退化，PG 在 <code>range</code> 的 GiST
+源码里实现了两个核心算法：</p>
+<ul>
+<li><strong>Penalty（惩罚函数）</strong>：当新插入一个区间时，计算把它放进哪个中间节点会导致该节点的“箱子体积膨胀得最小”（优先选择代价最小的节点塞进去）。</li>
+<li><strong>PickSplit（分裂函数）</strong>：当一个节点满了需要拆分成两个时，算法会极其痛苦地进行计算，<strong>尽可能把物理上离得远的区间分到两个不同的箱子里</strong>，从而让两个新箱子之间的重叠度降到最低。</li>
+</ul>
+<h1 id="单引号和双引号">单引号和双引号</h1>
+<p>在 <code>pg</code> 中，单引号和双引号的含义是不同的：</p>
+<ul>
+<li><strong><code>'</code>（单引号）</strong>：专门用来包裹
+<strong>字符串字面量（String Literal /
+Value）</strong>。也就是告诉数据库：这是一个具体的数据值。</li>
+<li><strong><code>"</code>（双引号）</strong>：专门用来包裹
+<strong>对象标识符（Identifier）</strong>。也就是告诉数据库：这是一个表名、列名、函数名或者别名。</li>
+</ul>
+<p>举个例子，我们创建如下的表：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> test_tab_04(id <span class="type">int</span>, col1 text[]);</span><br></pre></td></tr></table></figure>
+<p>下面的SQL执行会报错：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> test_tab_04 <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="keyword">ARRAY</span>[&quot;hello&quot;, &quot; &quot;, &quot;world.&quot;]);</span><br></pre></td></tr></table></figure>
+<p>提示：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">column</span> &quot;hello&quot; does <span class="keyword">not</span> exist</span><br><span class="line">LINE <span class="number">1</span>: ...ERT <span class="keyword">INTO</span> test_tab_04 <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">ARRAY</span>[&quot;hello&quot;, &quot;...</span><br></pre></td></tr></table></figure>
+<p>而下面的则可以正常执行：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> test_tab_04 <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="keyword">ARRAY</span>[<span class="string">&#x27;hello&#x27;</span>, <span class="string">&#x27; &#x27;</span>, <span class="string">&#x27;world.&#x27;</span>]);</span><br></pre></td></tr></table></figure>
+<p>此外，<code>pg</code> 的数组的索引是从 <code>1</code>
+开始的，并且超出索引时会返回 null 而不是异常：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> col1[<span class="number">1</span>],col1[<span class="number">2</span>],col1[<span class="number">3</span>],col1[<span class="number">4</span>]</span><br><span class="line"><span class="keyword">FROM</span> test_tab_04;</span><br></pre></td></tr></table></figure>
+<figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+-------+------+--------+--------+</span><br><span class="line">|<span class="string"> col1  </span>|<span class="string"> col1 </span>|<span class="string"> col1   </span>|<span class="string"> col1   </span>|</span><br><span class="line">|<span class="string">-------+------+--------+--------</span>|</span><br><span class="line">|<span class="string"> hello </span>|<span class="string">      </span>|<span class="string"> world. </span>|<span class="string"> &lt;null&gt; </span>|</span><br><span class="line">+-------+------+--------+--------+</span><br></pre></td></tr></table></figure>
+<h1 id="pg_lsn">pg_lsn</h1>
+<p><code>pg_lsn</code> 类型的全称是 PostgreSQL Log Sequence
+Number，我们基本不会声明某一个表中包含一个字段是 pg_lsn
+类型，它主要的作用是 pg 自己内部用于管理它的 WAL
+日志。即便是运维人员，也只是利用pg提供的这个特性去做一些类似于CDC日志同步的逻辑。</p>
+<h2 id="pg中的wal">pg中的WAL</h2>
+<p>在 <code>pg</code> 中，<code>WAL</code>
+是一个持久化的超大型的、有序的逻辑日志，但是在物理层面，它会被拆分为多个不同的文件，每个文件被称之为一个
+<code>segment</code>。</p>
+<p>在每个 <code>segment</code>
+中，不同的SQL生成的对应的WAL紧密排列，而所以我们需要一个文件内偏移量才能找到某一条具体的WAL日志。</p>
+<p>所以，当我们在 PG 中查询一个 LSN
+时，它通常长这样：<code>16/B374A848</code>。它在形式上是一个由斜杠
+<code>/</code> 隔开的十六进制字符串，但其本质是一个 <strong>64
+位的无符号整数（8 字节）</strong>。</p>
+<p>注意，这个斜杠（<code>/</code>）只是一个<strong>纯粹的可视化输出格式</strong>，它和
+WAL 的“逻辑段号”并不是直对的关系。</p>
+<ol type="1">
+<li><strong>物理 WAL 文件的大小</strong>：PG 的一个 WAL
+段文件（Segment）默认固定大小是 <strong><span
+class="math inline">\(16\text{ MB}\)</span></strong>。</li>
+<li>在 PG 源码中，它是通过将 64 位的绝对 LSN
+整数进行数学计算，来推导出真实的 WAL 文件名的。</li>
+</ol>
+<p><span class="math display">\[
+\text{WAL 文件名} = \text{Timeline ID} + \left(
+\frac{\text{LSN}}{16\text{ MB}} \text{ 的十六进制} \right)
+\]</span></p>
+<p>以 <code>16/B374A848</code> 为例子：</p>
+<ul>
+<li>把它转成一维 64 位整数，它是：<code>0x16B374A848</code>。</li>
+<li>我们用它除以 <span class="math inline">\(16\text{
+MB}\)</span>（<code>0x01000000</code>），得到的物理商是
+<code>0x16B3</code>。</li>
+<li>所以，它对应的物理 WAL
+文件名实际上长这样：<code>00000001000016B3000000B3</code>（前 8
+位是时间线，中间 8 位是逻辑段，最后 8 位是该段内的第几个 <span
+class="math inline">\(16\text{ MB}\)</span>）。</li>
+<li>而真正的<strong>文件内偏移量</strong>，其实是
+<code>0xB374A848</code> 对 <span class="math inline">\(16\text{
+MB}\)</span> 取模（Remainder）后的余数</li>
+</ul>
+<h2 id="什么是wal">什么是WAL</h2>
+<p>通常来说，在几乎所有的数据库中（不论是OLAP/OLTP，只要是需要保证在单机崩溃后恢复）都是通过一个叫
+WAL 的机制来实现的。</p>
+<p>而 WAL
+简单理解就是：在我们真正的要去做一件事之前，我们先将我们要做的事情记录下来。如果失败了我就先恢复到WAL日志之前的状态，再执行一次WAL日志。</p>
+<p>这个思想是基于一个非常简单的推论：</p>
+<p><span class="math inline">\(State_{n+1} = State_{n} +
+\Delta{v}\)</span></p>
+<p>也就是说，在 <code>n+1</code> 时刻的状态，等于 <code>n</code>
+时刻的状态，加上从时刻 <code>n</code> 到 时刻 <code>n+1</code>
+所有发生的变化。基于这个推论，并结合WAL我们就可以保证我们的状态一致性，而这个过程中我们需要记录两个状态：</p>
+<ul>
+<li><span class="math inline">\(State_n\)</span></li>
+<li><span class="math inline">\(State_n\)</span> 时刻对应的
+<code>LSN</code></li>
+</ul>
+<p>我们知道，WAL 是一个有序的日志，我们只需要记住以上两个状态，那么在
+<span class="math inline">\(State_n\)</span> 到 <span
+class="math inline">\(State_{n+1}\)</span>
+的这个状态中的任意时刻发生了故障，我们只需要恢复到 <span
+class="math inline">\(State_n\)</span> 时刻的状态，再重新执行 WAL
+即可。如果我们执行成功，我们更新状态到 <span
+class="math inline">\(State_{n+1}\)</span> 和 <span
+class="math inline">\(LSN_{new}\)</span>。</p>
+<p>那么，此时我们会发现一个新的问题：我们的WAL日志的执行必须是幂等的，因为在
+WAL 恢复时我们其实相当于有两个操作：</p>
+<ol type="1">
+<li>更新 <span class="math inline">\(State_n\)</span> 到 <span
+class="math inline">\(State_{n+1}\)</span>；</li>
+<li>更新 <span class="math inline">\(LSN_{old}\)</span> 到 <span
+class="math inline">\(LSN_{new}\)</span></li>
+</ol>
+<p>而这个本身不是原子操作，所以它必须是幂等的。
+<strong>这个原理，基本上应用于我们现实世界中所有对状态一致性有要求的地方：2PC/3PC
+的事务，raft协议的复制，flink的checkpoint等。</strong></p>
+<p>我们可以把我们的 WAL 磁盘更新看做是两步：</p>
+<ol type="1">
+<li>根据WAL更新日志的内容；</li>
+<li>更新LSN。</li>
+</ol>
+<p>我们通过将 LSN 放在我们的 Page 页中，这样我们先在内存中更新该 Page 在
+WAL 执行完毕后的结果，再更新 Page Header 中的 LSN。</p>
+<p>随后，我们将这个更新后的 Page
+更新到磁盘，此时我们要么都成功，要么都失败，天然的实现了我们的幂等。</p>
+<p>然而，在工程上实现这个逻辑的问题在于，磁盘并不存在这样一个原子更新的最小块，所以不论是在
+mysql 还是在 pg 中，这个所谓的 “原子更新的 Page”
+都只是一个抽象的概念：</p>
+<ul>
+<li>mysql 使用了双写缓冲（Double Write Buffer）</li>
+<li>pg 使用了全页写入机制（Full Page Write）。</li>
+</ul>
+<h2 id="pg_lsn的应用">pg_lsn的应用</h2>
+<p>通常来说，从业务开发的角度来讲， <code>pg_lsn</code>
+是一个不会用到的类型，然而对于 DBA，Infra
+Engineer，或者大数据中间件开发的视角来看， <code>pg_lsn</code>
+是一个极其重要的类型，我们可以考虑以下几个典型的场景：</p>
+<h3 id="cdc">CDC</h3>
+<p>在现代微服务和大数据架构中，有一个极为高频的诉求：<strong>把数据库的变更实时同步到
+Redis、Elasticsearch 或者 Kafka 中</strong>。常用的有
+<code>Debezium</code> 或者是 flink 的一些 CDC 组件。</p>
+<p>在这个情况下，用户通常会将 <code>lsn</code>
+作为状态存储起来，并在崩溃之后通过 <code>lsn</code>
+重新回到刚才同步的位置。</p>
+<h3 id="运维与高可用监控">运维与高可用监控</h3>
+<p>对于运维人员，<code>pg_lsn</code>
+是评估数据库集群健康度最不可或缺的指标：主从复制有没有延迟、延迟了多少、从库有没有卡死，全靠两个
+<code>pg_lsn</code> 相减得到的<strong>字节差值（Replication Lag
+Bytes）</strong>。如果这个差值持续飙升，DBA
+就会收到报警，开始介入排查网络或磁盘 I/O 问题。</p>
 
     </div>
 

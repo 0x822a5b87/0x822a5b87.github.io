@@ -205,9 +205,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-05-20 19:53:47 / 修改时间：22:45:59" itemprop="dateCreated datePublished" datetime="2026-05-20T19:53:47+08:00">2026-05-20</time>
+      <time title="创建时间：2026-05-20 19:53:47" itemprop="dateCreated datePublished" datetime="2026-05-20T19:53:47+08:00">2026-05-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-05-21 20:50:04" itemprop="dateModified" datetime="2026-05-21T20:50:04+08:00">2026-05-21</time>
     </span>
 
   
@@ -220,17 +226,70 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="pg和mysql在ai时代下的对比">pg和mysql在AI时代下的对比</h1>
-<p>从AI时代的视角再来看看pg相对于mysql的优势，在 Web2
-时代，通常我们在做架构设计的时候，会遵循一个原则：在查询SQL时基于最小查询信息原则尽量去减小数据库的压力。通常来说，一个系统的性能瓶颈有95%的情况是出现在数据库，而类似于接口之类的无状态服务往往不会成为性能瓶颈。但是到了
-AI 时代，这个原则却不一定适用了。</p>
-<p>因为核心矛盾变了：AI 时代的数据和传统的电商/EPR等系统完全不一样。</p>
-<p>在传统业务（如电商、社交）中，数据库里流转的往往是 int、varchar(50)
-这种极小的数据。但在 AI/RAG 场景下，数据长这样：</p>
-<ul>
-<li>一个 content 字段（知识块文本）：2000 字，约 4KB - 8KB。</li>
-<li>一个 embedding 字段（高维向量）：1536 个 float32，固定 6KB。</li>
-</ul>
+          <h1 id="mysqlpg中的复制逻辑">mysql/pg中的复制逻辑</h1>
+<p>在了解 mysql 和 pg
+在进行主从复制逻辑之前，我们必须要知道他们在架构上的重大区别。</p>
+<p>宏观上来讲，mysql
+的架构（和主从复制逻辑相关的）会分为两个层级，分别是 <code>server</code>
+和 <code>存储引擎</code>，它的实际架构如下图所示：</p>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph server[&quot;MySQL Server (Server层)&quot;]
+    direction TB
+    Connectors(&quot;连接器 (Connectors)&quot;)
+    Parser(&quot;解析器 (Parser)&quot;)
+    Optimizer(&quot;优化器 (Optimizer)&quot;)
+    Executor(&quot;执行器 (Executor)&quot;)
+end
+
+subgraph storage_engine[&quot;存储引擎层 (特指 InnoDB)&quot;]
+    direction TB
+    BufferPool(&quot;缓冲池 (Buffer Pool)&quot;)
+    UndoLog(&quot;回滚日志 (Undo Log)&quot;)
+    RedoLog(&quot;重做日志 (Redo Log - 真正的单机WAL)&quot;)
+    
+    BufferPool --&gt; UndoLog
+    BufferPool --&gt; RedoLog
+end
+
+subgraph logs[&quot;物理日志文件 (磁盘/操作系统)&quot;]
+    binlog_file[(&quot;binlog 文件&lt;br&gt;(逻辑归档/主从复制)&quot;)]
+    redolog_file[(&quot;ib_logfile 文件&lt;br&gt;(物理WAL/单机崩溃恢复)&quot;)]
+end
+
+%% 1. 业务交互线
+server --&gt;|Handler API| storage_engine
+
+%% 2. 两阶段提交的物理交互
+Executor --&gt;|写 Server 层日志| binlog_file
+RedoLog --&gt;|写 2PC 状态: Prepare/Commit| redolog_file
+
+
+class InnoDB,BufferPool,UndoLog,RedoLog green;
+class binlog_file,redolog_file purple;
+class InnoDB green
+class MyISAM,BLACKHOLE error
+class logs light_green
+
+class Connectors,QueryCache,Parser,Optimizer,Executor blue
+
+class server,storage_engine blockContainer
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;</code></pre>
+<p>而 <code>pg</code> 则简单很多：它只有一个存储引擎：</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2026/05/20/cheatsheet-for-pg-and-mysql/#more" rel="contents">
