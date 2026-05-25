@@ -1125,11 +1125,403 @@ $State_{n+1} = State_{n} + \Delta{v}$
 
 对于运维人员，`pg_lsn` 是评估数据库集群健康度最不可或缺的指标：主从复制有没有延迟、延迟了多少、从库有没有卡死，全靠两个 `pg_lsn` 相减得到的**字节差值（Replication Lag Bytes）**。如果这个差值持续飙升，DBA 就会收到报警，开始介入排查网络或磁盘 I/O 问题。
 
+# pg和mysql的数据隔离
+
+## 综述
+
+`mysql` 和 `pg` 在模型上，差别非常大：
+
+- `mysql` 是典型的**单进程，多线程（Shared Everything）**，在启动后，在操作系统层面**只有一个独立的进程**（`mysqld`）：
+  1. 对于每个 `client`，在连接时 `mysql` 会在内部为他分配一个线程。
+  2. 所有的线程在物理上共享数据（数据字典、元数据缓存），在 `mysql` 内部通过逻辑查询时鉴权来隔离数据。
+- `pg` 则是**多进程模型（Process-Per-Connection）**，在启动之后，操作系统里会有一个守护进程，以及大量的工作进程（`walwriter`，`checkpointer`，`background writer` 等）：
+  1. 对于每个 `client`，在连接时，`pg` 会从 `fork()` 一个新的进程，在新的进程中根据指定库从对应目录加载元数据。
+
+他们的元数据存储也是完全不同的：
+
+- 共同点是，在服务器上都会启动一个服务进程，这个服务进程会负责接收从 `client` 发送的请求，并查询内部的特定结构的文件/索引后向用户返回结果数据。
+- 区别是：
+  - `mysql` 内部的元数据是**逻辑隔离，物理共享**的，它内部所有的元数据被存放在一个全局统一的，由 InnoDB 统一管理的隐藏系统表里。元数据本身在 `mysql` 中也被抽象为了一个表，也就是说，它遵循和其他表一样的增删查改原则，通过 Redo/Undo Log 来做容灾和MVCC。同时，它也和其他的普通表一样，是先写WAL日志，再修改内存生成脏页，在一个合适的实际进行持久化（Double Write Buffer）。而我们的 `information_schema` 表则是对这个表做的一个视图。
+  - `pg` 在数据隔离的层面则更为的激进，它在内部将不同的库的元数据拆分存放到了不同的文件夹下，**它从物理层面和逻辑层面都做了隔离**。
+
+## 一个例子
+
+根据我们前面的描述，我们可以推测得出：**当我们在 `mysql`/`pg` 下执行 `use ${database}` 这条指令时其实会有有截然不同的行为**：
+
+1. `mysql` 物理共享，所以它只需要在内部**做一个逻辑上的切换**即可。
+2. `pg` 物理隔离，所以它需要**销毁当前 session，并创建一个新的 session 加载元数据。**
+
+我们按照如下的操作可以完美的复现这个结论：
+
+> 补充：`pg` 在内核层面并不支持**在同一个会话中切换数据库**这个功能，这里的 `use postgresq;` 实际上是我们使用的客户端帮我们做了适配，客户端在后台停止了刚才的 `session`，并向 `pg` 请求建立了一个新的 `session`。
+
+```bash
+sudo ss -tnp | grep mysqld
+# ESTAB 0      0          127.0.0.1:3306     127.0.0.1:36780 users:(("mysqld",pid=2930,fd=24))
+# 可以看到我们现在的连接是 pid=2930 的进程
+
+# 在 client 中切换库
+use information_schema;
+
+sudo ss -tnp | grep mysqld
+# ESTAB 0      0          127.0.0.1:3306     127.0.0.1:36780 users:(("mysqld",pid=2930,fd=24))
+# 我们的连接没有任何变化
+
+# 而pg则完全不一样，我们先看看现在的连接
+sudo ss -tnp | grep postgres
+# ESTAB 0      0          127.0.0.1:5432     127.0.0.1:38738 users:(("postgres",pid=35285,fd=9))
+
+# 在 client 中切换库
+use postgres;
+
+sudo ss -tnp | grep postgres
+# ESTAB 0      0          127.0.0.1:5432     127.0.0.1:41590 users:(("postgres",pid=36510,fd=9))
+# 我们的进程从 pid=35285 变成了 pid=36510
+```
+
+## 元数据存储上的隔离
+
+### pg
+
+在 pg 中，不同的数据之间的元数据是物理隔离的，我们可以这样去找到我们的元数据存储的位置：
+
+```sql
+-- 查找数据库的OID
+SELECT oid, datname FROM pg_database;
+
+-- 查找pg的文件目录
+SHOW data_directory;
+```
+
+我们得到了如下输出：
+
+```sql
++-------+-------------+
+| oid   | datname     |
+|-------+-------------|
+| 5     | postgres    |
+| 16385 | ai_infra_db |
+| 1     | template1   |
+| 4     | template0   |
++-------+-------------+
+
++-----------------------------+
+| data_directory              |
+|-----------------------------|
+| /var/lib/postgresql/18/main |
++-----------------------------+
+```
+
+我们可以看到这个目录下存放了相当多的文件：
+
+- `PG_VERSIOn` 存放了pg的版本号。
+- `base` 存放了我们的创建的所有库的元数据。
+- `global` 存放了我们的全局系统表，这些文件在全实例级别只有一份，里面记录的就是用户账号、有哪些数据库等全集群共享的信息。
+- `pg_wal` 存放了我们的全局 `WAL` 日志。
+
+```bash
+ll /var/lib/postgresql/18/main
+
+# -rw-------  1 postgres postgres    3 May 20 14:50 PG_VERSION
+# drwx------  7 postgres postgres 4.0K May 20 22:42 base/
+# drwx------  2 postgres postgres 4.0K May 22 15:06 global/
+# drwx------  4 postgres postgres 4.0K May 20 22:34 pg_wal/
+# ...
+```
+
+此时进入 `base` 文件加，我们可以看到我们所有的库都是独立的：
+
+```bash
+ll base
+
+# drwx------  7 postgres postgres  4096 May 20 22:42 ./
+# drwx------ 19 postgres postgres  4096 May 20 14:50 ../
+# drwx------  2 postgres postgres  4096 May 20 14:54 1/
+# drwx------  2 postgres postgres 12288 May 21 16:55 16385/
+# drwx------  2 postgres postgres  4096 May 22 15:06 4/
+# drwx------  2 postgres postgres  4096 May 20 14:53 5/
+# drwx------  2 postgres postgres  4096 May 20 22:42 pgsql_tmp/
+```
+
+### mysql
+
+`mysql` 的则是简单粗暴，通常 `mysql` 的路径是 `/var/lib/mysql/`：
+
+- `ibdata1` 共享表空间。
+- `mysql.ibd` 中央数据字典物理文件，包含了全部的核心元数据。
+- `undo_001` 和 `undo_002` 是我们独立的 undo 日志。
+- `mysql` 和 `performance_schema` 是默认提供的库。
+- `springboot` 是之前学习 `springboot` 时创建的一个表。
+
+```bash
+ll /var/lib/mysql/
+
+# -rw-r-----  1 mysql mysql  12M May 22 00:00  ibdata1
+# -rw-r-----  1 mysql mysql  25M May 19 21:42  mysql.ibd
+# -rw-r-----  1 mysql mysql  16M May 19 21:42  undo_001
+# -rw-r-----  1 mysql mysql  16M May 19 21:42  undo_002
+# drwxr-x---  2 mysql mysql 4.0K May 19 20:57  mysql/
+# drwxr-x---  2 mysql mysql 4.0K May 19 20:57  performance_schema/
+# drwxr-x---  2 mysql mysql 4.0K May 19 21:41  springboot/
+```
+
+然而，当我们查看 `springboot` 这个文件夹时：
+
+```bash
+tree springboot/
+
+# springboot/
+# ├── tbl_account.ibd
+# ├── tbl_dept.ibd
+# └── tbl_user.ibd
+```
+
+我们会发现，它只有 `.ibd` 文件，而这个是 `InnoDB` 的实际数据，并不包含元数据信息。
+
+# cluster/database/schema
+
+## 概述
+
+通常来说，一个典型的 `database` 的分库/分表逻辑应该按照如下方式去实现：
+
+```mermaid
+flowchart TD
+
+subgraph instance1["数据库实例 / Instance（王者荣耀）"]
+    subgraph database1["数据库 / Catalog（二区）"]
+        subgraph schema1["模式 / Schema（用户）"]
+            User1("User")
+            Login1("Login")
+            Logout1("Logout")
+        end
+        subgraph schema2["模式 / Schema（商业）"]
+            Purchase1("Purchase")
+            Sales1("Sales")
+        end
+    end
+    subgraph database3["数据库 / Catalog（一区）"]
+        subgraph schema3["模式 / Schema（用户）"]
+            User3("User")
+            Login3("Login")
+            Logout3("Logout")
+        end
+        subgraph schema4["模式 / Schema（商业）"]
+            Purchase2("Purchase")
+            Sales2("Sales")
+        end
+    end
+end
+
+subgraph lol_instance["数据库实例 / Instance（英雄联盟）"]
+    subgraph lol_database["数据库 / Catalog（用户运营）"]
+        subgraph lol_schema["模式 / Schema（公共）"]
+            lol_user("User")
+            lol_login("Login")
+            log_logout("Logout")
+        end
+    end
+end
+
+class instance1,lol_instance blockContainer
+class database1,database3,lol_database light_green
+class schema1,schema2,schema3,schema4,lol_schema gray
+
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+```
+
+1. instance：最顶层的是没有任何关联的，完全独立的业务，我们通常会将他们放在两个完全不同的数据实例中。但是，在数据量本身不大并且对数据安全性不那么敏感，我们可以考虑将他们放在同一个实例下的不同的库中。
+2. database：面向独立业务租户、独立系统、独立数据集群，通常来说，他们的数据文件、事务日志、连接资源、备份恢复完全独立，默认互相不可访问，故障、扩容、销毁互不影响。
+3. schema：库内逻辑命名空间，通常是面向同一系统内部的模块、团队、业务域。他们通常共享数据库底层存储与事务能力，仅做逻辑划分，库内跨 Schema 可自由关联查询。
+4. table：不同的业务逻辑特征。
+
+如果要简单的描述的话，那就是：
+
+1. instance 是物理机器或集群（非虚拟化场景下）或者容器实例（例如kubernetes集群）级别的隔离。
+2. database 是磁盘路径级别的隔离。
+3. schema 是逻辑层面的隔离。
+
+## mysql
+
+通常来说，按照SQL标准，我们的整体设计应该如上面所描述的一样，**然而mysql并没有遵循这个标准**，所以在mysql中，`schema` 和 `database` 是一个完全一样的概念，**都对应于SQL标准中的 `schema` 层。也就是说，`mysql` 没有提供 `database` 层面的隔离能力。**最典型的特征是：`mysql` 的跨库查询只要用户存在所有查询库的权限，它可以在不借助任何外部工具的情况下直接进行跨库的查询，而 `pg` 和 `oracle` 都不提供该能力。 
+
+## pg
+
+在 `pg` 中，也没有完全的遵循SQL标准，它的层级如下所示：
+
+```mermaid
+flowchart TD
+
+subgraph cluster["Cluster（单机数据目录实例）"]
+    subgraph database["Database（独立物理 OID 目录）"]
+        subgraph schema["Schema（逻辑命名空间）"]
+            user("User")
+            login("Login")
+            logout("Logout")
+        end
+    end
+end
+
+class cluster blockContainer
+class database light_green
+class schema gray
+
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+```
+
+它使用 `cluster` 去表示SQL标准的 `instance`：在 `pg` 中，`cluster` 是一个历史命名包袱，它和分布式系统（如 `kubernetes`、`redis cluster`）里的 `集群` 概念完全不是一个东西：
+
+- **常规分布式系统的 `cluster`**：指的是**多台物理机器/多个独立节点**通过网络协同工作，具备分布式容灾、水平扩展的能力。
+- `pg` 中的 `cluster`：在物理上它**就是单机上的一个独立数据目录（Data Directory）**。
+
+而现在之所以仍然保留它的原因在于，大量的代码中保留着 `cluster` 的命名导致积重难返。
+
+# 大字段的存储
+
+## 概述
+
+在数据库中，超大行写入是一个共同的难题。然而，不同的架构下，引起这个限制的并不是同一个原因。
+
+### mysql对于大字段的限制
+
+`mysql` 不允许超大行写入的原因是，`mysql` 的索引是**聚簇索引**（索引的叶子节点就是数据本身），而我们的存储本身是按页存储的，也就是说，单页存储的数据是有上限的。而如果我们在直接在单页中写入超大行，这会导致我们B+树索引中的叶子节点只能存放一个节点，这会导致我们的B+树直接退化为一个链表。所以，`mysql` 允许的单行的最大大小必须小于 PageSize / 2。当然，此时整个索引树的高度会急剧增高，所以实际性能仍然受到极大影响。
+
+### pg对于大字段的限制
+
+`pg` 对于大字段的限制主要出于以下几个原因：
+
+1. **单页物理写入的原子性**：linux的物理磁盘写入单位通常是 `4KB`，而 `pg` 的一个标准 Page 是 `8KB`，如果允许大行写入，我们假设这里占据了 page_a，page_b，page_c 三个 Page。那么此时，我们将需要处理在写入时的**页断裂**问题。 `mysql` 的解决方案是，通过引入了代价高昂的双写缓冲区（Double Write Buffer）来解决这个问题。而 `pg` 的设计为了避免这个问题，直接不允许数据跨行。
+2. 如果不允许数据跨行，那么整个的WAL重放将不需要考虑复杂的单行跨Page的场景，我们只需要简单的做 checksum 校验并重放即可。
+3. `pg` 的 MVCC 把行版本号存放在 Tuple Header 中，允许跨行写入将使得 MVCC 实现异常复杂。
+
+## 解决大字段写入
+
+为此不同的数据库发展出了截然不同的解决方案：
+
+### pg 如何处理大字段
+
+`pg` 直接不允许单行跨页，而如果对于某一行出现跨页的情况，那么它就会使用 `TOAST` 技术。
+
+原理就是，我们知道，在 `pg` 中，`table` 会有一个全局唯一的 `OID`，也就是说，我们只需要为某个大字段也生成一个唯一的 `ID`，我们就可以通过这两个 `ID` 定义到这个大字段。
+
+那么，我们生成一个隐藏的表 `pg_toast.pg_toast_xxxx`，其中 `xxxx` 是主表的 OID。
+
+随后将这个大对象拆成多个小行，并写入到这个表中。同时，在行内它会使用一个 Blob Pointer 作为后续查找该字段的依据。
+
+而 `pg_toast.pg_toast_xxxx` 这个表会包含三个字段：
+
+1. `chunk_id` 这就是我们的主表中实际存储的 Blob Pointer。
+2. `chunk_seq` 我们大字段在拆分后的序号。
+3. `chunk_data` 字段拆分后的数据。
+
+也就是说，当我们在查询这个大字段时，相当于是在后台执行了如下的SQL:
+
+```sql
+SELECT chunk_data
+FROM pg_toast_xxxx
+WHERE chunk_id = ?
+ORDER BY chunk_seq ASC;
+```
+
+我们就得到了这个大字段的实际值。
 
 
+### mysql如何处理大字段
 
+`mysql` 允许单行跨页，但是它会和 `pg` 一样，将这个字段存储到独立的 `Overflow Page` 内。同时，在原始行内存储一个指向这个 `Overflow Page` 的指针。但是，我们需要知道，`Overflow Page` 实际上是一个逻辑概念，在物理上，他会被拆分为多个特殊的 `Page`，每个 `Page` 除了存放数据之外，还有有一个指针指向它的下一页。所以，它实际上是一个链表。
 
+### 总结
 
+也就是说，`pg` 和 `mysql` 的共同点是，对于大字段他们都会使用一个独立的区域去存放，而通过一个指针来指向这个独立的存储区域。
+
+他们的区别在于，`pg` 是将原始数据拆分为多行，仍然遵循单行不跨页原则，而 `mysql` 则在 `Overflow Page` 中允许打破单行不跨页的规则。
+
+## 存储模型
+
+### mysql
+
+```mermaid
+flowchart TD
+
+big("大字段")
+
+subgraph list
+    subgraph page0
+        data0("data[0]")
+        ptr0("next")
+    end
+
+    subgraph page1
+        data1("data[1]")
+        ptr1("next")
+    end
+
+    subgraph page2
+        data2("data[n]")
+        ptr_n("null")
+    end
+
+end
+
+page0 --> page1 --> page2
+big --> list
+
+class list blockContainer
+class page0,page1,page2 light_green
+class data0,data1,data2 green
+class ptr0,ptr1 gray
+class ptr_n error
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+```
+
+### pg
+
+```mermaid
+flowchart TD
+
+big("大字段")
+
+subgraph heap
+	direction TB
+    subgraph row0
+        chunk_id0("chunk_id")
+        chunk_seq0("0")
+        chunk_data0("data[0]")
+    end
+    subgraph row1
+        chunk_id1("chunk_id")
+        chunk_seq1("1")
+        chunk_data1("data[1]")
+    end
+    subgraph row2
+        chunk_id2("chunk_id")
+        chunk_seq2("2")
+        chunk_data2("data[2]")
+    end
+end
+
+big --> heap
+
+class heap blockContainer
+class row0,row1,row2 light_green
+
+class chunk_id0,chunk_id1,chunk_id2 green
+class chunk_seq0,chunk_seq1,chunk_seq2 gray
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+```
 
 
 
