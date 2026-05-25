@@ -27,7 +27,7 @@
 <meta property="og:description" content="mysql&#x2F;pg中的复制逻辑 在了解 mysql 和 pg 在进行主从复制逻辑之前，我们必须要知道他们在架构上的重大区别。 宏观上来讲，mysql 的架构（和主从复制逻辑相关的）会分为两个层级，分别是 server 和 存储引擎，它的实际架构如下图所示： flowchart TD  subgraph server[&quot;MySQL Server (Server层)&quot;]     di">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-05-20T11:53:47.000Z">
-<meta property="article:modified_time" content="2026-05-21T12:50:04.336Z">
+<meta property="article:modified_time" content="2026-05-25T14:57:56.026Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="database">
 <meta property="article:tag" content="mysql">
@@ -141,7 +141,7 @@
         <div class="post-toc-wrap sidebar-panel">
             <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#mysqlpg%E4%B8%AD%E7%9A%84%E5%A4%8D%E5%88%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.</span> <span class="nav-text">mysql&#x2F;pg中的复制逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#innodb%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">1.1.</span> <span class="nav-text">InnoDB的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#redo-log"><span class="nav-number">1.1.1.</span> <span class="nav-text">Redo Log</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#undo-log"><span class="nav-number">1.1.2.</span> <span class="nav-text">Undo Log</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E7%9A%84binlog"><span class="nav-number">1.2.</span> <span class="nav-text">mysql的binlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E5%92%8Cpg%E7%9A%84%E5%A4%8D%E5%88%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.3.</span> <span class="nav-text">mysql和pg的复制逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E4%B8%8D%E4%BD%BF%E7%94%A8wal%E5%81%9A%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.4.</span> <span class="nav-text">mysql不使用WAL做主从复制的原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8wal%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.5.</span> <span class="nav-text">mysql无法使用WAL的原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%88%90%E6%9C%AC"><span class="nav-number">1.5.1.</span> <span class="nav-text">存储成本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#in-place-update-%E5%BC%95%E5%85%A5%E7%9A%84%E5%B9%B6%E5%8F%91%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98"><span class="nav-number">1.5.2.</span> <span class="nav-text">in-place update
 引入的并发时序问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E4%B8%8E%E5%AD%98%E5%82%A8%E6%A0%BC%E5%BC%8F%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.5.3.</span> <span class="nav-text">版本升级与存储格式的问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E5%9C%A8ai%E6%97%B6%E4%BB%A3%E4%B8%8B%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">2.</span> <span class="nav-text">pg和mysql在AI时代下的对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8Bjsonb%E4%BB%A5%E5%8F%8Adoris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.</span> <span class="nav-text">复合类型，jsonb以及doris中的variant</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.</span> <span class="nav-text">复合类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">3.1.1.</span> <span class="nav-text">复合类型的存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E7%B4%A2%E5%BC%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">复合类型的索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%B4%A2%E5%BC%95expression-index"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">表达式索引（Expression Index）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%8C%E7%BA%A7-b-tree-%E7%B4%A2%E5%BC%95row-level-b-tree"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">行级 B-Tree 索引（Row-level
-B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jsonb%E7%9A%84%E5%AD%98%E5%82%A8%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.</span> <span class="nav-text">jsonb的存储和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.2.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b-tree-%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">B-Tree 索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gin-%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GIN 倒排索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.3.</span> <span class="nav-text">doris中的variant</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">4.</span> <span class="nav-text">小数的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E6%98%AF%E5%A6%82%E4%BD%95%E7%B2%BE%E7%A1%AE%E8%A1%A8%E7%A4%BA%E5%B0%8F%E6%95%B0%E7%9A%84"><span class="nav-number">4.1.</span> <span class="nav-text">pg是如何精确表示小数的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">4.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#json%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%9D%91"><span class="nav-number">6.</span> <span class="nav-text">json索引的一个坑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gist"><span class="nav-number">7.</span> <span class="nav-text">GiST</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">7.1.</span> <span class="nav-text">GiST的原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AAgist%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">7.1.1.</span> <span class="nav-text">一个GiST的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E9%9D%A2%E4%B8%B4%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">7.2.</span> <span class="nav-text">GiST面临的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E5%BC%95%E5%8F%B7%E5%92%8C%E5%8F%8C%E5%BC%95%E5%8F%B7"><span class="nav-number">8.</span> <span class="nav-text">单引号和双引号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg_lsn"><span class="nav-number">9.</span> <span class="nav-text">pg_lsn</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E4%B8%AD%E7%9A%84wal"><span class="nav-number">9.1.</span> <span class="nav-text">pg中的WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFwal"><span class="nav-number">9.2.</span> <span class="nav-text">什么是WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg_lsn%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">9.3.</span> <span class="nav-text">pg_lsn的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cdc"><span class="nav-number">9.3.1.</span> <span class="nav-text">CDC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%BB%B4%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9B%91%E6%8E%A7"><span class="nav-number">9.3.2.</span> <span class="nav-text">运维与高可用监控</span></a></li></ol></li></ol></li></ol></div>
+B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jsonb%E7%9A%84%E5%AD%98%E5%82%A8%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.</span> <span class="nav-text">jsonb的存储和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.2.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b-tree-%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">B-Tree 索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gin-%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GIN 倒排索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.3.</span> <span class="nav-text">doris中的variant</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">4.</span> <span class="nav-text">小数的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E6%98%AF%E5%A6%82%E4%BD%95%E7%B2%BE%E7%A1%AE%E8%A1%A8%E7%A4%BA%E5%B0%8F%E6%95%B0%E7%9A%84"><span class="nav-number">4.1.</span> <span class="nav-text">pg是如何精确表示小数的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">4.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#json%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%9D%91"><span class="nav-number">6.</span> <span class="nav-text">json索引的一个坑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gist"><span class="nav-number">7.</span> <span class="nav-text">GiST</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">7.1.</span> <span class="nav-text">GiST的原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AAgist%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">7.1.1.</span> <span class="nav-text">一个GiST的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E9%9D%A2%E4%B8%B4%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">7.2.</span> <span class="nav-text">GiST面临的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E5%BC%95%E5%8F%B7%E5%92%8C%E5%8F%8C%E5%BC%95%E5%8F%B7"><span class="nav-number">8.</span> <span class="nav-text">单引号和双引号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg_lsn"><span class="nav-number">9.</span> <span class="nav-text">pg_lsn</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E4%B8%AD%E7%9A%84wal"><span class="nav-number">9.1.</span> <span class="nav-text">pg中的WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFwal"><span class="nav-number">9.2.</span> <span class="nav-text">什么是WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg_lsn%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">9.3.</span> <span class="nav-text">pg_lsn的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cdc"><span class="nav-number">9.3.1.</span> <span class="nav-text">CDC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%BB%B4%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9B%91%E6%8E%A7"><span class="nav-number">9.3.2.</span> <span class="nav-text">运维与高可用监控</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB"><span class="nav-number">10.</span> <span class="nav-text">pg和mysql的数据隔离</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E8%BF%B0"><span class="nav-number">10.1.</span> <span class="nav-text">综述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">10.2.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E4%B8%8A%E7%9A%84%E9%9A%94%E7%A6%BB"><span class="nav-number">10.3.</span> <span class="nav-text">元数据存储上的隔离</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pg"><span class="nav-number">10.3.1.</span> <span class="nav-text">pg</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql"><span class="nav-number">10.3.2.</span> <span class="nav-text">mysql</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#clusterdatabaseschema"><span class="nav-number">11.</span> <span class="nav-text">cluster&#x2F;database&#x2F;schema</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">11.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-1"><span class="nav-number">11.2.</span> <span class="nav-text">mysql</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg-1"><span class="nav-number">11.3.</span> <span class="nav-text">pg</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">12.</span> <span class="nav-text">大字段的存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-number">12.1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%AF%B9%E4%BA%8E%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">12.1.1.</span> <span class="nav-text">mysql对于大字段的限制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pg%E5%AF%B9%E4%BA%8E%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">12.1.2.</span> <span class="nav-text">pg对于大字段的限制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%A4%A7%E5%AD%97%E6%AE%B5%E5%86%99%E5%85%A5"><span class="nav-number">12.2.</span> <span class="nav-text">解决大字段写入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pg-%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%A4%A7%E5%AD%97%E6%AE%B5"><span class="nav-number">12.2.1.</span> <span class="nav-text">pg 如何处理大字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%A4%A7%E5%AD%97%E6%AE%B5"><span class="nav-number">12.2.2.</span> <span class="nav-text">mysql如何处理大字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">12.2.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B"><span class="nav-number">12.3.</span> <span class="nav-text">存储模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql-2"><span class="nav-number">12.3.1.</span> <span class="nav-text">mysql</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pg-2"><span class="nav-number">12.3.2.</span> <span class="nav-text">pg</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -222,7 +222,7 @@ B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-05-21 20:50:04" itemprop="dateModified" datetime="2026-05-21T20:50:04+08:00">2026-05-21</time>
+      <time title="修改时间：2026-05-25 22:57:56" itemprop="dateModified" datetime="2026-05-25T22:57:56+08:00">2026-05-25</time>
     </span>
 
   
@@ -1234,6 +1234,348 @@ Redis、Elasticsearch 或者 Kafka 中</strong>。常用的有
 <code>pg_lsn</code> 相减得到的<strong>字节差值（Replication Lag
 Bytes）</strong>。如果这个差值持续飙升，DBA
 就会收到报警，开始介入排查网络或磁盘 I/O 问题。</p>
+<h1 id="pg和mysql的数据隔离">pg和mysql的数据隔离</h1>
+<h2 id="综述">综述</h2>
+<p><code>mysql</code> 和 <code>pg</code> 在模型上，差别非常大：</p>
+<ul>
+<li><code>mysql</code> 是典型的<strong>单进程，多线程（Shared
+Everything）</strong>，在启动后，在操作系统层面<strong>只有一个独立的进程</strong>（<code>mysqld</code>）：
+<ol type="1">
+<li>对于每个 <code>client</code>，在连接时 <code>mysql</code>
+会在内部为他分配一个线程。</li>
+<li>所有的线程在物理上共享数据（数据字典、元数据缓存），在
+<code>mysql</code> 内部通过逻辑查询时鉴权来隔离数据。</li>
+</ol></li>
+<li><code>pg</code>
+则是<strong>多进程模型（Process-Per-Connection）</strong>，在启动之后，操作系统里会有一个守护进程，以及大量的工作进程（<code>walwriter</code>，<code>checkpointer</code>，<code>background writer</code>
+等）：
+<ol type="1">
+<li>对于每个 <code>client</code>，在连接时，<code>pg</code> 会从
+<code>fork()</code>
+一个新的进程，在新的进程中根据指定库从对应目录加载元数据。</li>
+</ol></li>
+</ul>
+<p>他们的元数据存储也是完全不同的：</p>
+<ul>
+<li>共同点是，在服务器上都会启动一个服务进程，这个服务进程会负责接收从
+<code>client</code>
+发送的请求，并查询内部的特定结构的文件/索引后向用户返回结果数据。</li>
+<li>区别是：
+<ul>
+<li><code>mysql</code>
+内部的元数据是<strong>逻辑隔离，物理共享</strong>的，它内部所有的元数据被存放在一个全局统一的，由
+InnoDB 统一管理的隐藏系统表里。元数据本身在 <code>mysql</code>
+中也被抽象为了一个表，也就是说，它遵循和其他表一样的增删查改原则，通过
+Redo/Undo Log
+来做容灾和MVCC。同时，它也和其他的普通表一样，是先写WAL日志，再修改内存生成脏页，在一个合适的实际进行持久化（Double
+Write Buffer）。而我们的 <code>information_schema</code>
+表则是对这个表做的一个视图。</li>
+<li><code>pg</code>
+在数据隔离的层面则更为的激进，它在内部将不同的库的元数据拆分存放到了不同的文件夹下，<strong>它从物理层面和逻辑层面都做了隔离</strong>。</li>
+</ul></li>
+</ul>
+<h2 id="一个例子">一个例子</h2>
+<p>根据我们前面的描述，我们可以推测得出：<strong>当我们在
+<code>mysql</code>/<code>pg</code> 下执行 <code>use ${database}</code>
+这条指令时其实会有有截然不同的行为</strong>：</p>
+<ol type="1">
+<li><code>mysql</code>
+物理共享，所以它只需要在内部<strong>做一个逻辑上的切换</strong>即可。</li>
+<li><code>pg</code> 物理隔离，所以它需要<strong>销毁当前
+session，并创建一个新的 session 加载元数据。</strong></li>
+</ol>
+<p>我们按照如下的操作可以完美的复现这个结论：</p>
+<blockquote>
+<p>补充：<code>pg</code>
+在内核层面并不支持<strong>在同一个会话中切换数据库</strong>这个功能，这里的
+<code>use postgresq;</code>
+实际上是我们使用的客户端帮我们做了适配，客户端在后台停止了刚才的
+<code>session</code>，并向 <code>pg</code> 请求建立了一个新的
+<code>session</code>。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> ss -tnp | grep mysqld</span><br><span class="line"><span class="comment"># ESTAB 0      0          127.0.0.1:3306     127.0.0.1:36780 users:((&quot;mysqld&quot;,pid=2930,fd=24))</span></span><br><span class="line"><span class="comment"># 可以看到我们现在的连接是 pid=2930 的进程</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 client 中切换库</span></span><br><span class="line">use information_schema;</span><br><span class="line"></span><br><span class="line"><span class="built_in">sudo</span> ss -tnp | grep mysqld</span><br><span class="line"><span class="comment"># ESTAB 0      0          127.0.0.1:3306     127.0.0.1:36780 users:((&quot;mysqld&quot;,pid=2930,fd=24))</span></span><br><span class="line"><span class="comment"># 我们的连接没有任何变化</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 而pg则完全不一样，我们先看看现在的连接</span></span><br><span class="line"><span class="built_in">sudo</span> ss -tnp | grep postgres</span><br><span class="line"><span class="comment"># ESTAB 0      0          127.0.0.1:5432     127.0.0.1:38738 users:((&quot;postgres&quot;,pid=35285,fd=9))</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 client 中切换库</span></span><br><span class="line">use postgres;</span><br><span class="line"></span><br><span class="line"><span class="built_in">sudo</span> ss -tnp | grep postgres</span><br><span class="line"><span class="comment"># ESTAB 0      0          127.0.0.1:5432     127.0.0.1:41590 users:((&quot;postgres&quot;,pid=36510,fd=9))</span></span><br><span class="line"><span class="comment"># 我们的进程从 pid=35285 变成了 pid=36510</span></span><br></pre></td></tr></table></figure>
+<h2 id="元数据存储上的隔离">元数据存储上的隔离</h2>
+<h3 id="pg">pg</h3>
+<p>在 pg
+中，不同的数据之间的元数据是物理隔离的，我们可以这样去找到我们的元数据存储的位置：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 查找数据库的OID</span></span><br><span class="line"><span class="keyword">SELECT</span> oid, datname <span class="keyword">FROM</span> pg_database;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 查找pg的文件目录</span></span><br><span class="line"><span class="keyword">SHOW</span> data_directory;</span><br></pre></td></tr></table></figure>
+<p>我们得到了如下输出：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> oid   <span class="operator">|</span> datname     <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span><span class="comment">-------+-------------|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">5</span>     <span class="operator">|</span> postgres    <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">16385</span> <span class="operator">|</span> ai_infra_db <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">1</span>     <span class="operator">|</span> template1   <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">4</span>     <span class="operator">|</span> template0   <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------+-------------+</span></span><br><span class="line"></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------------------+</span></span><br><span class="line"><span class="operator">|</span> data_directory              <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span><span class="comment">-----------------------------|</span></span><br><span class="line"><span class="operator">|</span> <span class="operator">/</span>var<span class="operator">/</span>lib<span class="operator">/</span>postgresql<span class="operator">/</span><span class="number">18</span><span class="operator">/</span>main <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------------------+</span></span><br></pre></td></tr></table></figure>
+<p>我们可以看到这个目录下存放了相当多的文件：</p>
+<ul>
+<li><code>PG_VERSIOn</code> 存放了pg的版本号。</li>
+<li><code>base</code> 存放了我们的创建的所有库的元数据。</li>
+<li><code>global</code>
+存放了我们的全局系统表，这些文件在全实例级别只有一份，里面记录的就是用户账号、有哪些数据库等全集群共享的信息。</li>
+<li><code>pg_wal</code> 存放了我们的全局 <code>WAL</code> 日志。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ll /var/lib/postgresql/18/main</span><br><span class="line"></span><br><span class="line"><span class="comment"># -rw-------  1 postgres postgres    3 May 20 14:50 PG_VERSION</span></span><br><span class="line"><span class="comment"># drwx------  7 postgres postgres 4.0K May 20 22:42 base/</span></span><br><span class="line"><span class="comment"># drwx------  2 postgres postgres 4.0K May 22 15:06 global/</span></span><br><span class="line"><span class="comment"># drwx------  4 postgres postgres 4.0K May 20 22:34 pg_wal/</span></span><br><span class="line"><span class="comment"># ...</span></span><br></pre></td></tr></table></figure>
+<p>此时进入 <code>base</code>
+文件加，我们可以看到我们所有的库都是独立的：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ll base</span><br><span class="line"></span><br><span class="line"><span class="comment"># drwx------  7 postgres postgres  4096 May 20 22:42 ./</span></span><br><span class="line"><span class="comment"># drwx------ 19 postgres postgres  4096 May 20 14:50 ../</span></span><br><span class="line"><span class="comment"># drwx------  2 postgres postgres  4096 May 20 14:54 1/</span></span><br><span class="line"><span class="comment"># drwx------  2 postgres postgres 12288 May 21 16:55 16385/</span></span><br><span class="line"><span class="comment"># drwx------  2 postgres postgres  4096 May 22 15:06 4/</span></span><br><span class="line"><span class="comment"># drwx------  2 postgres postgres  4096 May 20 14:53 5/</span></span><br><span class="line"><span class="comment"># drwx------  2 postgres postgres  4096 May 20 22:42 pgsql_tmp/</span></span><br></pre></td></tr></table></figure>
+<h3 id="mysql">mysql</h3>
+<p><code>mysql</code> 的则是简单粗暴，通常 <code>mysql</code> 的路径是
+<code>/var/lib/mysql/</code>：</p>
+<ul>
+<li><code>ibdata1</code> 共享表空间。</li>
+<li><code>mysql.ibd</code>
+中央数据字典物理文件，包含了全部的核心元数据。</li>
+<li><code>undo_001</code> 和 <code>undo_002</code> 是我们独立的 undo
+日志。</li>
+<li><code>mysql</code> 和 <code>performance_schema</code>
+是默认提供的库。</li>
+<li><code>springboot</code> 是之前学习 <code>springboot</code>
+时创建的一个表。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ll /var/lib/mysql/</span><br><span class="line"></span><br><span class="line"><span class="comment"># -rw-r-----  1 mysql mysql  12M May 22 00:00  ibdata1</span></span><br><span class="line"><span class="comment"># -rw-r-----  1 mysql mysql  25M May 19 21:42  mysql.ibd</span></span><br><span class="line"><span class="comment"># -rw-r-----  1 mysql mysql  16M May 19 21:42  undo_001</span></span><br><span class="line"><span class="comment"># -rw-r-----  1 mysql mysql  16M May 19 21:42  undo_002</span></span><br><span class="line"><span class="comment"># drwxr-x---  2 mysql mysql 4.0K May 19 20:57  mysql/</span></span><br><span class="line"><span class="comment"># drwxr-x---  2 mysql mysql 4.0K May 19 20:57  performance_schema/</span></span><br><span class="line"><span class="comment"># drwxr-x---  2 mysql mysql 4.0K May 19 21:41  springboot/</span></span><br></pre></td></tr></table></figure>
+<p>然而，当我们查看 <code>springboot</code> 这个文件夹时：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">tree springboot/</span><br><span class="line"></span><br><span class="line"><span class="comment"># springboot/</span></span><br><span class="line"><span class="comment"># ├── tbl_account.ibd</span></span><br><span class="line"><span class="comment"># ├── tbl_dept.ibd</span></span><br><span class="line"><span class="comment"># └── tbl_user.ibd</span></span><br></pre></td></tr></table></figure>
+<p>我们会发现，它只有 <code>.ibd</code> 文件，而这个是
+<code>InnoDB</code> 的实际数据，并不包含元数据信息。</p>
+<h1 id="clusterdatabaseschema">cluster/database/schema</h1>
+<h2 id="概述">概述</h2>
+<p>通常来说，一个典型的 <code>database</code>
+的分库/分表逻辑应该按照如下方式去实现：</p>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph instance1[&quot;数据库实例 / Instance（王者荣耀）&quot;]
+    subgraph database1[&quot;数据库 / Catalog（二区）&quot;]
+        subgraph schema1[&quot;模式 / Schema（用户）&quot;]
+            User1(&quot;User&quot;)
+            Login1(&quot;Login&quot;)
+            Logout1(&quot;Logout&quot;)
+        end
+        subgraph schema2[&quot;模式 / Schema（商业）&quot;]
+            Purchase1(&quot;Purchase&quot;)
+            Sales1(&quot;Sales&quot;)
+        end
+    end
+    subgraph database3[&quot;数据库 / Catalog（一区）&quot;]
+        subgraph schema3[&quot;模式 / Schema（用户）&quot;]
+            User3(&quot;User&quot;)
+            Login3(&quot;Login&quot;)
+            Logout3(&quot;Logout&quot;)
+        end
+        subgraph schema4[&quot;模式 / Schema（商业）&quot;]
+            Purchase2(&quot;Purchase&quot;)
+            Sales2(&quot;Sales&quot;)
+        end
+    end
+end
+
+subgraph lol_instance[&quot;数据库实例 / Instance（英雄联盟）&quot;]
+    subgraph lol_database[&quot;数据库 / Catalog（用户运营）&quot;]
+        subgraph lol_schema[&quot;模式 / Schema（公共）&quot;]
+            lol_user(&quot;User&quot;)
+            lol_login(&quot;Login&quot;)
+            log_logout(&quot;Logout&quot;)
+        end
+    end
+end
+
+class instance1,lol_instance blockContainer
+class database1,database3,lol_database light_green
+class schema1,schema2,schema3,schema4,lol_schema gray
+
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;</code></pre>
+<ol type="1">
+<li>instance：最顶层的是没有任何关联的，完全独立的业务，我们通常会将他们放在两个完全不同的数据实例中。但是，在数据量本身不大并且对数据安全性不那么敏感，我们可以考虑将他们放在同一个实例下的不同的库中。</li>
+<li>database：面向独立业务租户、独立系统、独立数据集群，通常来说，他们的数据文件、事务日志、连接资源、备份恢复完全独立，默认互相不可访问，故障、扩容、销毁互不影响。</li>
+<li>schema：库内逻辑命名空间，通常是面向同一系统内部的模块、团队、业务域。他们通常共享数据库底层存储与事务能力，仅做逻辑划分，库内跨
+Schema 可自由关联查询。</li>
+<li>table：不同的业务逻辑特征。</li>
+</ol>
+<p>如果要简单的描述的话，那就是：</p>
+<ol type="1">
+<li>instance
+是物理机器或集群（非虚拟化场景下）或者容器实例（例如kubernetes集群）级别的隔离。</li>
+<li>database 是磁盘路径级别的隔离。</li>
+<li>schema 是逻辑层面的隔离。</li>
+</ol>
+<h2 id="mysql-1">mysql</h2>
+<p>通常来说，按照SQL标准，我们的整体设计应该如上面所描述的一样，<strong>然而mysql并没有遵循这个标准</strong>，所以在mysql中，<code>schema</code>
+和 <code>database</code>
+是一个完全一样的概念，<strong>都对应于SQL标准中的 <code>schema</code>
+层。也就是说，<code>mysql</code> 没有提供 <code>database</code>
+层面的隔离能力。</strong>最典型的特征是：<code>mysql</code>
+的跨库查询只要用户存在所有查询库的权限，它可以在不借助任何外部工具的情况下直接进行跨库的查询，而
+<code>pg</code> 和 <code>oracle</code> 都不提供该能力。</p>
+<h2 id="pg-1">pg</h2>
+<p>在 <code>pg</code>
+中，也没有完全的遵循SQL标准，它的层级如下所示：</p>
+<pre><code class="highlight mermaid">flowchart TD
+
+subgraph cluster[&quot;Cluster（单机数据目录实例）&quot;]
+    subgraph database[&quot;Database（独立物理 OID 目录）&quot;]
+        subgraph schema[&quot;Schema（逻辑命名空间）&quot;]
+            user(&quot;User&quot;)
+            login(&quot;Login&quot;)
+            logout(&quot;Logout&quot;)
+        end
+    end
+end
+
+class cluster blockContainer
+class database light_green
+class schema gray
+
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;</code></pre>
+<p>它使用 <code>cluster</code> 去表示SQL标准的 <code>instance</code>：在
+<code>pg</code> 中，<code>cluster</code>
+是一个历史命名包袱，它和分布式系统（如
+<code>kubernetes</code>、<code>redis cluster</code>）里的
+<code>集群</code> 概念完全不是一个东西：</p>
+<ul>
+<li><strong>常规分布式系统的
+<code>cluster</code></strong>：指的是<strong>多台物理机器/多个独立节点</strong>通过网络协同工作，具备分布式容灾、水平扩展的能力。</li>
+<li><code>pg</code> 中的
+<code>cluster</code>：在物理上它<strong>就是单机上的一个独立数据目录（Data
+Directory）</strong>。</li>
+</ul>
+<p>而现在之所以仍然保留它的原因在于，大量的代码中保留着
+<code>cluster</code> 的命名导致积重难返。</p>
+<h1 id="大字段的存储">大字段的存储</h1>
+<h2 id="概述-1">概述</h2>
+<p>在数据库中，超大行写入是一个共同的难题。然而，不同的架构下，引起这个限制的并不是同一个原因。</p>
+<h3 id="mysql对于大字段的限制">mysql对于大字段的限制</h3>
+<p><code>mysql</code> 不允许超大行写入的原因是，<code>mysql</code>
+的索引是<strong>聚簇索引</strong>（索引的叶子节点就是数据本身），而我们的存储本身是按页存储的，也就是说，单页存储的数据是有上限的。而如果我们在直接在单页中写入超大行，这会导致我们B+树索引中的叶子节点只能存放一个节点，这会导致我们的B+树直接退化为一个链表。所以，<code>mysql</code>
+允许的单行的最大大小必须小于 PageSize /
+2。当然，此时整个索引树的高度会急剧增高，所以实际性能仍然受到极大影响。</p>
+<h3 id="pg对于大字段的限制">pg对于大字段的限制</h3>
+<p><code>pg</code> 对于大字段的限制主要出于以下几个原因：</p>
+<ol type="1">
+<li><strong>单页物理写入的原子性</strong>：linux的物理磁盘写入单位通常是
+<code>4KB</code>，而 <code>pg</code> 的一个标准 Page 是
+<code>8KB</code>，如果允许大行写入，我们假设这里占据了
+page_a，page_b，page_c 三个
+Page。那么此时，我们将需要处理在写入时的<strong>页断裂</strong>问题。
+<code>mysql</code> 的解决方案是，通过引入了代价高昂的双写缓冲区（Double
+Write Buffer）来解决这个问题。而 <code>pg</code>
+的设计为了避免这个问题，直接不允许数据跨行。</li>
+<li>如果不允许数据跨行，那么整个的WAL重放将不需要考虑复杂的单行跨Page的场景，我们只需要简单的做
+checksum 校验并重放即可。</li>
+<li><code>pg</code> 的 MVCC 把行版本号存放在 Tuple Header
+中，允许跨行写入将使得 MVCC 实现异常复杂。</li>
+</ol>
+<h2 id="解决大字段写入">解决大字段写入</h2>
+<p>为此不同的数据库发展出了截然不同的解决方案：</p>
+<h3 id="pg-如何处理大字段">pg 如何处理大字段</h3>
+<p><code>pg</code>
+直接不允许单行跨页，而如果对于某一行出现跨页的情况，那么它就会使用
+<code>TOAST</code> 技术。</p>
+<p>原理就是，我们知道，在 <code>pg</code> 中，<code>table</code>
+会有一个全局唯一的
+<code>OID</code>，也就是说，我们只需要为某个大字段也生成一个唯一的
+<code>ID</code>，我们就可以通过这两个 <code>ID</code>
+定义到这个大字段。</p>
+<p>那么，我们生成一个隐藏的表 <code>pg_toast.pg_toast_xxxx</code>，其中
+<code>xxxx</code> 是主表的 OID。</p>
+<p>随后将这个大对象拆成多个小行，并写入到这个表中。同时，在行内它会使用一个
+Blob Pointer 作为后续查找该字段的依据。</p>
+<p>而 <code>pg_toast.pg_toast_xxxx</code> 这个表会包含三个字段：</p>
+<ol type="1">
+<li><code>chunk_id</code> 这就是我们的主表中实际存储的 Blob
+Pointer。</li>
+<li><code>chunk_seq</code> 我们大字段在拆分后的序号。</li>
+<li><code>chunk_data</code> 字段拆分后的数据。</li>
+</ol>
+<p>也就是说，当我们在查询这个大字段时，相当于是在后台执行了如下的SQL:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> chunk_data</span><br><span class="line"><span class="keyword">FROM</span> pg_toast_xxxx</span><br><span class="line"><span class="keyword">WHERE</span> chunk_id <span class="operator">=</span> ?</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> chunk_seq <span class="keyword">ASC</span>;</span><br></pre></td></tr></table></figure>
+<p>我们就得到了这个大字段的实际值。</p>
+<h3 id="mysql如何处理大字段">mysql如何处理大字段</h3>
+<p><code>mysql</code> 允许单行跨页，但是它会和 <code>pg</code>
+一样，将这个字段存储到独立的 <code>Overflow Page</code>
+内。同时，在原始行内存储一个指向这个 <code>Overflow Page</code>
+的指针。但是，我们需要知道，<code>Overflow Page</code>
+实际上是一个逻辑概念，在物理上，他会被拆分为多个特殊的
+<code>Page</code>，每个 <code>Page</code>
+除了存放数据之外，还有有一个指针指向它的下一页。所以，它实际上是一个链表。</p>
+<h3 id="总结">总结</h3>
+<p>也就是说，<code>pg</code> 和 <code>mysql</code>
+的共同点是，对于大字段他们都会使用一个独立的区域去存放，而通过一个指针来指向这个独立的存储区域。</p>
+<p>他们的区别在于，<code>pg</code>
+是将原始数据拆分为多行，仍然遵循单行不跨页原则，而 <code>mysql</code>
+则在 <code>Overflow Page</code> 中允许打破单行不跨页的规则。</p>
+<h2 id="存储模型">存储模型</h2>
+<h3 id="mysql-2">mysql</h3>
+<pre><code class="highlight mermaid">flowchart TD
+
+big(&quot;大字段&quot;)
+
+subgraph list
+    subgraph page0
+        data0(&quot;data[0]&quot;)
+        ptr0(&quot;next&quot;)
+    end
+
+    subgraph page1
+        data1(&quot;data[1]&quot;)
+        ptr1(&quot;next&quot;)
+    end
+
+    subgraph page2
+        data2(&quot;data[n]&quot;)
+        ptr_n(&quot;null&quot;)
+    end
+
+end
+
+page0 --&gt; page1 --&gt; page2
+big --&gt; list
+
+class list blockContainer
+class page0,page1,page2 light_green
+class data0,data1,data2 green
+class ptr0,ptr1 gray
+class ptr_n error
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;</code></pre>
+<h3 id="pg-2">pg</h3>
+<pre><code class="highlight mermaid">flowchart TD
+
+big(&quot;大字段&quot;)
+
+subgraph heap
+	direction TB
+    subgraph row0
+        chunk_id0(&quot;chunk_id&quot;)
+        chunk_seq0(&quot;0&quot;)
+        chunk_data0(&quot;data[0]&quot;)
+    end
+    subgraph row1
+        chunk_id1(&quot;chunk_id&quot;)
+        chunk_seq1(&quot;1&quot;)
+        chunk_data1(&quot;data[1]&quot;)
+    end
+    subgraph row2
+        chunk_id2(&quot;chunk_id&quot;)
+        chunk_seq2(&quot;2&quot;)
+        chunk_data2(&quot;data[2]&quot;)
+    end
+end
+
+big --&gt; heap
+
+class heap blockContainer
+class row0,row1,row2 light_green
+
+class chunk_id0,chunk_id1,chunk_id2 green
+class chunk_seq0,chunk_seq1,chunk_seq2 gray
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;</code></pre>
 
     </div>
 
