@@ -1523,11 +1523,102 @@ classDef gray fill:#ccc,stroke:#333,font-weight:bold;
 classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
 ```
 
+# pg的进程模型
 
+`pg` 是典型的多进程模型，主进程执行得到root进程，后续所有的进程都从root进程fork()得到子进程，一个典型的pg实例如下所示：
 
+```bash
+# 在机器上执行
+ps axfo pid,ppid,cmd | grep -E "PID|postgres"
+```
 
+我们得到了如下输出（省略了无关输出）：
 
+```
+    PID    PPID CMD
+    247       1 /usr/lib/postgresql/18/bin/postgres -D /var/lib/postgresql/18/main -c config_file=/etc/postgresql/18/main/postgresql.conf
+    264     247  \_ postgres: 18/main: io worker 0
+    265     247  \_ postgres: 18/main: io worker 1
+    266     247  \_ postgres: 18/main: io worker 2
+    267     247  \_ postgres: 18/main: checkpointer
+    268     247  \_ postgres: 18/main: background writer
+    309     247  \_ postgres: 18/main: walwriter
+    310     247  \_ postgres: 18/main: autovacuum launcher
+    311     247  \_ postgres: 18/main: logical replication launcher
+   1311     247  \_ postgres: 18/main: developer ai_infra_db 127.0.0.1(56684) idle
+```
 
+可以看到，我们的父进程是我们的 `247` 进程：
+
+- 它的父进程是`linux`的`init/systemd`进程。
+- `pg` 的二进程文件是 `/usr/lib/postgresql/18/bin/postgres`。
+- `-D /var/lib/postgresql/18/main` 指定的当前实例的数据目录。
+- `-c config_file=/etc/postgresql/18/main/postgresql.conf` 指定了我们的配置文件。
+- 在这个配置文件中，我们可以找到配置：`cluster_name = '18/main'`。这也是我们之前提到的 `cluster` 是一个历史遗留问题的体现，它出现在各个位置，修改它最直接的影响就是低版本将无法直接无损的升级到更新的版本。
+
+按照`linux` 的规则，在 `fork()` 进程时，操作系统只负责为子进程分配一个 `PID`，而子进程的 `CMD` 由 `pg` 自己决定，它是由如下规则生成的：
+
+- `:` 作为分割符。
+- `postgres` 表示父进程的名字。
+- `18/main` 表示集群名（这里有两个点需要注意的是，在 `pg` 中，所谓的集群其实表示的就是当前实例，而集群名也是由配置文件中执行）。
+- `io worker 0` 最后面的部分表示的是当前进程自身的名字和状态。
+
+我们整个进程的架构和功能如下：
+
+```mermaid
+flowchart LR
+
+systemd("[1]<br/>init/systemd")
+postgresql("[247]<br/>postgresql")
+io_worker_0("[264]<br/>io_worker_0")
+io_worker_1("[265]<br/>io_worker_1")
+io_worker_2("[266]<br/>io_worker_2")
+checkpointer("[267]<br/>checkpointer")
+background_writer("[268]<br/>background writer")
+walwriter("[309]<br/>walwriter")
+autovacuum_launcher("[310]<br/>autovacuum launcher")
+replication("[311]<br/>logical replication launcher")
+idle("[1311]<br/>idle")
+
+systemd --> postgresql --> io_worker_0 & io_worker_1 & io_worker_2
+
+postgresql --> checkpointer & background_writer & walwriter & autovacuum_launcher & replication & idle
+
+class systemd purple
+class postgresql green
+class io_worker_0,io_worker_1,io_worker_2,checkpointer,background_writer,walwriter,autovacuum_launcher,replication,idle gray
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+- `io_worker_0`, `io_worker_1`, `io_worker_2` 是 `pg 18` 引入的新特性，核心进程要读写磁盘时，他们会把 IO 任务直接塞给这 3 个常驻的 `io worker` 队列。**这个是一个非常常见的优化手段，在非常多的其他的场景下都会有应用：**
+  - G1 中更新脏卡也是这种生产者-消费者的模型。 
+  - GC 中的堆外内存回收。
+- `checkpointer` 定期发起检查点（Checkpoint），把内存里所有的脏页一次性全强制冲进磁盘。
+- `background writer` 一个常驻执行的进程，核心目的是让 Shared Buffers 里随时都有足够多的 Clean Pages。
+- `walwriter` 只负责写 `WAL` 日志。
+- `autovacuum launcher` 监控主表、索引、以及**隐藏的 TOAST 表**，当某个表的死行比例超过水位线时，`fork()` 启动一个 `autovacuum worker` 子进程回收死行。这也是为什么它叫 `launcher` 的原因。
+- `logical replication launcher` 负责管理和拉起逻辑复制（Logical Replication）的发送与接收流。
+- `idle` 这里的全名是 `developer ai_infra_db 127.0.0.1(56684) idle` 这是我自己内部启动了一个 `pgcli` 连接到了我的 `ai_infra_db` 数据库。这里需要注意的是，`pg` 由于架构的原因，它对客户端的连接非常的粗暴：**每一个连接都会分配一个独立的服务进程**，所以通常来说，为了保证服务器的进程不被打爆，通常会部署 `PgBouncer` 作为中间件：**用户连接 `PgBouncer`， 由它来连接 `pg`， 这样 `pg` 的进程数就是可控的。而 `PgBouncer` 由于功能简单，所以它的性能非常好，并不会成为性能瓶颈**。
+
+## 为什么pg使用这么粗暴的方式管理连接
+
+1. `mysql` 多个连接共享内存空间，这意味着如果某个请求在触发未知异常（如segment fault）时会直接导致整个程序崩溃。而 `pg` 下的异常只会导致某个连接对应的进程崩溃。
+2. 多进程的架构可以有效避免全局的锁进程，只有在访问 `Shared Memory` 时才会上锁。
+3. 历史原因：**其实令人意外的是，`pg` 的出现比 `mysql` 更早，`pg` 开始于 `1986` 年，而 `mysql` 则开始于 `1995` 年。早期的 `unix` 的多线程（POSIX Threads）甚至没有被提出**。
 
 
 
