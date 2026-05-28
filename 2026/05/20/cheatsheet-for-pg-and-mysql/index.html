@@ -27,7 +27,7 @@
 <meta property="og:description" content="mysql&#x2F;pg中的复制逻辑 在了解 mysql 和 pg 在进行主从复制逻辑之前，我们必须要知道他们在架构上的重大区别。 宏观上来讲，mysql 的架构（和主从复制逻辑相关的）会分为两个层级，分别是 server 和 存储引擎，它的实际架构如下图所示： flowchart TD  subgraph server[&quot;MySQL Server (Server层)&quot;]     di">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-05-20T11:53:47.000Z">
-<meta property="article:modified_time" content="2026-05-27T15:21:32.958Z">
+<meta property="article:modified_time" content="2026-05-28T15:45:20.793Z">
 <meta property="article:author" content="2183814023">
 <meta property="article:tag" content="database">
 <meta property="article:tag" content="mysql">
@@ -141,7 +141,7 @@
         <div class="post-toc-wrap sidebar-panel">
             <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#mysqlpg%E4%B8%AD%E7%9A%84%E5%A4%8D%E5%88%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.</span> <span class="nav-text">mysql&#x2F;pg中的复制逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#innodb%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">1.1.</span> <span class="nav-text">InnoDB的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#redo-log"><span class="nav-number">1.1.1.</span> <span class="nav-text">Redo Log</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#undo-log"><span class="nav-number">1.1.2.</span> <span class="nav-text">Undo Log</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E7%9A%84binlog"><span class="nav-number">1.2.</span> <span class="nav-text">mysql的binlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E5%92%8Cpg%E7%9A%84%E5%A4%8D%E5%88%B6%E9%80%BB%E8%BE%91"><span class="nav-number">1.3.</span> <span class="nav-text">mysql和pg的复制逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E4%B8%8D%E4%BD%BF%E7%94%A8wal%E5%81%9A%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.4.</span> <span class="nav-text">mysql不使用WAL做主从复制的原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8wal%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.5.</span> <span class="nav-text">mysql无法使用WAL的原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%88%90%E6%9C%AC"><span class="nav-number">1.5.1.</span> <span class="nav-text">存储成本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#in-place-update-%E5%BC%95%E5%85%A5%E7%9A%84%E5%B9%B6%E5%8F%91%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98"><span class="nav-number">1.5.2.</span> <span class="nav-text">in-place update
 引入的并发时序问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E4%B8%8E%E5%AD%98%E5%82%A8%E6%A0%BC%E5%BC%8F%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.5.3.</span> <span class="nav-text">版本升级与存储格式的问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E5%9C%A8ai%E6%97%B6%E4%BB%A3%E4%B8%8B%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">2.</span> <span class="nav-text">pg和mysql在AI时代下的对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8Bjsonb%E4%BB%A5%E5%8F%8Adoris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.</span> <span class="nav-text">复合类型，jsonb以及doris中的variant</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.</span> <span class="nav-text">复合类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">3.1.1.</span> <span class="nav-text">复合类型的存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E7%B4%A2%E5%BC%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">复合类型的索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%B4%A2%E5%BC%95expression-index"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">表达式索引（Expression Index）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%8C%E7%BA%A7-b-tree-%E7%B4%A2%E5%BC%95row-level-b-tree"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">行级 B-Tree 索引（Row-level
-B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jsonb%E7%9A%84%E5%AD%98%E5%82%A8%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.</span> <span class="nav-text">jsonb的存储和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.2.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b-tree-%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">B-Tree 索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gin-%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GIN 倒排索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.3.</span> <span class="nav-text">doris中的variant</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">4.</span> <span class="nav-text">小数的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E6%98%AF%E5%A6%82%E4%BD%95%E7%B2%BE%E7%A1%AE%E8%A1%A8%E7%A4%BA%E5%B0%8F%E6%95%B0%E7%9A%84"><span class="nav-number">4.1.</span> <span class="nav-text">pg是如何精确表示小数的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">4.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#json%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%9D%91"><span class="nav-number">6.</span> <span class="nav-text">json索引的一个坑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gist"><span class="nav-number">7.</span> <span class="nav-text">GiST</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">7.1.</span> <span class="nav-text">GiST的原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AAgist%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">7.1.1.</span> <span class="nav-text">一个GiST的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E9%9D%A2%E4%B8%B4%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">7.2.</span> <span class="nav-text">GiST面临的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E5%BC%95%E5%8F%B7%E5%92%8C%E5%8F%8C%E5%BC%95%E5%8F%B7"><span class="nav-number">8.</span> <span class="nav-text">单引号和双引号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg_lsn"><span class="nav-number">9.</span> <span class="nav-text">pg_lsn</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E4%B8%AD%E7%9A%84wal"><span class="nav-number">9.1.</span> <span class="nav-text">pg中的WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFwal"><span class="nav-number">9.2.</span> <span class="nav-text">什么是WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg_lsn%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">9.3.</span> <span class="nav-text">pg_lsn的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cdc"><span class="nav-number">9.3.1.</span> <span class="nav-text">CDC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%BB%B4%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9B%91%E6%8E%A7"><span class="nav-number">9.3.2.</span> <span class="nav-text">运维与高可用监控</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB"><span class="nav-number">10.</span> <span class="nav-text">pg和mysql的数据隔离</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E8%BF%B0"><span class="nav-number">10.1.</span> <span class="nav-text">综述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">10.2.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E4%B8%8A%E7%9A%84%E9%9A%94%E7%A6%BB"><span class="nav-number">10.3.</span> <span class="nav-text">元数据存储上的隔离</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pg"><span class="nav-number">10.3.1.</span> <span class="nav-text">pg</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql"><span class="nav-number">10.3.2.</span> <span class="nav-text">mysql</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#clusterdatabaseschema"><span class="nav-number">11.</span> <span class="nav-text">cluster&#x2F;database&#x2F;schema</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">11.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-1"><span class="nav-number">11.2.</span> <span class="nav-text">mysql</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg-1"><span class="nav-number">11.3.</span> <span class="nav-text">pg</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">12.</span> <span class="nav-text">大字段的存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-number">12.1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%AF%B9%E4%BA%8E%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">12.1.1.</span> <span class="nav-text">mysql对于大字段的限制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pg%E5%AF%B9%E4%BA%8E%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">12.1.2.</span> <span class="nav-text">pg对于大字段的限制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%A4%A7%E5%AD%97%E6%AE%B5%E5%86%99%E5%85%A5"><span class="nav-number">12.2.</span> <span class="nav-text">解决大字段写入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pg-%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%A4%A7%E5%AD%97%E6%AE%B5"><span class="nav-number">12.2.1.</span> <span class="nav-text">pg 如何处理大字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%A4%A7%E5%AD%97%E6%AE%B5"><span class="nav-number">12.2.2.</span> <span class="nav-text">mysql如何处理大字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">12.2.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B"><span class="nav-number">12.3.</span> <span class="nav-text">存储模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql-2"><span class="nav-number">12.3.1.</span> <span class="nav-text">mysql</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pg-2"><span class="nav-number">12.3.2.</span> <span class="nav-text">pg</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E7%9A%84%E8%BF%9B%E7%A8%8B%E6%A8%A1%E5%9E%8B"><span class="nav-number">13.</span> <span class="nav-text">pg的进程模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88pg%E4%BD%BF%E7%94%A8%E8%BF%99%E4%B9%88%E7%B2%97%E6%9A%B4%E7%9A%84%E6%96%B9%E5%BC%8F%E7%AE%A1%E7%90%86%E8%BF%9E%E6%8E%A5"><span class="nav-number">13.1.</span> <span class="nav-text">为什么pg使用这么粗暴的方式管理连接</span></a></li></ol></li></ol></div>
+B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jsonb%E7%9A%84%E5%AD%98%E5%82%A8%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.</span> <span class="nav-text">jsonb的存储和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.2.2.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#b-tree-%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">B-Tree 索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gin-%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GIN 倒排索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#doris%E4%B8%AD%E7%9A%84variant"><span class="nav-number">3.3.</span> <span class="nav-text">doris中的variant</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%95%B0%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%BB%E8%BE%91"><span class="nav-number">4.</span> <span class="nav-text">小数的存储逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E6%98%AF%E5%A6%82%E4%BD%95%E7%B2%BE%E7%A1%AE%E8%A1%A8%E7%A4%BA%E5%B0%8F%E6%95%B0%E7%9A%84"><span class="nav-number">4.1.</span> <span class="nav-text">pg是如何精确表示小数的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">4.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E4%B8%AD%E5%AF%B9%E4%BA%8E%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">pg和mysql中对于变长字段的处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#json%E7%B4%A2%E5%BC%95%E7%9A%84%E4%B8%80%E4%B8%AA%E5%9D%91"><span class="nav-number">6.</span> <span class="nav-text">json索引的一个坑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gist"><span class="nav-number">7.</span> <span class="nav-text">GiST</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">7.1.</span> <span class="nav-text">GiST的原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AAgist%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">7.1.1.</span> <span class="nav-text">一个GiST的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gist%E9%9D%A2%E4%B8%B4%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">7.2.</span> <span class="nav-text">GiST面临的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E5%BC%95%E5%8F%B7%E5%92%8C%E5%8F%8C%E5%BC%95%E5%8F%B7"><span class="nav-number">8.</span> <span class="nav-text">单引号和双引号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg_lsn"><span class="nav-number">9.</span> <span class="nav-text">pg_lsn</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pg%E4%B8%AD%E7%9A%84wal"><span class="nav-number">9.1.</span> <span class="nav-text">pg中的WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFwal"><span class="nav-number">9.2.</span> <span class="nav-text">什么是WAL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg_lsn%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">9.3.</span> <span class="nav-text">pg_lsn的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cdc"><span class="nav-number">9.3.1.</span> <span class="nav-text">CDC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%BB%B4%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9B%91%E6%8E%A7"><span class="nav-number">9.3.2.</span> <span class="nav-text">运维与高可用监控</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E5%92%8Cmysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB"><span class="nav-number">10.</span> <span class="nav-text">pg和mysql的数据隔离</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E8%BF%B0"><span class="nav-number">10.1.</span> <span class="nav-text">综述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">10.2.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E4%B8%8A%E7%9A%84%E9%9A%94%E7%A6%BB"><span class="nav-number">10.3.</span> <span class="nav-text">元数据存储上的隔离</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pg"><span class="nav-number">10.3.1.</span> <span class="nav-text">pg</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql"><span class="nav-number">10.3.2.</span> <span class="nav-text">mysql</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#clusterdatabaseschema"><span class="nav-number">11.</span> <span class="nav-text">cluster&#x2F;database&#x2F;schema</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">11.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-1"><span class="nav-number">11.2.</span> <span class="nav-text">mysql</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pg-1"><span class="nav-number">11.3.</span> <span class="nav-text">pg</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E5%AD%98%E5%82%A8"><span class="nav-number">12.</span> <span class="nav-text">大字段的存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-number">12.1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%AF%B9%E4%BA%8E%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">12.1.1.</span> <span class="nav-text">mysql对于大字段的限制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pg%E5%AF%B9%E4%BA%8E%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-number">12.1.2.</span> <span class="nav-text">pg对于大字段的限制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%A4%A7%E5%AD%97%E6%AE%B5%E5%86%99%E5%85%A5"><span class="nav-number">12.2.</span> <span class="nav-text">解决大字段写入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pg-%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%A4%A7%E5%AD%97%E6%AE%B5"><span class="nav-number">12.2.1.</span> <span class="nav-text">pg 如何处理大字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E5%A4%A7%E5%AD%97%E6%AE%B5"><span class="nav-number">12.2.2.</span> <span class="nav-text">mysql如何处理大字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">12.2.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B"><span class="nav-number">12.3.</span> <span class="nav-text">存储模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql-2"><span class="nav-number">12.3.1.</span> <span class="nav-text">mysql</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pg-2"><span class="nav-number">12.3.2.</span> <span class="nav-text">pg</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pg%E7%9A%84%E8%BF%9B%E7%A8%8B%E6%A8%A1%E5%9E%8B"><span class="nav-number">13.</span> <span class="nav-text">pg的进程模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88pg%E4%BD%BF%E7%94%A8%E8%BF%99%E4%B9%88%E7%B2%97%E6%9A%B4%E7%9A%84%E6%96%B9%E5%BC%8F%E7%AE%A1%E7%90%86%E8%BF%9E%E6%8E%A5"><span class="nav-number">13.1.</span> <span class="nav-text">为什么pg使用这么粗暴的方式管理连接</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#transaction-age"><span class="nav-number">14.</span> <span class="nav-text">transaction age</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#explain"><span class="nav-number">15.</span> <span class="nav-text">explain</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFcost"><span class="nav-number">15.1.</span> <span class="nav-text">什么是cost</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E7%9A%84explain"><span class="nav-number">15.2.</span> <span class="nav-text">常用的explain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8D%E5%B8%A6%E4%BB%BB%E4%BD%95%E5%8F%82%E6%95%B0%E7%9A%84explain"><span class="nav-number">15.3.</span> <span class="nav-text">不带任何参数的explain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#analyze"><span class="nav-number">15.4.</span> <span class="nav-text">analyze</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#analyze-buffer"><span class="nav-number">15.5.</span> <span class="nav-text">(analyze, buffer)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%BB%A3%E4%BB%B7%E5%92%8C%E6%80%BB%E4%BB%A3%E4%BB%B7"><span class="nav-number">15.6.</span> <span class="nav-text">启动代价和总代价</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%A0%E7%A7%8D%E5%85%B8%E5%9E%8B%E7%9A%84%E6%9F%A5%E8%AF%A2%E8%AE%A1%E5%88%92"><span class="nav-number">15.7.</span> <span class="nav-text">几种典型的查询计划</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -222,7 +222,7 @@ B-Tree）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-05-27 23:21:32" itemprop="dateModified" datetime="2026-05-27T23:21:32+08:00">2026-05-27</time>
+      <time title="修改时间：2026-05-28 23:45:20" itemprop="dateModified" datetime="2026-05-28T23:45:20+08:00">2026-05-28</time>
     </span>
 
   
@@ -1689,6 +1689,206 @@ fault）时会直接导致整个程序崩溃。而 <code>pg</code>
 <code>mysql</code> 则开始于 <code>1995</code> 年。早期的
 <code>unix</code> 的多线程（POSIX
 Threads）甚至没有被提出</strong>。</li>
+</ol>
+<h1 id="transaction-age">transaction age</h1>
+<p>在pg中，每一行（tuple）的开头，都有一个23字节的隐藏头（HeapTupleHeaderData），我们的
+transaction age 和 MVCC 都依赖于这个头中的内容来实现：</p>
+<ol type="1">
+<li>t_xmin（4 字节 / 32位无符号整数）：它记录了创建当前行的 XID。</li>
+<li>t_xmax（4 字节 / 32位无符号整数）：它记录了修改/删除了当前行的
+XID，<strong>注意，如果当前行没有被update/delete过，那么 t_xmax ==
+0</strong>。</li>
+<li>t_infomask（2 字节 / 16位二进制位掩码
+Bitmask）：它表示了当前行的状态，这里和我们的MVCC有关的最重要的一个状态是：<code>HEAP_XMIN_FROZEN</code>，它表示当前行是否被冻结（FROZEN）。</li>
+</ol>
+<p>此外，在我们的pg的全局共享的 Shared Memory
+中，我们还有一个重要的值：<code>CurrentXID</code>，这是我们当前集群中使用的
+XID。</p>
+<p>这里存在的问题是：由于历史原因，我们的 transaction age
+是32位的，这意味着我们的pg的最大transaction
+age只有42亿，那假设存在如下场景：</p>
+<ol type="1">
+<li>我们不停的写入数据，XID不断增长。</li>
+<li>在某个时刻，我们的XID超过42亿，此时我们的transaction
+age溢出变成了0。</li>
+<li>假设这一行数据是一个update操作，那么此时对于pg来说，被update的数据的XID比他大，那么我们在MVCC时将显示错误的数据。</li>
+</ol>
+<p>为此，pg引入了一个称得上是奇葩的逻辑：<strong>它以CurrentXID为中心轴，将左边的21亿数据看做是过去的数据，正常的走MVCC流程，而右边的21亿看做是未来数据，走独特的MVCC流程。</strong></p>
+<p>这里非常难理解的是：</p>
+<ol type="1">
+<li>未来数据的XID可以小于CurrentXID。</li>
+<li>过去数据的XID可以大于CurrentXID。</li>
+</ol>
+<p>我们举个例子，假设现在我们XID是
+<code>[0, 10]</code>，而CurrentXID左边5个XID是过去，右边的5个XID是未来：</p>
+<ol type="1">
+<li>假设 CurrentXID == 9，那么此时过去数据的范围是
+<code>{4, 5, 6, 7, 8}</code>，而未来数据的范围是
+<code>{10, 0, 1, 2, 3}</code>。此时未来数据的XID可能小于CurrentXID。</li>
+<li>假设 CurrentXID == 0，那么此时过去数据的范围是
+<code>{6, 7, 8, 9, 10}</code>，而未来数据的范围是
+<code>{1, 2, 3, 4, 5}</code>。此时过去数据的XID可能大于CurrentXID。</li>
+</ol>
+<p>因为，pg将整个XID是作为一个环形的时间轴。</p>
+<p><strong>此时，由于pg将所谓大于CurrentXID的XID是作为未来数据，这意味着pg永远不会面临无新的XID可用的局面。我们的问题被转换为：那些本来应该是正常走MVCC流程的XID，此时应该怎么处理？</strong></p>
+<p>pg这里使用的方式是，在MVCC中过去数据和未来数据会经由条件进入到不同的判断分支。而这里就涉及到一个非常重要的状态：<code>FROZEN</code>，这个状态存储在
+<code>t_infomask</code> 中，由后台的 <code>autovacuum launcher</code>
+进程在满足条件：</p>
+<p>当某张表里最老的那行 <code>NON-FROZEN</code> 数据的 transaction
+age（CurrentXID - 该行的 xmin）达到 2 亿（默认的
+autovacuum_freeze_max_age）时：</p>
+<ol type="1">
+<li>它将 t_xmin 修改为 2，也就是我们的 FROZEN 状态对应的常量XID。</li>
+<li>在行头的 t_infomask 字段里，将
+<code>t_infomask.HEAP_XMIN_FROZEN</code> 标记为 1。</li>
+</ol>
+<p>此时，当前行被标记为 <code>FROZEN</code> 状态。</p>
+<p>随后，在MVCC查询中：</p>
+<ol type="1">
+<li>查询所有符合条件的数据，<strong>包括MVCC的所有版本的数据</strong>。</li>
+<li>如果 <code>tuple</code> 状态为 FROZEN：
+<ol type="1">
+<li>如果 <code>t_xmax</code> ==
+0，表明当前行未被更新过，合法数据直接返回。</li>
+<li>如果 <code>t_xmax</code> !=
+0，表明当前行被更新过，我们判断更新它的这一行是否已经被正常提交，如果被提交则当前行时非法数据，跳过。</li>
+</ol></li>
+<li>如果 <code>tuple</code> 状态不为 FROZEN：则走正常的 MVCC
+判断流程。</li>
+</ol>
+<p>而这里的逻辑就是：将所有大于 CurrentXID 的 XID
+都判断为未来数据，而这个XID可能在pg中已经被使用了。但是我们可以通过额外的状态
+<code>FROZEN</code> 来判断它。在某个时刻，我们的数据可能是：</p>
+<ul>
+<li>XID == 0x12345678，<code>FRONZEN</code> == 0。</li>
+<li>XID == 0x12345678，<code>FRONZEN</code> == 1。</li>
+</ul>
+<p>此时，我们知道 <code>FROZEN</code> 状态为 0
+的数据走正常的MVCC流程，去找有没有更新的版本。而 <code>FROZEN</code>
+状态为 1 的数据直接判定为潜在的合法数据，进入搜索最新版本的逻辑。</p>
+<p>当然，在实际的执行中，pg对这里做了优化，在 <code>autovacuum</code>
+的过程中，它会将 <code>FROZEN</code> 的数据的 XID 修改为
+<code>2</code>，也就是我们的 <code>FrozenTransactionId</code> 常量。</p>
+<p>也就是，本质上来说，为了保持我们的PG中始终有可用的XID，我们将那些可能出现冲突的XID标记为FROZEN状态，并直接放弃
+t_xmin 这个字段的使用。</p>
+<h1 id="explain">explain</h1>
+<h2 id="什么是cost">什么是cost</h2>
+<p>在我们开始真正的了解查询计划的生成之前，我们必须要了解所谓的 cost
+到底是什么：</p>
+<p>默认情况下，它们以顺序扫描一个数据块的开销作为基准单位，也就是说，将顺序扫描的基准参数“seq_page_cost”默认设为“1.0”，其他开销的基准参数都对照它来设置。</p>
+<p>也就是说，优化器在计算 cost
+的时候，会猜测它到底需要扫描多少个数据块，假设需要扫描两个数据块，那按照基准它的cost就是2.0。</p>
+<p>实际上，我们整个的查询会设计到多个地方的开销，假设我存在如下的
+SQL</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> jsonb_test_01 <span class="keyword">WHERE</span> id <span class="operator">&gt;</span> <span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+<p>假设这张表在磁盘上的物理实相是： - 在系统字典表里，它一共占了 100
+个数据页（Pages = 100）。 - 这 100 个页里，一共平铺着 10,000
+行数据（Rows = 10000）。</p>
+<p>计算磁盘I/O所需要的开销：因为是全表扫描，它要顺序读完这 100
+个页。</p>
+<p><span class="math display">\[
+\text{I/O 代价} = \text{Pages} \times \text{seq\_page\_cost} = 100
+\times 1.0 = 100.0
+\]</span></p>
+<p>CPU读取数据的开销：10000
+行数据要被全部从内存块里剥离出来，向上投递。</p>
+<p><span class="math display">\[
+\text{CPU 获取行代价} = \text{Rows} \times \text{cpu\_tuple\_cost} =
+10000 \times 0.01 = 100.0
+\]</span> CPU过滤条件执行的开销：对于这 10000 行，CPU 必须每一行都拿着
+&gt; 号去比对一次</p>
+<p><span class="math display">\[
+\text{CPU 表达式评估代价} = \text{Rows} \times
+\text{cpu\_operator\_cost} = 10000 \times 0.0025 = 25.0
+\]</span></p>
+<p>得到我们的最终开销：</p>
+<p><span class="math display">\[
+\text{总代价（Total Cost）} = 100.0 + 100.0 + 25.0 = 225.0
+\]</span></p>
+<h2 id="常用的explain">常用的explain</h2>
+<p>我们使用我们之前初始化的 <code>jsonb_test_01</code> 表来看看我们的
+<code>explain</code> 语句的使用</p>
+<p>我们可以先了解几个常用的 <code>explain</code>：</p>
+<ul>
+<li><code>explain</code> 最基础的命令。PG
+的优化器（CBO）根据当前的系统统计信息，在内存里快速精算出一套它认为最优路径，然后直接打印。<strong>SQL
+绝对不会真正执行，不产生实际的数据 I/O。</strong></li>
+<li><code>explain verbose</code> 同样<strong>不会真正执行
+SQL</strong>。但是，它会命令优化器把执行计划中每一个物理算子<strong>具体输出了哪些列（Output）</strong>、以及这些列属于哪个表（Schema
+限定名）等极其隐蔽的元数据全部打印出来。</li>
+<li><code>explain analyze</code>
+它是真实的执行后，把每一个操作步骤的开销（例如扫描了多少行，花费了多少时间）输出。</li>
+<li><code>explain costs</code> 在 PostgreSQL
+的标准语法中，<code>COSTS</code>
+是一个开关参数（默认是开启的）。所以我们通常用的是
+<strong><code>EXPLAIN (COSTS OFF)</code></strong>
+来关闭它。默认情况下，<code>explain</code> 和 <code>explain costs</code>
+是等价的。</li>
+<li><code>explain buffers</code>
+该参数只能与ANALYZE参数一起使用。显示的缓冲区信息包括共享块读和写的块数、本地块读和写的块数，以及临时块读和写的块数。共享块、本地块和临时块分别包含表和索引、临时表和临时索引，以及在排序和物化计划中使用的磁盘块。</li>
+</ul>
+<h2 id="不带任何参数的explain">不带任何参数的explain</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">explain <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> jsonb_test_01 <span class="keyword">where</span> data<span class="operator">-</span><span class="operator">&gt;&gt;</span><span class="string">&#x27;name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hello jsonb&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>我们得到</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">---------------------------------------------------------------------------------------------+</span></span><br><span class="line">| QUERY PLAN                                                                                  |</span><br><span class="line">|<span class="comment">---------------------------------------------------------------------------------------------|</span></span><br><span class="line">| <span class="keyword">Index</span> Scan <span class="keyword">using</span> jsonb_test_01_expr_idx <span class="keyword">on</span> jsonb_test_01  (<span class="keyword">cost</span>=<span class="number">0.29</span>.<span class="number">.8</span><span class="number">.31</span> <span class="keyword">rows</span>=<span class="number">1</span> width=<span class="number">47</span>) |</span><br><span class="line">|   <span class="keyword">Index</span> Cond: ((data -&gt;&gt; <span class="string">&#x27;name&#x27;</span>::<span class="type">text</span>) = <span class="string">&#x27;hello jsonb&#x27;</span>::<span class="type">text</span>)                               |</span><br><span class="line">+<span class="comment">---------------------------------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+<p>可以看到：</p>
+<ol type="1">
+<li>使用了 <code>jsonb_test_01.jsonb_test_01_expr_idx</code> 索引。</li>
+<li><code>cost=0.29..8.31</code> 这里分为两个部分，使用 <code>..</code>
+隔开，前面的 <code>0.29</code> 是<strong>启动代价</strong>，后面的
+<code>8.31</code> 是<strong>总代价</strong>。</li>
+<li><code>rows = 1</code> 表示查询一行。</li>
+<li><code>width=47</code>
+代表<strong>预计当前算子返回的每一行记录，平均占用的物理内存宽度是 47
+字节（Bytes）</strong>。这是因为当数据从磁盘捞出来后，在进入内存的一瞬间，PG
+的执行器必须为它们分配内存缓冲区。</li>
+</ol>
+<h2 id="analyze">analyze</h2>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">explain analyze <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> jsonb_test_01 <span class="keyword">where</span> data<span class="operator">-</span><span class="operator">&gt;&gt;</span><span class="string">&#x27;name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hello jsonb&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>输出</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br><span class="line">| QUERY PLAN                                                                                                                               |</span><br><span class="line">|<span class="comment">------------------------------------------------------------------------------------------------------------------------------------------|</span></span><br><span class="line">| <span class="keyword">Index</span> Scan <span class="keyword">using</span> jsonb_test_01_expr_idx <span class="keyword">on</span> jsonb_test_01  (<span class="keyword">cost</span>=<span class="number">0.29</span>.<span class="number">.8</span><span class="number">.31</span> <span class="keyword">rows</span>=<span class="number">1</span> width=<span class="number">47</span>) (actual <span class="type">time</span>=<span class="number">0.022</span>.<span class="number">.0</span><span class="number">.023</span> <span class="keyword">rows</span>=<span class="number">1.00</span> loops=<span class="number">1</span>) |</span><br><span class="line">|   <span class="keyword">Index</span> Cond: ((data -&gt;&gt; <span class="string">&#x27;name&#x27;</span>::<span class="type">text</span>) = <span class="string">&#x27;hello jsonb&#x27;</span>::<span class="type">text</span>) |</span><br><span class="line">|   <span class="keyword">Index</span> Searches: <span class="number">1</span>                                           |</span><br><span class="line">|   <span class="keyword">Buffers</span>: shared hit=<span class="number">3</span>                                       |</span><br><span class="line">| Planning <span class="type">Time</span>: <span class="number">0.066</span> ms                                       |</span><br><span class="line">| Execution <span class="type">Time</span>: <span class="number">0.035</span> ms                                      |</span><br><span class="line">+<span class="comment">------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+<ol type="1">
+<li>其他的部分和普通的 <code>explain</code>
+完全一致，但是它真实的执行了查询。</li>
+<li><code>(actual time=0.022..0.023 rows=1.00 loops=1)</code>
+记录了启动代价为 <code>0.022</code>，总代价为
+<code>0.023</code>，总共查询 <code>1</code> 行，<code>loops = 1</code>
+代表当前这个物理算子在整个查询生命周期中，一共被调用了多少次。而当我们发生连表查询时，就可能多次访问。</li>
+<li><code>Index Searches: 1</code> 表示查询索引的次数。</li>
+<li><code>Buffers: shared hit=3</code> 表示读取 Shared Memory
+的次数。</li>
+<li><code>Planning Time: 0.066 ms</code> 表示生成查询计划的时间 --
+是的，查询计划的生成也会有相当高额的开销。</li>
+<li><code>Execution Time: 0.035 ms</code> 实际执行时间。</li>
+</ol>
+<h2 id="analyze-buffer">(analyze, buffer)</h2>
+<p>我们还可以如下查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">explain analyze <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> jsonb_test_01 <span class="keyword">where</span> data<span class="operator">-</span><span class="operator">&gt;&gt;</span><span class="string">&#x27;name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hello jsonb&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>但是得到的输出是完全相同的，因为 PG18 已经默认输出了。</p>
+<h2 id="启动代价和总代价">启动代价和总代价</h2>
+<p>启动代价代表了数据库在查询到第一条数据时所需要花费的预估代价，而总代价代表了整个查询执行完毕时需要的预估代价。</p>
+<p>之所以需要两个不同的代价的原因是，对于我们的优化器而言，不论是启动代价还是总代价都只是一个预估值，而优化器需要这两个参数来选择真正的物理执行计划。</p>
+<p>简单来说：优化器通常会优先选择那些总代价更低的查询计划，然而当我们在遇到诸如
+<code>order by datetime desc limit 10</code> 时，这里假设
+<code>datetim</code>
+存在索引，那么很有可能会存在如下的两个执行计划：</p>
+<ul>
+<li><strong>查索引</strong>：此时启动代价极低，而总代价更高，<strong>因为在查索引时，我们索引对应的数据在磁盘上是随机分布的，也就是<code>pg</code>认为走索引会产生大量的随机IO。而随机IO的cost远高于顺序IO。</strong></li>
+<li><strong>全盘扫描</strong>：此时启动代价极高，而总代价更低，<strong>因为在全盘扫描时我们是顺序IO，但是问题在于我们需要把全部的数据排序完后（虽然可能借助于堆排序之类的优化）才可以开始返回数据。</strong></li>
+</ul>
+<p>此时，<code>pg</code> 认为这里存在
+<code>limit 10</code>，它会判断查询会提前终止，所以实际代价会远低于预估的总代价。为此，它可能选择查索引作为真正的执行计划。</p>
+<h2 id="几种典型的查询计划">几种典型的查询计划</h2>
+<ol type="1">
+<li><code>Seq Scan</code> 全表扫描。</li>
+<li><code>Index Scan</code> 表示索引查询。</li>
+<li><code>Bitmap Heap Scan</code>
+通常是在多条件查询或者非等值查询中，先通过条件构造自己的对应的位图，在对多个位图进行
+<code>and</code>/<code>or</code> 操作得到最终的结果。</li>
+<li><code>Recheck Cond</code>
+位图是存在内存中的，当满足条件的数据量比较大时，<code>pg</code>
+会进行<strong>位图降级</strong>，位图中的bit指向Page而不是真实的物理行，此时我们需要找到Page并进行Recheck。</li>
+<li><code>Filter</code> 表示条件过滤。</li>
 </ol>
 
     </div>
