@@ -1821,13 +1821,336 @@ explain analyze select * from jsonb_test_01 where data->>'name' = 'hello jsonb';
 4. `Recheck Cond` 位图是存在内存中的，当满足条件的数据量比较大时，`pg` 会进行**位图降级**，位图中的bit指向Page而不是真实的物理行，此时我们需要找到Page并进行Recheck。
 5. `Filter` 表示条件过滤。
 
+# 表连接
+
+在我们的数据库中，常用的连接方式有三种：
+
+- 嵌套循环连接（NestLoop Join）
+- 哈希连接（Hash Join）
+- 合并连接（Merge Join）
+
+这是因为，通常来讲，任何类型的DBMS它的表和表之间总是分开存储的，所以当出现 JOIN 时，它的查询一定可以分为如下的步骤：
+
+1. 查询A表的数据。
+2. 查询B表的数据。
+3. 根据 JOIN 条件，将A表和B表的数据组合为新的数据并返回给用户。
+
+在查表数据的过程中，其实就是得到了一个 Array[Row] 的数据结构，而我们的查询计划，会根据 RBO/CBO/HBO 等方式去生成，例如：
+
+- 谓词下推：将过滤条件下推到查询表数据的过程，尽量降低IO消耗。
+- 投影：只读取那些在 SELECT/JOIN/WHERE 等位置出现的必要字段。
+- 使用小表作为基表降低表连接期间的内存/CPU消耗。
+
+而且，根据我们 JOIN 的方式不同：`INNER JOIN`，`LEFT JOIN`，`RIGHT JOIN` 等我们也可以去做不同的优化。
+
+这里我们为了简单，我们将使用最简单的 `INNER JOIN` 来表示我们的连接执行过程。
+
+## NestLoop Join
+
+假设我们现在得到了 A[row] 和 B[row]，而我们的结果是 R[row]，那么其实这个 JOIN 的实现就可以描述为如下逻辑：
+
+```cpp
+// 驱动表（通常是数据量小、或者已经过滤后的结果集）
+for (Row ra : A) {
+    // 被驱动表（通常是数据量大，且在连接键上有索引）
+    // 执行器会在 B 的索引上进行精确查找
+    if (IndexLookup(B_index, ra.join_key)) {
+        Row rb = FetchRowFromB(B_index.pointer);
+        append(R, ra, rb);
+    }
+}
+```
+
+## Hash Join
+
+Hash Join 针对于我们的连接去做了优化，它在 Build 阶段将小表的数据加载到内存中，并在连接时直接使用 O(1) 的方式发起连接：
+
+```cpp
+// Build 阶段（构建哈希表）
+// 数据库只扫描小表 A，计算 Hash 值，存入内存中的 Hash Table
+Hash hashTable = CreateHashTable(A); 
+for (Row ra : A) {
+    hashTable.insert(ra.join_key, ra);
+}
+
+// Probe 阶段（探测匹配）
+// 数据库扫描大表 B，对于每一行，直接去哈希表里找
+for (Row rb : B) {
+    if (hashTable.contains(rb.join_key)) {
+        Row ra = hashTable.get(rb.join_key);
+        append(R, ra, rb);
+    }
+}
+```
+
+## Merge Join
+
+`Merge Join` 的使用有一定的限制：它要求我们的连接键本身是已经排好序的（例如存在索引，或者是上一步算子产生的有序输出），这样直接可以使用索引进行连接：
+
+```cpp
+// 前提：A 和 B 必须已经在连接键上排好序（Sorted）
+Row ra = A.next();
+Row rb = B.next();
+
+while (ra != null && rb != null) {
+    if (ra.key == rb.key) {
+        // 找到匹配了，输出结果
+        append(R, ra, rb);
+        
+        // 继续往后看，因为可能有重复 key
+        ra = A.next();
+        rb = B.next();
+    } else if (ra.key < rb.key) {
+        ra = A.next();
+    } else {
+        rb = B.next();
+    }
+}
+```
+
+# GEQO
+
+我们必须要知道：
+
+- **数据库优化器在生成执行计划时，本质上是在寻找最优的 JOIN 顺序。**
+- **执行计划的生成本身也是有消耗的。**
+- **为此，我们在生成执行计划时，生成最佳的执行计划并不能保证获得最佳的性能：例如生成执行计划100ms，执行10ms显然比生成执行计划200ms，执行1ms要更快。**
+
+为此，`pg` 引入了GEQO 去尝试在**查询编译时间**和**查询执行时间**做一个权衡，它的全称是 GEnetic Query Optimization，而它的最典型的应用场景就是，当我们在进行多表连接查询时对执行计划生成的优化，避免在执行计划上浪费过多的时间。
+
+举个例子，我们表之间的组合方式总共有 N! 种方法：
+
+- 对于两个表，我们有 2! = 2 种。
+- 对于五个表，我们有 5! = 120 种。
+- 对于十个表，我们有 10! = 3628800 种。
+
+而执行计划的生成，并不是简单的先找到12个表中最小的表作为基表，再在剩余的表中找到第二小的表作为基表这种简单的方法可以得到的，因为局部最优解不一定是全局最优解。
+
+GEQO 的本质就是遗传算法，是一个比较经典的 CBO 算法：
+
+1. 随机生成N个不同的JOIN顺序，而这些JOIN表中包含了全部的表。
+2. 评估这N个JOIN顺序中那些代价较低的，保留它们，并开始进入下一步杂交，而这些表就是我们的初始基因（Initial Gene）。
+3. 杂交（Crossover）：假设我们保留了两个顺序为 `[T1, T3, T2, T4]` 和 `[T3, T4, T1, T2]`，那么我们通过取前者的部分 `[T1, T3]` ，然后再从后者中补全我们缺失的 `[T4, T2]`。这样，我们得到的结果同时包含了两个组合的特性。
+4. 变异（Mutation）：为了防止陷入局部最优解得到全是相似的计划，算法还会随机的挑选计划并打乱。
+
+# 数据块
+
+```mermaid
+block-beta
+
+columns 10
+
+header("header"):4
+p1("行指针<br>1"):1
+p2("行指针<br>2"):1
+p3("行指针<br>3"):1
+p4("行指针<br>4"):1
+p5("行指针<br>5"):1
+space:1
+space:42
+data5("第5行"):2
+data4("第4行"):3
+data3("第3行"):4
+data2("第2行"):4
+data1("第1行"):5
+tail("tail"):2
+
+p1 --> data1
+p2 --> data2
+p3 --> data3
+p4 --> data4
+p5 --> data5
+
+class header,tail purple
+class p1,p2,p3,p4,p5 green
+class data1,data2,data3,data4,data5 light_green
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+# HOT
+
+# HOT（Heap-Only Tuples）
+
+我们的 `pg` 使用了非原地更新，所以它的实际的更新是直接插入一条新的数据，假设我们更新了第三行：
+
+```mermaid
+block-beta
+
+columns 10
+
+header("header"):4
+p1("行指针<br>1"):1
+p2("行指针<br>2"):1
+p3("行指针<br>3"):1
+p4("行指针<br>4"):1
+p5("行指针<br>5"):1
+space:1
+space:22
+data5("第5行"):2
+data4("第4行"):3
+data3("第3行"):4
+data2("第2行"):4
+data1("第1行"):5
+tail("tail"):2
+
+p1 --> data1
+p2 --> data2
+p3 --> data3
+p4 --> data4
+p5 --> data5
+
+class header,tail purple
+class p1,p2,p3,p4,p5 green
+class data1,data2,data3,data4,data5 light_green
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+那么实际它的结果可能是这样的：
+
+```mermaid
+block-beta
+
+columns 10
+
+header("header"):4
+p1("行指针<br>1"):1
+p2("行指针<br>2"):1
+p3("行指针<br>3"):1
+p4("行指针<br>4"):1
+p5("行指针<br>5"):1
+p6("行指针<br>3"):1
+space:20
+
+data6("第3行"):2
+data5("第5行"):2
+data4("第4行"):3
+data3("第3行"):4
+data2("第2行"):4
+data1("第1行"):5
+tail("tail"):2
+
+p1 --> data1
+p2 --> data2
+p3 --> data3
+p4 --> data4
+p5 --> data5
+p6 --> data6
+
+class header,tail purple
+class p1,p2,p3,p4,p5 green
+class data1,data2,data3,data4,data5 light_green
+class p6,data6 pink
+class p3,data3 error
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
+
+而原来的那一行数据已经失效，在这种情况下，假设我们有五个索引，那么此时我们需要更新所有的索引，让他们指向新的行的位置。
+
+为此， `pg` 引入了 `HOT`，它的实现思路也很简单：**直接将原始的数据当做一个二级指针，让他去指向新的合法的数据。**
+
+```mermaid
+block-beta
+
+columns 10
+
+header("header"):4
+p1("行指针<br>1"):1
+p2("行指针<br>2"):1
+p3("行指针<br>3"):1
+p4("行指针<br>4"):1
+p5("行指针<br>5"):1
+p6("行指针<br>3"):1
+space:20
+
+data6("第3行"):2
+data5("第5行"):2
+data4("第4行"):3
+data3("第3行"):4
+data2("第2行"):4
+data1("第1行"):5
+tail("tail"):2
+
+p1 --> data1
+p2 --> data2
+p3 --> data3
+p4 --> data4
+p5 --> data5
+p6 --> data6
+
+data3 --> data6
+
+class header,tail purple
+class p1,p2,p3,p4,p5 green
+class data1,data2,data3,data4,data5 light_green
+class p6,data6 pink
+class p3,data3 error
+
+classDef green fill:#695,color:#fff,font-weight:bold;
+classDef yellow fill:#FFEB3B,stroke:#333,color:#000,font-weight:bold;
+classDef blockContainer fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+classDef transparent fill:none,stroke:none,color:inherit;
+classDef content fill:#fff,stroke:#ccc;
+classDef animate stroke:#666,stroke-dasharray: 8 4,stroke-dashoffset: 900,animation: dash 20s linear infinite;
+classDef blue fill:#489,stroke:#333,color:#fff,font-weight:bold;
+classDef pink fill:#FFCCCC,stroke:#333,color:#333,font-weight:bold;
+classDef light_green fill:#e8f5e9,stroke:#695;
+classDef purple fill:#968,stroke:#333,color:#fff,font-weight:bold;
+classDef gray fill:#ccc,stroke:#333,font-weight:bold;
+classDef error fill:#bbf,stroke:#f65,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+classDef coral fill:#f8f,stroke:#333,stroke-width:4px;
+classDef orange fill:#fff3e0,stroke:#ef6c00,color:#ef6c00,font-weight:bold;
+```
 
 
 
+相对来说，它也引入了非常多的限制：
 
-
-
-
+1. 由于行指针只能指向当前行，那么我们的新旧数据必须要在同一个页中。为此，如果我们想要有足够的空间去支持HOT，我们必须要为我们的页留出足够的空间，也就是通过 `fillfactor` 参数指定当页中的空间占用率超过时不再继续插入数据。但是这会引入额外的空间浪费。
+2. HOT减少了对索引更新的消耗，但是问题在于它相当于一个多级指针，它的性能会下降。所以 `pg` 在 `auto vacuum` 期间会对他们进行 `Pruning`，包含：
+   - 删除已经废弃的版本节省空间。
+   - 修改所有的索引让他们指向压缩后的位置。
 
 
 
